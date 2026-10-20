@@ -122,6 +122,7 @@ class CampaignRun(Entity, Base):
     campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), index=True)
     laboratory_id: Mapped[str] = mapped_column(ForeignKey("laboratories.id"), index=True)
     requested_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    schedule_id: Mapped[str | None] = mapped_column(ForeignKey("schedules.id"), index=True)
     idempotency_key: Mapped[str] = mapped_column(String(80))
     state: Mapped[str] = mapped_column(String(30), default="CREATED", index=True)
     scope_hash: Mapped[str] = mapped_column(String(64))
@@ -141,6 +142,9 @@ class Approval(Entity, Base):
     __tablename__ = "approvals"
     run_id: Mapped[str] = mapped_column(ForeignKey("campaign_runs.id"), unique=True)
     approved_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    schedule_authorization_id: Mapped[str | None] = mapped_column(
+        ForeignKey("schedule_authorizations.id"), index=True
+    )
     scope_hash: Mapped[str] = mapped_column(String(64))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     max_duration_seconds: Mapped[int] = mapped_column(Integer)
@@ -228,6 +232,71 @@ class AuditEvent(Entity, Base):
     action: Mapped[str] = mapped_column(String(80), index=True)
     resource_id: Mapped[str] = mapped_column(String(100))
     details: Mapped[dict] = mapped_column(JSONB, default=dict)
+
+
+class Schedule(Entity, Base):
+    __tablename__ = "schedules"
+    __table_args__ = (
+        CheckConstraint("interval_seconds between 60 and 2592000", name="schedule_interval"),
+        CheckConstraint("max_occurrences between 1 and 100", name="schedule_budget"),
+        CheckConstraint("max_duration_seconds between 10 and 300", name="schedule_duration"),
+        CheckConstraint("occurrences_count between 0 and max_occurrences", name="schedule_count"),
+        CheckConstraint("ends_at > starts_at", name="schedule_window"),
+        CheckConstraint(
+            "state in ('PENDING_APPROVAL','ACTIVE','PAUSED','REVOKED','EXPIRED','EXHAUSTED','INVALIDATED')",
+            name="schedule_state",
+        ),
+        Index("ix_schedule_due", "state", "next_due_at"),
+    )
+    campaign_id: Mapped[str] = mapped_column(ForeignKey("campaigns.id"), index=True)
+    laboratory_id: Mapped[str] = mapped_column(ForeignKey("laboratories.id"))
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    state: Mapped[str] = mapped_column(String(30), default="PENDING_APPROVAL")
+    scope: Mapped[dict] = mapped_column(JSONB)
+    scope_hash: Mapped[str] = mapped_column(String(64))
+    plan_hash: Mapped[str] = mapped_column(String(64))
+    interval_seconds: Mapped[int] = mapped_column(Integer)
+    max_occurrences: Mapped[int] = mapped_column(Integer)
+    max_duration_seconds: Mapped[int] = mapped_column(Integer)
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    next_due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    occurrences_count: Mapped[int] = mapped_column(Integer, default=0)
+    reason: Mapped[str | None] = mapped_column(Text)
+
+
+class ScheduleAuthorization(Entity, Base):
+    __tablename__ = "schedule_authorizations"
+    schedule_id: Mapped[str] = mapped_column(ForeignKey("schedules.id"), index=True)
+    approved_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    plan_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        Index(
+            "uq_schedule_current_authorization",
+            "schedule_id",
+            unique=True,
+            postgresql_where=revoked_at.is_(None),
+        ),
+    )
+
+
+class ScheduleOccurrence(Entity, Base):
+    __tablename__ = "schedule_occurrences"
+    schedule_id: Mapped[str] = mapped_column(ForeignKey("schedules.id"), index=True)
+    authorization_id: Mapped[str] = mapped_column(ForeignKey("schedule_authorizations.id"))
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    run_id: Mapped[str | None] = mapped_column(ForeignKey("campaign_runs.id"), unique=True)
+    status: Mapped[str] = mapped_column(String(30))
+    reason: Mapped[str] = mapped_column(Text)
+    __table_args__ = (
+        UniqueConstraint("schedule_id", "scheduled_for"),
+        CheckConstraint(
+            "status in ('QUEUED','SKIPPED_LATE','SKIPPED_BUSY')", name="occurrence_status"
+        ),
+        CheckConstraint("(status = 'QUEUED') = (run_id IS NOT NULL)", name="occurrence_run"),
+    )
 
 
 Index("ix_runs_state_created", CampaignRun.state, CampaignRun.created_at)

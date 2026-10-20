@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 
 class Input(BaseModel):
@@ -63,6 +63,7 @@ class RunRead(BaseModel):
     campaign_id: str
     laboratory_id: str
     requested_by: str
+    schedule_id: str | None
     state: str
     scope_hash: str
     scope: dict
@@ -73,3 +74,25 @@ class RunRead(BaseModel):
     started_at: datetime | None
     ended_at: datetime | None
     deadline_at: datetime | None
+
+
+class ScheduleCreate(Input):
+    campaign_id: str = Field(min_length=36, max_length=36)
+    interval_seconds: int = Field(ge=60, le=2592000)
+    max_occurrences: int = Field(ge=1, le=100)
+    max_duration_seconds: int = Field(default=60, ge=10, le=300)
+    starts_at: AwareDatetime
+    ends_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def window(self):
+        if self.ends_at <= self.starts_at:
+            raise ValueError("Fim deve ser posterior ao início.")
+        if self.interval_seconds < self.max_duration_seconds:
+            raise ValueError("Intervalo deve comportar a duração máxima.")
+        return self
+
+
+class ScheduleApprove(Input):
+    confirm_plan_hash: str = Field(min_length=64, max_length=64)
+    confirm_automatic_execution: Literal[True]
