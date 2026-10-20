@@ -9,3 +9,10 @@
 - Migrações, Compose, hardening de runtime, testes de integração e E2E em Firefox com capturas reais.
 - Git privado, somente main e commits/pushes granulares. CI com cache e cancelamento de redundâncias.
 - Limitações: Lab Mode, Atomic executável, Wazuh externo, scheduler e PDF ainda não habilitados; advisory DiskCache herdado registrado com análise do caminho de parsing.
+
+## Continuidade — agendamento Demo aprovado
+
+- Planos recorrentes sob confirmação explícita administrativa, snapshot/hash, prazo e orçamento persistentes.
+- Dispatcher transacional, deduplicação por slot, descartes auditados por atraso/ocupação, pausa/revogação e grant exato por execução.
+- UI e APIs reais, histórico, origem agendada no relatório, privilégios SQL por coluna e cleanup protegido.
+- Testes PostgreSQL concorrentes, fluxo de navegador com ocorrência automática e smoke do Compose com SQL runtime restrito.

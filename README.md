@@ -6,7 +6,7 @@ Simulações controladas, resultados reproduzíveis e decisões de detecção su
 
 Equipes defensivas precisam verificar se seus controles observam e detectam comportamentos de ataque. O ÆGIS conecta campanhas, aprovação de escopo, execução, coleta, correlação e acompanhamento histórico num único fluxo.
 
-**Estado: MVP 0.1 em Demo Mode, persistente e executável.** Todos os eventos da demonstração são sintéticos. Lab Mode, execução de Atomic Red Team e validação externa com Wazuh ainda não estão habilitados. Não é um SIEM, EDR ou shell remoto.
+**Estado: MVP 0.1 em Demo Mode, com agendamento aprovado, persistente e executável.** Todos os eventos da demonstração são sintéticos. Lab Mode, execução de Atomic Red Team e validação externa com Wazuh ainda não estão habilitados. Não é um SIEM, EDR ou shell remoto.
 
 ![Dashboard real do Demo Mode, com evidências explicitamente sintéticas](docs/images/overview.png)
 
@@ -17,6 +17,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Quatro simulações em allowlist demonstrativa, com requisitos, comportamento e cleanup definidos. Arquivo marcador genérico não recebe técnica ATT&CK artificial.
 - Campanhas de escopo imutável, solicitações idempotentes, aprovação administrativa de uso único, expiração, confirmação de início e limite de duração.
 - Worker independente, fila transacional PostgreSQL, claim exclusivo, cancelamento cooperativo, cleanup e recuperação de execuções abandonadas.
+- Agendamentos Demo com aprovação explícita, validade, duração, limite de horários, pausa/revogação e histórico de autorizações.
 - Eventos originais, hashes SHA-256, justificativas de correlação, evidências inspecionáveis e auditoria.
 - Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
 - Inventário Sigma com parsing pySigma, importação YAML limitada e versões imutáveis; nenhuma implantação automática de regras.
@@ -62,6 +63,10 @@ Isso representa **1 detectado / 3 testes válidos = 33,3% neste escopo sintétic
 
 ![Execução real do aplicativo com resultados demonstrativos](docs/images/execution.png)
 
+Para automatizar: abra **Agendamentos**, crie um plano para a campanha, defina início/fim, intervalo e limite de horários, revise e autorize como administrador. O worker executa automaticamente dentro desses limites. Atrasos acima de 30 segundos e laboratório ocupado geram descartes auditados, consumindo o orçamento sem backlog. Pausar exige nova aprovação para retomar; revogar encerra o plano. [Política e operação](docs/operations/scheduling.md).
+
+![Agendamento Demo real com ocorrência e autorização rastreáveis](docs/images/schedules.png)
+
 ## Arquitetura
 
 ```mermaid
@@ -69,7 +74,7 @@ flowchart LR
   Browser[React / TypeScript] --> API[FastAPI / RBAC / CSRF]
   API --> DB[(PostgreSQL: dados + fila)]
   API --> Redis[(Redis: limites / heartbeat)]
-  Worker[Worker independente] --> DB
+  Worker[Worker independente + dispatcher Demo] --> DB
   Worker --> Demo[ExecutionAdapter Demo]
   Demo --> Telemetry[TelemetryProvider Demo]
   Telemetry --> Validate[Correlação independente de SIEM]
@@ -109,7 +114,7 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 - Só o adaptador Demo pode executar. Cancelamento é cooperativo; isolamento de adaptadores bloqueantes é requisito antes de habilitar execução real.
 - Wazuh foi testado com fixtures locais de contrato com identificadores fictícios, não com um servidor externo. Mapeamento entre `Asset.id` interno e `agent.id` real precisa ser conectado no Lab Mode.
 - Sigma validado sintaticamente não equivale a detecção implantada. Associação operacional com testes e conversão de SIEM ficam para próxima etapa.
-- Sem scheduler recorrente, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
+- Agendamento habilitado somente para Demo: até 16 planos ativos, 100 horários por plano, mínimo 60 segundos de intervalo e validade máxima de 90 dias. Sem cron livre, Lab real, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
 - Há um aviso transitivo conhecido em DiskCache, exigido pelo pySigma. O caminho de parsing usado não importa/utiliza o cache vulnerável; a revisão e sua verificação estão em [advisories](docs/security/dependency-advisories.json). Não alegamos ausência de vulnerabilidades.
 - Instalação padrão é HTTP em loopback. Exposição externa exige TLS, cookie Secure, revisão operacional e gestão própria de segredos. Não anunciar como enterprise-ready.
 
