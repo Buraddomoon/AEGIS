@@ -1,6 +1,61 @@
-import {Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts'
-import type {Coverage} from './types'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import type { Coverage } from './types'
 
-export default function TrendChart({trend}:{trend:Coverage['trend']}) {
-  return <div className="chart"><ResponsiveContainer width="100%" height={230}><AreaChart data={trend.map((t,i)=>({...t,label:`#${i+1}`}))}><defs><linearGradient id="detected" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#59d7b2" stopOpacity={0.23}/><stop offset="100%" stopColor="#59d7b2" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} stroke="#252f3c" strokeDasharray="3 5"/><XAxis dataKey="label" tick={{fill:'#8491a5',fontSize:11}} axisLine={false} tickLine={false}/><YAxis allowDecimals={false} tick={{fill:'#8491a5',fontSize:11}} axisLine={false} tickLine={false} width={30}/><Tooltip contentStyle={{background:'#171e2a',border:'1px solid #303d4e',borderRadius:8}}/><Area isAnimationActive={false} type="monotone" name="Avaliados" dataKey="evaluated" stroke="#536478" fill="transparent"/><Area isAnimationActive={false} type="monotone" name="Detectados" dataKey="detected" stroke="#59d7b2" fill="url(#detected)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer></div>
+export default function TrendChart({ trend }: { trend: Coverage['trend'] }) {
+  return (
+    <div className="chart">
+      <ResponsiveContainer width="100%" height={230}>
+        <AreaChart data={trend.map((t, i) => ({ ...t, label: `#${i + 1}` }))}>
+          <defs>
+            <linearGradient id="detected" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#59d7b2" stopOpacity={0.23} />
+              <stop offset="100%" stopColor="#59d7b2" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} stroke="#252f3c" strokeDasharray="3 5" />
+          <XAxis
+            dataKey="label"
+            tick={{ fill: '#8491a5', fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            allowDecimals={false}
+            tick={{ fill: '#8491a5', fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            width={30}
+          />
+          <Tooltip
+            contentStyle={{ background: '#171e2a', border: '1px solid #303d4e', borderRadius: 8 }}
+          />
+          <Area
+            isAnimationActive={false}
+            type="monotone"
+            name="Avaliados"
+            dataKey="evaluated"
+            stroke="#536478"
+            fill="transparent"
+          />
+          <Area
+            isAnimationActive={false}
+            type="monotone"
+            name="Detectados"
+            dataKey="detected"
+            stroke="#59d7b2"
+            fill="url(#detected)"
+            strokeWidth={2.5}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
 }
