@@ -25,10 +25,15 @@ def parse_sigma(content: str) -> dict:
     if collection.errors or len(collection.rules) != 1:
         raise ValueError("Forneça exatamente uma regra Sigma válida.")
     rule = collection.rules[0]
+    if not rule.title or len(rule.title) > 240:
+        raise ValueError("Título Sigma deve possuir entre 1 e 240 caracteres.")
     if not rule.id:
         raise ValueError("A regra deve possuir um UUID estável no campo id.")
-    techniques = [str(tag).removeprefix("attack.").upper() for tag in rule.tags
-                  if re.fullmatch(r"attack\.t\d{4}(\.\d{3})?", str(tag), re.IGNORECASE)]
+    techniques = [
+        str(tag).removeprefix("attack.").upper()
+        for tag in rule.tags
+        if re.fullmatch(r"attack\.t\d{4}(\.\d{3})?", str(tag), re.IGNORECASE)
+    ]
     return {"title": rule.title, "sigma_id": str(rule.id), "techniques": techniques}
 
 
@@ -44,13 +49,19 @@ class AtomicMetadataProvider:
             raise ValueError("Lista de testes Atomic inválida.")
         for item in tests:
             executor = item.get("executor", {})
-            result.append({"guid": item.get("auto_generated_guid"),
-                "name": item["name"], "technique_id": technique,
-                "platforms": item.get("supported_platforms", []),
-                "dependencies": item.get("dependencies", []),
-                "input_arguments": item.get("input_arguments", {}),
-                "executor": executor.get("name"),
-                "has_cleanup": bool(executor.get("cleanup_command")),
-                "elevation_required": executor.get("elevation_required", False),
-                "approved": False, "executable": False})
+            result.append(
+                {
+                    "guid": item.get("auto_generated_guid"),
+                    "name": item["name"],
+                    "technique_id": technique,
+                    "platforms": item.get("supported_platforms", []),
+                    "dependencies": item.get("dependencies", []),
+                    "input_arguments": item.get("input_arguments", {}),
+                    "executor": executor.get("name"),
+                    "has_cleanup": bool(executor.get("cleanup_command")),
+                    "elevation_required": executor.get("elevation_required", False),
+                    "approved": False,
+                    "executable": False,
+                }
+            )
         return result
