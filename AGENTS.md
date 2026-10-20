@@ -1,0 +1,17 @@
+# ÆGIS — instruções de engenharia
+
+## Política obrigatória de versionamento
+
+Use exclusivamente `main`. Não criar branches temporárias nem pull requests. Reutilizar `origin` privado; se ausente, usar a conta `gh` autenticada para criar/reutilizar um único repositório `aegis` PRIVATE. Verificar visibilidade antes do primeiro push. Nunca tornar público nem mudar visibilidade sem autorização.
+
+Criar commits Conventional Commits pequenos, frequentes e coerentes, incluindo unidades parciais verificáveis; não aguardar uma funcionalidade completa. Antes de cada commit, revisar arquivos staged, executar o check relevante e verificar segredos/temporários. Após cada commit, tentar `git push origin main` sem nova confirmação. Se a rede falhar, preservar commits e tentar sincronizar depois. Conflito remoto: parar somente sincronização e solicitar orientação; nunca force push, rebase de histórico publicado ou exclusão de commits. Continuar o desenvolvimento entre commits.
+
+CI com cancelamento de execuções redundantes e cache; não habilitar recursos pagos. Em cada marco, informar quantidade de commits, último hash/mensagem, sincronização, funcionalidades, testes e próximas tarefas. Essa política foi explicitamente autorizada pelo usuário nesta sessão.
+
+Leia `docs/PROGRESS.md` e os ADRs antes de alterar o código. Monólito modular Python + React; domínio em `apps/api/aegis/domain`, integrações atrás de Protocols. PostgreSQL é a fonte de verdade e fila durável; Redis atende limites de login e heartbeat. Não implemente shell remoto, execução de comandos de API, acesso ao socket Docker ou download/execução automática de testes Atomic.
+
+Todos os resultados Demo, eventos e relatórios devem indicar `synthetic=true`. Ausência de alerta nunca prova ausência de telemetria. Evidências devem casar execução, marcador, ativo, laboratório, tipo de comportamento e tempo. Não modificar evidências históricas ao editar regras.
+
+Use migrações Alembic explícitas. Mantenha aprovações de uso único delimitadas pelo hash do escopo, validade e duração. Toda mutação autenticada exige RBAC e CSRF. Somente administrador aprova; Demo permite autoaprovação explicitamente; Lab real precisa revisão separada antes de habilitar. Nunca publicar credenciais. Não iniciar Wazuh nem executar operações ofensivas reais sem autorização específica.
+
+Comandos: `make setup`, `make up`, `make test`, `make lint`, `make build`, `make e2e`, `make down`. Testes de integração usam PostgreSQL e Redis exclusivos do projeto. Nunca limpar dados de outros projetos. Não declarar checks aprovados sem executá-los. Atualize docs/PROGRESS.md com evidência e pendências. UI em pt-BR; nenhuma ação decorativa. Interfaces não operacionais devem informar indisponibilidade.
