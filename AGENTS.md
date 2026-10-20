@@ -2,7 +2,7 @@
 
 ## Política obrigatória de versionamento
 
-Use exclusivamente `main`. Não criar branches temporárias nem pull requests. Reutilizar `origin` privado; se ausente, usar a conta `gh` autenticada para criar/reutilizar um único repositório `aegis` PRIVATE. Verificar visibilidade antes do primeiro push. Nunca tornar público nem mudar visibilidade sem autorização.
+Use exclusivamente `main`. Não criar branches temporárias nem pull requests. Reutilizar `origin` privado; o nome autorizado do repositório GitHub é `AEGIS`, em maiúsculas, em `Buraddomoon/AEGIS`. Se o remoto estiver ausente, reutilizar esse repositório privado antes de considerar criar outro. `ÆGIS` permanece o nome do produto; GitHub aceita somente ASCII no nome do repositório. Verificar visibilidade antes do primeiro push. Nunca tornar público nem mudar visibilidade sem autorização.
 
 Criar commits Conventional Commits pequenos, frequentes e coerentes, incluindo unidades parciais verificáveis; não aguardar uma funcionalidade completa. Antes de cada commit, revisar arquivos staged, executar o check relevante e verificar segredos/temporários. Após cada commit, tentar `git push origin main` sem nova confirmação. Se a rede falhar, preservar commits e tentar sincronizar depois. Conflito remoto: parar somente sincronização e solicitar orientação; nunca force push, rebase de histórico publicado ou exclusão de commits. Continuar o desenvolvimento entre commits.
 

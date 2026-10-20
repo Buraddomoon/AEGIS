@@ -27,7 +27,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 Requisitos: Docker Engine com Compose, Git, Python 3 para gerar a configuração local; acesso à internet no primeiro build. Nenhuma instalação de Wazuh é necessária.
 
 ```bash
-git clone git@github.com:Buraddomoon/aegis.git
+git clone git@github.com:Buraddomoon/AEGIS.git aegis
 cd aegis
 make up
 make bootstrap
