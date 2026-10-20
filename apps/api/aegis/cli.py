@@ -70,8 +70,13 @@ def grant_runtime():
             )
             cursor.execute("REVOKE ALL ON alembic_version FROM aegis_app")
             cursor.execute(
-                "REVOKE UPDATE, DELETE ON audit_events, telemetry_events, detection_evidence, validation_results, rule_versions FROM aegis_app"
+                "REVOKE UPDATE, DELETE ON audit_events, telemetry_events, detection_evidence, validation_results, rule_versions, schedule_occurrences FROM aegis_app"
             )
+            cursor.execute("REVOKE UPDATE ON schedules, schedule_authorizations FROM aegis_app")
+            cursor.execute(
+                "GRANT UPDATE (state, reason, next_due_at, occurrences_count) ON schedules TO aegis_app"
+            )
+            cursor.execute("GRANT UPDATE (revoked_at) ON schedule_authorizations TO aegis_app")
         connection.commit()
     print(
         "Papel runtime configurado sem privilégios administrativos; evidências e auditoria append-only."

@@ -30,3 +30,28 @@ def test_demo_cleanup_refuses_reserved_laboratories(admin, monkeypatch):
         runpy.run_path("scripts/clean_demo.py")
     with session_factory()() as db:
         assert db.scalar(select(func.count()).select_from(Campaign)) == 1
+
+
+def test_cleanup_requires_revocation_and_deletes_schedule_links(admin, monkeypatch):
+    from aegis.models import Schedule, ScheduleAuthorization, ScheduleOccurrence
+    from aegis.scheduling import dispatch_one
+    from test_scheduling import approve, due, occurrences, proposal
+
+    item, _ = proposal(admin)
+    instant = due(item)
+    item = admin.get("/api/v1/schedules/" + item["id"]).json()
+    approve(admin, item)
+    monkeypatch.setattr("builtins.input", lambda _: "LIMPAR DEMO")
+    with pytest.raises(SystemExit, match="Revogue"):
+        runpy.run_path("scripts/clean_demo.py")
+    dispatch_one(instant)
+    assert len(occurrences(admin, item)) == 1
+    assert (
+        admin.post(f"/api/v1/schedules/{item['id']}/revoke", json={"confirm": True}).status_code
+        == 200
+    )
+    runpy.run_path("scripts/clean_demo.py")
+    with session_factory()() as db:
+        for model in (Campaign, Schedule, ScheduleAuthorization, ScheduleOccurrence):
+            assert db.scalar(select(func.count()).select_from(model)) == 0
+        assert db.scalar(select(func.count()).select_from(AuditEvent)) > 0
