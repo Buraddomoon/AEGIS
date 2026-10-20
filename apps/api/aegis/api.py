@@ -90,8 +90,12 @@ def login(data: schemas.Login, request: Request, response: Response, db: DB) -> 
         user.password_hash = hasher.hash(data.password)
     audit(db, user.id, "auth.login", user.id)
     db.commit()
-    options = {"secure": settings().secure_cookies, "samesite": "strict",
-               "max_age": settings().session_hours * 3600, "path": "/"}
+    options = {
+        "secure": settings().secure_cookies,
+        "samesite": "strict",
+        "max_age": settings().session_hours * 3600,
+        "path": "/",
+    }
     response.set_cookie("aegis_session", token, httponly=True, **options)
     response.set_cookie("aegis_csrf", csrf, httponly=False, **options)
     return {"user": schemas.UserRead.model_validate(user).model_dump(), "csrf_token": csrf}
@@ -114,8 +118,10 @@ def logout(user: Viewer, request: Request, response: Response, db: DB):
 @router.get("/users", tags=["Identity"])
 def users(user: Admin, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
     items = db.scalars(select(User).order_by(User.username).offset(offset).limit(limit)).all()
-    return {"items": [schemas.UserRead.model_validate(u).model_dump() for u in items],
-            "total": db.scalar(select(func.count()).select_from(User))}
+    return {
+        "items": [schemas.UserRead.model_validate(u).model_dump() for u in items],
+        "total": db.scalar(select(func.count()).select_from(User)),
+    }
 
 
 @router.post("/users", response_model=schemas.UserRead, status_code=201, tags=["Identity"])
@@ -123,7 +129,9 @@ def create_user(data: schemas.UserCreate, user: Admin, db: DB):
     rate_limit("user-create:" + user.id, 30, 3600)
     if db.scalar(select(User).where(User.username == data.username.lower())):
         raise HTTPException(409, "Nome de usuário já cadastrado.")
-    item = User(username=data.username.lower(), password_hash=hasher.hash(data.password), role=data.role)
+    item = User(
+        username=data.username.lower(), password_hash=hasher.hash(data.password), role=data.role
+    )
     db.add(item)
     db.flush()
     audit(db, user.id, "user.create", item.id, role=item.role)
@@ -134,12 +142,23 @@ def create_user(data: schemas.UserCreate, user: Admin, db: DB):
 @router.get("/labs", tags=["Laboratories"])
 def labs(user: Viewer, db: DB) -> dict:
     items = db.scalars(select(Laboratory).order_by(Laboratory.name)).all()
-    return {"items": [{**queries.record(lab), "synthetic": lab.kind == "demo",
-                       "active_run_state": (db.get(CampaignRun, lab.active_run_id).state if lab.active_run_id and db.get(CampaignRun, lab.active_run_id) else None),
-                       "connection_status": "synthetic" if lab.kind == "demo" else "disconnected",
-                       "execution_capability": "demo-only",
-                       "telemetry_source": "aegis-demo" if lab.kind == "demo" else None}
-                      for lab in items]}
+    return {
+        "items": [
+            {
+                **queries.record(lab),
+                "synthetic": lab.kind == "demo",
+                "active_run_state": (
+                    db.get(CampaignRun, lab.active_run_id).state
+                    if lab.active_run_id and db.get(CampaignRun, lab.active_run_id)
+                    else None
+                ),
+                "connection_status": "synthetic" if lab.kind == "demo" else "disconnected",
+                "execution_capability": "demo-only",
+                "telemetry_source": "aegis-demo" if lab.kind == "demo" else None,
+            }
+            for lab in items
+        ]
+    }
 
 
 @router.patch("/labs/{lab_id}/authorization", tags=["Laboratories"])
@@ -152,8 +171,14 @@ def authorize_lab(lab_id: str, data: schemas.LabAuthorization, user: Admin, db: 
     if lab.authorized != data.authorized:
         lab.authorized = data.authorized
         lab.environment_version += 1
-        audit(db, user.id, "lab.authorization", lab.id, authorized=lab.authorized,
-              environment_version=lab.environment_version)
+        audit(
+            db,
+            user.id,
+            "lab.authorization",
+            lab.id,
+            authorized=lab.authorized,
+            environment_version=lab.environment_version,
+        )
     db.commit()
     return queries.record(lab)
 
@@ -164,11 +189,18 @@ def recover_lab(lab_id: str, data: schemas.Confirm, user: Admin, db: DB) -> dict
     observed_lab = services.get_or_404(db, Laboratory, lab_id)
     observed_run_id = observed_lab.active_run_id
     run = services.locked_run(db, observed_run_id) if observed_run_id else None
-    lab = db.scalar(select(Laboratory).where(Laboratory.id == lab_id).with_for_update().execution_options(populate_existing=True))
+    lab = db.scalar(
+        select(Laboratory)
+        .where(Laboratory.id == lab_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     if lab.active_run_id != observed_run_id:
         raise HTTPException(409, "Reserva do laboratório mudou durante a revisão.")
     if not run or run.state != "CLEANUP_FAILED" or lab.kind != "demo":
-        raise HTTPException(409, "Recuperação disponível apenas para falha de cleanup demonstrativo.")
+        raise HTTPException(
+            409, "Recuperação disponível apenas para falha de cleanup demonstrativo."
+        )
     lab.active_run_id = None
     audit(db, user.id, "lab.cleanup_reviewed", lab.id, run_id=run.id, synthetic=True)
     db.commit()
@@ -181,12 +213,21 @@ def assets(user: Viewer, db: DB) -> dict:
 
 
 @router.get("/techniques", tags=["ATT&CK"])
-def techniques(user: Viewer, db: DB, q: str = Query("", max_length=100),
-               tactic: str | None = None, platform: str | None = None,
-               coverage: str | None = None, offset: Offset = 0, limit: Limit = 50) -> dict:
+def techniques(
+    user: Viewer,
+    db: DB,
+    q: str = Query("", max_length=100),
+    tactic: str | None = None,
+    platform: str | None = None,
+    coverage: str | None = None,
+    offset: Offset = 0,
+    limit: Limit = 50,
+) -> dict:
     query = select(AttackTechnique).order_by(AttackTechnique.id)
     if q:
-        query = query.where(AttackTechnique.name.ilike(f"%{q}%") | AttackTechnique.id.ilike(f"%{q}%"))
+        query = query.where(
+            AttackTechnique.name.ilike(f"%{q}%") | AttackTechnique.id.ilike(f"%{q}%")
+        )
     if tactic:
         query = query.where(AttackTechnique.tactics.any(tactic))
     if platform:
@@ -194,8 +235,11 @@ def techniques(user: Viewer, db: DB, q: str = Query("", max_length=100),
     outcomes = queries.technique_outcomes(db)
     if coverage:
         ids = [key for key, value in outcomes.items() if value == coverage]
-        query = query.where(AttackTechnique.id.not_in(outcomes) if coverage == "NOT_TESTED"
-                            else AttackTechnique.id.in_(ids))
+        query = query.where(
+            AttackTechnique.id.not_in(outcomes)
+            if coverage == "NOT_TESTED"
+            else AttackTechnique.id.in_(ids)
+        )
     result = queries.page(db, query, offset, limit)
     for item in result["items"]:
         item["coverage"] = outcomes.get(item["id"], "NOT_TESTED")
@@ -205,28 +249,48 @@ def techniques(user: Viewer, db: DB, q: str = Query("", max_length=100),
 @router.get("/techniques/{technique_id}", tags=["ATT&CK"])
 def technique_detail(technique_id: str, user: Viewer, db: DB) -> dict:
     technique = services.get_or_404(db, AttackTechnique, technique_id)
-    tests = db.scalars(select(TestDefinition).where(TestDefinition.technique_id == technique_id)).all()
+    tests = db.scalars(
+        select(TestDefinition).where(TestDefinition.technique_id == technique_id)
+    ).all()
     history = []
     for result, execution, run in queries.completed_results(db):
         scoped = next(t for t in run.scope["test_definitions"] if t["id"] == execution.test_id)
         if scoped["technique_id"] == technique_id:
-            history.append({"run_id": run.id, "outcome": result.outcome,
-                            "created_at": result.created_at, "synthetic": True})
-    return {**queries.record(technique), "tests": [queries.record(t) for t in tests],
-            "coverage_history": history[-30:], "telemetry_sources": ["aegis-demo"] if tests else [],
-            "operational_rules": [], "limitation": "Regras Sigma cadastradas não são regras implantadas no SIEM."}
+            history.append(
+                {
+                    "run_id": run.id,
+                    "outcome": result.outcome,
+                    "created_at": result.created_at,
+                    "synthetic": True,
+                }
+            )
+    return {
+        **queries.record(technique),
+        "tests": [queries.record(t) for t in tests],
+        "coverage_history": history[-30:],
+        "telemetry_sources": ["aegis-demo"] if tests else [],
+        "operational_rules": [],
+        "limitation": "Regras Sigma cadastradas não são regras implantadas no SIEM.",
+    }
 
 
 @router.get("/tests", tags=["Tests"])
 def tests(user: Viewer, db: DB) -> dict:
-    return {"items": [queries.record(t) for t in db.scalars(select(TestDefinition).order_by(TestDefinition.id))]}
+    return {
+        "items": [
+            queries.record(t)
+            for t in db.scalars(select(TestDefinition).order_by(TestDefinition.id))
+        ]
+    }
 
 
 @router.get("/campaigns", tags=["Campaigns"])
 def campaigns(user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
     result = queries.page(db, select(Campaign).order_by(Campaign.created_at.desc()), offset, limit)
     for item in result["items"]:
-        item["test_ids"] = list(db.scalars(select(CampaignTest.test_id).where(CampaignTest.campaign_id == item["id"])))
+        item["test_ids"] = list(
+            db.scalars(select(CampaignTest.test_id).where(CampaignTest.campaign_id == item["id"]))
+        )
     return result
 
 
@@ -241,7 +305,9 @@ def create_campaign(data: schemas.CampaignCreate, user: Operator, db: DB) -> dic
         test = services.get_or_404(db, TestDefinition, test_id)
         if not test.approved:
             raise HTTPException(409, "Teste fora da allowlist.")
-    campaign = Campaign(name=data.name, objective=data.objective, laboratory_id=lab.id, created_by=user.id)
+    campaign = Campaign(
+        name=data.name, objective=data.objective, laboratory_id=lab.id, created_by=user.id
+    )
     db.add(campaign)
     db.flush()
     for test_id in data.test_ids:
@@ -251,7 +317,12 @@ def create_campaign(data: schemas.CampaignCreate, user: Operator, db: DB) -> dic
     return queries.campaign_detail(db, campaign)
 
 
-@router.post("/campaigns/{campaign_id}/runs", response_model=schemas.RunRead, status_code=201, tags=["Executions"])
+@router.post(
+    "/campaigns/{campaign_id}/runs",
+    response_model=schemas.RunRead,
+    status_code=201,
+    tags=["Executions"],
+)
 def request_run(campaign_id: str, data: schemas.RunRequest, user: Operator, db: DB):
     try:
         return services.request_run(db, campaign_id, user, data.idempotency_key)
@@ -262,8 +333,14 @@ def request_run(campaign_id: str, data: schemas.RunRequest, user: Operator, db: 
 
 
 @router.get("/executions", tags=["Executions"])
-def executions(user: Viewer, db: DB, state: str | None = None,
-               campaign_id: str | None = None, offset: Offset = 0, limit: Limit = 50) -> dict:
+def executions(
+    user: Viewer,
+    db: DB,
+    state: str | None = None,
+    campaign_id: str | None = None,
+    offset: Offset = 0,
+    limit: Limit = 50,
+) -> dict:
     query = select(CampaignRun).order_by(CampaignRun.created_at.desc())
     if state:
         query = query.where(CampaignRun.state == state)
@@ -313,7 +390,9 @@ def compare(before: str, after: str, user: Viewer, db: DB) -> dict:
 
 @router.get("/rules", tags=["Sigma"])
 def rules(user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
-    result = queries.page(db, select(DetectionRule).order_by(DetectionRule.created_at.desc()), offset, limit)
+    result = queries.page(
+        db, select(DetectionRule).order_by(DetectionRule.created_at.desc()), offset, limit
+    )
     for item in result["items"]:
         item["status"] = "syntax_validated_not_deployed"
     return result
@@ -322,8 +401,16 @@ def rules(user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
 @router.get("/rules/{rule_id}/versions", tags=["Sigma"])
 def rule_versions(rule_id: str, user: Viewer, db: DB) -> dict:
     services.get_or_404(db, DetectionRule, rule_id)
-    return {"items": [queries.record(v) for v in db.scalars(select(RuleVersion)
-            .where(RuleVersion.rule_id == rule_id).order_by(RuleVersion.version.desc()))]}
+    return {
+        "items": [
+            queries.record(v)
+            for v in db.scalars(
+                select(RuleVersion)
+                .where(RuleVersion.rule_id == rule_id)
+                .order_by(RuleVersion.version.desc())
+            )
+        ]
+    }
 
 
 @router.post("/rules", status_code=201, tags=["Sigma"])
@@ -331,24 +418,38 @@ def import_rule(data: schemas.SigmaImport, user: Operator, db: DB) -> dict:
     try:
         parsed = parse_sigma(data.content)
     except Exception:
-        raise HTTPException(422, "Sigma inválido. Verifique UUID, logsource, detection e condition; aliases YAML são proibidos.") from None
+        raise HTTPException(
+            422,
+            "Sigma inválido. Verifique UUID, logsource, detection e condition; aliases YAML são proibidos.",
+        ) from None
     if any(not db.get(AttackTechnique, t) for t in parsed["techniques"]):
         raise HTTPException(422, "Técnica referenciada não existe no catálogo ativo.")
-    rule = db.scalar(select(DetectionRule).where(DetectionRule.sigma_id == parsed["sigma_id"]).with_for_update())
+    rule = db.scalar(
+        select(DetectionRule).where(DetectionRule.sigma_id == parsed["sigma_id"]).with_for_update()
+    )
     content_hash = digest(data.content)
     if not rule:
         rule = DetectionRule(title=parsed["title"], sigma_id=parsed["sigma_id"], latest_version=1)
         db.add(rule)
         db.flush()
     else:
-        latest = db.scalar(select(RuleVersion).where(RuleVersion.rule_id == rule.id,
-                                                     RuleVersion.version == rule.latest_version))
+        latest = db.scalar(
+            select(RuleVersion).where(
+                RuleVersion.rule_id == rule.id, RuleVersion.version == rule.latest_version
+            )
+        )
         if latest and latest.sha256 == content_hash:
             return {**queries.record(rule), "unchanged": True}
         rule.latest_version += 1
         rule.title = parsed["title"]
-    version = RuleVersion(rule_id=rule.id, version=rule.latest_version, content=data.content,
-                          sha256=content_hash, techniques=parsed["techniques"], created_by=user.id)
+    version = RuleVersion(
+        rule_id=rule.id,
+        version=rule.latest_version,
+        content=data.content,
+        sha256=content_hash,
+        techniques=parsed["techniques"],
+        created_by=user.id,
+    )
     db.add(version)
     audit(db, user.id, "sigma.import", rule.id, version=version.version, sha256=content_hash)
     db.commit()
@@ -357,20 +458,27 @@ def import_rule(data: schemas.SigmaImport, user: Operator, db: DB) -> dict:
 
 @router.get("/reports", tags=["Reports"])
 def reports(user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
-    return queries.page(db, select(CampaignRun).where(CampaignRun.state == "COMPLETED")
-                         .order_by(CampaignRun.created_at.desc()), offset, limit)
+    return queries.page(
+        db,
+        select(CampaignRun)
+        .where(CampaignRun.state == "COMPLETED")
+        .order_by(CampaignRun.created_at.desc()),
+        offset,
+        limit,
+    )
 
 
 @router.get("/reports/{run_id}", tags=["Reports"])
-def report(run_id: str, user: Viewer, db: DB,
-           format: Literal["json", "html"] = "json"):
+def report(run_id: str, user: Viewer, db: DB, format: Literal["json", "html"] = "json"):
     detail = queries.execution_detail(db, run_id)
     data = build_report(detail)
     audit(db, user.id, "report.export", run_id, format=format)
     db.commit()
     if format == "html":
-        return HTMLResponse(HTMLReportExporter().export(data),
-            headers={"Content-Disposition": f'attachment; filename="aegis-{detail["id"]}.html"'})
+        return HTMLResponse(
+            HTMLReportExporter().export(data),
+            headers={"Content-Disposition": f'attachment; filename="aegis-{detail["id"]}.html"'},
+        )
     return data
 
 
@@ -380,31 +488,57 @@ def connectors(user: Viewer) -> dict:
         worker = redis_client().get("aegis:worker:heartbeat") is not None
     except RedisError:
         worker = False
-    return {"items": [{"id": "demo", "name": "Adaptador demonstrativo", "status": "synthetic",
-                       "synthetic": True, "description": "Eventos gerados em memória e persistidos."},
-                      {"id": "wazuh", "name": "Wazuh Indexer", "synthetic": False,
-                       "status": "configured_unverified" if settings().wazuh_url else "disconnected",
-                       "description": "Somente leitura. Conexão externa ainda não validada."}],
-            "worker_online": worker, "scheduling": "not_implemented", "lab_mode": "not_enabled"}
+    return {
+        "items": [
+            {
+                "id": "demo",
+                "name": "Adaptador demonstrativo",
+                "status": "synthetic",
+                "synthetic": True,
+                "description": "Eventos gerados em memória e persistidos.",
+            },
+            {
+                "id": "wazuh",
+                "name": "Wazuh Indexer",
+                "synthetic": False,
+                "status": "configured_unverified" if settings().wazuh_url else "disconnected",
+                "description": "Somente leitura. Conexão externa ainda não validada.",
+            },
+        ],
+        "worker_online": worker,
+        "scheduling": "not_implemented",
+        "lab_mode": "not_enabled",
+    }
 
 
 @router.post("/connectors/wazuh/test", tags=["Integrations"])
 def test_wazuh(user: Admin, db: DB) -> dict:
     from aegis.integrations.wazuh import configured_provider
+
     rate_limit("wazuh-test:" + user.id, 5, 60)
     try:
         provider = configured_provider()
         version = provider.test_connection()
     except ValueError:
-        raise HTTPException(409, "Wazuh não configurado: exige HTTPS, IP fixado, credenciais e CA válida.") from None
+        raise HTTPException(
+            409, "Wazuh não configurado: exige HTTPS, IP fixado, credenciais e CA válida."
+        ) from None
     except Exception:
-        raise HTTPException(502, "Falha na conexão Wazuh. Verifique TLS, acesso e credenciais no ambiente.") from None
+        raise HTTPException(
+            502, "Falha na conexão Wazuh. Verifique TLS, acesso e credenciais no ambiente."
+        ) from None
     audit(db, user.id, "wazuh.connection_test", "wazuh", success=True)
     db.commit()
-    return {"status": "connected", "version": version, "scope": "indexer_read_only",
-            "limitation": "Conectividade não comprova ingestão de telemetria nem detecção."}
+    return {
+        "status": "connected",
+        "version": version,
+        "scope": "indexer_read_only",
+        "limitation": "Conectividade não comprova ingestão de telemetria nem detecção.",
+    }
 
 
 @router.get("/audit", tags=["Audit"])
 def audit_events(user: Admin, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
-    return queries.page(db, select(AuditEvent).order_by(AuditEvent.created_at.desc()), offset, limit)
+    return queries.page(
+        db, select(AuditEvent).order_by(AuditEvent.created_at.desc()), offset, limit
+    )
