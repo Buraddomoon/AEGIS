@@ -19,8 +19,9 @@ def pg_engine():
     original = database.engine()
     with original.begin() as conn:
         conn.execute(text(f'CREATE SCHEMA "{schema}"'))
-    test_engine = create_engine(settings().database_url,
-                    connect_args={"options": f"-csearch_path={schema}"}, pool_size=8)
+    test_engine = create_engine(
+        settings().database_url, connect_args={"options": f"-csearch_path={schema}"}, pool_size=8
+    )
     previous = database.engine
     database.engine = lambda: test_engine
     redis_before = settings().redis_url
@@ -49,21 +50,31 @@ def db_ready(pg_engine):
     with database.session_factory()() as db:
         seed(db)
         for role in ["administrator", "operator", "viewer"]:
-            db.add(User(username=role, role=role, password_hash=hasher.hash("Test-only-randomized-scope-23!")))
+            db.add(
+                User(
+                    username=role,
+                    role=role,
+                    password_hash=hasher.hash("Test-only-randomized-scope-23!"),
+                )
+            )
         db.commit()
 
 
 @pytest.fixture
 def client(db_ready):
     from aegis.main import app
+
     with TestClient(app) as client:
         yield client
 
 
 @pytest.fixture
 def admin(client):
-    result = client.post("/api/v1/auth/login", headers={"x-aegis-request": "browser"},
-                         json={"username": "administrator", "password": "Test-only-randomized-scope-23!"})
+    result = client.post(
+        "/api/v1/auth/login",
+        headers={"x-aegis-request": "browser"},
+        json={"username": "administrator", "password": "Test-only-randomized-scope-23!"},
+    )
     assert result.status_code == 200, result.text
     client.headers["x-csrf-token"] = result.json()["csrf_token"]
     return client
@@ -71,17 +82,28 @@ def admin(client):
 
 def create_queued(client, tests=None):
     lab = client.get("/api/v1/labs").json()["items"][0]
-    campaign = client.post("/api/v1/campaigns", json={"name": "Teste de integração",
-        "objective": "Validar o fluxo completo e a coleta sintética.", "laboratory_id": lab["id"],
-        "test_ids": tests or ["demo-shell", "demo-powershell", "demo-process-discovery", "demo-file-marker"]})
+    campaign = client.post(
+        "/api/v1/campaigns",
+        json={
+            "name": "Teste de integração",
+            "objective": "Validar o fluxo completo e a coleta sintética.",
+            "laboratory_id": lab["id"],
+            "test_ids": tests
+            or ["demo-shell", "demo-powershell", "demo-process-discovery", "demo-file-marker"],
+        },
+    )
     assert campaign.status_code == 201, campaign.text
-    run = client.post(f'/api/v1/campaigns/{campaign.json()["id"]}/runs',
-                      json={"idempotency_key": uuid.uuid4().hex})
+    run = client.post(
+        f"/api/v1/campaigns/{campaign.json()['id']}/runs",
+        json={"idempotency_key": uuid.uuid4().hex},
+    )
     assert run.status_code == 201, run.text
     result = run.json()
-    approved = client.post(f'/api/v1/executions/{result["id"]}/approve', json={
-        "confirm_scope_hash": result["scope_hash"], "max_duration_seconds": 60})
+    approved = client.post(
+        f"/api/v1/executions/{result['id']}/approve",
+        json={"confirm_scope_hash": result["scope_hash"], "max_duration_seconds": 60},
+    )
     assert approved.status_code == 200, approved.text
-    started = client.post(f'/api/v1/executions/{result["id"]}/start', json={"confirm": True})
+    started = client.post(f"/api/v1/executions/{result['id']}/start", json={"confirm": True})
     assert started.status_code == 200, started.text
     return result
