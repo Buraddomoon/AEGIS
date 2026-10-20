@@ -205,7 +205,13 @@ def dispatch_one(at: datetime | None = None) -> bool:
     with session_factory()() as db:
         item = db.scalar(
             select(Schedule)
-            .where(Schedule.state == "ACTIVE", Schedule.next_due_at <= instant)
+            .where(
+                ((Schedule.state == "ACTIVE") & (Schedule.next_due_at <= instant))
+                | (
+                    Schedule.state.in_(("PENDING_APPROVAL", "PAUSED"))
+                    & (Schedule.ends_at <= instant)
+                )
+            )
             .order_by(Schedule.next_due_at, Schedule.id)
             .with_for_update(skip_locked=True)
             .limit(1)
@@ -286,10 +292,8 @@ def dispatch_one(at: datetime | None = None) -> bool:
             if item.occurrences_count >= item.max_occurrences:
                 item.state = "EXHAUSTED"
             elif item.next_due_at >= item.ends_at:
-                item.state = "EXPIRED"
-                # Last emitted run must remain valid until ends_at even with no more slots.
-                if run_id:
-                    item.state = "EXHAUSTED"
+                # No future slots, but any previously issued run keeps its exact grant.
+                item.state = "EXHAUSTED"
             audit(
                 db,
                 None,

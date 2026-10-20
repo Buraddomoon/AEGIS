@@ -72,7 +72,9 @@ def grant_runtime():
             cursor.execute(
                 "REVOKE UPDATE, DELETE ON audit_events, telemetry_events, detection_evidence, validation_results, rule_versions, schedule_occurrences FROM aegis_app"
             )
-            cursor.execute("REVOKE UPDATE ON schedules, schedule_authorizations FROM aegis_app")
+            cursor.execute(
+                "REVOKE UPDATE, DELETE ON schedules, schedule_authorizations FROM aegis_app"
+            )
             cursor.execute(
                 "GRANT UPDATE (state, reason, next_due_at, occurrences_count) ON schedules TO aegis_app"
             )

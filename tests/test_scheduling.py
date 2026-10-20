@@ -20,7 +20,7 @@ from conftest import create_queued
 from sqlalchemy import func, select
 
 
-def proposal(admin, **overrides):
+def proposal(admin, expected_status=201, **overrides):
     lab = admin.get("/api/v1/labs").json()["items"][0]
     campaign = admin.post(
         "/api/v1/campaigns",
@@ -42,7 +42,7 @@ def proposal(admin, **overrides):
     )
     data.update(overrides)
     response = admin.post("/api/v1/schedules", json=data)
-    assert response.status_code == 201, response.text
+    assert response.status_code == expected_status, response.text
     return response.json(), starts
 
 
@@ -293,6 +293,28 @@ def test_expired_plan_does_not_emit(admin):
     assert not occurrences(admin, item)
 
 
+def test_last_busy_slot_does_not_invalidate_previously_issued_run(admin):
+    item, instant = ready(admin, max_duration_seconds=60)
+    with session_factory()() as db:
+        schedule = db.get(Schedule, item["id"])
+        schedule.ends_at = instant + timedelta(seconds=90)
+        schedule.plan_hash = scheduling.digest(scheduling.plan(schedule))
+        grant = db.scalar(
+            select(ScheduleAuthorization).where(ScheduleAuthorization.schedule_id == item["id"])
+        )
+        grant.plan_hash, grant.expires_at = schedule.plan_hash, schedule.ends_at
+        db.commit()
+    assert scheduling.dispatch_one(instant + timedelta(seconds=20))
+    first = occurrences(admin, item)[0]
+    assert scheduling.dispatch_one(instant + timedelta(seconds=60))
+    assert occurrences(admin, item)[0]["status"] == "SKIPPED_BUSY"
+    with session_factory()() as db:
+        assert db.get(Schedule, item["id"]).state == "EXHAUSTED"
+        run = db.get(CampaignRun, first["run_id"])
+        grant = db.scalar(select(Approval).where(Approval.run_id == run.id))
+        assert scheduling.authorization_valid(db, run, grant)
+
+
 @pytest.mark.parametrize(
     "overrides",
     [
@@ -305,8 +327,7 @@ def test_expired_plan_does_not_emit(admin):
     ],
 )
 def test_schedule_bounds(admin, overrides):
-    with pytest.raises(AssertionError, match="422"):
-        proposal(admin, **overrides)
+    proposal(admin, expected_status=422, **overrides)
 
 
 def test_schedule_rbac(client):
@@ -340,3 +361,12 @@ def test_schedule_rbac(client):
                 ).status_code
                 == 403
             )
+
+
+def test_expired_pending_plan_releases_open_capacity_without_approval(admin):
+    item, starts = proposal(admin)
+    assert scheduling.dispatch_one(starts + timedelta(hours=2))
+    detail = admin.get("/api/v1/schedules/" + item["id"]).json()
+    assert detail["state"] == "EXPIRED"
+    assert detail["occurrences_count"] == 0
+    assert not detail["authorizations"]
