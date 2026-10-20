@@ -4,6 +4,10 @@
 
 Fundação, fluxo completo, evidências, interface, relatórios e comparações. Testes locais e de navegador, Compose e documentação. O aceite é desse escopo, não de toda a plataforma futura.
 
+### Extensão entregue — agendamento Demo aprovado
+
+Planos imutáveis, autorização recorrente delimitada, slots transacionais, pausa/revogação, histórico e relatórios no fluxo existente. Apenas Demo, com testes PostgreSQL e navegador real. Política em [scheduling](../operations/scheduling.md).
+
 ## 0.2 — Laboratório Linux isolado
 
 Exige infraestrutura própria e autorização específica antes de executar. Executor fixo por allowlist, identidade de endpoint, atestação de isolamento, limite efetivo de processo, cancelamento, lease/fencing, cleanup idempotente e recuperação de efeitos desconhecidos. Pelo menos uma simulação benigna validada e registrada. Importação Atomic jamais executa comandos automaticamente.
@@ -18,6 +22,6 @@ Associação regra/teste, análise semântica, backend/pipeline Sigma oficialmen
 
 ## 0.5 — Automação e operação
 
-Scheduler de campanhas sob aprovação com validade/limites, deduplicação e concorrência; relatórios comparativos automáticos e PDF; retenção/arquivo, backup/restore verificado, isolamento por workspace e gestão de usuários mais completa.
+Extensão do agendamento aprovado para Lab Mode, após isolamento efetivo; relatórios comparativos automáticos e PDF; retenção/arquivo, backup/restore verificado, isolamento por workspace e gestão de usuários mais completa.
 
 Futuro: Caldera, outros SIEM/EDR, Windows em VM própria, CI/CD e assistência por IA sem controle autônomo sobre evidências/detecção/alterações críticas. Núcleo independente de IA comercial.

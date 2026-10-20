@@ -12,8 +12,9 @@
 | Exportação e comparação | HTML escapado, JSON original, repetição com nova aprovação e comparação de mesmo escopo |
 | UI funcional e responsiva | E2E visita páginas e verifica ausência de overflow em 390px; capturas reais |
 | Catálogo oficial versionado | snapshot, referência, licença e hash de origem |
-| Integrações não configuradas explícitas | Wazuh desconectado; Lab/scheduler não habilitados |
+| Integrações não configuradas explícitas | Wazuh desconectado; Lab não habilitado; scheduler somente Demo aprovado |
+| Agendamento Demo delimitado | testes de grant exato, slots concorrentes, rollback, busy/atraso, limites, revogação, cleanup, E2E e smoke runtime |
 | Segurança de importações | testes YAML, parsing pySigma, versionamento; sem implantação automática |
 | Qualidade e GitHub | checks locais, CI configurada, privado/main-only, staged verificado e pushes granulares |
 
-Consulte docs/PROGRESS.md para a rodada final de testes e estado real da CI. Não considerar Wazuh externo, Lab Mode ou scheduler concluídos a partir desses critérios. Auditoria de dependências mantém advisory transitivo revisado; isso é limitação documentada, não alegação de ausência de vulnerabilidades.
+Consulte docs/PROGRESS.md para a rodada final de testes e estado real da CI. Não considerar Wazuh externo, Lab Mode ou agendamento de laboratório real concluídos a partir desses critérios. Auditoria de dependências mantém advisory transitivo revisado; isso é limitação documentada, não alegação de ausência de vulnerabilidades.

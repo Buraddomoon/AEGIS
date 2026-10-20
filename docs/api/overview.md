@@ -13,6 +13,7 @@ Sessão por cookie HttpOnly. Login JSON exige `X-Aegis-Request: browser`; origem
 | tests | GET allowlist demonstrativa |
 | campaigns | GET/POST; POST `/{id}/runs` com idempotency_key |
 | executions | GET lista/detalhe, POST approve/start/cancel/reject |
+| schedules | GET/POST lista/criação; GET detalhe e occurrences; POST approve (admin), pause (operador), revoke (admin), com confirmação explícita |
 | coverage | GET indicadores; GET compare?before=UUID&after=UUID |
 | rules | GET/POST import YAML; GET `/{id}/versions` |
 | reports | GET lista de concluídas; GET `/{run_id}?format=json|html` |
@@ -24,4 +25,4 @@ Listagens grandes usam `offset` e `limit` (1–1000), com `items/total`. Catálo
 
 Erros `{error: {code, message, request_id}}`; erros de input incluem somente campo/tipo, sem valores sensíveis. Status: 401 sem sessão, 403 sem papel/CSRF/origem, 404 inexistente, 409 conflito de estado/escopo, 413 payload grande, 422 input inválido, 429 rate limit, 502 conector falhou, 503 dependência indisponível. X-Request-ID auxilia diagnóstico.
 
-Polling controlado da UI acompanha estado e evidências, sem WebSocket fictício. Endpoints de schedules/execução real/implantação Sigma não existem nesta versão. Integrações ainda não configuradas retornam estado explícito e teste de conexão retorna 409; não inventam sucesso.
+Polling controlado da UI acompanha estado e evidências, sem WebSocket fictício. Schedules operam somente Demo, conforme [política](../operations/scheduling.md). Endpoints de execução real e implantação Sigma não existem nesta versão. Integrações ainda não configuradas retornam estado explícito e teste de conexão retorna 409; não inventam sucesso.
