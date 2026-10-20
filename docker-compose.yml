@@ -32,12 +32,18 @@ services:
   migrate:
     build: .
     image: aegis-local:0.1
-    command: [alembic, upgrade, head]
+    command: [/bin/sh, -c, 'alembic upgrade head && python -m aegis.cli seed && python -m aegis.cli grant-runtime']
     environment: &app-env
       DATABASE_URL: postgresql+psycopg://aegis:${POSTGRES_PASSWORD}@db:5432/aegis
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:18780}
       SECURE_COOKIES: ${SECURE_COOKIES:-false}
+      WAZUH_URL: ${WAZUH_URL:-}
+      WAZUH_ALLOWED_IP: ${WAZUH_ALLOWED_IP:-}
+      WAZUH_USERNAME: ${WAZUH_USERNAME:-}
+      WAZUH_PASSWORD: ${WAZUH_PASSWORD:-}
+      WAZUH_CA_BUNDLE: ${WAZUH_CA_BUNDLE:-}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Run scripts/init_env.py}
     networks: [backend]
     depends_on:
       db: {condition: service_healthy}
@@ -45,7 +51,16 @@ services:
   api:
     image: aegis-local:0.1
     command: [uvicorn, aegis.main:app, --host, 0.0.0.0, --port, '8080', --no-proxy-headers]
-    environment: *app-env
+    environment: &runtime-env
+      DATABASE_URL: postgresql+psycopg://aegis_app:${APP_DB_PASSWORD}@db:5432/aegis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:18780}
+      SECURE_COOKIES: ${SECURE_COOKIES:-false}
+      WAZUH_URL: ${WAZUH_URL:-}
+      WAZUH_ALLOWED_IP: ${WAZUH_ALLOWED_IP:-}
+      WAZUH_USERNAME: ${WAZUH_USERNAME:-}
+      WAZUH_PASSWORD: ${WAZUH_PASSWORD:-}
+      WAZUH_CA_BUNDLE: ${WAZUH_CA_BUNDLE:-}
     ports: ['127.0.0.1:18780:8080']
     networks: [backend, ingress]
     depends_on:
@@ -65,7 +80,7 @@ services:
   worker:
     image: aegis-local:0.1
     command: [python, -m, aegis.worker]
-    environment: *app-env
+    environment: *runtime-env
     networks: [backend]
     depends_on:
       migrate: {condition: service_completed_successfully}
