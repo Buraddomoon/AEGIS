@@ -2,7 +2,8 @@ name: Validate AEGIS
 on:
   push:
     branches: [main]
-    paths-ignore: ['docs/**', '**.md', 'LICENSE']
+    # Security policy JSON remains executable input and must trigger validation.
+    paths-ignore: ['**/*.md', '*.md', 'docs/images/**', 'LICENSE']
   workflow_dispatch:
 permissions:
   contents: read
