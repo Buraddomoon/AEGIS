@@ -1,3 +1,4 @@
+import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -112,6 +113,8 @@ def test_schedule_full_flow_exact_grant_report_and_budget(admin):
     assert report["run"]["state"] == "COMPLETED"
     assert report["run"]["executions"][0]["result"]["outcome"] == "DETECTED"
     assert report["run"]["synthetic"]
+    assert report["run"]["schedule_plan"]["plan_hash"] == item["plan_hash"]
+    assert report["run"]["schedule_authorization"]["id"] == occurrence["authorization_id"]
     assert admin.get("/api/v1/schedules/" + item["id"]).json()["state"] == "EXHAUSTED"
 
 
@@ -370,3 +373,29 @@ def test_expired_pending_plan_releases_open_capacity_without_approval(admin):
     assert detail["state"] == "EXPIRED"
     assert detail["occurrences_count"] == 0
     assert not detail["authorizations"]
+
+
+def test_tick_racing_with_pause_leaves_no_queued_work_or_reservation(admin):
+    item, instant = ready(admin)
+    barrier = threading.Barrier(2)
+
+    def tick():
+        barrier.wait(timeout=5)
+        return scheduling.dispatch_one(instant)
+
+    def pause():
+        barrier.wait(timeout=5)
+        with session_factory()() as db:
+            return scheduling.stop_schedule(
+                db, item["id"], db.get(User, item["created_by"]), revoke=False
+            ).state
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        one, two = pool.submit(tick), pool.submit(pause)
+        one.result(timeout=10)
+        assert two.result(timeout=10) == "PAUSED"
+    with session_factory()() as db:
+        assert db.get(Schedule, item["id"]).state == "PAUSED"
+        assert db.get(Laboratory, item["laboratory_id"]).active_run_id is None
+        assert all(r.state == "CANCELLED" for r in db.scalars(select(CampaignRun)))
+    assert claim_next() is None

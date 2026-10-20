@@ -13,6 +13,8 @@ from aegis.models import (
     CampaignTest,
     DetectionEvidence,
     ExecutionStep,
+    Schedule,
+    ScheduleAuthorization,
     ScheduleOccurrence,
     TelemetryEvent,
     TestExecution,
@@ -84,12 +86,21 @@ def execution_detail(db: Session, run_id: str) -> dict:
     ).all()
     campaign = get_or_404(db, Campaign, run.campaign_id)
     occurrence = db.scalar(select(ScheduleOccurrence).where(ScheduleOccurrence.run_id == run.id))
+    scheduled_plan, grant = None, None
+    if run.schedule_id and approval and approval.schedule_authorization_id:
+        from aegis.scheduling import plan
+
+        schedule = get_or_404(db, Schedule, run.schedule_id)
+        scheduled_plan = {**plan(schedule), "plan_hash": schedule.plan_hash}
+        grant = db.get(ScheduleAuthorization, approval.schedule_authorization_id)
     return {
         **record(run),
         "campaign_name": campaign.name,
         "objective": campaign.objective,
         "approval": record(approval) if approval else None,
         "schedule_occurrence": record(occurrence) if occurrence else None,
+        "schedule_plan": scheduled_plan,
+        "schedule_authorization": record(grant) if grant else None,
         "executions": items,
         "steps": [record(s) for s in steps],
     }
