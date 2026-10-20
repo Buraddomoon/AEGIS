@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -92,7 +92,9 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
     }
 
 
-def request_run(db: Session, campaign_id: str, actor: User, key: str) -> CampaignRun:
+def request_run(
+    db: Session, campaign_id: str, actor: User, key: str, *, commit: bool = True
+) -> CampaignRun:
     existing = db.scalar(
         select(CampaignRun).where(
             CampaignRun.requested_by == actor.id, CampaignRun.idempotency_key == key
@@ -132,7 +134,7 @@ def request_run(db: Session, campaign_id: str, actor: User, key: str) -> Campaig
         db.flush()
         move(db, run, State.PENDING_APPROVAL, "Incluído no escopo solicitado.", execution)
     audit(db, actor.id, "run.request", run.id, scope_hash=run.scope_hash, synthetic=True)
-    db.commit()
+    db.commit() if commit else db.flush()
     return run
 
 
@@ -174,7 +176,10 @@ def approve_run(db: Session, run_id: str, actor: User, minutes: int, duration: i
     return approval
 
 
-def start_run(db: Session, run_id: str, actor: User) -> CampaignRun:
+def start_run(
+    db: Session, run_id: str, actor: User, *, commit: bool = True, at: datetime | None = None
+) -> CampaignRun:
+    instant = at or now()
     run = locked_run(db, run_id)
     # Repeated starts do not consume a new approval or create duplicate jobs.
     if run.state in {
@@ -190,7 +195,7 @@ def start_run(db: Session, run_id: str, actor: User) -> CampaignRun:
     if run.state != State.PENDING_APPROVAL:
         raise HTTPException(409, "Estado não permite início.")
     approval = db.scalar(select(Approval).where(Approval.run_id == run.id).with_for_update())
-    if not approval or approval.used_at or approval.expires_at <= now():
+    if not approval or approval.used_at or approval.expires_at <= instant:
         raise HTTPException(409, "Aprovação ausente, consumida ou expirada.")
     lab = db.scalar(select(Laboratory).where(Laboratory.id == run.laboratory_id).with_for_update())
     if lab.active_run_id:
@@ -198,15 +203,17 @@ def start_run(db: Session, run_id: str, actor: User) -> CampaignRun:
     fresh = snapshot_scope(db, get_or_404(db, Campaign, run.campaign_id))
     if digest(fresh) != run.scope_hash or approval.scope_hash != run.scope_hash:
         raise HTTPException(409, "Configuração mudou após revisão; solicite nova execução.")
-    approval.used_at = now()
+    approval.used_at = instant
     lab.active_run_id = run.id
     # Absolute queue+execution deadline prevents indefinitely reserved laboratories.
-    run.deadline_at = now() + timedelta(seconds=approval.max_duration_seconds)
+    run.deadline_at = min(
+        instant + timedelta(seconds=approval.max_duration_seconds), approval.expires_at
+    )
     move(db, run, State.QUEUED, "Aprovação consumida; execução persistida na fila transacional.")
     for item in db.scalars(select(TestExecution).where(TestExecution.run_id == run.id)):
         move(db, run, State.QUEUED, "Teste enfileirado.", item)
     audit(db, actor.id, "run.start", run.id, approval_id=approval.id)
-    db.commit()
+    db.commit() if commit else db.flush()
     return run
 
 
@@ -216,7 +223,9 @@ def release_lab(db: Session, run: CampaignRun) -> None:
         lab.active_run_id = None
 
 
-def cancel_run(db: Session, run_id: str, actor: User, reject: bool = False) -> CampaignRun:
+def cancel_run(
+    db: Session, run_id: str, actor: User, reject: bool = False, *, commit: bool = True
+) -> CampaignRun:
     run = locked_run(db, run_id)
     if run.state in TERMINAL:
         raise HTTPException(409, "Execução já finalizada.")
@@ -237,5 +246,5 @@ def cancel_run(db: Session, run_id: str, actor: User, reject: bool = False) -> C
             item.ended_at = now()
         release_lab(db, run)
     audit(db, actor.id, "run.reject" if reject else "run.cancel", run.id)
-    db.commit()
+    db.commit() if commit else db.flush()
     return run
