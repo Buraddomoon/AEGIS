@@ -1,0 +1,38 @@
+{
+  "name": "aegis-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 18780",
+    "build": "tsc -b && vite build",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "lint": "tsc -b --pretty false",
+    "format": "prettier --write src"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.0",
+    "lucide-react": "^0.577.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "recharts": "^3.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "latest",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "jsdom": "latest",
+    "prettier": "latest",
+    "puppeteer-core": "^25.15.0",
+    "tailwindcss": "latest",
+    "typescript": "latest",
+    "vite": "8.3.4",
+    "vitest": "latest"
+  }
+}
