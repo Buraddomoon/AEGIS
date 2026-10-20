@@ -1,0 +1,122 @@
+# ÆGIS
+
+**Purple Team Automation & Detection Validation Platform**
+
+Simulações controladas, resultados reproduzíveis e decisões de detecção sustentadas por evidências.
+
+Equipes defensivas precisam verificar se seus controles observam e detectam comportamentos de ataque. O ÆGIS conecta campanhas, aprovação de escopo, execução, coleta, correlação e acompanhamento histórico num único fluxo.
+
+**Estado: MVP 0.1 em Demo Mode, persistente e executável.** Todos os eventos da demonstração são sintéticos. Lab Mode, execução de Atomic Red Team e validação externa com Wazuh ainda não estão habilitados. Não é um SIEM, EDR ou shell remoto.
+
+![Dashboard real do Demo Mode, com evidências explicitamente sintéticas](docs/images/overview.png)
+
+## O que funciona
+
+- Login local com Argon2id, sessões opacas, CSRF, RBAC e limite distribuído de tentativas.
+- Catálogo oficial Enterprise ATT&CK 20.0: 706 técnicas/subtécnicas ativas, pesquisa, filtros, tabela, matriz e histórico de avaliações.
+- Quatro simulações em allowlist demonstrativa, com requisitos, comportamento e cleanup definidos. Arquivo marcador genérico não recebe técnica ATT&CK artificial.
+- Campanhas de escopo imutável, solicitações idempotentes, aprovação administrativa de uso único, expiração, confirmação de início e limite de duração.
+- Worker independente, fila transacional PostgreSQL, claim exclusivo, cancelamento cooperativo, cleanup e recuperação de execuções abandonadas.
+- Eventos originais, hashes SHA-256, justificativas de correlação, evidências inspecionáveis e auditoria.
+- Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
+- Inventário Sigma com parsing pySigma, importação YAML limitada e versões imutáveis; nenhuma implantação automática de regras.
+- Adaptador Wazuh Indexer somente leitura, HTTPS/TLS validado, IP fixado, paginação e fixtures locais. **Sem demonstração externa validada.**
+
+## Início rápido
+
+Requisitos: Docker Engine com Compose, Git, Python 3 para gerar a configuração local; acesso à internet no primeiro build. Nenhuma instalação de Wazuh é necessária.
+
+```bash
+git clone git@github.com:Buraddomoon/aegis.git
+cd aegis
+make up
+make bootstrap
+```
+
+O repositório é **privado**; o clone exige acesso autorizado. `make up` gera segredos aleatórios em `.env` (0600), constrói a SPA/API, aplica migrações, faz seed e inicia PostgreSQL, Redis e worker. `make bootstrap` solicita usuário e senha no terminal, sem conta administrativa publicada.
+
+Abra **http://localhost:18780**. Se não houver Make: execute `python3 scripts/init_env.py`, `docker compose up -d --build` e `docker compose run --rm migrate python -m aegis.cli bootstrap`.
+
+Para parar, `make down`. O volume do banco é preservado. Recursos configurados: limites de memória por serviço no Compose; consumo real depende do host e não foi usado como benchmark.
+
+## Demonstração reproduzível
+
+1. Autentique com o administrador criado localmente.
+2. Abra **Campanhas → Nova campanha**, escolha Demo Lab e os quatro testes.
+3. Solicite execução; revise testes, versão do ambiente e fingerprint do escopo.
+4. Aprove e depois **Confirme e inicie**. A autorização permite uma única execução e expira.
+5. Abra resultados, eventos e evidências; confira `synthetic: true` e os hashes.
+6. Consulte cobertura e exporte relatório HTML ou JSON.
+7. Repita a campanha, aprove novamente e compare em **Cobertura de detecção**.
+
+Uma campanha com os quatro testes produz, por desenho do adaptador Demo:
+
+| Simulação | Resultado sintético | Interpretação |
+|---|---|---|
+| Shell Unix benigno | DETECTED | Alerta da regra esperada correlacionado à execução |
+| PowerShell benigno | OBSERVED_NOT_ALERTED | Telemetria correlacionada e consulta completa sem alerta esperado |
+| Descoberta de processos | NO_TELEMETRY | Execução confirmada, evidência insuficiente de telemetria |
+| Marcador temporário | INCONCLUSIVE | Consulta demonstrativamente indisponível |
+
+Isso representa **1 detectado / 3 testes válidos = 33,3% neste escopo sintético**; o inconclusivo é excluído. Não representa 33,3% de proteção de uma organização. Repetir sem alterar o escopo reproduz os mesmos cenários; não simula uma melhoria defensiva inexistente.
+
+![Execução real do aplicativo com resultados demonstrativos](docs/images/execution.png)
+
+## Arquitetura
+
+```mermaid
+flowchart LR
+  Browser[React / TypeScript] --> API[FastAPI / RBAC / CSRF]
+  API --> DB[(PostgreSQL: dados + fila)]
+  API --> Redis[(Redis: limites / heartbeat)]
+  Worker[Worker independente] --> DB
+  Worker --> Demo[ExecutionAdapter Demo]
+  Demo --> Telemetry[TelemetryProvider Demo]
+  Telemetry --> Validate[Correlação independente de SIEM]
+  Validate --> Evidence[Evidências / resultados / relatórios]
+  Evidence --> DB
+  Wazuh[Adaptador Wazuh: testes locais] -. Lab Mode ainda não conectado .-> Telemetry
+```
+
+Monólito modular, sem microsserviços desnecessários. PostgreSQL é fonte de verdade e fila durável (`FOR UPDATE SKIP LOCKED`); Redis não transporta jobs serializados. API e worker usam papel de banco sem privilégios administrativos; evidências, versões Sigma e auditoria têm escrita append-only. [Arquitetura e decisões](docs/architecture/overview.md).
+
+Stack: Python 3.13, FastAPI, Pydantic 2, SQLAlchemy 2, Alembic, psycopg 3, PostgreSQL 17, Redis 8; React, TypeScript, Vite, Tailwind 4, TanStack Query, Recharts e Lucide. Versões efetivas e hashes estão nos lockfiles. [Licenças](THIRD_PARTY_NOTICES.md).
+
+## Desenvolvimento e validação
+
+Requisitos adicionais: Python 3.13, Node 24, npm e Firefox instalado para o E2E. Os locks Python publicados são para Linux x86_64 / CPython 3.13.
+
+```bash
+make setup                 # ou make PYTHON=/caminho/python3.13 setup
+make infra                 # somente PostgreSQL/Redis locais
+make migrate
+make test                  # domínio, integração PostgreSQL e componentes React
+make lint
+make build
+make audit
+make e2e                   # API, worker e schema descartável, navegador real
+```
+
+Se estiver usando o Compose completo, pare API/worker (`docker compose stop api worker`) antes de iniciar `make dev-web`, que também utiliza a porta 18780. Para desenvolvimento, em terminais separados: `make dev-api`, `make dev-worker`, `make dev-web`. Bootstrap local: `.venv/bin/python -m aegis.cli bootstrap`; seed local: `.venv/bin/python -m aegis.cli seed`.
+
+Os testes usam schemas PostgreSQL temporários; não truncam o banco da aplicação. E2E usa credenciais aleatórias em memória e schema descartável, executa o worker real e gera as capturas deste README. Sem mocks no fluxo E2E. Consulte [testes e evidências de validação](docs/development/testing.md).
+
+CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de execuções redundantes. Desenvolvimento exclusivamente em `main`, commits granulares e push direto, conforme política em [AGENTS.md](AGENTS.md).
+
+## Limitações reais
+
+- MVP de workspace único: usuários autenticados compartilham as consultas; não há isolamento multi-tenant, MFA, SSO ou recuperação de senha pela interface.
+- Só o adaptador Demo pode executar. Cancelamento é cooperativo; isolamento de adaptadores bloqueantes é requisito antes de habilitar execução real.
+- Wazuh foi testado com respostas locais anonimizadas, não com um servidor externo. Mapeamento entre `Asset.id` interno e `agent.id` real precisa ser conectado no Lab Mode.
+- Sigma validado sintaticamente não equivale a detecção implantada. Associação operacional com testes e conversão de SIEM ficam para próxima etapa.
+- Sem scheduler recorrente, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
+- Há um aviso transitivo conhecido em DiskCache, exigido pelo pySigma. O caminho de parsing usado não importa/utiliza o cache vulnerável; a revisão e sua verificação estão em [advisories](docs/security/dependency-advisories.json). Não alegamos ausência de vulnerabilidades.
+- Instalação padrão é HTTP em loopback. Exposição externa exige TLS, cookie Secure, revisão operacional e gestão própria de segredos. Não anunciar como enterprise-ready.
+
+[Roadmap](docs/product/roadmap.md) · [Critérios de aceite](docs/product/acceptance-criteria.md) · [Progresso e retomada](docs/PROGRESS.md) · [API/OpenAPI](docs/api/overview.md) · [Segurança](SECURITY.md)
+
+## Uso autorizado e licença
+
+Utilize somente em ambientes previamente autorizados. A plataforma não fornece comandos arbitrários, evasão, persistência maliciosa, coleta de credenciais ou exfiltração. Nenhuma simulação real foi executada nesta entrega.
+
+Código ÆGIS sob [MIT](LICENSE). Dataset MITRE e bibliotecas mantêm suas próprias licenças. A disponibilidade da licença não altera a visibilidade privada do repositório.
