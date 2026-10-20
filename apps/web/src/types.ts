@@ -75,6 +75,7 @@ export interface Scope {
 export interface Run {
   id: string
   campaign_id: string
+  schedule_id: string | null
   laboratory_id: string
   state: string
   synthetic: boolean
@@ -121,12 +122,14 @@ export interface Execution {
 export interface RunDetail extends Run {
   campaign_name: string
   objective: string
+  schedule_occurrence: ScheduleOccurrence | null
   approval: {
     id: string
     approved_by: string
     expires_at: string
     max_duration_seconds: number
     used_at: string | null
+    schedule_authorization_id: string | null
   } | null
   executions: Execution[]
   steps: {
@@ -136,6 +139,44 @@ export interface RunDetail extends Run {
     message: string
     created_at: string
   }[]
+}
+
+export interface Schedule {
+  id: string
+  campaign_id: string
+  laboratory_id: string
+  created_by: string
+  state: string
+  scope: Scope
+  scope_hash: string
+  plan_hash: string
+  interval_seconds: number
+  max_occurrences: number
+  max_duration_seconds: number
+  starts_at: string
+  ends_at: string
+  next_due_at: string
+  occurrences_count: number
+  reason: string | null
+}
+export interface ScheduleDetail extends Schedule {
+  plan: Record<string, unknown>
+  synthetic: boolean
+  authorizations: {
+    id: string
+    created_at: string
+    expires_at: string
+    revoked_at: string | null
+  }[]
+}
+export interface ScheduleOccurrence {
+  id: string
+  schedule_id: string
+  authorization_id: string
+  scheduled_for: string
+  run_id: string | null
+  status: string
+  reason: string
 }
 export interface Coverage {
   scope: string

@@ -348,6 +348,17 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
         description={r.objective}
         action={<Badge value={r.state} />}
       />
+      {r.schedule_id && (
+        <div className="notice">
+          <Clock3 size={18} />
+          <span>
+            Execução automática autorizada.{' '}
+            <Go to={`schedules/${r.schedule_id}`}>Plano de origem</Go> · autorização{' '}
+            {r.approval?.schedule_authorization_id?.slice(0, 8)} · ocorrência{' '}
+            {r.schedule_occurrence?.id.slice(0, 8)}.
+          </span>
+        </div>
+      )}
       <div className="execution-toolbar">
         {user.role === 'administrator' && pending && !r.approval && (
           <button className="button primary" disabled={busy} onClick={() => setReview(true)}>
@@ -887,8 +898,8 @@ export function Reports() {
       </Panel>
       <div className="notice">
         <Clock3 size={18} />
-        PDF e agendamento recorrente fazem parte do roadmap. Nenhum relatório demonstra proteção de
-        um ambiente real no Demo Mode.
+        PDF faz parte do roadmap. Agendamentos Demo preservam a autorização de origem. Nenhum
+        relatório demonstra proteção de um ambiente real no Demo Mode.
       </div>
     </>
   )

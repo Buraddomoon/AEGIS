@@ -1987,3 +1987,50 @@ dd {
     transition: none !important;
   }
 }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.schedule-detail {
+  padding: 24px;
+}
+.schedule-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+}
+.schedule-facts small,
+td > small {
+  display: block;
+  color: var(--muted);
+  margin: 4px 0;
+}
+.schedule-detail details {
+  margin: 20px 0;
+}
+.status-ACTIVE {
+  color: #66c6b7;
+  background: #14312e;
+}
+.status-INVALIDATED,
+.status-REVOKED {
+  color: #e6a3a3;
+  background: #362326;
+}
+.status-PAUSED,
+.status-SKIPPED_LATE,
+.status-SKIPPED_BUSY {
+  color: #dfbd7f;
+  background: #332c21;
+}
+@media (max-width: 600px) {
+  .form-grid,
+  .schedule-facts {
+    grid-template-columns: 1fr;
+  }
+  .schedule-detail {
+    padding: 16px;
+  }
+}

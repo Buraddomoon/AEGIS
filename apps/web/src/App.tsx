@@ -4,6 +4,7 @@ import {
   Activity,
   ArrowUpRight,
   BookOpen,
+  CalendarClock,
   CheckCircle2,
   ChevronRight,
   CircleDot,
@@ -41,6 +42,7 @@ import type { Campaign, Connectors, Coverage, Page, Run, User } from './types'
 import { Catalog, TestLibrary } from './Catalog'
 import { Campaigns, Executions, ExecutionDetail, CoveragePage, Reports } from './Operations'
 import { Laboratories, Rules, Settings } from './Management'
+import { Scheduling } from './Scheduling'
 
 const TrendChart = lazy(() => import('./TrendChart'))
 
@@ -58,6 +60,7 @@ const navigation = [
       { id: 'tests', label: 'Biblioteca de testes', icon: BookOpen },
       { id: 'campaigns', label: 'Campanhas', icon: Layers },
       { id: 'executions', label: 'Execuções', icon: Activity },
+      { id: 'schedules', label: 'Agendamentos', icon: CalendarClock },
     ],
   },
   {
@@ -212,6 +215,8 @@ export default function App() {
               <ExecutionDetail id={route.split('/')[1]} user={user.data} />
             ) : page === 'executions' ? (
               <Executions />
+            ) : page === 'schedules' ? (
+              <Scheduling user={user.data} id={route.split('/')[1]} key={route} />
             ) : page === 'coverage' ? (
               <CoveragePage />
             ) : page === 'reports' ? (
@@ -536,7 +541,8 @@ function Overview({ user }: { user: User }) {
             </div>
           </div>
           <div className="panel-footnote">
-            Lab Mode e agendamento recorrente ainda não estão habilitados.
+            Agendamentos Demo exigem aprovação administrativa com validade e limites. Lab Mode
+            permanece indisponível.
           </div>
         </Panel>
       </div>
