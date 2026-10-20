@@ -67,6 +67,7 @@ export const labels: Record<string, string> = {
   TIMED_OUT: 'Tempo esgotado',
   CANCELLED: 'Cancelado',
   CLEANUP_FAILED: 'Falha de limpeza',
+  DISPATCHED: 'Execução emitida',
   ACTIVE: 'Ativo',
   PAUSED: 'Pausado',
   REVOKED: 'Revogado',

@@ -236,7 +236,7 @@ export function ScheduleForm({ onClose }: { onClose: () => void }) {
             onChange={(e) => setDuration(Number(e.target.value))}
           />
         </label>
-        <p className="muted">
+        <p className="muted-text">
           Início em até 30 dias; fim em até 90 dias. Horários ancorados no início, sem acumular
           execuções. Limite global: 64 planos abertos e 16 ativos.
         </p>
@@ -300,7 +300,7 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
             </p>
           </div>
           <p>{s.scope.test_definitions.map((t) => `${t.name} (v${t.version})`).join(' · ')}</p>
-          <p className="muted">
+          <p className="muted-text">
             Versões de regras no snapshot: {Object.keys(s.scope.rule_versions).length}. Cadastro
             Sigma não significa implantação no SIEM.
           </p>
@@ -376,7 +376,7 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
                     <tr key={o.id}>
                       <td>{date(o.scheduled_for)}</td>
                       <td>
-                        <Badge value={o.status} />
+                        <Badge value={o.status === 'QUEUED' ? 'DISPATCHED' : o.status} />
                       </td>
                       <td>
                         {o.reason}
@@ -471,8 +471,8 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
                   </li>
                   <li>Pausar exige nova aprovação para retomar e preserva o consumo.</li>
                 </ul>
-                <code className="hash">{s.plan_hash}</code>
-                <label className="check-row">
+                <code className="schedule-hash">{s.plan_hash}</code>
+                <label className="checkbox-label">
                   <input
                     type="checkbox"
                     required

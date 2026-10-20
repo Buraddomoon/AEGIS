@@ -2034,3 +2034,12 @@ td > small {
     padding: 16px;
   }
 }
+.schedule-detail > p {
+  margin: 12px 0;
+}
+.schedule-hash {
+  display: block;
+  overflow-wrap: anywhere;
+  margin: 16px 0;
+  color: var(--muted);
+}
