@@ -40,8 +40,11 @@ def rate_limit(key: str, limit: int = 10, seconds: int = 300) -> None:
     except RedisError:
         raise HTTPException(503, "Limitador de autenticação indisponível.") from None
     if int(count) > limit:
-        raise HTTPException(429, "Muitas tentativas; aguarde antes de tentar novamente.",
-                            headers={"Retry-After": str(seconds)})
+        raise HTTPException(
+            429,
+            "Muitas tentativas; aguarde antes de tentar novamente.",
+            headers={"Retry-After": str(seconds)},
+        )
 
 
 def verify_password(stored: str, password: str) -> bool:
@@ -53,9 +56,14 @@ def verify_password(stored: str, password: str) -> bool:
 
 def create_session(db: Session, user: User) -> tuple[str, str]:
     token, csrf = secrets.token_urlsafe(48), secrets.token_urlsafe(32)
-    db.add(LoginSession(token_hash=token_hash(token), user_id=user.id,
-                        csrf_hash=token_hash(csrf),
-                        expires_at=now() + timedelta(hours=settings().session_hours)))
+    db.add(
+        LoginSession(
+            token_hash=token_hash(token),
+            user_id=user.id,
+            csrf_hash=token_hash(csrf),
+            expires_at=now() + timedelta(hours=settings().session_hours),
+        )
+    )
     return token, csrf
 
 
@@ -80,6 +88,7 @@ def require_roles(*roles: str):
         if user.role not in roles:
             raise HTTPException(403, "Seu papel não permite esta operação.")
         return user
+
     return dependency
 
 

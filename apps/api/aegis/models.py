@@ -34,7 +34,9 @@ class Entity:
 
 class User(Entity, Base):
     __tablename__ = "users"
-    __table_args__ = (CheckConstraint("role in ('administrator','operator','viewer')", name="role"),)
+    __table_args__ = (
+        CheckConstraint("role in ('administrator','operator','viewer')", name="role"),
+    )
     username: Mapped[str] = mapped_column(String(80), unique=True)
     password_hash: Mapped[str] = mapped_column(Text)
     role: Mapped[str] = mapped_column(String(20))

@@ -18,10 +18,15 @@ class State(StrEnum):
     CLEANUP_FAILED = "CLEANUP_FAILED"
 
 
-TERMINAL = {State.COMPLETED, State.REJECTED, State.FAILED, State.TIMED_OUT,
-            State.CANCELLED, State.CLEANUP_FAILED}
-ACTIVE = {State.PREPARING, State.RUNNING, State.COLLECTING, State.VALIDATING,
-          State.CLEANING_UP}
+TERMINAL = {
+    State.COMPLETED,
+    State.REJECTED,
+    State.FAILED,
+    State.TIMED_OUT,
+    State.CANCELLED,
+    State.CLEANUP_FAILED,
+}
+ACTIVE = {State.PREPARING, State.RUNNING, State.COLLECTING, State.VALIDATING, State.CLEANING_UP}
 ALLOWED: dict[State, set[State]] = {
     State.CREATED: {State.PENDING_APPROVAL},
     State.PENDING_APPROVAL: {State.QUEUED, State.REJECTED, State.CANCELLED},
