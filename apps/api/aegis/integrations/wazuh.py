@@ -24,7 +24,8 @@ class WazuhIndexerProvider:
                 or parsed.path not in {"", "/"} or parsed.query or parsed.fragment):
             raise ValueError("Indexer exige origem HTTPS sem caminho ou credenciais na URL.")
         ip = ipaddress.ip_address(allowed_ip)
-        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_unspecified:
+        checked_ip = getattr(ip, "ipv4_mapped", None) or ip
+        if checked_ip.is_loopback or checked_ip.is_link_local or checked_ip.is_multicast or checked_ip.is_unspecified:
             raise ValueError("Destino de integração não permitido.")
         for index in [alerts_index, archives_index]:
             if index is not None and not re.fullmatch(r"[a-z0-9][a-z0-9._*-]{0,150}", index):
@@ -34,7 +35,7 @@ class WazuhIndexerProvider:
         self.hostname = parsed.hostname
         self.authority = parsed.netloc
         address = f"[{ip}]" if ip.version == 6 else str(ip)
-        self.base = f"https://{address}:{parsed.port or 9200}"
+        self.base = f"https://{address}:{parsed.port or 443}"
         self.alerts_index, self.archives_index = alerts_index, archives_index
         self.client = httpx.Client(auth=(username, password),
             verify=ssl.create_default_context(cafile=ca_bundle), transport=transport,
@@ -51,7 +52,7 @@ class WazuhIndexerProvider:
             if 300 <= response.status_code < 400:
                 raise ValueError("Redirects de integração são proibidos.")
             chunks, size = [], 0
-            for chunk in response.iter_bytes():
+            for chunk in response.iter_bytes(chunk_size=65536):
                 size += len(chunk)
                 if size > 8_000_000:
                     raise ValueError("Resposta excede limite de tamanho.")

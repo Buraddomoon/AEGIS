@@ -1,0 +1,11 @@
+{
+  "_id": "anonymized-alert-001",
+  "_index": "wazuh-alerts-4.x-2026.10.20",
+  "_source": {
+    "timestamp": "2026-10-20T15:00:00.000Z",
+    "agent": {"id": "001", "name": "isolated-lab-endpoint"},
+    "rule": {"id": "100100", "level": 5, "description": "Authorized laboratory marker", "mitre": {"id": ["T1059.004"]}},
+    "data": {"aegis": {"laboratory_id": "lab-fixture", "execution_id": "execution-fixture", "marker": "aegis-fixture-marker", "behavior": "unix-shell-marker"}},
+    "full_log": "Anonymized development fixture: authorized laboratory marker"
+  }
+}
