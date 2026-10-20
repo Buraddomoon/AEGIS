@@ -12,7 +12,7 @@ Suíte cobre identidade/CSRF/RBAC, ausência de segredos nas respostas, limite d
 
 Fluxo: login → catálogo → campanha → revisão/aprovação → início → worker → eventos/evidências → exportação → nova solicitação → nova aprovação → comparação → indicadores → páginas auxiliares → viewport móvel. O script valida respostas reais e produz `docs/images/*.png`. Schemas e processos do teste são removidos em finally; logs ficam em `.local/e2e/`, ignorados pelo Git. Capturas não contêm credenciais.
 
-Fixtures Wazuh usam `httpx.MockTransport`, sem rede, e representam testes de contrato; não comprovam integração real. Testes de componentes podem simular respostas para estados vazios/erro, enquanto o fluxo E2E não usa mocks.
+Fixtures Wazuh usam `httpx.MockTransport`, sem rede, e representam testes de contrato escritos manualmente, com identificadores fictícios; não comprovam integração real. Testes de componentes podem simular respostas para estados vazios/erro, enquanto o fluxo E2E não usa mocks.
 
 ## Resultado inicial observado
 

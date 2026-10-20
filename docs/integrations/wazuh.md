@@ -10,6 +10,6 @@ Compose repassa a configuração ao runtime. Para CA privada, crie override com 
 
 Padrão de alertas `wazuh-alerts-4.x-*`; archives é opcional no construtor. Sem índice de archives, ausência de alertas não fornece prova de telemetria. Schema inicial exige campos de marcador/identidade em `data.aegis` e `agent.id`; campo ausente não é preenchido a partir do contexto solicitado. Outras versões/schemas precisam de adapter/mapeamento explícito.
 
-**Estado real:** testes `MockTransport` e fixture anonimizada passaram; nenhuma conexão externa foi estabelecida para esta entrega. A UI mostra desconectado ou configurado/não verificado. Um teste bem-sucedido informa apenas conectividade naquele instante, não detecção.
+**Estado real:** testes `MockTransport` e fixture de contrato com identificadores fictícios passaram; nenhuma conexão externa foi estabelecida para esta entrega. A UI mostra desconectado ou configurado/não verificado. Um teste bem-sucedido informa apenas conectividade naquele instante, não detecção.
 
 Antes de ligar execução real: mapear `Asset.external_id` (agent.id) à identidade interna de ativo; implementar polling até a janela de ingestão e prazo total de operação; validar logs/marcadores reais, relógios e índices; comprovar o ciclo num laboratório autorizado. O worker Demo não está conectado ao adapter Wazuh. Não há evidência de integração real end-to-end.

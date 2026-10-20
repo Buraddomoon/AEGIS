@@ -107,7 +107,7 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 
 - MVP de workspace único: usuários autenticados compartilham as consultas; não há isolamento multi-tenant, MFA, SSO ou recuperação de senha pela interface.
 - Só o adaptador Demo pode executar. Cancelamento é cooperativo; isolamento de adaptadores bloqueantes é requisito antes de habilitar execução real.
-- Wazuh foi testado com respostas locais anonimizadas, não com um servidor externo. Mapeamento entre `Asset.id` interno e `agent.id` real precisa ser conectado no Lab Mode.
+- Wazuh foi testado com fixtures locais de contrato com identificadores fictícios, não com um servidor externo. Mapeamento entre `Asset.id` interno e `agent.id` real precisa ser conectado no Lab Mode.
 - Sigma validado sintaticamente não equivale a detecção implantada. Associação operacional com testes e conversão de SIEM ficam para próxima etapa.
 - Sem scheduler recorrente, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
 - Há um aviso transitivo conhecido em DiskCache, exigido pelo pySigma. O caminho de parsing usado não importa/utiliza o cache vulnerável; a revisão e sua verificação estão em [advisories](docs/security/dependency-advisories.json). Não alegamos ausência de vulnerabilidades.
