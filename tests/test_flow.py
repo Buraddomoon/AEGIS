@@ -15,7 +15,7 @@ def test_complete_demo_and_repeat_compare_report(admin):
     assert claim_next() is None
     process_run(run["id"])
     process_run(run["id"])
-    detail = admin.get('/api/v1/executions/' + run["id"]).json()
+    detail = admin.get("/api/v1/executions/" + run["id"]).json()
     assert detail["state"] == "COMPLETED", detail
     outcomes = {e["result"]["outcome"] for e in detail["executions"]}
     assert outcomes == {"DETECTED", "OBSERVED_NOT_ALERTED", "NO_TELEMETRY", "INCONCLUSIVE"}
@@ -27,27 +27,48 @@ def test_complete_demo_and_repeat_compare_report(admin):
     assert coverage["valid_tests"] == 3
     assert coverage["detected_percentage"] == 33.3
     assert coverage["evaluated_techniques"] == 3
-    report = admin.get(f'/api/v1/reports/{run["id"]}').json()
+    report = admin.get(f"/api/v1/reports/{run['id']}").json()
     assert report["synthetic"] and report["integrity_sha256"]
-    html = admin.get(f'/api/v1/reports/{run["id"]}?format=html')
+    from aegis.domain.validation import digest
+
+    assert digest(report["run"]) == report["integrity_sha256"]
+    html = admin.get(f"/api/v1/reports/{run['id']}?format=html")
     assert "EVIDÊNCIAS SINTÉTICAS" in html.text
-    repeated = admin.post(f'/api/v1/campaigns/{run["campaign_id"]}/runs', json={"idempotency_key": uuid.uuid4().hex}).json()
-    assert admin.post(f'/api/v1/executions/{repeated["id"]}/approve', json={"confirm_scope_hash": repeated["scope_hash"]}).status_code == 200
-    assert admin.post(f'/api/v1/executions/{repeated["id"]}/start', json={"confirm": True}).status_code == 200
+    repeated = admin.post(
+        f"/api/v1/campaigns/{run['campaign_id']}/runs", json={"idempotency_key": uuid.uuid4().hex}
+    ).json()
+    assert (
+        admin.post(
+            f"/api/v1/executions/{repeated['id']}/approve",
+            json={"confirm_scope_hash": repeated["scope_hash"]},
+        ).status_code
+        == 200
+    )
+    assert (
+        admin.post(f"/api/v1/executions/{repeated['id']}/start", json={"confirm": True}).status_code
+        == 200
+    )
     assert claim_next() == repeated["id"]
     process_run(repeated["id"])
-    comparison = admin.get(f'/api/v1/coverage/compare?before={run["id"]}&after={repeated["id"]}').json()
+    comparison = admin.get(
+        f"/api/v1/coverage/compare?before={run['id']}&after={repeated['id']}"
+    ).json()
     assert comparison["comparable"]
     assert all(not t["changed"] for t in comparison["tests"])
 
 
 def test_idempotent_start_and_request(admin):
     run = create_queued(admin, ["demo-shell"])
-    assert admin.post(f'/api/v1/executions/{run["id"]}/start', json={"confirm": True}).status_code == 200
+    assert (
+        admin.post(f"/api/v1/executions/{run['id']}/start", json={"confirm": True}).status_code
+        == 200
+    )
     with session_factory()() as db:
         item = db.get(CampaignRun, run["id"])
         key = item.idempotency_key
-    repeated = admin.post(f'/api/v1/campaigns/{run["campaign_id"]}/runs', json={"idempotency_key": key})
+    repeated = admin.post(
+        f"/api/v1/campaigns/{run['campaign_id']}/runs", json={"idempotency_key": key}
+    )
     assert repeated.json()["id"] == run["id"]
     with session_factory()() as db:
         assert db.scalar(select(func.count()).select_from(CampaignRun)) == 1
@@ -67,7 +88,7 @@ def test_concurrent_workers_only_one_claims(admin):
 
 def test_cancel_queued_releases_lab(admin):
     run = create_queued(admin)
-    result = admin.post(f'/api/v1/executions/{run["id"]}/cancel')
+    result = admin.post(f"/api/v1/executions/{run['id']}/cancel")
     assert result.json()["state"] == "CANCELLED"
     assert claim_next() is None
     with session_factory()() as db:
@@ -81,7 +102,7 @@ def test_worker_revalidates_expiry(admin):
         approval.expires_at = now() - timedelta(minutes=1)
         db.commit()
     assert claim_next() is None
-    assert admin.get('/api/v1/executions/' + run["id"]).json()["state"] == "REJECTED"
+    assert admin.get("/api/v1/executions/" + run["id"]).json()["state"] == "REJECTED"
 
 
 def test_timeout_and_abandoned_recovery(admin):
@@ -94,7 +115,7 @@ def test_timeout_and_abandoned_recovery(admin):
         db.commit()
     assert recover_abandoned() == 1
     assert recover_abandoned() == 0
-    assert admin.get('/api/v1/executions/' + run["id"]).json()["state"] == "TIMED_OUT"
+    assert admin.get("/api/v1/executions/" + run["id"]).json()["state"] == "TIMED_OUT"
 
 
 def test_cancel_running_cleanup_and_failure(admin):
@@ -102,11 +123,13 @@ def test_cancel_running_cleanup_and_failure(admin):
 
     class CancellingAdapter(DemoExecutionAdapter):
         cleaned = False
+
         def execute(self, ctx):
             with session_factory()() as db:
                 db.get(CampaignRun, run["id"]).cancel_requested = True
                 db.commit()
             return True
+
         def cleanup(self, ctx):
             self.cleaned = True
 
@@ -115,7 +138,7 @@ def test_cancel_running_cleanup_and_failure(admin):
     adapter = CancellingAdapter()
     process_run(run["id"], adapter)
     assert adapter.cleaned
-    assert admin.get('/api/v1/executions/' + run["id"]).json()["state"] == "CANCELLED"
+    assert admin.get("/api/v1/executions/" + run["id"]).json()["state"] == "CANCELLED"
 
 
 def test_cleanup_failure_visible_and_lab_reserved(admin):
@@ -124,11 +147,17 @@ def test_cleanup_failure_visible_and_lab_reserved(admin):
     class BrokenCleanup(DemoExecutionAdapter):
         def cleanup(self, ctx):
             raise RuntimeError("Injected cleanup failure")
+
     run = create_queued(admin, ["demo-shell"])
     assert claim_next() == run["id"]
     process_run(run["id"], BrokenCleanup())
-    detail = admin.get('/api/v1/executions/' + run["id"]).json()
+    detail = admin.get("/api/v1/executions/" + run["id"]).json()
     assert detail["state"] == "CLEANUP_FAILED" and detail["error"]
     with session_factory()() as db:
         assert db.get(Laboratory, run["laboratory_id"]).active_run_id == run["id"]
-    assert admin.post(f'/api/v1/labs/{run["laboratory_id"]}/recover', json={"confirm": True}).status_code == 200
+    assert (
+        admin.post(
+            f"/api/v1/labs/{run['laboratory_id']}/recover", json={"confirm": True}
+        ).status_code
+        == 200
+    )
