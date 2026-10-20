@@ -131,6 +131,42 @@ try {
   await navigate('attack')
   await text('706 técnicas')
   await screenshot('attack')
+  await navigate('schedules')
+  await text('Agendamentos')
+  await button('Novo agendamento')
+  const campaignValue = await page.$eval('dialog select', (el) => el.options[1].value)
+  await page.select('dialog select', campaignValue)
+  await page.evaluate(() => {
+    const format = (ms) => {
+      const d = new Date(ms)
+      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19)
+    }
+    const fields = [...document.querySelectorAll('dialog input')]
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+    for (const [el, value] of [[fields[0], format(Date.now() + 15000)], [fields[1], format(Date.now() + 300000)], [fields[3], '1']]) {
+      set.call(el, value)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+  })
+  await button('Criar plano', 'dialog button')
+  await page.waitForFunction(() => !document.querySelector('dialog[open]'))
+  await button('Revisar autorização recorrente')
+  await page.click('dialog input[type="checkbox"]')
+  await button('Autorizar plano Demo', 'dialog button')
+  await page.waitForFunction(() => !document.querySelector('dialog[open]'))
+  await text('Limite encerrado')
+  await text('Ver execução')
+  await screenshot('schedules')
+  await button('Ver execução', 'main a')
+  await text('Execução e cleanup demonstrativos concluídos.')
+  await text('Execução automática autorizada.')
+  const scheduledId = await page.evaluate(() => location.hash.split('/')[1])
+  const scheduledReport = await page.evaluate(async id => (await fetch('/api/v1/reports/' + id)).json(), scheduledId)
+  assert.equal(scheduledReport.synthetic, true)
+  assert.equal(scheduledReport.run.state, 'COMPLETED')
+  assert.equal(scheduledReport.run.approval.schedule_authorization_id, scheduledReport.run.schedule_occurrence.authorization_id)
+  assert.ok(scheduledReport.run.schedule_id)
   for (const [route, heading] of [
     ['tests', 'Biblioteca de testes'],
     ['reports', 'Relatórios'],
@@ -143,7 +179,7 @@ try {
   }
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
   await navigate('overview')
-  await text('8 testes concluídos')
+  await text('12 testes concluídos')
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     true,
@@ -154,11 +190,11 @@ try {
   console.log(
     JSON.stringify({
       result: 'PASS',
-      flow: 'login → catalog → campaign → approval → worker → evidence → metrics → export → repeat → compare',
-      runs: 2,
-      tests: 8,
+      flow: 'login → catalog → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report',
+      runs: 3,
+      tests: 12,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 4,
+      screenshots: 5,
       browserErrors: errors.length,
     }),
   )
