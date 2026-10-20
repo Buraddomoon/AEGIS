@@ -2,7 +2,7 @@ PYTHON ?= python3.13
 VENV = .venv/bin
 DEV = docker compose -f docker-compose.yml -f infra/compose.dev.yml
 
-.PHONY: setup up down bootstrap seed infra dev-api dev-worker dev-web migrate lint format test test-unit test-integration test-web e2e build audit logs clean-demo
+.PHONY: setup up down bootstrap seed infra dev-api dev-worker dev-web migrate lint format test test-unit test-integration test-web e2e build audit logs clean-demo smoke
 setup:
 	$(PYTHON) -m venv .venv
 	$(VENV)/python -m pip install --upgrade pip==26.2.2
@@ -43,7 +43,7 @@ format:
 test-unit:
 	$(VENV)/pytest tests/test_domain.py -q
 test-integration:
-	$(VENV)/pytest tests/test_flow.py tests/test_security.py tests/test_integrations.py tests/test_migrations.py -q
+	$(VENV)/pytest tests/test_flow.py tests/test_security.py tests/test_integrations.py tests/test_migrations.py tests/test_cleanup.py -q
 test-web:
 	npm --prefix apps/web test
 test:
@@ -60,3 +60,5 @@ logs:
 	docker compose logs --tail=100 api worker
 clean-demo:
 	$(VENV)/python scripts/clean_demo.py
+smoke:
+	$(VENV)/python scripts/smoke_compose.py
