@@ -1,4 +1,5 @@
 """Durable PostgreSQL worker. No imported commands or remote execution path."""
+
 import logging
 import signal
 import threading
@@ -39,18 +40,35 @@ class Interrupted(Exception):
 
 def claim_next() -> str | None:
     with session_factory()() as db:
-        run = db.scalar(select(CampaignRun).where(CampaignRun.state == State.QUEUED)
-                        .order_by(CampaignRun.created_at).with_for_update(skip_locked=True).limit(1))
+        run = db.scalar(
+            select(CampaignRun)
+            .where(CampaignRun.state == State.QUEUED)
+            .order_by(CampaignRun.created_at)
+            .with_for_update(skip_locked=True)
+            .limit(1)
+        )
         if not run:
             return None
         approval = db.scalar(select(Approval).where(Approval.run_id == run.id))
         lab = db.get(Laboratory, run.laboratory_id)
-        if (not approval or approval.expires_at <= now() or not approval.used_at
-                or approval.scope_hash != run.scope_hash or digest(run.scope) != run.scope_hash
-                or not lab or not lab.authorized or lab.kind != "demo"
-                or lab.active_run_id != run.id
-                or lab.environment_version != run.scope["environment_version"]):
-            move(db, run, State.REJECTED, "Pré-requisitos ou aprovação deixaram de ser válidos na fila.")
+        if (
+            not approval
+            or approval.expires_at <= now()
+            or not approval.used_at
+            or approval.scope_hash != run.scope_hash
+            or digest(run.scope) != run.scope_hash
+            or not lab
+            or not lab.authorized
+            or lab.kind != "demo"
+            or lab.active_run_id != run.id
+            or lab.environment_version != run.scope["environment_version"]
+        ):
+            move(
+                db,
+                run,
+                State.REJECTED,
+                "Pré-requisitos ou aprovação deixaram de ser válidos na fila.",
+            )
             for item in db.scalars(select(TestExecution).where(TestExecution.run_id == run.id)):
                 # Queued tests may be rejected before any effect.
                 move(db, run, State.REJECTED, "Autorização revalidada e rejeitada.", item)
@@ -86,7 +104,11 @@ def guard(run_id: str) -> None:
         if not run.deadline_at or run.deadline_at <= now():
             raise Interrupted(State.TIMED_OUT, "Prazo absoluto de execução excedido.")
         lab = db.get(Laboratory, run.laboratory_id)
-        if not lab or not lab.authorized or lab.environment_version != run.scope["environment_version"]:
+        if (
+            not lab
+            or not lab.authorized
+            or lab.environment_version != run.scope["environment_version"]
+        ):
             raise Interrupted(State.FAILED, "Autorização ou versão do laboratório mudou.")
         if stop.is_set():
             raise Interrupted(State.CANCELLED, "Worker encerrando de forma controlada.")
@@ -106,9 +128,17 @@ def set_phase(run_id: str, state: State, message: str) -> None:
 
 
 def context_for(run: CampaignRun, item: TestExecution, test: dict) -> ExecutionContext:
-    return ExecutionContext(item.id, run.laboratory_id, item.asset_id, item.marker,
-                            test["behavior"], item.started_at or now(), item.ended_at or now(),
-                            True, test["expected_rule"])
+    return ExecutionContext(
+        item.id,
+        run.laboratory_id,
+        item.asset_id,
+        item.marker,
+        test["behavior"],
+        item.started_at or now(),
+        item.ended_at or now(),
+        True,
+        test["expected_rule"],
+    )
 
 
 def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
@@ -129,8 +159,11 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
             if not run or run.state != State.PREPARING:
                 return
             tests = {t["id"]: t for t in run.scope["test_definitions"]}
-            items = db.scalars(select(TestExecution).where(TestExecution.run_id == run_id)
-                               .order_by(TestExecution.test_id)).all()
+            items = db.scalars(
+                select(TestExecution)
+                .where(TestExecution.run_id == run_id)
+                .order_by(TestExecution.test_id)
+            ).all()
             for item in items:
                 contexts[item.id] = context_for(run, item, tests[item.test_id])
         for context in contexts.values():
@@ -154,49 +187,87 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
         set_phase(run_id, State.COLLECTING, "Coletando eventos pelo contrato TelemetryProvider.")
         for item in items:
             guard(run_id)
-            collection = DemoTelemetryProvider(tests[item.test_id]["demo_outcome"]).collect(contexts[item.id])
+            collection = DemoTelemetryProvider(tests[item.test_id]["demo_outcome"]).collect(
+                contexts[item.id]
+            )
             collections[item.id] = collection
             with session_factory()() as db:
                 for event in collection.events:
-                    db.add(TelemetryEvent(execution_id=item.id, source_id=event.source_id,
-                         source=event.source, timestamp=event.timestamp, kind=event.kind,
-                         rule_id=event.rule_id, synthetic=event.synthetic,
-                         raw=event.raw, sha256=digest(event.raw)))
+                    db.add(
+                        TelemetryEvent(
+                            execution_id=item.id,
+                            source_id=event.source_id,
+                            source=event.source,
+                            timestamp=event.timestamp,
+                            kind=event.kind,
+                            rule_id=event.rule_id,
+                            synthetic=event.synthetic,
+                            raw=event.raw,
+                            sha256=digest(event.raw),
+                        )
+                    )
                 db.commit()
-        set_phase(run_id, State.VALIDATING, "Correlacionando marcador, ativo, comportamento, regra e tempo.")
+        set_phase(
+            run_id,
+            State.VALIDATING,
+            "Correlacionando marcador, ativo, comportamento, regra e tempo.",
+        )
         for item in items:
             guard(run_id)
             with session_factory()() as db:
                 executed = db.get(TestExecution, item.id).executed
                 collection = collections[item.id]
-                verdict = validate(contexts[item.id], collection, executed,
-                                   run.scope["clock_skew_seconds"], run.scope["ingestion_window_seconds"])
-                result = ValidationResult(execution_id=item.id, outcome=verdict.outcome,
-                         reason=verdict.reason, logic_version=LOGIC_VERSION, synthetic=True,
-                         collection_complete=collection.complete,
-                         telemetry_available=collection.telemetry_available,
-                         alerts_available=collection.alerts_available)
+                verdict = validate(
+                    contexts[item.id],
+                    collection,
+                    executed,
+                    run.scope["clock_skew_seconds"],
+                    run.scope["ingestion_window_seconds"],
+                )
+                result = ValidationResult(
+                    execution_id=item.id,
+                    outcome=verdict.outcome,
+                    reason=verdict.reason,
+                    logic_version=LOGIC_VERSION,
+                    synthetic=True,
+                    collection_complete=collection.complete,
+                    telemetry_available=collection.telemetry_available,
+                    alerts_available=collection.alerts_available,
+                )
                 db.add(result)
                 db.flush()
                 for event in verdict.evidence:
-                    stored = db.scalar(select(TelemetryEvent).where(
-                        TelemetryEvent.execution_id == item.id,
-                        TelemetryEvent.source == event.source,
-                        TelemetryEvent.source_id == event.source_id))
-                    db.add(DetectionEvidence(result_id=result.id, event_id=stored.id,
-                                             reason=verdict.reason))
+                    stored = db.scalar(
+                        select(TelemetryEvent).where(
+                            TelemetryEvent.execution_id == item.id,
+                            TelemetryEvent.source == event.source,
+                            TelemetryEvent.source_id == event.source_id,
+                        )
+                    )
+                    db.add(
+                        DetectionEvidence(
+                            result_id=result.id, event_id=stored.id, reason=verdict.reason
+                        )
+                    )
                 db.commit()
     except Interrupted as exc:
         target, error = exc.state, str(exc)
     except Exception:
         log.exception("Run %s failed", run_id)
-        target, error = State.FAILED, "Falha interna no adaptador; consulte os logs locais do worker."
+        target, error = (
+            State.FAILED,
+            "Falha interna no adaptador; consulte os logs locais do worker.",
+        )
     finally:
         with session_factory()() as db:
-            current = db.scalar(select(CampaignRun).where(CampaignRun.id == run_id).with_for_update())
+            current = db.scalar(
+                select(CampaignRun).where(CampaignRun.id == run_id).with_for_update()
+            )
             if current and current.state in ACTIVE:
                 if current.state != State.CLEANING_UP:
-                    move(db, current, State.CLEANING_UP, "Cleanup obrigatório de todos os contextos.")
+                    move(
+                        db, current, State.CLEANING_UP, "Cleanup obrigatório de todos os contextos."
+                    )
                 for item in db.scalars(select(TestExecution).where(TestExecution.run_id == run_id)):
                     if item.state in ACTIVE and item.state != State.CLEANING_UP:
                         move(db, current, State.CLEANING_UP, "Liberando contexto sintético.", item)
@@ -213,7 +284,9 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
             target = State.CLEANUP_FAILED
             error = "Cleanup falhou. Demo: nenhum efeito externo; revise logs, confirme contexto descartado e libere laboratório após inspeção."
         with session_factory()() as db:
-            current = db.scalar(select(CampaignRun).where(CampaignRun.id == run_id).with_for_update())
+            current = db.scalar(
+                select(CampaignRun).where(CampaignRun.id == run_id).with_for_update()
+            )
             if current and current.state == State.CLEANING_UP:
                 if target == State.COMPLETED and current.cancel_requested:
                     target, error = State.CANCELLED, "Cancelamento confirmado durante cleanup."
@@ -234,22 +307,48 @@ def recover_abandoned() -> int:
     """Demo-only safe recovery: no automatic replay of unknown side effects."""
     recovered = 0
     with session_factory()() as db:
-        stale = db.scalars(select(CampaignRun).where(
-            CampaignRun.state.in_(list(ACTIVE)),
-            CampaignRun.deadline_at < now() - timedelta(seconds=30),
-            CampaignRun.heartbeat_at < now() - timedelta(seconds=30)
-        ).with_for_update(skip_locked=True)).all()
+        stale = db.scalars(
+            select(CampaignRun)
+            .where(
+                CampaignRun.state.in_(list(ACTIVE)),
+                CampaignRun.deadline_at < now() - timedelta(seconds=30),
+                CampaignRun.heartbeat_at < now() - timedelta(seconds=30),
+            )
+            .with_for_update(skip_locked=True)
+        ).all()
         for run in stale:
             if not run.synthetic:
                 continue
             if run.state != State.CLEANING_UP:
-                move(db, run, State.CLEANING_UP, "Recuperação após interrupção do worker; nenhuma repetição de testes.")
+                move(
+                    db,
+                    run,
+                    State.CLEANING_UP,
+                    "Recuperação após interrupção do worker; nenhuma repetição de testes.",
+                )
             for item in db.scalars(select(TestExecution).where(TestExecution.run_id == run.id)):
                 if item.state in ACTIVE:
                     if item.state != State.CLEANING_UP:
-                        move(db, run, State.CLEANING_UP, "Descartando contexto demonstrativo abandonado.", item)
-                    move(db, run, State.TIMED_OUT, "Worker interrompido; contexto sintético liberado.", item)
-            move(db, run, State.TIMED_OUT, "Worker interrompido; cleanup sintético recuperado. Revisar resultados parciais.")
+                        move(
+                            db,
+                            run,
+                            State.CLEANING_UP,
+                            "Descartando contexto demonstrativo abandonado.",
+                            item,
+                        )
+                    move(
+                        db,
+                        run,
+                        State.TIMED_OUT,
+                        "Worker interrompido; contexto sintético liberado.",
+                        item,
+                    )
+            move(
+                db,
+                run,
+                State.TIMED_OUT,
+                "Worker interrompido; cleanup sintético recuperado. Revisar resultados parciais.",
+            )
             run.error, run.ended_at = "Worker interrompido; execução não repetida.", now()
             release_lab(db, run)
             recovered += 1
