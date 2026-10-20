@@ -79,3 +79,10 @@ def test_report_escapes_untrusted_campaign_name():
     assert '<script>alert' not in html
     assert '&lt;script&gt;' in html
     assert '<img src=x' not in html
+
+
+def test_password_whitespace_is_significant(admin):
+    password = '  whitespace-is-significant  '
+    assert admin.post('/api/v1/users', json={'username': 'space-user', 'password': password, 'role': 'viewer'}).status_code == 201
+    admin.post('/api/v1/auth/logout')
+    assert admin.post('/api/v1/auth/login', json={'username': 'space-user', 'password': password}, headers={'x-aegis-request': 'browser'}).status_code == 200

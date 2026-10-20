@@ -9,6 +9,8 @@ class Input(BaseModel):
 
 
 class Login(Input):
+    # Password whitespace is significant, including for interactive CLI bootstrap.
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
     username: str = Field(min_length=3, max_length=80, pattern=r"^[a-zA-Z0-9_.@-]+$")
     password: str = Field(min_length=1, max_length=128)
 
