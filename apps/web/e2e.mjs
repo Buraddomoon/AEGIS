@@ -167,6 +167,7 @@ try {
   assert.equal(scheduledReport.run.state, 'COMPLETED')
   assert.equal(scheduledReport.run.approval.schedule_authorization_id, scheduledReport.run.schedule_occurrence.authorization_id)
   assert.ok(scheduledReport.run.schedule_id)
+  assert.equal(scheduledReport.run.schedule_plan.plan_hash, scheduledReport.run.schedule_authorization.plan_hash)
   for (const [route, heading] of [
     ['tests', 'Biblioteca de testes'],
     ['reports', 'Relatórios'],
