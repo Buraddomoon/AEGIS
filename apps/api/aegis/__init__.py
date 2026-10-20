@@ -1,0 +1,1 @@
+"""ÆGIS modular monolith."""

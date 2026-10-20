@@ -1,0 +1,28 @@
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    database_url: str = "postgresql+psycopg://aegis@localhost:18782/aegis"
+    redis_url: str = "redis://localhost:18783/0"
+    public_origin: str = "http://localhost:18780"
+    secure_cookies: bool = False  # Loopback HTTP demo; HTTPS deployments must enable.
+    session_hours: int = Field(default=8, ge=1, le=24)
+    worker_poll_seconds: float = 0.5
+    demo_step_seconds: float = Field(default=0.15, ge=0, le=5)
+    web_dist: Path = Path("apps/web/dist")
+    fixtures_path: Path = Path("fixtures")
+    wazuh_url: str | None = None
+    wazuh_username: str | None = None
+    wazuh_password: str | None = None
+    wazuh_ca_bundle: str | None = None
+    wazuh_allowed_ip: str | None = None
+
+
+@lru_cache
+def settings() -> Settings:
+    return Settings()
