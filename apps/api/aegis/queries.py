@@ -13,6 +13,7 @@ from aegis.models import (
     CampaignTest,
     DetectionEvidence,
     ExecutionStep,
+    ScheduleOccurrence,
     TelemetryEvent,
     TestExecution,
     ValidationResult,
@@ -82,11 +83,13 @@ def execution_detail(db: Session, run_id: str) -> dict:
         .order_by(ExecutionStep.created_at, ExecutionStep.id)
     ).all()
     campaign = get_or_404(db, Campaign, run.campaign_id)
+    occurrence = db.scalar(select(ScheduleOccurrence).where(ScheduleOccurrence.run_id == run.id))
     return {
         **record(run),
         "campaign_name": campaign.name,
         "objective": campaign.objective,
         "approval": record(approval) if approval else None,
+        "schedule_occurrence": record(occurrence) if occurrence else None,
         "executions": items,
         "steps": [record(s) for s in steps],
     }

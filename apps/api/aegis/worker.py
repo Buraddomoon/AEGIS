@@ -25,6 +25,7 @@ from aegis.models import (
     ValidationResult,
     now,
 )
+from aegis.scheduling import authorization_valid, scheduler_loop
 from aegis.security import redis_client
 from aegis.services import move, release_lab
 
@@ -62,6 +63,7 @@ def claim_next() -> str | None:
             or lab.kind != "demo"
             or lab.active_run_id != run.id
             or lab.environment_version != run.scope["environment_version"]
+            or not authorization_valid(db, run, approval)
         ):
             move(
                 db,
@@ -112,6 +114,10 @@ def guard(run_id: str) -> None:
             raise Interrupted(State.FAILED, "Autorização ou versão do laboratório mudou.")
         if stop.is_set():
             raise Interrupted(State.CANCELLED, "Worker encerrando de forma controlada.")
+        if run.schedule_id:
+            approval = db.scalar(select(Approval).where(Approval.run_id == run.id))
+            if not authorization_valid(db, run, approval):
+                raise Interrupted(State.CANCELLED, "Autorização recorrente deixou de ser válida.")
         run.heartbeat_at = now()
         db.commit()
 
@@ -292,6 +298,13 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
                     target, error = State.CANCELLED, "Cancelamento confirmado durante cleanup."
                 if target == State.COMPLETED and current.deadline_at <= now():
                     target, error = State.TIMED_OUT, "Prazo excedido durante cleanup."
+                if target == State.COMPLETED and current.schedule_id:
+                    approval = db.scalar(select(Approval).where(Approval.run_id == current.id))
+                    if not authorization_valid(db, current, approval):
+                        target, error = (
+                            State.CANCELLED,
+                            "Autorização recorrente revogada durante cleanup.",
+                        )
                 move(db, current, target, error or "Execução e cleanup demonstrativos concluídos.")
                 current.error, current.ended_at, current.heartbeat_at = error, now(), now()
                 for item in db.scalars(select(TestExecution).where(TestExecution.run_id == run_id)):
@@ -361,6 +374,10 @@ def main() -> None:
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     log.info("AEGIS worker: transactional PostgreSQL queue; demo adapter only")
+    scheduler = threading.Thread(
+        target=scheduler_loop, args=(stop,), name="demo-scheduler", daemon=True
+    )
+    scheduler.start()
     while not stop.is_set():
         try:
             try:
@@ -376,6 +393,7 @@ def main() -> None:
         except Exception:
             log.exception("Worker polling failed")
             stop.wait(2)
+    scheduler.join(timeout=5)
 
 
 if __name__ == "__main__":

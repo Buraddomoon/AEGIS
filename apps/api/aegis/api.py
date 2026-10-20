@@ -8,7 +8,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from aegis import queries, schemas, services
+from aegis import queries, scheduling, schemas, services
 from aegis.config import settings
 from aegis.db import get_db
 from aegis.domain.validation import digest
@@ -24,6 +24,9 @@ from aegis.models import (
     Laboratory,
     LoginSession,
     RuleVersion,
+    Schedule,
+    ScheduleAuthorization,
+    ScheduleOccurrence,
     TestDefinition,
     User,
 )
@@ -383,6 +386,63 @@ def coverage(user: Viewer, db: DB) -> dict:
     return queries.coverage(db)
 
 
+@router.get("/schedules", tags=["Scheduling"])
+def schedules(user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
+    return queries.page(db, select(Schedule).order_by(Schedule.created_at.desc()), offset, limit)
+
+
+@router.post("/schedules", status_code=201, tags=["Scheduling"])
+def create_schedule(data: schemas.ScheduleCreate, user: Operator, db: DB) -> dict:
+    rate_limit("schedule-create:" + user.id, 30, 3600)
+    return queries.record(scheduling.create(db, data, user))
+
+
+@router.get("/schedules/{schedule_id}", tags=["Scheduling"])
+def schedule_detail(schedule_id: str, user: Viewer, db: DB) -> dict:
+    item = services.get_or_404(db, Schedule, schedule_id)
+    grants = db.scalars(
+        select(ScheduleAuthorization)
+        .where(ScheduleAuthorization.schedule_id == item.id)
+        .order_by(ScheduleAuthorization.created_at.desc())
+    ).all()
+    return {
+        **queries.record(item),
+        "authorizations": [queries.record(g) for g in grants],
+        "plan": scheduling.plan(item),
+        "synthetic": True,
+    }
+
+
+@router.get("/schedules/{schedule_id}/occurrences", tags=["Scheduling"])
+def schedule_occurrences(
+    schedule_id: str, user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 50
+) -> dict:
+    services.get_or_404(db, Schedule, schedule_id)
+    return queries.page(
+        db,
+        select(ScheduleOccurrence)
+        .where(ScheduleOccurrence.schedule_id == schedule_id)
+        .order_by(ScheduleOccurrence.scheduled_for.desc()),
+        offset,
+        limit,
+    )
+
+
+@router.post("/schedules/{schedule_id}/approve", tags=["Scheduling"])
+def approve_schedule(schedule_id: str, data: schemas.ScheduleApprove, user: Admin, db: DB) -> dict:
+    return queries.record(scheduling.approve(db, schedule_id, user, data.confirm_plan_hash))
+
+
+@router.post("/schedules/{schedule_id}/pause", tags=["Scheduling"])
+def pause_schedule(schedule_id: str, data: schemas.Confirm, user: Operator, db: DB) -> dict:
+    return queries.record(scheduling.stop_schedule(db, schedule_id, user, revoke=False))
+
+
+@router.post("/schedules/{schedule_id}/revoke", tags=["Scheduling"])
+def revoke_schedule(schedule_id: str, data: schemas.Confirm, user: Admin, db: DB) -> dict:
+    return queries.record(scheduling.stop_schedule(db, schedule_id, user, revoke=True))
+
+
 @router.get("/coverage/compare", tags=["Coverage"])
 def compare(before: str, after: str, user: Viewer, db: DB) -> dict:
     return queries.compare(db, before, after)
@@ -506,7 +566,7 @@ def connectors(user: Viewer) -> dict:
             },
         ],
         "worker_online": worker,
-        "scheduling": "not_implemented",
+        "scheduling": "approved_demo_only",
         "lab_mode": "not_enabled",
     }
 
