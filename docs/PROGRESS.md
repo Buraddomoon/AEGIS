@@ -125,3 +125,49 @@ Próxima evolução: executor Linux isolado com timeout/interrupção efetivos, 
 ## Continuidade 2026-10-21 — runner Linux seguro
 
 Estado inicial: main limpa/sincronizada em e0dcb3a, remoto AEGIS PRIVATE confirmado. Implementação do ADR 0003: runner opt-in separado, um teste marcador benigno, identidade/protocolo, watchdog/cancelamento/cleanup, diário idempotente e mTLS. Lab Mode da aplicação permanece desabilitado até validação autorizada e integração completa; nenhuma conexão Wazuh será iniciada.
+
+## Marco Linux A — runner independente implementado e ensaio autorizado
+
+Data: 2026-10-21. Primeiro incremento da etapa Linux, sem declarar Lab Mode integrado às campanhas. O usuário respondeu **“Autorizar somente esse ensaio local”** ao escopo concreto: containers novos aegis-linux-lab, rede isolated, mTLS, um marcador de 43 bytes em tmpfs, processo limitado a 5s, verificação do diário após restart e desligamento. Não houve autorização/acesso a Wazuh, rede corporativa, outros alvos ou novos tipos de teste.
+
+### Entregas verificáveis
+
+- `apps/api/aegis/lab_runner/protocol.py`: modelos estritos, UUIDs, marker UUID, hash, prazo, geração e allowlist exclusiva `linux-file-marker/v1`; sem comandos/caminhos/scripts de API.
+- `engine.py`, `journal.py`, `marker_program.py`, `files.py`: subprocesso Python fixo com ambiente mínimo, limites Linux, sessão/grupo próprios, kill/reap, PDEATHSIG com verificação do pai, deadline monotônico de 5s e lease de 2s sem ressurreição. Intenção persistida antes do efeito; SQLite/WAL local mantém fence e identidade após restart; sem replay ambíguo.
+- `server.py` e `integrations/linux_runner.py`: HTTPS/mTLS obrigatório, CAs cliente/servidor distintas, pin de IP privado/SAN, identidade/allowlist/hash/geração/recibo verificados. Sem proxies de ambiente, redirects ou entrada de URL pela aplicação. Mesmo contrato ExecutionAdapter; ainda não ligado ao worker Demo.
+- Workspace privado 0700 por UUID, nomes fixos exclusivos/NOFOLLOW, conteúdo/hash conferidos e cleanup sem recursão; arquivo desconhecido/symlink/erro mantém reserva.
+- `labs/linux/compose.yml` e Dockerfile: runner UID 10001, rootfs read-only, caps ALL removidas, no-new-privileges, limites de recursos, tmpfs de 1 MiB e rede internal+gateway isolated sem portas/publicação nem endereço de host no bridge. Somente secrets individuais read-only e volume próprio do diário; sem socket Docker/diretório de dados host.
+- Controller CLI opt-in: preflight, marker com confirmação explícita, inspect, cleanup e retry-check restrito a job concluído/limpo. Makefile com lab-init/config/build/up/preflight/inspect/smoke/down e test-runner. Nada é iniciado pelo make up/test/CI padrão.
+- Documentação de instalação, PKI local, operação/recuperação, revisão de segurança e ADR 0003. PKI/diário/recibos reais ficam locais, ignorados e fora do Git.
+
+### Ensaio efetivamente executado
+
+Configuração efetiva e ausência de conflito da sub-rede 172.30.88.0/29 foram verificadas antes de aplicar somente a rede nova. Docker inspect confirmou UID/read-only/caps/no-new-privileges, limites, mounts, tmpfs e gateway isolated. Sem sondagem de outros serviços.
+
+O controller autenticou com mTLS e confirmou runner/lab/asset/allowlist. Um job criou 43 bytes, verificou conteúdo e SHA-256 e removeu os dois artefatos. Resultado do executor **SUCCEEDED**, cleanup **CLEANED**, `synthetic=false`, kind **execution_receipt**. Validação pelo domínio retornou **INCONCLUSIVE**, pois nenhum SIEM foi consultado; não inventar telemetria nem DETECTED.
+
+Após reiniciar o runner, retry do mesmo job devolveu o recibo original inalterado. Consulta read-only do journal confirmou **um job e um único início**, e `/work` estava vazio. Finalmente `down` removeu containers e rede próprios, preservando volume do diário e configuração local. A aplicação Demo permaneceu saudável em http://localhost:18780.
+
+Evidência local (não publicada): `.local/linux-lab/authorized-smoke.jsonl`, `restart-retry.json`, `runtime-controls.json`; volume `aegis-linux-lab_journal`. Teste não foi registrado como campanha na plataforma; não aparece artificialmente nas métricas Demo.
+
+### Testes e revisão
+
+| Verificação executada | Resultado observado |
+|---|---|
+| `make lint` | Ruff/check/format, mypy domínio, TypeScript/Prettier aprovados |
+| `make test` | **131 testes Python passaram** em 39,08s; **5 frontend passaram**; aviso upstream TestClient/httpx preservado |
+| Runner | 46 cenários de protocolo, comandos/caminhos recusados, arquivos, child real de pytest, TLS real loopback, mTLS recusado, concorrência, journal/fence, lease/cancelamento/deadline, restart, morte do pai com subreaper, race de handoff e isolamento |
+| Docker runner | build aprovado; ensaio opt-in autorizado e inspect de runtime aprovados; imagem final reconstruída após correção de handoff |
+| Cleanup do ensaio | workspace vazio, histórico intacto, containers/rede removidos; volume preservado |
+| `make audit` | npm zero achados; Python mantém um advisory transitivo DiskCache conhecido/revisado, sem novo achado desconhecido |
+| Links Markdown | 31 documentos verificados, sem destinos locais ausentes |
+
+A revisão especializada somente leitura identificou race entre publicar SUCCEEDED e liberar active, que poderia recusar cleanup indevidamente. Corrigida por publicação/liberação no mesmo lock após reap e regressão com barreira determinística. Motivo de interrupção/cancelamento agora é preservado. Outro problema encontrado no primeiro up: opções tmpfs separadas pelo YAML; corrigido antes de executar o ensaio e coberto por teste/inspect. O ensaio real ocorreu antes da correção de handoff; essa correção foi validada em testes de software e a imagem final foi reconstruída, sem novo efeito real.
+
+### Estado de publicação e próximo incremento
+
+CI final de `a4f185a`: **SUCCESS**, [run 39602912793](https://github.com/Buraddomoon/AEGIS/actions/runs/39602912793), job em 1m53s. Lint/tipos, testes PostgreSQL/frontend, build e advisory review passaram. A rodada anterior de 11accac também passou; a última inclui a proteção de fixture para não sinalizar PID já recolhido. Commits posteriores são somente documentação e não disparam CI redundante. GitHub permanece AEGIS privado e somente main, com commits pequenos e push após cada commit. Consultar git log -1, git rev-list --count HEAD e git status -sb para hash/quantidade/sincronização do checkpoint.
+
+Pendências reais: registrar Linux Lab/Asset/autorização/isolamento na API; ligar adapter ao worker com aprovações delimitadas e identidade mTLS, receipts imutáveis no PostgreSQL, recuperação real pós-falha e synthetic=false correto; UI e métricas separadas por modo; depois Wazuh com configuração autorizada, tradução Asset/agent e coleta defensiva real. O worker atual continua exclusivamente Demo. PKI é de desenvolvimento (folhas de 2 dias/CA de 7 dias), sem rotação automática. Journal tem quota de 10.000, sem expurgo que elimine fences. Containers não substituem VM; nenhum suporte a Atomic executável, Windows, comandos genéricos ou códigos arbitrários foi habilitado.
+
+Este marco acrescentou **12 commits**, incluindo este checkpoint, totalizando **80 commits**. Hash/mensagem finais e main/origin/main serão conferidos após o push. Nada foi tornado público, nenhum PR/branch temporário/force push foi usado. O ensaio autorizado foi encerrado e não concede autorização para SIEM externo ou outros testes.
