@@ -1,0 +1,3 @@
+# Management API is unnecessary for this assay and must not listen on the lab LAN.
+host: ['127.0.0.1']
+port: 55000

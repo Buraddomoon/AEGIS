@@ -1,0 +1,9 @@
+_meta:
+  type: rolesmapping
+  config_version: 2
+aegis_reader:
+  users: [aegis_reader]
+aegis_ingest:
+  users: [aegis_ingest]
+aegis_admin:
+  users: [admin]

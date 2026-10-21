@@ -1,0 +1,20 @@
+network.host: 0.0.0.0
+node.name: wazuh.indexer
+cluster.name: aegis-isolated-wazuh
+discovery.type: single-node
+path.data: /var/lib/wazuh-indexer
+path.logs: /var/log/wazuh-indexer
+compatibility.override_main_response_version: true
+plugins.security.ssl.http.enabled: true
+plugins.security.ssl.http.pemcert_filepath: certs/indexer.pem
+plugins.security.ssl.http.pemkey_filepath: certs/indexer-key.pem
+plugins.security.ssl.http.pemtrustedcas_filepath: certs/root-ca.pem
+plugins.security.ssl.transport.pemcert_filepath: certs/indexer.pem
+plugins.security.ssl.transport.pemkey_filepath: certs/indexer-key.pem
+plugins.security.ssl.transport.pemtrustedcas_filepath: certs/root-ca.pem
+plugins.security.ssl.transport.enforce_hostname_verification: true
+plugins.security.nodes_dn: ['CN=wazuh.indexer,OU=AEGIS,O=AEGIS Lab']
+plugins.security.authcz.admin_dn: ['CN=admin,OU=AEGIS,O=AEGIS Lab']
+plugins.security.allow_default_init_securityindex: true
+plugins.security.check_snapshot_restore_write_privileges: true
+cluster.routing.allocation.disk.threshold_enabled: true

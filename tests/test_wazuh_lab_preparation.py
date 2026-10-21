@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import stat
 import subprocess
 import sys
@@ -78,3 +79,63 @@ def test_repeat_preparation_preserves_identity_and_secrets(prepared):
     assert result.returncode != 0
     assert (path / "runner/connection.json").read_bytes() == original
     assert (path / "indexer-passwords.json").read_bytes() == credentials
+
+
+def test_rendered_compose_preserves_isolation_and_secret_boundaries(prepared):
+    if not shutil.which("docker"):
+        pytest.skip("Compose structural check requires Docker CLI, not daemon startup.")
+    path, _ = prepared
+    command = ["docker", "compose", "--env-file", str(path / "lab.env"), "-p", "aegis-wazuh-lab"]
+    for file in (
+        "docker-compose.yml",
+        "labs/linux/compose.yml",
+        "labs/linux/platform.yml",
+        "labs/wazuh/compose.yml",
+    ):
+        command.extend(["-f", file])
+    result = subprocess.run(
+        [*command, "config", "--format", "json"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=10,
+    )
+    config = json.loads(result.stdout)
+    services = config["services"]
+    for name in (
+        "wazuh.indexer",
+        "wazuh.manager",
+        "wazuh.agent",
+        "runner",
+        "observer",
+        "worker",
+        "db",
+        "redis",
+    ):
+        assert "ports" not in services[name]
+    assert set(services["runner"]["networks"]) == {"isolated"}
+    assert services["observer"]["network_mode"] == "none"
+    assert services["observer"]["read_only"]
+    observer_mounts = {item["target"]: item for item in services["observer"]["volumes"]}
+    assert observer_mounts["/work"]["read_only"]
+    assert not observer_mounts["/observation-log"].get("read_only", False)
+    agent_mounts = {item["target"]: item for item in services["wazuh.agent"]["volumes"]}
+    assert "/work" not in agent_mounts
+    assert agent_mounts["/var/log/aegis"]["read_only"]
+    for name in ("api", "worker"):
+        sources = {item["source"] for item in services[name]["secrets"]}
+        assert not sources.intersection({"indexer_key", "filebeat_key"})
+        assert services[name]["environment"]["WAZUH_USERNAME"] == "aegis_reader"
+        assert "INDEXER_PASSWORD" not in services[name]["environment"]
+    assert services["api"]["ports"][0]["host_ip"] == "127.0.0.1"
+    assert services["api"]["ports"][0]["published"] == "18786"
+    for name in ("isolated", "telemetry"):
+        assert config["networks"][name]["internal"]
+        assert (
+            config["networks"][name]["driver_opts"]["com.docker.network.bridge.gateway_mode_ipv4"]
+            == "isolated"
+        )
+    assert config["volumes"]["workspace"]["driver_opts"]["type"] == "tmpfs"
+    assert "noexec,nosuid,nodev" in config["volumes"]["workspace"]["driver_opts"]["o"]
+    assert all(value["name"].startswith("aegis-wazuh-lab_") for value in config["volumes"].values())

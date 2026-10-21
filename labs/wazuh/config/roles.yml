@@ -1,0 +1,22 @@
+_meta:
+  type: roles
+  config_version: 2
+aegis_admin:
+  cluster_permissions: ['*']
+  index_permissions:
+    - index_patterns: ['*']
+      allowed_actions: ['*']
+aegis_reader:
+  cluster_permissions: ['cluster:monitor/main', 'indices:data/read/scroll*']
+  index_permissions:
+    - index_patterns: ['wazuh-alerts-4.x-*']
+      allowed_actions: ['read']
+aegis_ingest:
+  # Filebeat bootstrap is confined to this disposable Indexer, never the app.
+  cluster_permissions:
+    - cluster_monitor
+    - 'indices:admin/template/*'
+    - 'cluster:admin/ingest/pipeline/*'
+  index_permissions:
+    - index_patterns: ['wazuh-alerts-4.x-*']
+      allowed_actions: ['crud', 'create_index', 'manage']
