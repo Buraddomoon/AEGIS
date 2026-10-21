@@ -85,3 +85,18 @@ lab-down:
 .PHONY: test-runner
 test-runner:
 	$(VENV)/pytest tests/test_runner_protocol.py tests/test_runner_engine.py tests/test_runner_transport.py tests/test_runner_parent_death.py tests/test_runner_isolation.py -q
+
+# Separate database/API on 18785; never modifies the default Demo stack.
+LINUX_PLATFORM = docker compose --env-file .env --env-file .local/linux-lab/ids.env -p aegis-linux-lab -f docker-compose.yml -f labs/linux/compose.yml -f labs/linux/platform.yml
+.PHONY: linux-platform-config linux-platform-build linux-platform-up linux-platform-smoke linux-platform-down
+linux-platform-config:
+	$(LINUX_PLATFORM) config --quiet
+linux-platform-build: linux-platform-config
+	$(LINUX_PLATFORM) build migrate runner
+linux-platform-up: linux-platform-config
+	$(LINUX_PLATFORM) up -d db redis migrate runner api worker
+linux-platform-smoke:
+	$(VENV)/python scripts/inspect_linux_lab.py
+	$(VENV)/python scripts/smoke_linux_platform.py --confirm-integrated-marker
+linux-platform-down:
+	$(LINUX_PLATFORM) down

@@ -92,3 +92,30 @@ def test_runtime_inspection_refuses_weaker_isolation(threat):
         network["Options"]["com.docker.network.bridge.gateway_mode_ipv4"] = "nat"
     with pytest.raises(ValueError):
         validate(changed, network, Path("/local-config"))
+
+
+def test_platform_overlay_scopes_real_access_and_preserves_separate_demo_port():
+    class ComposeLoader(yaml.SafeLoader):
+        pass
+
+    ComposeLoader.add_constructor("!override", lambda loader, node: loader.construct_sequence(node))
+    config = yaml.load(Path("labs/linux/platform.yml").read_text(), Loader=ComposeLoader)
+    assert config["name"] == "aegis-linux-lab"
+    services = config["services"]
+    assert services["api"]["ports"] == ["127.0.0.1:18785:8080"]
+    assert set(services["worker"]["networks"]) == {"backend", "isolated"}
+    for name in ("api", "worker"):
+        environment = services[name]["environment"]
+        assert environment["LINUX_RUNNER_CONFIG"] == "/run/secrets/controller_connection"
+        assert environment["WAZUH_URL"] == environment["WAZUH_PASSWORD"] == ""
+        assert services[name]["secrets"] == [
+            "controller_server_ca",
+            "controller_client_cert",
+            "controller_client_key",
+            "controller_connection",
+        ]
+        assert services[name]["restart"] == "no"
+    # The default deployment never joins the lab network or receives its client key.
+    default = yaml.safe_load(Path("docker-compose.yml").read_text())
+    assert "isolated" not in default["networks"]
+    assert "LINUX_RUNNER_CONFIG" not in default["services"]["api"]["environment"]
