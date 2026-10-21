@@ -1,6 +1,6 @@
-# Linux Lab — runner restrito (incremento preparatório)
+# Linux Lab — runner restrito e campanhas integradas
 
-Runner e adaptador executáveis para **um marcador benigno**, separados da aplicação principal. Ainda não há campanha Linux no PostgreSQL/UI nem integração operacional com Wazuh. `make up` continua iniciando somente Demo; não há botão falso de execução real.
+Runner e adaptador para **um marcador benigno**, integrados à API/worker/UI por opt-in. Sem integração operacional Wazuh; comprovantes do executor não são evidências defensivas. `make up` continua iniciando somente Demo. As seções iniciais descrevem o runner standalone; o segundo incremento integrado e seu escopo estão abaixo.
 
 ## Escopo concreto do ensaio
 
@@ -55,8 +55,41 @@ Cleanup explícito só após término confirmado. Arquivos desconhecidos exigem 
 
 Testes de software usam diretórios pytest descartáveis e processos fixos, além de fixture bloqueante exclusiva de testes para timeout/cancelamento. Transporte testa handshake TLS real em loopback, recusa cliente sem certificado/incorreto e servidor não confiável; testes ASGI separados verificam mensagens/limites. Isso não substitui o ensaio Docker autorizado.
 
-Estado efetivamente observado do build, testes, ensaio e autorização: [PROGRESS](../../docs/PROGRESS.md). Próximo incremento após aceite: registrar laboratório/ativo/revisão de isolamento na API, aprovação de escopo Linux por operação, receipts persistidos no PostgreSQL e UI, recuperação de worker real e separação explícita de métricas Demo/real. Só então habilitar campanhas Linux. Wazuh requer configuração e validação próprias.
+Estado efetivamente observado do build, testes, ensaio e autorização: [PROGRESS](../../docs/PROGRESS.md). O segundo incremento abaixo entregou registro/revisão/preflight, aprovação separada, comprovantes PostgreSQL/UI, recuperação verificada e separação de métricas. Wazuh requer configuração e validação próprias.
 
 ## Resultado observado em 2026-10-21
 
 Ensaio autorizado: mTLS e identidade confirmados; marcador de 43 bytes criado/verificado/removido; SUCCEEDED+CLEANED com comprovante de execução; validação INCONCLUSIVE porque SIEM não consultado. Restart+retry preservaram o recibo original, workspace vazio e um único início no diário. Containers/rede removidos no finally; volume preservado. A correção posterior da race de publicação terminal/cleanup foi validada por regressão determinística, e a imagem final reconstruída. Esse ensaio não representa uma campanha Linux já integrada à aplicação.
+
+## Integração com campanhas — segundo incremento
+
+Código integrado pela mesma API/fila/worker do Demo; opt-in por `LINUX_RUNNER_CONFIG` apontando para JSON `RunnerConnection`. A API não aceita endpoint, comando, caminho ou script do usuário. Registro administrativo deriva IDs e certificados dessa configuração; revisão de isolamento, preflight mTLS de 5 minutos e autorização precedem a criação da campanha. Apenas `linux-file-marker-v1` é compatível. Um administrador **diferente do solicitante** confirma efeito real em cada aprovação. Agendamento Linux não é suportado.
+
+Recibos e cleanup são registros imutáveis próprios no PostgreSQL, inspecionáveis na execução/relatório. Não são alertas defensivos. Sem SIEM, classificação **INCONCLUSIVE**, com `synthetic=false`. Overview permanece explicitamente Demo; cobertura e matriz permitem escolher modo.
+
+### Escopo concreto do novo ensaio integrado
+
+**Requer aprovação específica antes do primeiro up/smoke.** O ensaio standalone anterior não autoriza este fluxo novo.
+
+Projeto separado `aegis-linux-lab`, preservando a aplicação Demo existente. Serviços próprios `db`, `redis`, `migrate`, `api`, `worker`, `runner`; API publicada somente em `127.0.0.1:18785`. Volume PostgreSQL próprio, diário/IDs/PKI Linux originais preservados. Rede de runner `172.30.88.0/29` isolated interna; somente API e worker desse projeto recebem acesso mTLS a ela. Backend interno e ingress próprios para HTTP local. Sem host network, Docker socket, diretórios de dados host ou Wazuh (variáveis explicitamente vazias).
+
+O script cadastra duas contas temporárias aleatórias (admin e operador), revisa/cadastra o binding, faz preflight sem efeito, autoriza o Linux Lab, solicita campanha pelo operador e aprova pelo administrador. O worker cria/verifica/remove **um marcador de 43 bytes** em tmpfs, filho limitado a **5 segundos**, lease de 2 segundos. Script verifica recibo/cleanup, resultado inconclusivo sem telemetria inventada, segregação de indicadores e relatórios HTML/JSON. Ao final revoga a autorização e desativa ambas as contas. `down` encerra somente os serviços/redes deste projeto, preservando volumes e evidência local ignorada `.local/linux-lab/platform-assay.json`.
+
+```bash
+make linux-platform-config  # valida sem iniciar
+make linux-platform-build   # compila sem ensaio
+# Somente após aprovação específica do escopo acima:
+make linux-platform-up
+make linux-platform-smoke
+make linux-platform-down    # executar também se smoke falhar; não usar -v
+```
+
+O overlay usa `!override` para substituir a porta 18780 por 18785, requer Compose 2.24.4+ conforme [documentação oficial de merge](https://docs.docker.com/reference/compose-file/merge/). Não executar `lab-up` standalone simultaneamente: compartilham identidade, rede e diário. Não usar volumes de outro projeto. O ensaio integrado ainda deve ser confirmado por evidência de runtime no PROGRESS; config/build e fixtures não bastam para declará-lo executado.
+
+### Recuperação e rotação
+
+Após crash real, `CLEANUP_FAILED` mantém reserva. Administrador usa a ação de recuperação para consultar/cancelar/limpar somente o UUID/spec/geração originais; nunca prepara ou inicia outro job. `404` remoto após RPC ambígua **não** autoriza liberação. Sem dispatch persistido, nenhum RPC foi permitido. Resposta perdida de cleanup pode ser confirmada por consulta e cleanup idempotente; journal deve ser preservado para recusar start atrasado.
+
+Se identidade, endpoint ou certificados do binding mudaram/expiraram, recuperação automatizada recusa a configuração nova. Restaure o vínculo original válido ou faça inspeção/cleanup offline do runner original, documentando a intervenção; não apague journal nem altere reserva manualmente para contornar a quarentena. Renovação/rotação automatizada permanece pendente. Reiniciar/renovar certificado não concede nova autorização de execução.
+
+Resultado do ensaio integrado: uma campanha COMPLETED, marcador de 43 bytes, cleanup CLEANED e workspace vazio, INCONCLUSIVE sem eventos/alertas defensivos. Captura opcional falhou inicialmente por esperar pouco o login; corrigida e validada por consulta do histórico, sem outro efeito. Banco confirmou uma única campanha real. Admin, operador e visualizador temporário foram desativados; laboratório revogado/sem reserva; containers/redes encerrados e volumes preservados. Comando de captura não foi apresentado como execução integral com exit 0; passos de negócio, persistência e UI têm verificações separadas registradas no PROGRESS.
