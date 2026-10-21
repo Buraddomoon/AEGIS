@@ -7,6 +7,8 @@ from aegis.domain.validation import digest
 
 LIMITATION = "Dados sintéticos. Ausência de alerta não comprova comprometimento, vulnerabilidade explorável ou risco de negócio. Este relatório não valida proteção de ambiente real."
 
+REAL_LIMITATION = "Laboratório Linux autorizado. Comprovantes do executor confirmam somente o efeito e cleanup do teste benigno. SIEM não consultado: não há confirmação de observação ou detecção defensiva. Ausência de alerta não comprova comprometimento ou risco de negócio."
+
 
 def build_report(detail: dict) -> dict:
     # Hash exactly the JSON representation delivered to clients, including UTC dates.
@@ -16,7 +18,7 @@ def build_report(detail: dict) -> dict:
         "report_version": "1.0",
         "synthetic": detail["synthetic"],
         "run": detail,
-        "limitations": [LIMITATION],
+        "limitations": [LIMITATION if detail["synthetic"] else REAL_LIMITATION],
         "recommendations": [
             "Verificar instrumentação e disponibilidade da coleta nas simulações sem telemetria.",
             "Revisar regras e repetir o mesmo escopo após mudanças aprovadas.",
@@ -36,10 +38,16 @@ class HTMLReportExporter:
             f"<tr><td>{escape(e['test_id'])}</td><td>{escape((e['result'] or {}).get('outcome', 'NOT_TESTED'))}</td><td>{escape((e['result'] or {}).get('reason', 'Sem conclusão'))}</td></tr>"
             for e in run["executions"]
         )
+        notice = (
+            "DEMONSTRAÇÃO · EVIDÊNCIAS SINTÉTICAS"
+            if report["synthetic"]
+            else "LABORATÓRIO REAL · COMPROVANTES DO EXECUTOR"
+        )
+        limitation = " ".join(report["limitations"])
         raw = escape(json.dumps(report, ensure_ascii=False, indent=2, default=str))
         return f"""<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>ÆGIS — relatório</title>
 <style>body{{font:15px system-ui;max-width:1100px;margin:48px auto;padding:20px;color:#132235}}h1{{color:#176658}}td,th{{padding:14px;text-align:left;border-bottom:1px solid #ccd6dd}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}.notice{{padding:20px;background:#eef7f3}}</style>
-<h1>ÆGIS · Validação de detecção</h1><div class="notice"><strong>DEMONSTRAÇÃO · EVIDÊNCIAS SINTÉTICAS</strong><p>{escape(LIMITATION)}</p></div>
+<h1>ÆGIS · Validação de detecção</h1><div class="notice"><strong>{escape(notice)}</strong><p>{escape(limitation)}</p></div>
 <h2>{escape(run["campaign_name"])}</h2><p>{escape(run["objective"])}</p>
 <p>Execução: {escape(run["id"])} · Estado: {escape(run["state"])}</p><p>Data UTC: {escape(run["created_at"])} · Ambiente v{escape(run["scope"]["environment_version"])}</p>
 <h2>Resumo executivo</h2><p>Foram avaliadas {len(run["executions"])} simulações neste escopo. As classificações abaixo distinguem detecção, observação sem alerta e insuficiência de evidências. Os resultados não demonstram proteção de uma organização.</p>

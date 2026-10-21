@@ -8,7 +8,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from aegis import queries, scheduling, schemas, services
+from aegis import linux_labs, queries, scheduling, schemas, services
 from aegis.config import settings
 from aegis.db import get_db
 from aegis.domain.validation import digest
@@ -22,6 +22,7 @@ from aegis.models import (
     CampaignTest,
     DetectionRule,
     Laboratory,
+    LabVerification,
     LoginSession,
     RuleVersion,
     Schedule,
@@ -56,7 +57,7 @@ Limit = Annotated[int, Query(ge=1, le=1000)]
 
 @router.get("/health/live", tags=["Health"])
 def live() -> dict:
-    return {"status": "ok", "version": "0.1.0", "mode": "demo"}
+    return {"status": "ok", "version": "0.2.0", "default_mode": "demo"}
 
 
 @router.get("/health/ready", tags=["Health"])
@@ -155,8 +156,12 @@ def labs(user: Viewer, db: DB) -> dict:
                     if lab.active_run_id and db.get(CampaignRun, lab.active_run_id)
                     else None
                 ),
-                "connection_status": "synthetic" if lab.kind == "demo" else "disconnected",
-                "execution_capability": "demo-only",
+                "connection_status": "synthetic"
+                if lab.kind == "demo"
+                else ("connected" if linux_labs.verified(db, lab) else "disconnected"),
+                "execution_capability": "demo-only"
+                if lab.kind == "demo"
+                else ("linux-marker-only" if linux_labs.binding_valid(db, lab) else "disabled"),
                 "telemetry_source": "aegis-demo" if lab.kind == "demo" else None,
             }
             for lab in items
@@ -169,11 +174,16 @@ def authorize_lab(lab_id: str, data: schemas.LabAuthorization, user: Admin, db: 
     lab = db.scalar(select(Laboratory).where(Laboratory.id == lab_id).with_for_update())
     if not lab:
         raise HTTPException(404, "Laboratório não encontrado.")
-    if lab.kind != "demo":
-        raise HTTPException(409, "Lab Mode ainda não habilitado.")
+    if lab.kind not in ("demo", "linux"):
+        raise HTTPException(409, "Tipo de laboratório não suportado.")
+    if lab.kind == "linux" and data.authorized and not linux_labs.verified(db, lab):
+        raise HTTPException(
+            409, "Autorização Linux exige binding revisado e preflight mTLS vigente."
+        )
     if lab.authorized != data.authorized:
         lab.authorized = data.authorized
-        lab.environment_version += 1
+        if lab.kind == "demo" or not data.authorized:
+            lab.environment_version += 1
         audit(
             db,
             user.id,
@@ -184,6 +194,35 @@ def authorize_lab(lab_id: str, data: schemas.LabAuthorization, user: Admin, db: 
         )
     db.commit()
     return queries.record(lab)
+
+
+@router.post("/labs/linux/register", status_code=201, tags=["Laboratories"])
+def register_linux(data: schemas.LinuxRegistration, user: Admin, db: DB) -> dict:
+    rate_limit("linux-register:" + user.id, 10, 3600)
+    return queries.record(linux_labs.register(db, data, user))
+
+
+@router.post("/labs/{lab_id}/preflight", tags=["Laboratories"])
+def preflight_linux(lab_id: str, data: schemas.Confirm, user: Admin, db: DB) -> dict:
+    rate_limit("linux-preflight:" + user.id, 10, 60)
+    return queries.record(
+        linux_labs.preflight(db, services.get_or_404(db, Laboratory, lab_id), user)
+    )
+
+
+@router.get("/labs/{lab_id}/verifications", tags=["Laboratories"])
+def lab_verifications(
+    lab_id: str, user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 25
+) -> dict:
+    services.get_or_404(db, Laboratory, lab_id)
+    return queries.page(
+        db,
+        select(LabVerification)
+        .where(LabVerification.laboratory_id == lab_id)
+        .order_by(LabVerification.created_at.desc()),
+        offset,
+        limit,
+    )
 
 
 @router.post("/labs/{lab_id}/recover", tags=["Laboratories"])
@@ -200,12 +239,14 @@ def recover_lab(lab_id: str, data: schemas.Confirm, user: Admin, db: DB) -> dict
     )
     if lab.active_run_id != observed_run_id:
         raise HTTPException(409, "Reserva do laboratório mudou durante a revisão.")
-    if not run or run.state != "CLEANUP_FAILED" or lab.kind != "demo":
+    if not run or run.state != "CLEANUP_FAILED" or lab.kind not in ("demo", "linux"):
         raise HTTPException(
-            409, "Recuperação disponível apenas para falha de cleanup demonstrativo."
+            409, "Recuperação disponível apenas para laboratório reservado por CLEANUP_FAILED."
         )
+    if lab.kind == "linux":
+        linux_labs.recover(db, run)
     lab.active_run_id = None
-    audit(db, user.id, "lab.cleanup_reviewed", lab.id, run_id=run.id, synthetic=True)
+    audit(db, user.id, "lab.cleanup_reviewed", lab.id, run_id=run.id, synthetic=run.synthetic)
     db.commit()
     return queries.record(lab)
 
@@ -223,6 +264,7 @@ def techniques(
     tactic: str | None = None,
     platform: str | None = None,
     coverage: str | None = None,
+    mode: Literal["demo", "linux"] = "demo",
     offset: Offset = 0,
     limit: Limit = 50,
 ) -> dict:
@@ -235,7 +277,7 @@ def techniques(
         query = query.where(AttackTechnique.tactics.any(tactic))
     if platform:
         query = query.where(AttackTechnique.platforms.any(platform))
-    outcomes = queries.technique_outcomes(db)
+    outcomes = queries.technique_outcomes(db, mode)
     if coverage:
         ids = [key for key, value in outcomes.items() if value == coverage]
         query = query.where(
@@ -264,7 +306,7 @@ def technique_detail(technique_id: str, user: Viewer, db: DB) -> dict:
                     "run_id": run.id,
                     "outcome": result.outcome,
                     "created_at": result.created_at,
-                    "synthetic": True,
+                    "synthetic": run.synthetic,
                 }
             )
     return {
@@ -302,12 +344,14 @@ def create_campaign(data: schemas.CampaignCreate, user: Operator, db: DB) -> dic
     if len(set(data.test_ids)) != len(data.test_ids):
         raise HTTPException(422, "Testes duplicados.")
     lab = services.get_or_404(db, Laboratory, data.laboratory_id)
-    if not lab.authorized or lab.kind != "demo":
-        raise HTTPException(409, "Selecione Demo Lab autorizado.")
+    if not lab.authorized or lab.kind not in ("demo", "linux"):
+        raise HTTPException(409, "Selecione laboratório autorizado.")
     for test_id in data.test_ids:
         test = services.get_or_404(db, TestDefinition, test_id)
-        if not test.approved:
-            raise HTTPException(409, "Teste fora da allowlist.")
+        if not test.approved or test.execution_kind != (
+            "demo" if lab.kind == "demo" else "linux_marker"
+        ):
+            raise HTTPException(409, "Teste fora da allowlist ou incompatível com laboratório.")
     campaign = Campaign(
         name=data.name, objective=data.objective, laboratory_id=lab.id, created_by=user.id
     )
@@ -315,6 +359,8 @@ def create_campaign(data: schemas.CampaignCreate, user: Operator, db: DB) -> dic
     db.flush()
     for test_id in data.test_ids:
         db.add(CampaignTest(campaign_id=campaign.id, test_id=test_id))
+    db.flush()
+    services.snapshot_scope(db, campaign)
     audit(db, user.id, "campaign.create", campaign.id, test_ids=data.test_ids)
     db.commit()
     return queries.campaign_detail(db, campaign)
@@ -341,10 +387,13 @@ def executions(
     db: DB,
     state: str | None = None,
     campaign_id: str | None = None,
+    mode: Literal["demo", "linux"] | None = None,
     offset: Offset = 0,
     limit: Limit = 50,
 ) -> dict:
     query = select(CampaignRun).order_by(CampaignRun.created_at.desc())
+    if mode is not None:
+        query = query.where(CampaignRun.synthetic.is_(mode == "demo"))
     if state:
         query = query.where(CampaignRun.state == state)
     if campaign_id:
@@ -362,7 +411,14 @@ def approve(run_id: str, data: schemas.Approve, user: Admin, db: DB) -> dict:
     run = services.locked_run(db, run_id)
     if not secrets.compare_digest(run.scope_hash, data.confirm_scope_hash):
         raise HTTPException(409, "Hash revisado não corresponde ao escopo solicitado.")
-    item = services.approve_run(db, run_id, user, data.validity_minutes, data.max_duration_seconds)
+    item = services.approve_run(
+        db,
+        run_id,
+        user,
+        data.validity_minutes,
+        data.max_duration_seconds,
+        confirm_real=data.confirm_real_execution,
+    )
     return queries.record(item)
 
 
@@ -382,8 +438,8 @@ def reject(run_id: str, user: Admin, db: DB):
 
 
 @router.get("/coverage", tags=["Coverage"])
-def coverage(user: Viewer, db: DB) -> dict:
-    return queries.coverage(db)
+def coverage(user: Viewer, db: DB, mode: Literal["demo", "linux"] = "demo") -> dict:
+    return queries.coverage(db, mode)
 
 
 @router.get("/schedules", tags=["Scheduling"])
@@ -567,7 +623,7 @@ def connectors(user: Viewer) -> dict:
         ],
         "worker_online": worker,
         "scheduling": "approved_demo_only",
-        "lab_mode": "not_enabled",
+        "lab_mode": "linux_opt_in" if linux_labs.configured_hash() else "not_configured",
     }
 
 

@@ -13,6 +13,9 @@ from aegis.models import (
     CampaignTest,
     DetectionEvidence,
     ExecutionStep,
+    RunnerCleanup,
+    RunnerDispatch,
+    RunnerReceipt,
     Schedule,
     ScheduleAuthorization,
     ScheduleOccurrence,
@@ -77,6 +80,17 @@ def execution_detail(db: Session, run_id: str) -> dict:
                 "result": record(result) if result else None,
                 "events": [record(e) for e in events],
                 "evidence": [record(e) for e in evidence],
+                **{
+                    name: (record(value) if value else None)
+                    for name, model in [
+                        ("runner_dispatch", RunnerDispatch),
+                        ("runner_receipt", RunnerReceipt),
+                        ("runner_cleanup", RunnerCleanup),
+                    ]
+                    for value in [
+                        db.scalar(select(model).where(model.execution_id == execution.id))
+                    ]
+                },
             }
         )
     steps = db.scalars(
@@ -106,18 +120,21 @@ def execution_detail(db: Session, run_id: str) -> dict:
     }
 
 
-def completed_results(db: Session):
-    return db.execute(
+def completed_results(db: Session, mode: str | None = None):
+    query = (
         select(ValidationResult, TestExecution, CampaignRun)
         .join(TestExecution, ValidationResult.execution_id == TestExecution.id)
         .join(CampaignRun, CampaignRun.id == TestExecution.run_id)
         .where(CampaignRun.state == "COMPLETED", TestExecution.state == "COMPLETED")
         .order_by(CampaignRun.created_at)
-    ).all()
+    )
+    if mode is not None:
+        query = query.where(CampaignRun.synthetic.is_(mode == "demo"))
+    return db.execute(query).all()
 
 
-def coverage(db: Session) -> dict:
-    rows = completed_results(db)
+def coverage(db: Session, mode: str = "demo") -> dict:
+    rows = completed_results(db, mode)
     counts = Counter(row[0].outcome for row in rows)
     valid = sum(
         counts[k] for k in [Outcome.DETECTED, Outcome.OBSERVED_NOT_ALERTED, Outcome.NO_TELEMETRY]
@@ -136,24 +153,30 @@ def coverage(db: Session) -> dict:
         bucket["detected"] += int(result.outcome == Outcome.DETECTED)
         bucket["evaluated"] += 1
     return {
-        "synthetic": True,
-        "scope": "Demo Lab • execuções concluídas • todas as datas",
+        "synthetic": mode == "demo",
+        "mode": mode,
+        "scope": ("Demo Lab" if mode == "demo" else "Laboratórios Linux reais")
+        + " • execuções concluídas • todas as datas",
         "catalogued_techniques": db.scalar(select(func.count()).select_from(AttackTechnique)),
         "evaluated_techniques": len(tested),
-        "total_runs": db.scalar(select(func.count()).select_from(CampaignRun)),
+        "total_runs": db.scalar(
+            select(func.count())
+            .select_from(CampaignRun)
+            .where(CampaignRun.synthetic.is_(mode == "demo"))
+        ),
         "completed_tests": len(rows),
         "valid_tests": valid,
         "outcomes": dict(counts),
         "detected_percentage": round(counts[Outcome.DETECTED] / valid * 100, 1) if valid else None,
         "denominator": "DETECTED + OBSERVED_NOT_ALERTED + NO_TELEMETRY, somente testes com execução concluída; INCONCLUSIVE e EXECUTION_FAILED excluídos",
-        "limitation": "Percentual deste escopo de testes sintéticos; não representa proteção da organização.",
+        "limitation": "Percentual somente deste modo e escopo de testes; não representa proteção da organização. Comprovantes de execução não são detecções.",
         "trend": list(trend.values())[-30:],
     }
 
 
-def technique_outcomes(db: Session) -> dict[str, str]:
+def technique_outcomes(db: Session, mode: str = "demo") -> dict[str, str]:
     result = {}
-    for verdict, execution, run in completed_results(db):
+    for verdict, execution, run in completed_results(db, mode):
         test = next(t for t in run.scope["test_definitions"] if t["id"] == execution.test_id)
         if test["technique_id"]:
             result[test["technique_id"]] = verdict.outcome
@@ -185,11 +208,12 @@ def compare(db: Session, before_id: str, after_id: str) -> dict:
     return {
         "before_id": before_id,
         "after_id": after_id,
-        "synthetic": True,
+        "synthetic": before["synthetic"] and after["synthetic"],
+        "mode": before["scope"]["mode"],
         "comparable": comparable,
         "same_scope": before["scope_hash"] == after["scope_hash"],
         "before_scope": before["scope"],
         "after_scope": after["scope"],
         "tests": rows,
-        "limitation": "Resultados demonstrativos. Mudanças de ambiente, versões de regras ou testes exigem revisão da comparabilidade.",
+        "limitation": "Mudanças de ambiente, versões de regras ou testes exigem revisão da comparabilidade. Recibos do executor não comprovam detecção defensiva.",
     }
