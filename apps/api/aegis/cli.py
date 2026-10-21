@@ -70,7 +70,7 @@ def grant_runtime():
             )
             cursor.execute("REVOKE ALL ON alembic_version FROM aegis_app")
             cursor.execute(
-                "REVOKE UPDATE, DELETE ON audit_events, telemetry_events, detection_evidence, validation_results, rule_versions, schedule_occurrences, lab_verifications, runner_receipts, runner_cleanups FROM aegis_app"
+                "REVOKE UPDATE, DELETE ON audit_events, telemetry_events, detection_evidence, validation_results, rule_versions, schedule_occurrences, lab_verifications, runner_receipts, runner_cleanups, telemetry_collections FROM aegis_app"
             )
             cursor.execute(
                 "REVOKE UPDATE, DELETE ON schedules, schedule_authorizations, runner_dispatches FROM aegis_app"

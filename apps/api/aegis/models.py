@@ -346,3 +346,32 @@ class ScheduleOccurrence(Entity, Base):
 
 
 Index("ix_runs_state_created", CampaignRun.state, CampaignRun.created_at)
+
+
+class WazuhBinding(Entity, Base):
+    __tablename__ = "wazuh_bindings"
+    laboratory_id: Mapped[str] = mapped_column(ForeignKey("laboratories.id"), unique=True)
+    asset_id: Mapped[str] = mapped_column(ForeignKey("assets.id"), unique=True)
+    agent_id: Mapped[str] = mapped_column(String(12), unique=True)
+    expected_rule: Mapped[str] = mapped_column(String(16))
+    configuration_hash: Mapped[str] = mapped_column(String(64))
+    schema_id: Mapped[str] = mapped_column(String(40))
+    reviewed_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    review: Mapped[str] = mapped_column(Text)
+
+
+class TelemetryCollection(Entity, Base):
+    __tablename__ = "telemetry_collections"
+    __table_args__ = (CheckConstraint("attempts >= 0", name="collection_attempts"),)
+    execution_id: Mapped[str] = mapped_column(ForeignKey("test_executions.id"), unique=True)
+    provider: Mapped[str] = mapped_column(String(40))
+    configuration_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    schema_id: Mapped[str] = mapped_column(String(40))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(Integer)
+    complete: Mapped[bool] = mapped_column(Boolean)
+    telemetry_available: Mapped[bool] = mapped_column(Boolean)
+    alerts_available: Mapped[bool] = mapped_column(Boolean)
+    window_satisfied: Mapped[bool] = mapped_column(Boolean)
+    reason: Mapped[str] = mapped_column(Text)
