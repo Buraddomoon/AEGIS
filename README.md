@@ -6,7 +6,7 @@ Simulações controladas, resultados reproduzíveis e decisões de detecção su
 
 Equipes defensivas precisam verificar se seus controles observam e detectam comportamentos de ataque. O ÆGIS conecta campanhas, aprovação de escopo, execução, coleta, correlação e acompanhamento histórico num único fluxo.
 
-**Estado: 0.2 — Demo persistente e campanhas Linux opt-in validadas localmente.** Demo mantém eventos sintéticos explícitos. Linux admite somente um marcador benigno revisado, com mTLS, aprovação por outra pessoa, recibos e cleanup persistidos. Sem validação externa Wazuh ou execução de Atomic Red Team. Não é um SIEM, EDR ou shell remoto.
+**Estado: 0.2 — Demo persistente e campanhas Linux opt-in validadas localmente.** Demo mantém eventos sintéticos explícitos. Linux admite somente um marcador benigno revisado, com mTLS, aprovação por outra pessoa, recibos e cleanup persistidos. Coleta Wazuh preparada e testada localmente, **sem instalação nem validação Wazuh externa**; Atomic Red Team não executa. Não é um SIEM, EDR ou shell remoto.
 
 ![Dashboard real do Demo Mode, com evidências explicitamente sintéticas](docs/images/overview.png)
 
@@ -22,7 +22,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
 - Inventário Sigma com parsing pySigma, importação YAML limitada e versões imutáveis; nenhuma implantação automática de regras.
 - Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; campanha integrada autorizada validou API/worker/SQL runtime, recibos, cleanup e UI, sem SIEM.
-- Adaptador Wazuh Indexer somente leitura, HTTPS/TLS validado, IP fixado, paginação e fixtures locais. **Sem demonstração externa validada.**
+- Coleta Wazuh opt-in no worker: binding administrativo de agente/regra, política/hash aprovados, polling com prazo integral, paginação, resumo imutável e UI/relatórios. Testes locais incluem TLS real em loopback e fixtures de eventos. **Wazuh não instalado nem validado externamente.**
 
 ## Início rápido
 
@@ -80,6 +80,14 @@ O segundo ensaio, autorizado separadamente, percorreu cadastro/revisão → pref
 
 ![Histórico real da única campanha Linux autorizada, resultado inconclusivo e recibo separado de evidência defensiva](docs/images/linux-execution.png)
 
+## Preparação Wazuh — sem instalar
+
+O próximo fluxo está implementado no código: política de implantação → revisão do binding → escopo de campanha → coleta limitada → evidências/resultado/relatório. O usuário informou não possuir Wazuh; esta entrega usa apenas fixtures e testes locais, sem iniciar o SIEM ou repetir ensaio Linux.
+
+[Guia de preparação](labs/wazuh/README.md) inclui mapping entre agent.id e Asset.id, observador passivo sem executar marcadores, arquivos JSON/XML exemplificados e montagem de configuração. A regra de exemplo valida somente o pipeline de um marcador benigno; não representa cobertura ATT&CK ou proteção empresarial. Agent, compartilhamento read-only do workspace, ingestão/archives e validação com wazuh-logtest continuam pendentes de ambiente/autorização próprios.
+
+![Estado real da aplicação: Wazuh desconectado e configuração por implantação](docs/images/wazuh-preparation.png)
+
 ## Arquitetura
 
 ```mermaid
@@ -96,7 +104,8 @@ flowchart LR
   Telemetry --> Validate[Correlação independente de SIEM]
   Validate --> Evidence[Evidências / resultados / relatórios]
   Evidence --> DB
-  Wazuh[Adaptador Wazuh: testes locais] -. Coleta real ainda não conectada .-> Telemetry
+  Worker --> Wazuh[Coleta Wazuh aprovada: testes locais]
+  Wazuh -. Sem validação externa .-> Validate
 ```
 
 Monólito modular, sem microsserviços desnecessários. PostgreSQL é fonte de verdade e fila durável (`FOR UPDATE SKIP LOCKED`); Redis não transporta jobs serializados. API e worker usam papel de banco sem privilégios administrativos; evidências, versões Sigma e auditoria têm escrita append-only. [Arquitetura e decisões](docs/architecture/overview.md).
@@ -112,6 +121,7 @@ make setup                 # ou make PYTHON=/caminho/python3.13 setup
 make infra                 # somente PostgreSQL/Redis locais
 make migrate
 make test                  # domínio, integração PostgreSQL e componentes React
+make test-wazuh            # fixtures de coleta, campanhas, observador e TLS local; sem instalar SIEM
 make lint
 make build
 make audit
@@ -128,7 +138,7 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 
 - MVP de workspace único: usuários autenticados compartilham as consultas; não há isolamento multi-tenant, MFA, SSO ou recuperação de senha pela interface.
 - Linux real é limitado a um marcador fixo, sem atribuição ATT&CK artificial, Atomic ou comandos genéricos. Recuperação após crash mantém quarentena até cleanup confirmado; rotação de binding/certificado original ainda exige intervenção manual. Demo usa cancelamento cooperativo; Linux supervisiona processo e lease.
-- Wazuh foi testado com fixtures locais de contrato com identificadores fictícios, não com um servidor externo. Mapeamento entre `Asset.id` interno e `agent.id` real precisa ser conectado no Lab Mode.
+- Wazuh foi testado com fixtures locais e HTTPS em loopback, sem SIEM externo. O mapping aprovado e worker estão implementados; agente/instrumentação, compartilhamento do workspace, archives, regras e ingestão reais ainda precisam de ambiente e autorização. Não declarar DETECTED externo com base nas fixtures.
 - Sigma validado sintaticamente não equivale a detecção implantada. Associação operacional com testes e conversão de SIEM ficam para próxima etapa.
 - Agendamento habilitado somente para Demo: até 16 planos ativos, 100 horários por plano, mínimo 60 segundos de intervalo e validade máxima de 90 dias. Sem cron livre, Lab real, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
 - Há um aviso transitivo conhecido em DiskCache, exigido pelo pySigma. O caminho de parsing usado não importa/utiliza o cache vulnerável; a revisão e sua verificação estão em [advisories](docs/security/dependency-advisories.json). Não alegamos ausência de vulnerabilidades.

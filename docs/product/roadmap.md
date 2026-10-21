@@ -16,7 +16,7 @@ Exige infraestrutura própria e autorização específica antes de executar. Exe
 
 ## 0.3 — Wazuh real
 
-Mapeamento Asset.external_id, instrumentação de marcadores, janela de ingestão com polling e prazo total, schemas configuráveis, TLS/credenciais de leitura e prova de um ciclo num laboratório autorizado. Evidência original preservada; nenhuma classificação DETECTED sem alerta correlacionado.
+Preparação entregue sem instalar SIEM: mapping WazuhBinding entre Asset.id e agent.id, política/hash/revisão, coleta no worker, polling/prazo total, schema/índices configuráveis, resumo imutável, UI/relatórios e observador passivo. Validação com fixtures e HTTPS real em loopback. Pendente: Wazuh próprio, agente/instrumentação efetiva, compartilhamento seguro do workspace/log, validação das regras com wazuh-logtest e prova de ciclo defensivo externo autorizado. Evidência original preservada; nenhuma classificação DETECTED sem alerta correlacionado.
 
 ## 0.4 — Engenharia de detecção
 

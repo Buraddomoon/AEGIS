@@ -32,3 +32,10 @@
 - UI distingue real/sintético, comprovante do executor e evidência defensiva; indicadores, matriz e histórico por modo; relatórios proporcionais às evidências.
 - Ensaio integrado autorizado: uma campanha, marcador de 43 bytes, cleanup confirmado, INCONCLUSIVE sem SIEM. Overlay separado, contas temporárias desativadas e serviços encerrados.
 - Testes de respostas perdidas, rollback após cleanup, recuperação concorrente e revogações; capturas reais e regressão E2E Demo. Wazuh externo permanece pendente.
+
+## Continuidade — coleta Wazuh preparada sem instalação externa
+
+- Binding administrativo de agent.id/regra/índices/schema/janelas e fingerprint de política/destino/CA/principal; revisão explícita sem credenciais na API.
+- Worker coleta por contrato, polling cancelável com orçamento/cleanup, prazo HTTP integral, mapeamento estrito de agente, limites e resumo append-only; correlação 1.1 invalidando aprovação antiga.
+- UI e relatórios mostram política, tentativas, janela e evidência, distinguindo receipt do executor e conectividade/ingestão não verificadas.
+- Observer passivo de marcador, configuração/XML e mounts de referência; sem instalação automática, nova simulação real ou consulta Wazuh externa. Testes de contrato, TLS loopback e Demo reais; exemplos Wazuh-logtest aguardam ambiente próprio.
