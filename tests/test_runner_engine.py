@@ -1,4 +1,5 @@
 import sqlite3
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
@@ -219,3 +220,27 @@ def test_journal_identity_cannot_be_rebound_and_closed_runner_is_idempotent(tmp_
         Runner(identity.model_copy(update={"runner_id": uuid4()}), work, state)
     restored = Runner(identity, work, state)
     restored.close()
+
+
+def test_terminal_result_handoff_cannot_race_with_cleanup(runner, monkeypatch):
+    published, release = threading.Event(), threading.Event()
+    update = runner.journal.update
+
+    def publish_then_pause(identifier, **values):
+        update(identifier, **values)
+        if values.get("state") == "SUCCEEDED":
+            published.set()
+            assert release.wait(timeout=3)
+
+    monkeypatch.setattr(runner.journal, "update", publish_then_pause)
+    view = prepare(runner)
+    runner.start(view.spec.job_id, bound(view))
+    assert published.wait(timeout=3)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        try:
+            cleanup = pool.submit(runner.cleanup, view.spec.job_id, bound(view))
+            time.sleep(0.05)
+            assert not cleanup.done(), "Cleanup observed terminal state before ownership handoff"
+        finally:
+            release.set()
+        assert cleanup.result(timeout=3).cleanup_state == "CLEANED"

@@ -287,20 +287,22 @@ class Runner:
                 else:
                     process.wait()
             value = receipt.model_dump(mode="json") if receipt else None
-            try:
-                self.journal.update(
-                    spec.job_id,
-                    state=outcome,
-                    reason=reason,
-                    receipt=value,
-                    receipt_hash=digest(value) if value else None,
-                )
-            except Exception:
-                log.exception(
-                    "Result persistence failed; job remains fenced pending explicit cleanup"
-                )
-            finally:
-                with self.control:
+            # Child is already reaped. Publish terminal state and release effect ownership
+            # under the same control lock, so cleanup cannot observe a half-finished handoff.
+            with self.control:
+                try:
+                    self.journal.update(
+                        spec.job_id,
+                        state=outcome,
+                        reason=reason,
+                        receipt=value,
+                        receipt_hash=digest(value) if value else None,
+                    )
+                except Exception:
+                    log.exception(
+                        "Result persistence failed; job remains fenced pending explicit cleanup"
+                    )
+                finally:
                     if self.active is active:
                         self.active = None
 
@@ -330,5 +332,7 @@ class Runner:
                     reason="Cleanup recusado/falhou; reserva mantida. Inspecione volume /work sem apagar arquivos desconhecidos.",
                 )
                 raise Conflict("Cleanup falhou; runner continua reservado.") from None
-            self.journal.update(identifier, cleanup_state="CLEANED", reason=view.reason)
+            self.journal.update(
+                identifier, cleanup_state="CLEANED", reason=self.journal.get(identifier).reason
+            )
         return self.journal.get(identifier)
