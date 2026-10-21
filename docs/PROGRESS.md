@@ -1,5 +1,7 @@
 # Registro de progresso — ÆGIS
 
+Estado atual: **0.2.0, Marco Linux B ao final deste documento**. Demo saudável em localhost:18780; campanha Linux integrada validada sob autorização específica e stack do ensaio encerrado. Os registros anteriores abaixo são históricos, não o estado atual.
+
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
 - Ambiente inspecionado; projeto novo em `/home/IVPTER/codes/aegis`, sem alterar projetos existentes. Python local 3.13.14, Node 24.18, Docker disponível. Serviços próprios PostgreSQL/Redis e portas loopback 18780–18784.
@@ -175,3 +177,53 @@ Este marco acrescentou **12 commits**, incluindo este checkpoint, totalizando **
 ## Continuidade — campanhas Linux integradas
 
 Início em main limpa/sincronizada b34c555 (80 commits). Implementação do ADR 0004: binding/admin preflight/autorização, campanha e aprovação separada, dispatch/comprovantes/cleanup persistidos, worker com quarentena real, UI/relatórios/métricas por modo. O ensaio anterior foi encerrado; não reutilizar sua autorização para Wazuh, alvos externos ou novos efeitos sem escopo específico.
+
+## Marco Linux B — campanha integrada, comprovantes e recuperação
+
+Data: 2026-10-21. Continuidade a partir de b34c555 (80 commits). O usuário autorizou separadamente **“Autorizar somente esse ensaio integrado”**: projeto próprio aegis-linux-lab, API loopback 18785, banco/Redis/migração/API/worker/runner próprios, acesso mTLS apenas à rede isolada do runner, um marcador de 43 bytes em tmpfs, filho limitado a 5s, aprovação separada, comprovantes/indicadores/relatórios e encerramento. A autorização não inclui Wazuh, outros alvos, novos testes ou recorrência.
+
+### Funcionalidades entregues
+
+- `linux_labs.py`, `services.py`, `api.py`: registro administrativo derivado exclusivamente da configuração de implantação; revisão de isolamento, binding de IDs/certificados, preflight mTLS com validade de 5 min, autorização do laboratório, allowlist exclusiva e aprovação de operação por administrador ativo diferente do solicitante ativo. Sem URL, comando ou caminho recebido da API.
+- Migração `d4465b7aca2a`: LinuxLabBinding, LabVerification, RunnerDispatch, RunnerReceipt, RunnerCleanup e execution_kind. Upgrade de banco populado preserva o histórico Demo. Comprovantes/verificações são append-only; runtime só altera generation no dispatch.
+- `worker.py`: mesma fila/máquina de estados e contratos; intenção confirmada no PostgreSQL antes de prepare RPC e geração antes de start. Identidade/versão/usuários/allowlist revalidados. Crash real mantém CLEANUP_FAILED/reserva; recuperar consulta/cancela/limpa o job original, sem novo prepare/start. 404 ambíguo não libera laboratório.
+- `queries.py`/`reporting.py`: recibo e cleanup separados de eventos/evidência defensiva; synthetic=false preservado; relatórios HTML/JSON limitam conclusões. Sem SIEM consultado, INCONCLUSIVE. Cobertura, matriz e detalhes/histórico ATT&CK respeitam modo; overview é explicitamente Demo. Marcador não recebe técnica ATT&CK artificial.
+- UI pt-BR: cadastro/revisão/preflight/autorização Linux, histórico de verificações, campanhas com testes compatíveis, confirmação de efeito real, autoaprovação bloqueada, recibos inspecionáveis, seleção de modo e relatórios corretamente identificados. Scheduler continua somente Demo.
+- `labs/linux/platform.yml` e Makefile: stack integrado opt-in separado; API 18785, volume PostgreSQL próprio e diário/identidade Linux preservados. Somente API/worker recebem certificado cliente; runner sem portas/gateway host e sem Docker socket. Wazuh explicitamente vazio. Nenhum Lab é iniciado por make up/test/CI padrão.
+- Versão de produto/API/pacotes alinhada em 0.2.0. README, AGENTS, arquitetura/segurança/operação/aceite atualizados e captura real Linux adicionada.
+
+### Ensaio real efetivamente observado
+
+O Compose foi renderizado e revisado sem expor segredos, sem conflito da sub-rede 172.30.88.0/29. Inspect confirmou UID 10001, read-only, caps removidas, no-new-privileges, tmpfs/limites, mounts individuais e gateway isolated.
+
+Campanha única **40033401-d62d-46b9-98d3-377dbda00a00**: solicitação pelo operador e aprovação por administrador distinto; fila PostgreSQL e worker sob papel SQL restrito; mTLS real; marcador **43 bytes**; execução **COMPLETED**, recibo **execution_receipt**, cleanup **CLEANED**, synthetic=false. Classificação **INCONCLUSIVE**, com **zero eventos e zero evidências defensivas inventadas**. Relatórios HTML/JSON e separação de cobertura real/Demo verificados. Workspace do runner vazio; banco confirmou exatamente uma campanha Linux.
+
+O comando com captura opcional inicialmente terminou com erro porque o script tentou preencher login antes do formulário aparecer. Corrigida espera por seletor; apenas o histórico foi consultado depois, com visualizador temporário, em Firefox real. Não houve repetição do marcador. A captura e assertions de UI passaram sem erros JavaScript. Não declarar que o comando original inteiro retornou exit 0: fluxo de negócio e consulta visual tiveram verificações separadas.
+
+Admin, operador e visualizador temporários foram desativados. Laboratório revogado e sem reserva. `linux-platform-down` encerrou todos os containers/redes próprios, preservando volumes `aegis-linux-lab_journal` e `aegis-linux-lab_postgres-data`. Evidências completas locais ignoradas: `.local/linux-lab/platform-assay.json`, `platform-execution.png`. Captura revisada e sem credenciais em `docs/images/linux-execution.png`.
+
+### Verificações finais executadas
+
+| Verificação | Resultado observado |
+|---|---|
+| `make test` | **149 testes Python passaram**, 68,93s; **10 frontend passaram**; aviso upstream TestClient/httpx preservado |
+| `make lint` | Ruff/check/format, mypy domínio, TypeScript e Prettier aprovados |
+| Cenários Linux | aprovação segregada, confirmação, preflight expirado, usuários/binding/allowlist revogados, scheduler recusado, recibos/relatórios/métricas, crash e geração, 404 sem liberar, respostas perdidas em prepare/start/cleanup, rollback após cleanup remoto e recuperação concorrente (um sucesso/um conflito) |
+| Migrações | upgrade/downgrade de schema de teste populado e alembic check aprovados |
+| `make e2e` final | **PASS**, Firefox, 3 runs / 12 testes sintéticos, repetição/comparação/agendamento/grant/relatórios, cinco capturas e zero erros JS |
+| Docker build | imagens API/SPA e runner construídas; imagem final Demo reconstruída e aplicada |
+| `make smoke` final | **PASS**: API + SQL runtime + worker, execução manual e agendada, grant/revogação e 8 resultados sintéticos |
+| Runtime Demo | http://localhost:18780 saudável, banco/Redis true; OpenAPI 0.2.0, endpoints opt-in e assets novos confirmados |
+| Cleanup do ensaio | nenhum container/rede aegis-linux-lab restante; volumes preservados |
+| `make audit` | npm zero; Python mantém um advisory transitivo DiskCache PYSEC-2026-2447 explicitamente revisado, sem alegar zero achados |
+| Documentação | 33 Markdown verificados sem destinos locais ausentes; git diff --check aprovado |
+
+A primeira tentativa do smoke Demo após recriar API encontrou conexão resetada durante startup. Adicionada espera limitada de health GET antes das mutações; smoke repetido apenas no Demo passou. Essa correção não executou outro teste Linux. Revisão especializada somente leitura confirmou fronteiras de autorização, dispatch antes da rede, geração, quarentena e grants; sugestões de respostas ambíguas/rollback/concorrência foram cobertas por regressões.
+
+### Pendências e continuidade
+
+Próxima etapa: ligar coleta defensiva Wazuh ao fluxo Linux por configuração/autorização próprias, mapeamento Asset/agent, instrumentação que preserve o marcador, consulta com janela de ingestão e fixtures adicionais; somente depois validar um ciclo defensivo real. Nenhum Wazuh externo foi acessado nesta entrega. PKI é de desenvolvimento e expira em poucos dias; rotação/binding original após quarentena requer procedimento manual, não bypass. Sem Windows real, Atomic executável, scheduler Linux, PDF, implantação Sigma, MFA/SSO, multi-tenant ou expurgo automático de fences. Não ampliar allowlist nem repetir ensaio sem autorização específica.
+
+Este marco acrescenta **21 commits granulares**, incluindo este checkpoint, totalizando **101**. GitHub AEGIS confirmado **PRIVATE**, somente main, sem PR/branch temporário/force push; push após cada commit. Consultar git log -1 e git status -sb para hash/mensagem/sincronização após o checkpoint. O último commit de código é 8d7a38b; commits seguintes são documentação/capturas.
+
+CI remota do último código **8d7a38b: SUCCESS**, [run 39615555686](https://github.com/Buraddomoon/AEGIS/actions/runs/39615555686). Lint/tipos, PostgreSQL/frontend/build e revisão de advisories passaram. Commits posteriores contêm somente documentação/capturas e não iniciam execução redundante. Repositório confirmado privado; sincronização e hash do checkpoint conferidos após push.
