@@ -6,7 +6,7 @@ Simulações controladas, resultados reproduzíveis e decisões de detecção su
 
 Equipes defensivas precisam verificar se seus controles observam e detectam comportamentos de ataque. O ÆGIS conecta campanhas, aprovação de escopo, execução, coleta, correlação e acompanhamento histórico num único fluxo.
 
-**Estado: MVP 0.1 em Demo Mode, com agendamento aprovado, persistente e executável.** Todos os eventos da demonstração são sintéticos. Lab Mode, execução de Atomic Red Team e validação externa com Wazuh ainda não estão habilitados. Não é um SIEM, EDR ou shell remoto.
+**Estado: MVP 0.1 em Demo Mode, com agendamento aprovado, persistente e executável.** Todos os eventos da demonstração são sintéticos. Lab Mode nas campanhas, execução de Atomic Red Team e validação externa com Wazuh ainda não estão habilitados. Um runner Linux separado está disponível como incremento opt-in, descrito abaixo. Não é um SIEM, EDR ou shell remoto.
 
 ![Dashboard real do Demo Mode, com evidências explicitamente sintéticas](docs/images/overview.png)
 
@@ -21,6 +21,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Eventos originais, hashes SHA-256, justificativas de correlação, evidências inspecionáveis e auditoria.
 - Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
 - Inventário Sigma com parsing pySigma, importação YAML limitada e versões imutáveis; nenhuma implantação automática de regras.
+- Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; ensaio local autorizado validado. Ainda separado das campanhas/UI.
 - Adaptador Wazuh Indexer somente leitura, HTTPS/TLS validado, IP fixado, paginação e fixtures locais. **Sem demonstração externa validada.**
 
 ## Início rápido
@@ -67,6 +68,14 @@ Para automatizar: abra **Agendamentos**, crie um plano para a campanha, defina i
 
 ![Agendamento Demo real com ocorrência e autorização rastreáveis](docs/images/schedules.png)
 
+## Runner Linux opt-in — primeiro incremento da etapa 3
+
+O ensaio local explicitamente autorizado executou um programa fixo em container isolado: criou, conferiu o hash e removeu um marcador de 43 bytes. O diário preservou um único início após restart e retry. Sem consulta ao SIEM, a classificação foi **INCONCLUSIVE**; o comprovante de execução não é alerta defensivo.
+
+`make lab-init`, `make lab-config` e `make lab-build` preparam PKI/configuração/imagem sem iniciar o laboratório. `make lab-up`, `make lab-preflight`, `make lab-inspect`, `make lab-smoke` e `make lab-down` operam somente esse laboratório, após autorização específica. Não fazem parte do `make up` padrão. [Instalação, escopo, limitações e recuperação](labs/linux/README.md).
+
+O laboratório foi desligado ao concluir o ensaio; diário e configuração local foram preservados. Registro de campanhas Linux na API, receipts no PostgreSQL e integração com a UI são o próximo incremento. Não existe botão de Lab Mode operacional nesta versão.
+
 ## Arquitetura
 
 ```mermaid
@@ -111,7 +120,7 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 ## Limitações reais
 
 - MVP de workspace único: usuários autenticados compartilham as consultas; não há isolamento multi-tenant, MFA, SSO ou recuperação de senha pela interface.
-- Só o adaptador Demo pode executar. Cancelamento é cooperativo; isolamento de adaptadores bloqueantes é requisito antes de habilitar execução real.
+- Nas campanhas da aplicação, somente Demo executa e seu cancelamento continua cooperativo. O runner Linux separado já supervisiona seu programa fixo; integrá-lo ao worker/UI com aprovações e persistência real permanece pendente. Não permite Atomic ou comandos genéricos.
 - Wazuh foi testado com fixtures locais de contrato com identificadores fictícios, não com um servidor externo. Mapeamento entre `Asset.id` interno e `agent.id` real precisa ser conectado no Lab Mode.
 - Sigma validado sintaticamente não equivale a detecção implantada. Associação operacional com testes e conversão de SIEM ficam para próxima etapa.
 - Agendamento habilitado somente para Demo: até 16 planos ativos, 100 horários por plano, mínimo 60 segundos de intervalo e validade máxima de 90 dias. Sem cron livre, Lab real, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.

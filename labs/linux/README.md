@@ -4,7 +4,7 @@ Runner e adaptador executáveis para **um marcador benigno**, separados da aplic
 
 ## Escopo concreto do ensaio
 
-Projeto Compose `aegis-linux-lab`, imagem `aegis-linux-runner:local`, serviço `runner` e um `controller` temporário. Rede dedicada `172.30.88.0/29`, interna, com gateway mode **isolated** e sem portas publicadas. O bridge não recebe endereço do host. Nenhum container é conectado às redes da aplicação, da empresa ou de outros projetos; sem socket Docker, mounts do host ou host networking. Somente arquivos específicos de certificados/configuração são montados read-only como secrets; chaves de CA não são montadas.
+Projeto Compose `aegis-linux-lab`, imagem `aegis-linux-runner:local`, serviço `runner` e um `controller` temporário. Rede dedicada `172.30.88.0/29`, interna, com gateway mode **isolated** e sem portas publicadas. O bridge não recebe endereço do host. Nenhum container é conectado às redes da aplicação, da empresa ou de outros projetos; sem socket Docker, volumes de dados/diretórios do host ou host networking. Somente arquivos específicos de certificados/configuração são montados read-only como secrets; chaves de CA não são montadas.
 
 Único teste: `linux-file-marker/v1`, sem técnica ATT&CK atribuída. Programa Python fixo cria `proof.marker` com `aegis-UUID` mais newline (43 bytes), lê/confere conteúdo/hash e registra `receipt.json`. Ambos ficam em diretório UUID sob `/work` tmpfs de 1 MiB. Cleanup remove somente esses dois nomes e o diretório, sem recursão. Arquivo desconhecido/symlink/erro mantém reserva e exige revisão.
 
@@ -34,6 +34,7 @@ Revise o Compose e conflitos de sub-rede antes de iniciar. Não executar estas e
 
 ```bash
 make lab-up
+make lab-inspect    # verifica controles reais do container por docker inspect
 make lab-preflight  # conexão mTLS/identidade; ainda sem efeito
 make lab-smoke      # cria/confere/remove um único marcador benigno
 make lab-down      # para/remove containers/rede próprios; preserva volume do diário
@@ -46,6 +47,8 @@ docker compose --env-file .local/linux-lab/ids.env -f labs/linux/compose.yml run
 docker compose --env-file .local/linux-lab/ids.env -f labs/linux/compose.yml run --rm --no-deps controller cleanup --job-id UUID
 ```
 
+Para verificar retry de uma execução concluída e limpa, use o mesmo comando com `controller retry-check --job-id UUID`; ele recusa jobs pendentes/ativos e exige recibo histórico inalterado.
+
 Cleanup explícito só após término confirmado. Arquivos desconhecidos exigem inspeção manual do container/volume, preservando o diário e sem exclusão recursiva automática. Não disponibilizar essas ferramentas a usuários de API como shell.
 
 ## O que foi e o que falta validar
@@ -53,3 +56,7 @@ Cleanup explícito só após término confirmado. Arquivos desconhecidos exigem 
 Testes de software usam diretórios pytest descartáveis e processos fixos, além de fixture bloqueante exclusiva de testes para timeout/cancelamento. Transporte testa handshake TLS real em loopback, recusa cliente sem certificado/incorreto e servidor não confiável; testes ASGI separados verificam mensagens/limites. Isso não substitui o ensaio Docker autorizado.
 
 Estado efetivamente observado do build, testes, ensaio e autorização: [PROGRESS](../../docs/PROGRESS.md). Próximo incremento após aceite: registrar laboratório/ativo/revisão de isolamento na API, aprovação de escopo Linux por operação, receipts persistidos no PostgreSQL e UI, recuperação de worker real e separação explícita de métricas Demo/real. Só então habilitar campanhas Linux. Wazuh requer configuração e validação próprias.
+
+## Resultado observado em 2026-10-21
+
+Ensaio autorizado: mTLS e identidade confirmados; marcador de 43 bytes criado/verificado/removido; SUCCEEDED+CLEANED com comprovante de execução; validação INCONCLUSIVE porque SIEM não consultado. Restart+retry preservaram o recibo original, workspace vazio e um único início no diário. Containers/rede removidos no finally; volume preservado. A correção posterior da race de publicação terminal/cleanup foi validada por regressão determinística, e a imagem final reconstruída. Esse ensaio não representa uma campanha Linux já integrada à aplicação.

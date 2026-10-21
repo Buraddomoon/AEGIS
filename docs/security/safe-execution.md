@@ -7,3 +7,11 @@ Uma solicitação percorre estados validados; worker revalida pré-requisitos, m
 Após morte abrupta, finally não é garantido. Worker identifica run sintético sem heartbeat e com deadline vencido há 30s, registra cleanup de contexto sem efeito externo e TIMED_OUT. Não reexecuta simulações automaticamente. Jobs QUEUED têm deadline absoluto e não bloqueiam o laboratório indefinidamente após o worker retornar.
 
 Os adaptadores Demo retornam imediatamente; deadline e cancelamento não interrompem uma chamada síncrona arbitrariamente bloqueada. **Antes de Lab Mode:** usar executor fixo isolado, prazo efetivo por processo, lease/fencing para efeitos externos, cleanup idempotente revisado, revisão de allowlist e teste em ambiente explicitamente autorizado. Não habilitar shell genérico nem executar comandos importados.
+
+## Runner Linux independente
+
+O runner opt-in do ADR 0003 admite somente linux-file-marker/v1, sem comandos, caminhos ou scripts importados. Executa programa fixo em subprocesso com deadline monotônico (máximo de 5s), lease de 2s, cancelamento de grupo, reap e PDEATHSIG. O watchdog mata/recolhe o processo antes de tocar o diário SQLite, para locks de persistência não prolongarem efeitos. Lease expirado não renova; UUID/hash/geração impedem replay.
+
+Workspace privado, arquivo fixo exclusivo/NOFOLLOW e cleanup restrito por dir_fd; arquivos inesperados mantêm reserva. Journal sobrevive ao container e não repete efeito ambíguo. mTLS exige CA cliente exclusiva, distinta da CA servidor. Rede Docker usa internal+gateway isolated, sem portas/rotas externas nem gateway de host. Esses controles são verificados por inspect; não constituem sandbox para código arbitrário nem substituem VM.
+
+Ensaio específico autorizado pelo usuário em 2026-10-21 confirmou marcador de 43 bytes, hash, remoção e fence após reinício. Runner/container/rede foram parados/removidos, preservando diário/PKI. A aplicação principal **continua Demo**; não plugar este adapter ao worker atual sem tratar identidade, aprovação, synthetic=false, comprovantes e recuperação reais. Ver [procedimentos](../../labs/linux/README.md).

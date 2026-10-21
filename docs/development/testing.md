@@ -23,3 +23,9 @@ Existe aviso de depreciação do upstream Starlette para o transporte httpx de T
 ## Marco de agendamento Demo
 
 Na rodada ampliada: **85 testes Python** e **5 testes frontend** passaram; E2E Firefox concluiu **3 runs / 12 testes sintéticos**, incluindo agendamento automático, com zero erros JavaScript. O smoke Compose inclui run manual e agendada, verificação de grant, relatório e revogação usando API/worker com papel SQL restrito. Consulte PROGRESS para comandos e CI final.
+
+## Runner Linux independente
+
+`make test-runner` verifica protocolo, filesystem, supervisor, journal, cliente/servidor, TLS real em loopback, morte do pai e isolamento de configuração. Não inicia containers. Fixtures de software criam somente arquivos/processos fixos em diretórios pytest; o programa bloqueante usado em timeout não existe na allowlist runtime. O teste PDEATHSIG utiliza um subreaper separado e recolhe seus próprios filhos.
+
+`make lab-smoke` é um ensaio **real opt-in**, exige autorização e container previamente iniciado; não integra `make test` nem CI. O ensaio de2026-10-21 foi autorizado explicitamente e seu resultado está em PROGRESS. Nenhum Wazuh externo foi acessado.

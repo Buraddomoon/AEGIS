@@ -10,6 +10,8 @@ Planos imutáveis, autorização recorrente delimitada, slots transacionais, pau
 
 ## 0.2 — Laboratório Linux isolado
 
+Primeiro incremento entregue: runner separado com marcador benigno, processo supervisionado, mTLS, diário/fencing e ensaio Docker local especificamente autorizado. Ainda falta registrar laboratório/ativo, aprovar e executar campanhas Linux na API/worker/UI, persistir receipts no PostgreSQL e separar métricas Demo/real.
+
 Exige infraestrutura própria e autorização específica antes de executar. Executor fixo por allowlist, identidade de endpoint, atestação de isolamento, limite efetivo de processo, cancelamento, lease/fencing, cleanup idempotente e recuperação de efeitos desconhecidos. Pelo menos uma simulação benigna validada e registrada. Importação Atomic jamais executa comandos automaticamente.
 
 ## 0.3 — Wazuh real

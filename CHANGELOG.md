@@ -16,3 +16,11 @@
 - Dispatcher transacional, deduplicação por slot, descartes auditados por atraso/ocupação, pausa/revogação e grant exato por execução.
 - UI e APIs reais, histórico, origem agendada no relatório, privilégios SQL por coluna e cleanup protegido.
 - Testes PostgreSQL concorrentes, fluxo de navegador com ocorrência automática e smoke do Compose com SQL runtime restrito.
+
+## Continuidade 2026-10-21 — runner Linux opt-in
+
+- Runner separado para marcador benigno, protocolo fixo e mTLS obrigatório com CAs de cliente/servidor distintas.
+- Supervisor com deadline/lease, kill/reap, PDEATHSIG, diário persistente e fencing por UUID/hash/geração.
+- Workspace restrito e cleanup sem recursão, manifest Docker isolado, PKI local e controller CLI com confirmação explícita.
+- Testes de TLS real, concorrência, journal bloqueado, morte do pai e inspeção de isolamento; ensaio real autorizado confirmou efeito e cleanup, sem evidência defensiva de SIEM.
+- Integração de campanhas Linux na UI/PostgreSQL permanece pendente; Wazuh real não conectado.
