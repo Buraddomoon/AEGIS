@@ -264,7 +264,13 @@ def review_wazuh_binding(
     lab = db.scalar(select(Laboratory).where(Laboratory.id == lab_id).with_for_update())
     if not lab:
         raise HTTPException(404, "Laboratório não encontrado.")
-    return queries.record(telemetry.bind(db, lab, user, data.review))
+    try:
+        return queries.record(telemetry.bind(db, lab, user, data.review))
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            409, "Agente/ativo já vinculado; remova o vínculo anterior após revisão."
+        ) from None
 
 
 @router.post("/labs/{lab_id}/wazuh-binding/remove", tags=["Integrations"])

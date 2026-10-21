@@ -10,7 +10,7 @@ from aegis.db import session_factory
 from aegis.domain.validation import digest
 from aegis.integrations.wazuh import WazuhIndexerProvider
 from aegis.integrations.wazuh_config import WazuhCollectionConfig
-from aegis.models import Approval, CampaignRun, Laboratory, TelemetryCollection
+from aegis.models import Approval, Asset, CampaignRun, Laboratory, TelemetryCollection, uid
 from aegis.models import TestExecution as Execution
 from aegis.worker import claim_next, context_for, process_run
 from sqlalchemy import func, select
@@ -194,3 +194,43 @@ def test_binding_removal_requires_no_reservation_and_preserves_historical_scope(
     assert result.json()["status"] == "unbound"
     historical = client.get("/api/v1/executions/" + run["id"]).json()
     assert historical["scope"]["telemetry"] == run["scope"]["telemetry"]
+
+
+def test_duplicate_agent_binding_conflicts_without_changing_environment(wazuh):
+    linux, path, scenario = wazuh
+    client = linux[0]
+    with session_factory()() as db:
+        other = Laboratory(
+            name="Other authorized-scope fixture",
+            description="Fixture only",
+            kind="linux",
+            owner="Fixture",
+            isolation="Isolated fixture",
+            authorized=False,
+        )
+        db.add(other)
+        db.flush()
+        asset = Asset(
+            laboratory_id=other.id,
+            name="Other endpoint fixture",
+            platform="Linux",
+            external_id=uid(),
+            synthetic=False,
+        )
+        db.add(asset)
+        db.commit()
+        lab_id, asset_id, version = other.id, asset.id, other.environment_version
+    value = json.loads(path.read_text())
+    value.update({"laboratory_id": lab_id, "asset_id": asset_id})
+    path.write_text(json.dumps(value))
+    result = client.put(
+        f"/api/v1/labs/{lab_id}/wazuh-binding",
+        json={
+            "review": "Duplicate external agent must not silently move to another scope.",
+            "confirm_read_only_scope": True,
+        },
+    )
+    assert result.status_code == 409
+    with session_factory()() as db:
+        assert db.get(Laboratory, lab_id).environment_version == version
+    assert scenario["calls"] == 0
