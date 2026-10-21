@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+import yaml
 from aegis.integrations.wazuh_config import WazuhCollectionConfig
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +64,29 @@ def test_generated_certificates_verify_real_new_addresses(prepared, leaf, ca, ad
         capture_output=True,
         timeout=5,
     )
+
+
+def test_indexer_node_identity_matches_certificate_distinguished_name(prepared):
+    path, _ = prepared
+    result = subprocess.run(
+        [
+            "openssl",
+            "x509",
+            "-noout",
+            "-subject",
+            "-nameopt",
+            "RFC2253",
+            "-in",
+            str(path / "pki/indexer.pem"),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    subject = result.stdout.strip().removeprefix("subject=")
+    config = yaml.safe_load((ROOT / "labs/wazuh/config/indexer.yml").read_text())
+    assert subject in config["plugins.security.nodes_dn"]
 
 
 def test_repeat_preparation_preserves_identity_and_secrets(prepared):

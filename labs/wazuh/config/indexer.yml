@@ -13,8 +13,8 @@ plugins.security.ssl.transport.pemcert_filepath: certs/indexer.pem
 plugins.security.ssl.transport.pemkey_filepath: certs/indexer-key.pem
 plugins.security.ssl.transport.pemtrustedcas_filepath: certs/root-ca.pem
 plugins.security.ssl.transport.enforce_hostname_verification: true
-plugins.security.nodes_dn: ['CN=wazuh.indexer,OU=AEGIS,O=AEGIS Lab']
-plugins.security.authcz.admin_dn: ['CN=admin,OU=AEGIS,O=AEGIS Lab']
+plugins.security.nodes_dn: ['O=AEGIS Lab,OU=AEGIS,CN=wazuh.indexer']
+plugins.security.authcz.admin_dn: ['O=AEGIS Lab,OU=AEGIS,CN=admin']
 plugins.security.allow_default_init_securityindex: true
 plugins.security.check_snapshot_restore_write_privileges: true
 cluster.routing.allocation.disk.threshold_enabled: true
