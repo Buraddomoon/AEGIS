@@ -280,3 +280,125 @@ Persistem limitações anteriores de PKI de desenvolvimento, rotação/recupera�
 Este marco acrescenta **18 commits granulares**, incluindo este checkpoint, totalizando **119 commits**. Último código/configuração: **8eb1103**; commits posteriores são documentação/capturas. GitHub AEGIS permanece privado e exclusivamente main; commit/push foram feitos por unidade verificável. Conferir git log -1 e git status -sb após o checkpoint para hash/mensagem/sincronização finais.
 
 CI remota do último código/configuração **8eb1103: SUCCESS**, [run 39645394721](https://github.com/Buraddomoon/AEGIS/actions/runs/39645394721). Instalação dos locks, lint/tipos, PostgreSQL/frontend/build e revisão de advisories passaram. Os commits seguintes são documentação/capturas e não disparam testes remotos redundantes. Foram verificados 36 Markdown sem destinos locais ausentes. Hash/sincronização final serão conferidos após push deste checkpoint.
+
+## Marco Wazuh B — ensaio isolado preparado; início condicionado à RAM
+
+Data: 2026-10-21. Continuidade de **c1c3ce1**, 119 commits, main limpa/sincronizada.
+O usuário pediu priorizar a pendência real de Wazuh. A preparação desta etapa não
+instalou nem iniciou SIEM, não repetiu o Linux Lab e não executou outro marcador
+real. Testes locais usam fixtures/schemas/arquivos descartáveis; seus resultados
+não são evidência defensiva Wazuh.
+
+### Autorização específica e bloqueio atual
+
+Após apresentar os artefatos concretos em `labs/wazuh/ASSAY.md`, o usuário respondeu
+**“Autorizar somente esse ensaio quando o preflight passar”**. Autoriza somente o
+projeto próprio aegis-wazuh-lab, imagens oficiais Wazuh4.14.9 fixadas por digest,
+builds próprios, API localhost18786, TLS/regra/agente, um marcador43bytes/filho5s/
+campanha120s, aprovação segregada, evidências/cleanup e encerramento preservando
+volumes. **Não pedir a mesma autorização novamente**; não ampliar alvos, repetir
+efeitos ou parar outros projetos. Isso sucede o pedido anterior sem instalar
+somente dentro desse escopo delimitado.
+
+Preflight final observado: **16 CPUs**, **5.285.867.520 bytes MemAvailable
+(4,92 GiB)**, **440.968.421.376 bytes livres no filesystem Docker**,
+**vm.max_map_count=1048576**. O gate exige 4 CPUs/8 GiB disponíveis/50 GiB livres/
+map_count262144. **RAM insuficiente, exit1 esperado; início/download bloqueados.**
+Swap não conta como RAM disponível. Não alterar sysctl/swap/cache nem parar
+serviços de outros projetos para contornar esse limite. A autorização não elimina
+o gate. Não houve recusa de aprovação automática: o bloqueio é o recurso medido.
+
+### Implementado e verificável
+
+- ADR0006, `labs/wazuh/compose.yml`, `config/*`, `images.json`: projeto separado,
+  imagens manager/Indexer/agente4.14.9 oficiais linux/amd64 fixadas por digest.
+  Consultados documentos oficiais e manifests do registro, **sem baixar camadas**.
+  Runner/observer usam imagem própria separada; API/worker/migração também. Sem
+  novos pacotes/dependências ou serviço pago. GPLv2 manager/agente e Apache2.0
+  Indexer documentados separadamente da licença MIT do código AEGIS.
+- Redes runner172.30.89.0/29 e telemetria172.30.90.0/29 internas/isolated; runner
+  não integra rede SIEM, observer sem rede, agente só lê logfileRO. Somente API
+  loopback18786; nenhum endpoint SIEM publicado. Sem host network/socketDocker ou
+  diretórios do host. Backend/ingress seguem a plataforma, sem afirmar isolamento
+  físico total do host. Teto agregado de containers7.03GiB, incluindo migração.
+- Workspace tmpfs1MiB UID10001/0700/noexec/nosuid/nodev compartilhado runnerRW/
+  observerRO. Imagem prepara `/observation-log`10001/0700 para copy-up do volume.
+  Permissões/opções efetivas **ainda precisam de inspeção no runtime**.
+- `marker_log.py`: JSONL dedicado1MiB, arquivo0600, flock de único escritor, fsync
+  do arquivo/diretório, retomada/dedupe; conflito de marcador/hash da mesma execução,
+  linha parcial, outro escopo, links/FIFO/permissões inseguras recusados. Sem
+  rotação/truncamento destrutivos. ObserverCLI aceita sink opt-in, continua sem
+  executar/criar/remover marcador nem atribuir rule.id/detecção.
+- `prepare_wazuh_lab.py`: identidades novas, PKI própria com SANs novos, senhas
+  aleatórias, agent001 pré-provisionado somente nesse manager, política60s/poll2s/
+  request3s. Recusa sobrescrever identidades; dados locais em `.local/wazuh-lab`
+  ignorados e0700, senhas/env0600. Essa preparação não chama Docker nem instala
+  serviços. Agente precisa ser confirmado Active antes de aprovar o efeito.
+- Roles reader/ingest/admin separados; aplicação recebe somente leitura dos
+  índices de alertas, sem chave de ingestão/admin. Manager recebe conta própria.
+  TLS verificado; gestão API configurada no loopback interno, módulos desnecessários
+  desativados, sem archives no primeiro ensaio. Bootstrap/permissões reais ainda
+  pendentes de teste na imagem, incluindo rotação/desativação de defaults internos.
+- `wazuh_host_preflight.py` e `wazuh_lab.py`: verificações somente leitura,
+  daemon Unix local explícito, sanitização de contexto/plataforma/variáveis para
+  shell não sobrescrever lab.env. Lifecycle pull/hash/build/up opt-in sob gate;
+  hash por ferramenta oficial isolada, segredo somente stdin; check-rule futuro
+  usa sandbox sintético, não evidência; status/config/down não dependem de RAM,
+  down preserva volumes. Colisão de rede/porta/certificado expirado bloqueia início.
+  Scripts de lifecycle **não executam marcador**.
+- Makefile, AGENTS, README, changelog, roadmap, integração e testes documentam
+  escopo/autorização/limites atuais. `make up/test/CI` não inicia Wazuh ou Lab.
+
+### Verificações efetivamente executadas
+
+| Check | Resultado observado |
+|---|---|
+| `make test` | **244 Python passaram**,90.93s; **14 frontend passaram**; aviso upstream TestClient/httpx preservado |
+| `make lint` | Ruff/check/format81arquivos, mypy domínio, TypeScript e Prettier passaram |
+| `make test-wazuh-preparation` | **46 passaram**; host gate, PKI/DN/SAN, config privada, render Compose, lifecycle simulado e log/observer reais em filesystem descartável |
+| `make wazuh-lab-config` | Compose real renderizado/validado, sem up e sem imprimir credenciais |
+| PKI | OpenSSL verify real para novos IPs, teste de DN RFC2253; CA/key não publicados |
+| Limites do log | restart/dedupe, conflito append/restart, escritor concorrente, links/hardlinks/FIFO, partial line, capacidade e preservação verificados |
+| Guardas lifecycle | falta confirmação/recursos não chega ao Docker mutável; shutdown sem gate/-v/prune; segredo não aparece em argv; contexto externo não substitui destino |
+| Estado Docker | nenhum container/rede aegis-wazuh-lab; nenhum container aegis-linux-lab; nenhuma imagem wazuh/* baixada |
+| Demo existente | http://localhost:18780 pronto, database=true e redis=true; histórico e serviços de outros projetos preservados |
+| Documentos | 42 Markdown verificados sem destinos locais ausentes; git diff --check aprovado |
+
+Teste de hash usa resultado simulado e **não valida a ferramenta Java/BCrypt da
+imagem oficial**. Render/config não valida os entrypoints ou engine Wazuh. Sem
+rebuild da aplicação Demo, alteração de UI ou nova rodada E2E: o código alterado
+é de implantação/CLI/observação; os resultados E2E anteriores permanecem históricos.
+Não repetir checks sem mudança/falha que justifique. Não houve nova dependência;
+advisory transitivo DiskCache previamente revisado continua documentado.
+
+### Revisão e correções
+
+Revisão especializada somente leitura encontrou DN de certificado em ordem
+incompatível com nodes_dn e dedupe silencioso de marcadores conflitantes. Ambos
+corrigidos com regressões executadas, além de fsync do diretório e sanitização
+compartilhada do daemon/DOCKER_DEFAULT_PLATFORM. Revisão final confirmou correções
+e não apontou outro bloqueador concreto estático. Isso não substitui runtime.
+A primeira coleta do teste de preflight teve import de scripts fora do pacote;
+corrigida carga do arquivo de ferramenta, sem alterar sys.path da aplicação.
+
+### Próxima ação, sem repetir trabalho
+
+Quando houver **8GiB MemAvailable** e demais condições, executar o ensaio **já
+autorizado** de ASSAY.md: pull/hash/build/up, inspeção efetiva, wazuh-logtest,
+agenteActive/ingestão/TLS/leitura e negativa de escrita, cadastro/binding/preflight,
+uma campanha com um marcador e aprovação separada, documento original/evidências,
+relatórios/cleanup, revogação e encerramento. Não recriar identidade/journal para
+apagar ambiguidade nem repetir efeito por falha de screenshot. Se faltarem recursos,
+preservar esta preparação e informar o bloqueio sem afirmar Wazuh validado.
+
+Persistem as limitações anteriores de Windows, Atomic executável, scheduler Linux,
+retenção/fences, rotação operacional de PKI, Sigma deployment, PDF e multi-tenant.
+
+Este marco acrescenta **11 commits granulares**, incluindo este checkpoint,
+totalizando **130 commits**. Somente main, GitHub AEGIS privado, push após cada
+commit, sem branch/PR/force ou reescrita. Último código **6e6464b**; CI
+[run39658915452](https://github.com/Buraddomoon/AEGIS/actions/runs/39658915452)
+**SUCCESS**, efetivamente consultada após conclusão: lint/tipos, testes PostgreSQL/
+frontend/build e revisão de advisories passaram. Commits seguintes contêm somente
+documentação e não iniciam validação redundante. Conferir git log -1 e git status
+-sb após o checkpoint para hash/mensagem/sincronização finais.
