@@ -1,6 +1,7 @@
 # ADR 0006 — Ensaio Wazuh próprio e opt-in
 
-Status: preparação; execução real ainda não autorizada nem validada. Data: 2026-10-21.
+Status: preparação; ensaio autorizado sob preflight, execução real não validada.
+Data: 2026-10-21.
 
 ## Contexto
 
@@ -18,7 +19,8 @@ um novo marcador dependem de autorização específica, conforme a instrução o
   mounts do sistema ou acesso a ambientes corporativos.
 - Referência atual: imagens oficiais Wazuh **4.14.9**, sem `latest`. Conferir
   arquitetura, digests efetivamente baixados e licenças antes do ensaio. AEGIS
-  continua MIT; Wazuh é software separado com licença própria GPLv2.
+  continua MIT; manager/agente Wazuh são GPLv2 e Indexer Apache-2.0, com
+  dependências/licenças próprias nas imagens.
 - Primeiro verificar recursos sem alterar o host: quatro CPUs, 8 GiB de memória
   **disponível** e 50 GiB livres no filesystem do Docker, `vm.max_map_count` de
   pelo menos 262144. O piso de memória disponível é uma margem operacional local,
@@ -56,6 +58,13 @@ outros projetos para liberar RAM.
 Após preparar/revisar os artefatos, solicitar somente o escopo concreto que falta.
 Uma autorização não elimina o preflight nem permite ampliar alvos/efeitos. Até
 então, documentação/manifests/testes são preparação, sem alegação de validação real.
+
+O usuário posteriormente autorizou **“Autorizar somente esse ensaio quando o
+preflight passar”**, respondendo ao escopo integral registrado em
+[ASSAY.md](../../../labs/wazuh/ASSAY.md). Autorização de um único ciclo, imagens
+fixadas, infraestrutura própria, um marcador e encerramento com evidências/volumes
+preservados. Não pedir novamente a mesma autorização. O host ainda não satisfaz
+a margem de RAM disponível; não iniciar nem baixar o stack enquanto o gate falhar.
 
 ## Fontes oficiais consultadas
 
