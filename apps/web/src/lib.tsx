@@ -77,6 +77,7 @@ export const labels: Record<string, string> = {
   SKIPPED_LATE: 'Descartado por atraso',
   SKIPPED_BUSY: 'Laboratório ocupado',
   disconnected: 'Desconectado',
+  connected: 'mTLS verificado',
   configured_unverified: 'Configurado · não verificado',
   synthetic: 'Sintético',
   administrator: 'Administrador',

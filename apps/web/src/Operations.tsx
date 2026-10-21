@@ -48,7 +48,8 @@ import type {
 } from './types'
 
 export function Campaigns({ user }: { user: User }) {
-  const data = useData<Page<Campaign>>('/campaigns?limit=1000'),
+  const labs = useData<Page<Lab>>('/labs'),
+    data = useData<Page<Campaign>>('/campaigns?limit=1000'),
     [creating, setCreating] = useState(location.hash.includes('/new')),
     { busy, run } = useAction()
   const request = (id: string) =>
@@ -86,7 +87,11 @@ export function Campaigns({ user }: { user: User }) {
                 <span className="test-icon">
                   <Layers size={23} />
                 </span>
-                <span className="subtle-tag">Demo Lab</span>
+                <span className="subtle-tag">
+                  {labs.data?.items.find((l) => l.id === c.laboratory_id)?.kind === 'linux'
+                    ? 'Linux real'
+                    : 'Demo Lab'}
+                </span>
               </div>
               <h2>{c.name}</h2>
               <p>{c.objective}</p>
@@ -165,36 +170,55 @@ function CampaignForm({ onClose }: { onClose: () => void }) {
         </label>
         <label>
           Laboratório
-          <select required value={lab} onChange={(e) => setLab(e.target.value)}>
+          <select
+            required
+            value={lab}
+            onChange={(e) => {
+              setLab(e.target.value)
+              setSelected([])
+            }}
+          >
             <option value="">Selecione o ambiente</option>
             {labs.data?.items
               .filter((l) => l.authorized)
               .map((l) => (
                 <option value={l.id} key={l.id}>
-                  {l.name} · versão {l.environment_version} · sintético
+                  {l.name} · versão {l.environment_version} · {l.synthetic ? 'sintético' : 'real'}
                 </option>
               ))}
           </select>
         </label>
         <fieldset>
           <legend>Simulações do escopo</legend>
-          {tests.data?.items.map((t) => (
-            <label className="checkbox-label" key={t.id}>
-              <input
-                type="checkbox"
-                checked={selected.includes(t.id)}
-                onChange={(e) =>
-                  setSelected(
-                    e.target.checked ? [...selected, t.id] : selected.filter((x) => x !== t.id),
-                  )
-                }
-              />
-              <span>
-                {t.name}
-                <small>{t.technique_id ?? 'Sem associação ATT&CK'} · sintético</small>
-              </span>
-            </label>
-          ))}
+          {tests.data?.items
+            .filter(
+              (t) =>
+                t.approved &&
+                t.execution_kind ===
+                  (labs.data?.items.find((l) => l.id === lab)?.kind === 'linux'
+                    ? 'linux_marker'
+                    : 'demo'),
+            )
+            .map((t) => (
+              <label className="checkbox-label" key={t.id}>
+                <input
+                  type="checkbox"
+                  checked={selected.includes(t.id)}
+                  onChange={(e) =>
+                    setSelected(
+                      e.target.checked ? [...selected, t.id] : selected.filter((x) => x !== t.id),
+                    )
+                  }
+                />
+                <span>
+                  {t.name}
+                  <small>
+                    {t.technique_id ?? 'Sem associação ATT&CK'} ·{' '}
+                    {t.execution_kind === 'demo' ? 'sintético' : 'efeito real em laboratório'}
+                  </small>
+                </span>
+              </label>
+            ))}
         </fieldset>
         {(labs.error || tests.error) && <Failure error={(labs.error || tests.error)!} />}
         <p className="muted-text">
@@ -217,9 +241,10 @@ function CampaignForm({ onClose }: { onClose: () => void }) {
 export function Executions() {
   const campaign = new URLSearchParams(location.hash.split('?')[1] ?? '').get('campaign'),
     [filter, setFilter] = useState(''),
+    [mode, setMode] = useState(''),
     [page, setPage] = useState(0)
   const data = useData<Page<Run>>(
-      `/executions?limit=25&offset=${page * 25}${filter ? `&state=${filter}` : ''}${campaign ? `&campaign_id=${campaign}` : ''}`,
+      `/executions?limit=25&offset=${page * 25}${mode ? `&mode=${mode}` : ''}${filter ? `&state=${filter}` : ''}${campaign ? `&campaign_id=${campaign}` : ''}`,
       2500,
     ),
     campaigns = useData<Page<Campaign>>('/campaigns?limit=1000')
@@ -232,6 +257,18 @@ export function Executions() {
       />
       <div className="toolbar">
         <Filter size={17} />
+        <select
+          aria-label="Modo de execução"
+          value={mode}
+          onChange={(e) => {
+            setMode(e.target.value)
+            setPage(0)
+          }}
+        >
+          <option value="">Todos os modos</option>
+          <option value="demo">Demo · sintético</option>
+          <option value="linux">Linux real</option>
+        </select>
         <select
           aria-label="Filtrar estado"
           value={filter}
@@ -278,7 +315,9 @@ export function Executions() {
                         <a href={`#executions/${r.id}`} className="table-title">
                           {campaigns.data?.items.find((c) => c.id === r.campaign_id)?.name ??
                             'Campanha'}
-                          <small>{r.id.slice(0, 8)} · sintético</small>
+                          <small>
+                            {r.id.slice(0, 8)} · {r.synthetic ? 'sintético' : 'Linux real'}
+                          </small>
                         </a>
                       </td>
                       <td>
@@ -343,7 +382,7 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
         Todas as execuções
       </a>
       <PageHeading
-        eyebrow={`EXECUÇÃO ${r.id.slice(0, 8).toUpperCase()} · DADOS SINTÉTICOS`}
+        eyebrow={`EXECUÇÃO ${r.id.slice(0, 8).toUpperCase()} · ${r.synthetic ? 'DADOS SINTÉTICOS' : 'LINUX REAL'}`}
         title={r.campaign_name}
         description={r.objective}
         action={<Badge value={r.state} />}
@@ -360,12 +399,15 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
         </div>
       )}
       <div className="execution-toolbar">
-        {user.role === 'administrator' && pending && !r.approval && (
-          <button className="button primary" disabled={busy} onClick={() => setReview(true)}>
-            <ShieldCheck size={17} />
-            Revisar e aprovar
-          </button>
-        )}
+        {user.role === 'administrator' &&
+          pending &&
+          !r.approval &&
+          (r.synthetic || user.id !== r.requested_by) && (
+            <button className="button primary" disabled={busy} onClick={() => setReview(true)}>
+              <ShieldCheck size={17} />
+              Revisar e aprovar
+            </button>
+          )}
         {user.role !== 'viewer' && pending && r.approval && (
           <button
             className="button primary"
@@ -443,6 +485,12 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
           {r.error}
         </div>
       )}
+      {!r.synthetic && (
+        <div className="notice warning">
+          Efeito real limitado ao marcador revisado. Aprovação exige administrador diferente do
+          solicitante. Comprovante do executor não comprova detecção; SIEM não consultado.
+        </div>
+      )}
       {pending && (
         <div className="notice">
           <ShieldCheck size={19} />
@@ -454,7 +502,9 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
       <div className="run-meta">
         <div>
           <small>AMBIENTE</small>
-          <strong>Demo Lab · v{r.scope.environment_version}</strong>
+          <strong>
+            {r.synthetic ? 'Demo Lab' : 'Linux real'} · v{r.scope.environment_version}
+          </strong>
         </div>
         <div>
           <small>SOLICITAÇÃO</small>
@@ -494,6 +544,23 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
                   <span>Coleta completa: {e.result.collection_complete ? 'sim' : 'não'}</span>
                   <span>Lógica: {e.result.logic_version}</span>
                 </div>
+              )}
+              {!e.synthetic && (
+                <details className="scope-details">
+                  <summary>
+                    Comprovantes do executor e cleanup (não são evidência defensiva)
+                  </summary>
+                  <p>
+                    Sem consulta ao SIEM. Hashes permitem inspecionar a integridade dos registros.
+                  </p>
+                  <pre>
+                    {JSON.stringify(
+                      { receipt: e.runner_receipt, cleanup: e.runner_cleanup },
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </details>
               )}
               <div className="evidence-list">
                 {e.events.map((ev) => (
@@ -539,7 +606,10 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
       </details>
       {review && <ApprovalReview detail={r} onClose={() => setReview(false)} />}{' '}
       {event && (
-        <Modal title="Evidência sintética" onClose={() => setEvent(null)}>
+        <Modal
+          title={event.synthetic ? 'Evidência sintética' : 'Evidência defensiva'}
+          onClose={() => setEvent(null)}
+        >
           <dl>
             <dt>Identificador original</dt>
             <dd className="mono">{event.source_id}</dd>
@@ -553,7 +623,8 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
             <dd className="mono">{event.sha256}</dd>
           </dl>
           <div className="notice">
-            Dado sintético. Hash de integridade não equivale a assinatura digital.
+            {event.synthetic ? 'Dado sintético. ' : ''}Hash de integridade não equivale a assinatura
+            digital.
           </div>
           <pre>{JSON.stringify(event.raw, null, 2)}</pre>
         </Modal>
@@ -570,8 +641,11 @@ function ApprovalReview({ detail: r, onClose }: { detail: RunDetail; onClose: ()
     <Modal title="Revisar escopo de autorização" onClose={onClose}>
       <p>Autorização de uso único, válida por 15 minutos, exclusivamente para esta solicitação.</p>
       <div className="notice">
-        Demo Lab · ambiente v{r.scope.environment_version} · {r.scope.test_definitions.length}{' '}
-        testes sintéticos · sem acesso a endpoints externos.
+        {r.synthetic ? 'Demo Lab' : 'Linux real'} · ambiente v{r.scope.environment_version} ·{' '}
+        {r.scope.test_definitions.length}{' '}
+        {r.synthetic
+          ? 'testes sintéticos · sem acesso a endpoints externos.'
+          : 'marcador real em tmpfs · runner fixado · sem consulta SIEM.'}
       </div>
       <ul className="scope-list">
         {r.scope.test_definitions.map((t) => (
@@ -594,6 +668,7 @@ function ApprovalReview({ detail: r, onClose }: { detail: RunDetail; onClose: ()
                 confirm_scope_hash: r.scope_hash,
                 max_duration_seconds: duration,
                 validity_minutes: 15,
+                confirm_real_execution: !r.synthetic,
               }),
             })
             onClose()
@@ -622,7 +697,9 @@ function ApprovalReview({ detail: r, onClose }: { detail: RunDetail; onClose: ()
             onChange={(e) => setConfirmed(e.target.checked)}
           />
           <span>
-            Revisei e autorizo este escopo demonstrativo. Entendo que os resultados são sintéticos.
+            {r.synthetic
+              ? 'Revisei e autorizo este escopo demonstrativo. Entendo que os resultados são sintéticos.'
+              : 'Revisei a identidade, isolamento e escopo. Autorizo o efeito real e a limpeza do marcador neste runner. Sou diferente do solicitante.'}
           </span>
         </label>
         <div className="form-actions">
@@ -637,8 +714,9 @@ function ApprovalReview({ detail: r, onClose }: { detail: RunDetail; onClose: ()
 }
 
 export function CoveragePage() {
-  const data = useData<Coverage>('/coverage', 5000),
-    runs = useData<Page<Run>>('/executions?state=COMPLETED&limit=1000'),
+  const [mode, setMode] = useState('demo'),
+    data = useData<Coverage>(`/coverage?mode=${mode}`, 5000),
+    runs = useData<Page<Run>>(`/executions?mode=${mode}&state=COMPLETED&limit=1000`),
     [before, setBefore] = useState(''),
     [after, setAfter] = useState(''),
     [comparison, setComparison] = useState<Comparison | null>(null),
@@ -653,6 +731,24 @@ export function CoveragePage() {
         title="Cobertura de detecção"
         description="Avalie resultados com denominadores explícitos e compare execuções reproduzíveis."
       />
+      <div className="toolbar">
+        <label>
+          Escopo dos indicadores
+          <select
+            aria-label="Modo dos indicadores"
+            value={mode}
+            onChange={(e) => {
+              setMode(e.target.value)
+              setBefore('')
+              setAfter('')
+              setComparison(null)
+            }}
+          >
+            <option value="demo">Demo · sintético</option>
+            <option value="linux">Linux real</option>
+          </select>
+        </label>
+      </div>
       <div className="stats-grid">
         <div className="metric">
           <span>Técnicas catalogadas</span>
@@ -855,7 +951,9 @@ export function Reports() {
                     <td className="table-title">
                       {campaigns.data?.items.find((c) => c.id === r.campaign_id)?.name ??
                         r.campaign_id}
-                      <small>Dados sintéticos</small>
+                      <small>
+                        {r.synthetic ? 'Dados sintéticos' : 'Linux real · sem consulta SIEM'}
+                      </small>
                     </td>
                     <td>
                       <Go to={`executions/${r.id}`}>{r.id.slice(0, 8)}</Go>
