@@ -14,7 +14,9 @@ def openssl(*args: str):
     )
 
 
-def initialize(output: Path) -> Path:
+def initialize(output: Path, *, server_ip: str = "172.30.88.2") -> Path:
+    if server_ip not in {"172.30.88.2", "172.30.89.2"}:
+        raise ValueError("Endereço fora das duas redes de laboratório revisadas.")
     output = output.resolve()
     output.mkdir(
         mode=0o700, parents=True, exist_ok=False
@@ -63,7 +65,7 @@ def initialize(output: Path) -> Path:
             )
             extensions = "basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\n"
             extensions += (
-                "extendedKeyUsage=serverAuth\nsubjectAltName=IP:172.30.88.2\n"
+                f"extendedKeyUsage=serverAuth\nsubjectAltName=IP:{server_ip}\n"
                 if purpose == "server"
                 else "extendedKeyUsage=clientAuth\n"
             )
@@ -93,7 +95,7 @@ def initialize(output: Path) -> Path:
             root.with_suffix(".crt").chmod(0o444)
         connection = {
             **identifiers,
-            "url": "https://172.30.88.2:8443",
+            "url": f"https://{server_ip}:8443",
             "server_ca": "/run/secrets/controller_server_ca",
             "client_cert": "/run/secrets/controller_client_cert",
             "client_key": "/run/secrets/controller_client_key",
