@@ -8,6 +8,8 @@ Escopo técnico: monólito modular com interfaces de adapter, persistência rela
 
 Critérios semânticos: DETECTED exige execução confirmada e alerta da regra esperada com identidade, marcador, comportamento e tempo compatíveis. OBSERVED_NOT_ALERTED exige observação correlacionada e consulta completa de alertas. NO_TELEMETRY significa insuficiência de evidência de coleta, não falha de detecção confirmada. INCONCLUSIVE cobre coleta incompleta/indisponível. EXECUTION_FAILED não entra no denominador válido. NOT_TESTED permanece distinto de catálogo.
 
-Fora do release: execução real remota, agendamento de laboratório real, Caldera, Windows real, PDF, recomendações LLM, multi-tenancy e SSO. Não anunciar funcionalidades futuras como operacionais.
+Fora do release inicial 0.1: execução real remota, agendamento de laboratório real, Caldera, Windows real, PDF, recomendações LLM, multi-tenancy e SSO. Não anunciar funcionalidades futuras como operacionais.
 
 Agendamento de campanhas Demo foi entregue como extensão do MVP, sob aprovação explícita e limites persistentes. Consulte [operação](../operations/scheduling.md) e ADR 0002 para políticas, contratos e validação.
+
+Incremento 0.2 entregue: uma campanha Linux de marcador fixo em runner opt-in, autorizada e validada localmente, com os mesmos contratos/fila, segregação de aprovação, recibos e cleanup reais. Sem coleta SIEM, não comprova detecção. Sem Windows, Atomic executável, scheduler Linux ou shell.

@@ -6,7 +6,7 @@ Simulações controladas, resultados reproduzíveis e decisões de detecção su
 
 Equipes defensivas precisam verificar se seus controles observam e detectam comportamentos de ataque. O ÆGIS conecta campanhas, aprovação de escopo, execução, coleta, correlação e acompanhamento histórico num único fluxo.
 
-**Estado: MVP 0.1 em Demo Mode, com agendamento aprovado, persistente e executável.** Todos os eventos da demonstração são sintéticos. Lab Mode nas campanhas, execução de Atomic Red Team e validação externa com Wazuh ainda não estão habilitados. Um runner Linux separado está disponível como incremento opt-in, descrito abaixo. Não é um SIEM, EDR ou shell remoto.
+**Estado: 0.2 — Demo persistente e campanhas Linux opt-in validadas localmente.** Demo mantém eventos sintéticos explícitos. Linux admite somente um marcador benigno revisado, com mTLS, aprovação por outra pessoa, recibos e cleanup persistidos. Sem validação externa Wazuh ou execução de Atomic Red Team. Não é um SIEM, EDR ou shell remoto.
 
 ![Dashboard real do Demo Mode, com evidências explicitamente sintéticas](docs/images/overview.png)
 
@@ -21,7 +21,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Eventos originais, hashes SHA-256, justificativas de correlação, evidências inspecionáveis e auditoria.
 - Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
 - Inventário Sigma com parsing pySigma, importação YAML limitada e versões imutáveis; nenhuma implantação automática de regras.
-- Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; ensaio local autorizado validado. Ainda separado das campanhas/UI.
+- Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; campanha integrada autorizada validou API/worker/SQL runtime, recibos, cleanup e UI, sem SIEM.
 - Adaptador Wazuh Indexer somente leitura, HTTPS/TLS validado, IP fixado, paginação e fixtures locais. **Sem demonstração externa validada.**
 
 ## Início rápido
@@ -68,13 +68,17 @@ Para automatizar: abra **Agendamentos**, crie um plano para a campanha, defina i
 
 ![Agendamento Demo real com ocorrência e autorização rastreáveis](docs/images/schedules.png)
 
-## Runner Linux opt-in — primeiro incremento da etapa 3
+## Linux Lab integrado — etapa 3
 
 O ensaio local explicitamente autorizado executou um programa fixo em container isolado: criou, conferiu o hash e removeu um marcador de 43 bytes. O diário preservou um único início após restart e retry. Sem consulta ao SIEM, a classificação foi **INCONCLUSIVE**; o comprovante de execução não é alerta defensivo.
 
 `make lab-init`, `make lab-config` e `make lab-build` preparam PKI/configuração/imagem sem iniciar o laboratório. `make lab-up`, `make lab-preflight`, `make lab-inspect`, `make lab-smoke` e `make lab-down` operam somente esse laboratório, após autorização específica. Não fazem parte do `make up` padrão. [Instalação, escopo, limitações e recuperação](labs/linux/README.md).
 
-O laboratório foi desligado ao concluir o ensaio; diário e configuração local foram preservados. Registro de campanhas Linux na API, receipts no PostgreSQL e integração com a UI são o próximo incremento. Não existe botão de Lab Mode operacional nesta versão.
+O segundo ensaio, autorizado separadamente, percorreu cadastro/revisão → preflight mTLS → autorização do laboratório → solicitação pelo operador → aprovação por outro administrador → fila/worker → marcador → cleanup → relatório. Banco confirmou **uma única campanha real**, resultado INCONCLUSIVE, recibo de 43 bytes, zero eventos/alertas defensivos inventados e reserva liberada. Contas temporárias foram desativadas; laboratório revogado e containers/redes encerrados.
+
+`make linux-platform-config` e `make linux-platform-build` preparam o stack integrado separado. `make linux-platform-up/smoke/down` exigem autorização específica, conforme o [escopo concreto](labs/linux/README.md#escopo-concreto-do-novo-ensaio-integrado). API desse ensaio usa localhost:18785, banco próprio e o runner fixado; o Demo padrão continua em 18780.
+
+![Histórico real da única campanha Linux autorizada, resultado inconclusivo e recibo separado de evidência defensiva](docs/images/linux-execution.png)
 
 ## Arquitetura
 
@@ -85,11 +89,14 @@ flowchart LR
   API --> Redis[(Redis: limites / heartbeat)]
   Worker[Worker independente + dispatcher Demo] --> DB
   Worker --> Demo[ExecutionAdapter Demo]
+  Worker --> Linux[ExecutionAdapter Linux: mTLS / marcador fixo]
+  Linux --> Receipts[Recibo + cleanup, separados de telemetria]
+  Receipts --> DB
   Demo --> Telemetry[TelemetryProvider Demo]
   Telemetry --> Validate[Correlação independente de SIEM]
   Validate --> Evidence[Evidências / resultados / relatórios]
   Evidence --> DB
-  Wazuh[Adaptador Wazuh: testes locais] -. Lab Mode ainda não conectado .-> Telemetry
+  Wazuh[Adaptador Wazuh: testes locais] -. Coleta real ainda não conectada .-> Telemetry
 ```
 
 Monólito modular, sem microsserviços desnecessários. PostgreSQL é fonte de verdade e fila durável (`FOR UPDATE SKIP LOCKED`); Redis não transporta jobs serializados. API e worker usam papel de banco sem privilégios administrativos; evidências, versões Sigma e auditoria têm escrita append-only. [Arquitetura e decisões](docs/architecture/overview.md).
@@ -120,7 +127,7 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 ## Limitações reais
 
 - MVP de workspace único: usuários autenticados compartilham as consultas; não há isolamento multi-tenant, MFA, SSO ou recuperação de senha pela interface.
-- Nas campanhas da aplicação, somente Demo executa e seu cancelamento continua cooperativo. O runner Linux separado já supervisiona seu programa fixo; integrá-lo ao worker/UI com aprovações e persistência real permanece pendente. Não permite Atomic ou comandos genéricos.
+- Linux real é limitado a um marcador fixo, sem atribuição ATT&CK artificial, Atomic ou comandos genéricos. Recuperação após crash mantém quarentena até cleanup confirmado; rotação de binding/certificado original ainda exige intervenção manual. Demo usa cancelamento cooperativo; Linux supervisiona processo e lease.
 - Wazuh foi testado com fixtures locais de contrato com identificadores fictícios, não com um servidor externo. Mapeamento entre `Asset.id` interno e `agent.id` real precisa ser conectado no Lab Mode.
 - Sigma validado sintaticamente não equivale a detecção implantada. Associação operacional com testes e conversão de SIEM ficam para próxima etapa.
 - Agendamento habilitado somente para Demo: até 16 planos ativos, 100 horários por plano, mínimo 60 segundos de intervalo e validade máxima de 90 dias. Sem cron livre, Lab real, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
@@ -131,6 +138,6 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 
 ## Uso autorizado e licença
 
-Utilize somente em ambientes previamente autorizados. A plataforma não fornece comandos arbitrários, evasão, persistência maliciosa, coleta de credenciais ou exfiltração. Nenhuma simulação real foi executada nesta entrega.
+Utilize somente em ambientes previamente autorizados. A plataforma não fornece comandos arbitrários, evasão, persistência maliciosa, coleta de credenciais ou exfiltração. Somente os ensaios benignos Linux explicitamente autorizados foram executados; nenhum alvo externo ou Wazuh foi acessado.
 
 Código ÆGIS sob [MIT](LICENSE). Dataset MITRE e bibliotecas mantêm suas próprias licenças. A disponibilidade da licença não altera a visibilidade privada do repositório.

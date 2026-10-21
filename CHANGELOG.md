@@ -24,3 +24,11 @@
 - Workspace restrito e cleanup sem recursão, manifest Docker isolado, PKI local e controller CLI com confirmação explícita.
 - Testes de TLS real, concorrência, journal bloqueado, morte do pai e inspeção de isolamento; ensaio real autorizado confirmou efeito e cleanup, sem evidência defensiva de SIEM.
 - Integração de campanhas Linux na UI/PostgreSQL permanece pendente; Wazuh real não conectado.
+
+## 0.2.0 — 2026-10-21 — campanhas Linux integradas
+
+- Binding revisado e preflight mTLS, autorização de laboratório, aprovação de operação por administrador distinto e allowlist exclusiva de marcador benigno.
+- API/worker persistem dispatch antes da RPC, geração, recibo e cleanup imutáveis; crash conserva quarentena e recuperação nunca inicia/reaplica o efeito.
+- UI distingue real/sintético, comprovante do executor e evidência defensiva; indicadores, matriz e histórico por modo; relatórios proporcionais às evidências.
+- Ensaio integrado autorizado: uma campanha, marcador de 43 bytes, cleanup confirmado, INCONCLUSIVE sem SIEM. Overlay separado, contas temporárias desativadas e serviços encerrados.
+- Testes de respostas perdidas, rollback após cleanup, recuperação concorrente e revogações; capturas reais e regressão E2E Demo. Wazuh externo permanece pendente.
