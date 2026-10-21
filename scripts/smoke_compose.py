@@ -34,7 +34,17 @@ with session_factory()() as db:
     user_id = user.id
 try:
     with httpx.Client(base_url="http://localhost:18780/api/v1", timeout=10) as client:
-        assert client.get("/health/ready").json()["status"] == "ready"
+        end = time.monotonic() + 30
+        while time.monotonic() < end:
+            try:
+                response = client.get("/health/ready")
+                if response.is_success and response.json().get("status") == "ready":
+                    break
+            except (httpx.HTTPError, ValueError):
+                pass
+            time.sleep(0.2)
+        else:
+            raise RuntimeError("Compose API did not become ready within 30 seconds")
         result = client.post(
             "/auth/login",
             json={"username": username, "password": password},
