@@ -12,8 +12,8 @@ from aegis.config import settings
 
 app = FastAPI(
     title="ÆGIS — Purple Team Validation",
-    version="0.1.0",
-    description="MVP Demo: evidências sintéticas, fluxo persistente e RBAC. Lab Mode não habilitado.",
+    version="0.2.0",
+    description="Demo sintético persistente e Linux opt-in com marcador revisado, aprovação segregada e recibos distintos de evidência defensiva.",
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
     redoc_url=None,
