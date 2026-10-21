@@ -178,6 +178,8 @@ try {
     await navigate(route)
     await text(heading)
   }
+  await text('Desconectado')
+  await screenshot('wazuh-preparation')
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
   await navigate('overview')
   await text('12 testes concluídos')
@@ -195,7 +197,7 @@ try {
       runs: 3,
       tests: 12,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 5,
+      screenshots: 6,
       browserErrors: errors.length,
     }),
   )
