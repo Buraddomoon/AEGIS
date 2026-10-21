@@ -488,7 +488,10 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
       {!r.synthetic && (
         <div className="notice warning">
           Efeito real limitado ao marcador revisado. Aprovação exige administrador diferente do
-          solicitante. Comprovante do executor não comprova detecção; SIEM não consultado.
+          solicitante. Comprovante do executor não comprova detecção.{' '}
+          {r.scope.telemetry?.provider === 'wazuh-indexer'
+            ? 'Coleta Wazuh prevista no escopo; confira tentativas, janela e evidências.'
+            : 'SIEM não consultado.'}
         </div>
       )}
       {pending && (
@@ -551,7 +554,8 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
                     Comprovantes do executor e cleanup (não são evidência defensiva)
                   </summary>
                   <p>
-                    Sem consulta ao SIEM. Hashes permitem inspecionar a integridade dos registros.
+                    Comprovantes do executor não são alertas. Hashes permitem inspecionar a
+                    integridade dos registros.
                   </p>
                   <pre>
                     {JSON.stringify(
@@ -560,6 +564,20 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
                       2,
                     )}
                   </pre>
+                </details>
+              )}
+              {e.collection && (
+                <details className="scope-details">
+                  <summary>Resumo da coleta · {e.collection.provider}</summary>
+                  <p>
+                    {e.collection.attempts} tentativa(s) · janela cumprida:{' '}
+                    {e.collection.window_satisfied ? 'sim' : 'não'} · consulta completa:{' '}
+                    {e.collection.complete ? 'sim' : 'não'}
+                  </p>
+                  <p>{e.collection.reason}</p>
+                  <p>
+                    {date(e.collection.started_at)} → {date(e.collection.ended_at)}
+                  </p>
                 </details>
               )}
               <div className="evidence-list">
@@ -645,8 +663,15 @@ function ApprovalReview({ detail: r, onClose }: { detail: RunDetail; onClose: ()
         {r.scope.test_definitions.length}{' '}
         {r.synthetic
           ? 'testes sintéticos · sem acesso a endpoints externos.'
-          : 'marcador real em tmpfs · runner fixado · sem consulta SIEM.'}
+          : 'marcador real em tmpfs · runner fixado · coleta conforme política revisada.'}
       </div>
+      {!r.synthetic && (
+        <div className="notice">
+          {r.scope.telemetry?.provider === 'wazuh-indexer'
+            ? `Wazuh somente leitura · agente ${r.scope.telemetry.policy?.agent_id} · regra esperada ${r.scope.telemetry.policy?.expected_rule} · espera de ingestão ${r.scope.telemetry.policy?.ingestion_wait_seconds}s. Este teste benigno avalia somente o pipeline de observação.`
+            : 'Sem vínculo defensivo: resultado será inconclusivo quanto à detecção.'}
+        </div>
+      )}
       <ul className="scope-list">
         {r.scope.test_definitions.map((t) => (
           <li key={t.id}>
@@ -952,7 +977,9 @@ export function Reports() {
                       {campaigns.data?.items.find((c) => c.id === r.campaign_id)?.name ??
                         r.campaign_id}
                       <small>
-                        {r.synthetic ? 'Dados sintéticos' : 'Linux real · sem consulta SIEM'}
+                        {r.synthetic
+                          ? 'Dados sintéticos'
+                          : 'Linux real · fontes identificadas no relatório'}
                       </small>
                     </td>
                     <td>

@@ -59,6 +59,10 @@ export interface Campaign {
   test_ids: string[]
 }
 export interface Scope {
+  telemetry?: {
+    provider: string
+    policy?: { agent_id: string; expected_rule: string; ingestion_wait_seconds: number }
+  }
   environment_version: number
   asset_id: string
   mode: string
@@ -112,6 +116,15 @@ export interface Result {
   alerts_available: boolean
 }
 export interface Execution {
+  collection?: {
+    provider: string
+    attempts: number
+    complete: boolean
+    window_satisfied: boolean
+    reason: string
+    started_at: string
+    ended_at: string
+  } | null
   id: string
   test_id: string
   state: string

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { LinuxRegistration } from './LinuxRegistration'
+import { WazuhBinding } from './WazuhBinding'
 import {
   CheckCircle2,
   FileCode2,
@@ -31,6 +32,7 @@ export function Laboratories({ user }: { user: User }) {
   const data = useData<Page<Lab & { active_run_state: string | null }>>('/labs', 3000),
     { busy, run } = useAction(),
     [registering, setRegistering] = useState(false),
+    [telemetryLab, setTelemetryLab] = useState<Lab | null>(null),
     [selected, setSelected] = useState<string | null>(null)
   return (
     <>
@@ -93,6 +95,11 @@ export function Laboratories({ user }: { user: User }) {
               {l.isolation}
             </div>
             <p className="mono muted-text">ID {l.id}</p>
+            {!l.synthetic && (
+              <button className="button" onClick={() => setTelemetryLab(l)}>
+                Revisar coleta Wazuh
+              </button>
+            )}
             {!l.synthetic && (
               <button className="text-link" onClick={() => setSelected(l.id)}>
                 Histórico de verificações mTLS
@@ -174,6 +181,9 @@ export function Laboratories({ user }: { user: User }) {
         Linux é opt-in e aceita somente o marcador benigno fixado na implantação. Sem coleta SIEM, o
         resultado defensivo é inconclusivo. Windows e agendamentos Linux permanecem indisponíveis.
       </div>
+      {telemetryLab && (
+        <WazuhBinding lab={telemetryLab} user={user} onClose={() => setTelemetryLab(null)} />
+      )}
       {registering && <LinuxRegistration onClose={() => setRegistering(false)} />}
       {selected && <VerificationHistory id={selected} onClose={() => setSelected(null)} />}
     </>
