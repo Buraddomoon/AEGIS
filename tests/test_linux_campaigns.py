@@ -1,5 +1,6 @@
 import runpy
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
 import httpx
@@ -233,7 +234,8 @@ def test_linux_scheduling_is_never_implicitly_authorized(linux):
     assert result.status_code == 409
 
 
-def test_crashed_linux_worker_is_quarantined_and_recovery_never_starts_job(linux):
+@pytest.mark.parametrize("concurrent", [False, True])
+def test_crashed_linux_worker_is_quarantined_and_recovery_never_starts_job(linux, concurrent):
     client, lab, _ = linux
     run = queued(linux)
     assert claim_next() == run["id"]
@@ -255,7 +257,17 @@ def test_crashed_linux_worker_is_quarantined_and_recovery_never_starts_job(linux
     assert detail["state"] == "CLEANUP_FAILED"
     with session_factory()() as db:
         assert db.get(Laboratory, lab["id"]).active_run_id == run["id"]
-    recovered = client.post(f"/api/v1/labs/{lab['id']}/recover", json={"confirm": True})
+
+    def recover():
+        return client.post(f"/api/v1/labs/{lab['id']}/recover", json={"confirm": True})
+
+    if concurrent:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            responses = list(pool.map(lambda _: recover(), range(2)))
+        assert sorted(result.status_code for result in responses) == [200, 409]
+        recovered = next(result for result in responses if result.status_code == 200)
+    else:
+        recovered = recover()
     assert recovered.status_code == 200, recovered.text
     assert recovered.json()["active_run_id"] is None
     with session_factory()() as db:
