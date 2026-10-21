@@ -8,7 +8,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from aegis import linux_labs, queries, scheduling, schemas, services
+from aegis import linux_labs, queries, scheduling, schemas, services, telemetry
 from aegis.config import settings
 from aegis.db import get_db
 from aegis.domain.validation import digest
@@ -249,6 +249,31 @@ def recover_lab(lab_id: str, data: schemas.Confirm, user: Admin, db: DB) -> dict
     audit(db, user.id, "lab.cleanup_reviewed", lab.id, run_id=run.id, synthetic=run.synthetic)
     db.commit()
     return queries.record(lab)
+
+
+@router.get("/labs/{lab_id}/wazuh-binding", tags=["Integrations"])
+def wazuh_binding(lab_id: str, user: Viewer, db: DB) -> dict:
+    return telemetry.status(db, services.get_or_404(db, Laboratory, lab_id))
+
+
+@router.put("/labs/{lab_id}/wazuh-binding", tags=["Integrations"])
+def review_wazuh_binding(
+    lab_id: str, data: schemas.WazuhBindingReview, user: Admin, db: DB
+) -> dict:
+    rate_limit("wazuh-binding:" + user.id, 10, 3600)
+    lab = db.scalar(select(Laboratory).where(Laboratory.id == lab_id).with_for_update())
+    if not lab:
+        raise HTTPException(404, "Laboratório não encontrado.")
+    return queries.record(telemetry.bind(db, lab, user, data.review))
+
+
+@router.post("/labs/{lab_id}/wazuh-binding/remove", tags=["Integrations"])
+def remove_wazuh_binding(lab_id: str, data: schemas.Confirm, user: Admin, db: DB) -> dict:
+    lab = db.scalar(select(Laboratory).where(Laboratory.id == lab_id).with_for_update())
+    if not lab:
+        raise HTTPException(404, "Laboratório não encontrado.")
+    telemetry.unbind(db, lab, user)
+    return telemetry.status(db, lab)
 
 
 @router.get("/assets", tags=["Laboratories"])

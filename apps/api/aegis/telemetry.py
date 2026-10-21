@@ -40,13 +40,21 @@ def binding(db: Session, lab_id: str) -> WazuhBinding | None:
 
 def status(db: Session, lab: Laboratory) -> dict:
     item = binding(db, lab.id)
+    try:
+        proposed = descriptor()
+    except (ValueError, OSError):
+        proposed = None
+    fingerprint = digest(proposed) if proposed else None
     return {
-        "configuration_available": configured_hash() is not None,
+        "configuration_available": bool(proposed and proposed["policy"]["laboratory_id"] == lab.id),
+        "proposed_policy": proposed["policy"]
+        if proposed and proposed["policy"]["laboratory_id"] == lab.id
+        else None,
         "status": "unbound"
         if not item
         else (
             "reviewed_unverified"
-            if item.configuration_hash == configured_hash()
+            if item.configuration_hash == fingerprint
             else "configuration_changed"
         ),
         "binding": {

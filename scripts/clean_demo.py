@@ -12,6 +12,7 @@ from aegis.models import (
     Schedule,
     ScheduleAuthorization,
     ScheduleOccurrence,
+    TelemetryCollection,
     TelemetryEvent,
     TestExecution,
     ValidationResult,
@@ -46,6 +47,7 @@ with session_factory()() as db:
     for model, condition in [
         (DetectionEvidence, DetectionEvidence.result_id.in_(results)),
         (ValidationResult, ValidationResult.id.in_(results)),
+        (TelemetryCollection, TelemetryCollection.execution_id.in_(executions)),
         (TelemetryEvent, TelemetryEvent.execution_id.in_(executions)),
         (ExecutionStep, ExecutionStep.run_id.in_(runs)),
         (TestExecution, TestExecution.id.in_(executions)),

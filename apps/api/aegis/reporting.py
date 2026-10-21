@@ -13,12 +13,22 @@ REAL_LIMITATION = "Laboratório Linux autorizado. Comprovantes do executor confi
 def build_report(detail: dict) -> dict:
     # Hash exactly the JSON representation delivered to clients, including UTC dates.
     detail = jsonable_encoder(detail)
+    queried = any(
+        (item.get("collection") or {}).get("provider") == "wazuh-indexer"
+        and (item.get("collection") or {}).get("attempts", 0) > 0
+        for item in detail["executions"]
+    )
+    real_limitation = (
+        "Coleta Wazuh registrada neste escopo; disponibilidade, janela e evidências devem ser inspecionadas. Recibo do executor não é alerta. Uma regra de instrumentação do marcador benigno valida somente esse pipeline, sem comprovar proteção empresarial ou técnica ATT&CK."
+        if queried
+        else REAL_LIMITATION
+    )
     return {
         "product": "ÆGIS",
-        "report_version": "1.0",
+        "report_version": "1.1",
         "synthetic": detail["synthetic"],
         "run": detail,
-        "limitations": [LIMITATION if detail["synthetic"] else REAL_LIMITATION],
+        "limitations": [LIMITATION if detail["synthetic"] else real_limitation],
         "recommendations": [
             "Verificar instrumentação e disponibilidade da coleta nas simulações sem telemetria.",
             "Revisar regras e repetir o mesmo escopo após mudanças aprovadas.",

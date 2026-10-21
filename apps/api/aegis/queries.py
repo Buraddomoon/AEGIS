@@ -19,6 +19,7 @@ from aegis.models import (
     Schedule,
     ScheduleAuthorization,
     ScheduleOccurrence,
+    TelemetryCollection,
     TelemetryEvent,
     TestExecution,
     ValidationResult,
@@ -83,6 +84,7 @@ def execution_detail(db: Session, run_id: str) -> dict:
                 **{
                     name: (record(value) if value else None)
                     for name, model in [
+                        ("collection", TelemetryCollection),
                         ("runner_dispatch", RunnerDispatch),
                         ("runner_receipt", RunnerReceipt),
                         ("runner_cleanup", RunnerCleanup),

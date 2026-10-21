@@ -61,6 +61,11 @@ class LinuxRegistration(Input):
     confirm_isolation_review: Literal[True]
 
 
+class WazuhBindingReview(Input):
+    review: str = Field(min_length=20, max_length=4000)
+    confirm_read_only_scope: Literal[True]
+
+
 class SigmaImport(Input):
     content: str = Field(min_length=10, max_length=65536)
 
