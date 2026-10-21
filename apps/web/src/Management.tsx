@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { LinuxRegistration } from './LinuxRegistration'
 import {
   CheckCircle2,
   FileCode2,
@@ -28,12 +29,22 @@ import type { Audit, Connectors, Lab, Page, Rule, RuleVersion, User } from './ty
 
 export function Laboratories({ user }: { user: User }) {
   const data = useData<Page<Lab & { active_run_state: string | null }>>('/labs', 3000),
-    { busy, run } = useAction()
+    { busy, run } = useAction(),
+    [registering, setRegistering] = useState(false),
+    [selected, setSelected] = useState<string | null>(null)
   return (
     <>
       <PageHeading
         eyebrow="ESCOPO AUTORIZADO"
         title="Laboratórios"
+        action={
+          user.role === 'administrator' && (
+            <button className="button primary" onClick={() => setRegistering(true)}>
+              <Plus size={17} />
+              Registrar Linux Lab
+            </button>
+          )
+        }
         description="Identidade, versão de ambiente e autorização explícita para cada laboratório."
       />
       {data.isLoading ? (
@@ -68,7 +79,13 @@ export function Laboratories({ user }: { user: User }) {
               </div>
               <div>
                 <small>CAPACIDADE</small>
-                <strong>Adaptadores sintéticos</strong>
+                <strong>
+                  {l.synthetic
+                    ? 'Adaptadores sintéticos'
+                    : l.execution_capability === 'linux-marker-only'
+                      ? 'Marcador Linux revisado'
+                      : 'Desconectado'}
+                </strong>
               </div>
             </div>
             <div className="notice">
@@ -76,6 +93,11 @@ export function Laboratories({ user }: { user: User }) {
               {l.isolation}
             </div>
             <p className="mono muted-text">ID {l.id}</p>
+            {!l.synthetic && (
+              <button className="text-link" onClick={() => setSelected(l.id)}>
+                Histórico de verificações mTLS
+              </button>
+            )}
             {l.active_run_id && (
               <p>
                 Laboratório reservado:{' '}
@@ -86,6 +108,24 @@ export function Laboratories({ user }: { user: User }) {
             )}
             {user.role === 'administrator' && (
               <div className="inline-actions">
+                {!l.synthetic && (
+                  <button
+                    className="button"
+                    disabled={busy}
+                    onClick={() =>
+                      void run(
+                        () =>
+                          api(`/labs/${l.id}/preflight`, {
+                            method: 'POST',
+                            body: JSON.stringify({ confirm: true }),
+                          }),
+                        'Preflight registrado; consulte o resultado da verificação.',
+                      )
+                    }
+                  >
+                    Verificar mTLS (sem execução)
+                  </button>
+                )}
                 <button
                   className="button"
                   disabled={busy}
@@ -100,7 +140,9 @@ export function Laboratories({ user }: { user: User }) {
                     )
                   }
                 >
-                  {l.authorized ? 'Revogar autorização' : 'Autorizar Demo Lab'}
+                  {l.authorized
+                    ? 'Revogar autorização'
+                    : `Autorizar ${l.synthetic ? 'Demo Lab' : 'Linux Lab'}`}
                 </button>
                 {l.active_run_state === 'CLEANUP_FAILED' && (
                   <button
@@ -113,11 +155,13 @@ export function Laboratories({ user }: { user: User }) {
                             method: 'POST',
                             body: JSON.stringify({ confirm: true }),
                           }),
-                        'Revisão de cleanup sintético registrada.',
+                        'Recuperação registrada; laboratório liberado após confirmação de cleanup.',
                       )
                     }
                   >
-                    Confirmar revisão e liberar laboratório
+                    {l.synthetic
+                      ? 'Confirmar revisão e liberar laboratório'
+                      : 'Verificar cleanup original e liberar'}
                   </button>
                 )}
               </div>
@@ -127,10 +171,39 @@ export function Laboratories({ user }: { user: User }) {
       )}
       <div className="notice">
         <Radio size={18} />
-        Linux Lab e Windows Lab ainda não estão habilitados. Nenhum endpoint real pode ser
-        cadastrado como destino executável nesta versão.
+        Linux é opt-in e aceita somente o marcador benigno fixado na implantação. Sem coleta SIEM, o
+        resultado defensivo é inconclusivo. Windows e agendamentos Linux permanecem indisponíveis.
       </div>
+      {registering && <LinuxRegistration onClose={() => setRegistering(false)} />}
+      {selected && <VerificationHistory id={selected} onClose={() => setSelected(null)} />}
     </>
+  )
+}
+
+function VerificationHistory({ id, onClose }: { id: string; onClose: () => void }) {
+  const data = useData<
+    Page<{ id: string; success: boolean; reason: string; expires_at: string; created_at: string }>
+  >(`/labs/${id}/verifications`)
+  return (
+    <Modal title="Verificações do runner" onClose={onClose}>
+      {data.isLoading ? (
+        <Loading />
+      ) : data.error ? (
+        <Failure error={data.error} />
+      ) : data.data?.items.length ? (
+        data.data.items.map((v) => (
+          <article key={v.id}>
+            <strong>{v.success ? 'Preflight confirmado' : 'Preflight falhou'}</strong>
+            <p>{v.reason}</p>
+            <p>
+              {date(v.created_at)} · validade {date(v.expires_at)}
+            </p>
+          </article>
+        ))
+      ) : (
+        <Empty title="Nenhuma verificação registrada" />
+      )}
+    </Modal>
   )
 }
 

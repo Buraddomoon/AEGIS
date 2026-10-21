@@ -20,6 +20,7 @@ export interface Lab {
   environment_version: number
   isolation: string
   active_run_id: string | null
+  execution_capability: string
   connection_status: string
   synthetic: boolean
 }
@@ -32,6 +33,7 @@ export interface Test {
   cleanup: string
   prerequisites: string
   demo_outcome: string
+  execution_kind: 'demo' | 'linux_marker'
   approved: boolean
   platform: string
   risk: string
@@ -73,6 +75,7 @@ export interface Scope {
   }[]
 }
 export interface Run {
+  requested_by: string
   id: string
   campaign_id: string
   schedule_id: string | null
@@ -117,6 +120,8 @@ export interface Execution {
   synthetic: boolean
   result: Result | null
   events: EventRecord[]
+  runner_receipt: { content: Record<string, unknown>; sha256: string } | null
+  runner_cleanup: { content: Record<string, unknown>; sha256: string } | null
   evidence: { id: string; event_id: string; reason: string }[]
 }
 export interface RunDetail extends Run {
