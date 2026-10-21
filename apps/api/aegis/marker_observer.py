@@ -6,9 +6,12 @@ import json
 import os
 import stat
 import time
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
+
+from aegis.marker_log import ObservationLog
 
 
 def observe_once(
@@ -103,14 +106,22 @@ def main():
     parser.add_argument("--laboratory-id", type=UUID, required=True)
     parser.add_argument("--asset-id", type=UUID, required=True)
     parser.add_argument("--once", action="store_true")
+    parser.add_argument("--log-directory", type=Path)
     args = parser.parse_args()
-    seen: set[str] = set()
-    while True:
-        for record in observe_once(args.workspace, args.laboratory_id, args.asset_id, seen):
-            print(json.dumps(record, ensure_ascii=False, separators=(",", ":")), flush=True)
-        if args.once:
-            return
-        time.sleep(0.25)
+    sink = (
+        ObservationLog(args.log_directory, args.laboratory_id, args.asset_id)
+        if args.log_directory
+        else nullcontext(None)
+    )
+    with sink as log:
+        seen: set[str] = set(log.seen) if log else set()
+        while True:
+            for record in observe_once(args.workspace, args.laboratory_id, args.asset_id, seen):
+                if not log or log.append(record):
+                    print(json.dumps(record, ensure_ascii=False, separators=(",", ":")), flush=True)
+            if args.once:
+                return
+            time.sleep(0.25)
 
 
 if __name__ == "__main__":
