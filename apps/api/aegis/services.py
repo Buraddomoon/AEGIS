@@ -4,9 +4,9 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aegis import linux_labs
+from aegis import linux_labs, telemetry
 from aegis.domain.states import TERMINAL, State, check_transition
-from aegis.domain.validation import digest
+from aegis.domain.validation import LOGIC_VERSION, digest
 from aegis.models import (
     Approval,
     Asset,
@@ -84,7 +84,7 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
         "asset_id": asset.id,
         "mode": lab.kind,
         "synthetic": synthetic,
-        "logic_version": "aegis-correlation/1.0",
+        "logic_version": LOGIC_VERSION,
         "clock_skew_seconds": 5,
         "ingestion_window_seconds": 120,
         "test_definitions": [
@@ -105,6 +105,12 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
     }
     if not synthetic:
         scope["runner"] = linux_labs.descriptor()
+        scope["telemetry"] = telemetry.scope_for(db, lab, asset)
+        if scope["telemetry"]["provider"] == "wazuh-indexer":
+            policy = scope["telemetry"]["policy"]
+            scope["clock_skew_seconds"] = policy["clock_skew_seconds"]
+            scope["ingestion_window_seconds"] = policy["ingestion_window_seconds"]
+            scope["test_definitions"][0]["expected_rule"] = policy["expected_rule"]
     return scope
 
 

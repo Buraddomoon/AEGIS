@@ -9,10 +9,10 @@ from datetime import timedelta
 from redis.exceptions import RedisError
 from sqlalchemy import select
 
-from aegis import linux_labs
+from aegis import linux_labs, telemetry
 from aegis.config import settings
 from aegis.db import session_factory
-from aegis.domain.contracts import Collection, ExecutionAdapter, ExecutionContext
+from aegis.domain.contracts import ExecutionAdapter, ExecutionContext
 from aegis.domain.states import ACTIVE, State
 from aegis.domain.validation import LOGIC_VERSION, digest, validate
 from aegis.integrations.demo import DemoExecutionAdapter, DemoTelemetryProvider
@@ -58,6 +58,7 @@ def claim_next() -> str | None:
             not approval
             or approval.expires_at <= now()
             or not approval.used_at
+            or run.scope.get("logic_version") != LOGIC_VERSION
             or approval.scope_hash != run.scope_hash
             or digest(run.scope) != run.scope_hash
             or not lab
@@ -107,6 +108,11 @@ def guard(run_id: str) -> None:
         run = db.scalar(select(CampaignRun).where(CampaignRun.id == run_id).with_for_update())
         if not run or run.state not in ACTIVE:
             raise Interrupted(State.FAILED, "Execução perdeu a posse ou já foi finalizada.")
+        if run.scope.get("logic_version") != LOGIC_VERSION:
+            raise Interrupted(
+                State.CANCELLED,
+                "Versão da lógica aprovada difere do worker; nova aprovação necessária.",
+            )
         if run.cancel_requested:
             raise Interrupted(State.CANCELLED, "Cancelamento solicitado; iniciando cleanup.")
         if not run.deadline_at or run.deadline_at <= now():
@@ -242,13 +248,7 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
                     contexts[item.id]
                 )
                 if run.synthetic
-                else Collection(
-                    (),
-                    False,
-                    False,
-                    False,
-                    "SIEM não configurado/consultado; comprovante do executor não é telemetria defensiva.",
-                )
+                else telemetry.collect_real(run_id, contexts[item.id], lambda: guard(run_id))
             )
             collections[item.id] = collection
             with session_factory()() as db:
@@ -386,7 +386,7 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
                     or (
                         "Execução e cleanup demonstrativos concluídos."
                         if current.synthetic
-                        else "Execução Linux e cleanup confirmados; SIEM não consultado."
+                        else "Execução Linux e cleanup confirmados; validação limitada às evidências registradas."
                     ),
                 )
                 current.error, current.ended_at, current.heartbeat_at = error, now(), now()

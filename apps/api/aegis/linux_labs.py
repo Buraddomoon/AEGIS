@@ -206,6 +206,10 @@ def approval_valid(db: Session, run: CampaignRun, approval: Approval | None) -> 
     requester = db.get(User, run.requested_by)
     approver = db.get(User, approval.approved_by) if approval else None
     lab = db.get(Laboratory, run.laboratory_id)
+    from aegis.telemetry import scope_valid
+
+    if not scope_valid(db, run):
+        return False
     current_identity = None
     try:
         current_identity = descriptor()

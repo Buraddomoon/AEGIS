@@ -7,7 +7,7 @@ from typing import Any
 
 from aegis.domain.contracts import Collection, Event, ExecutionContext
 
-LOGIC_VERSION = "aegis-correlation/1.0"
+LOGIC_VERSION = "aegis-correlation/1.1"
 
 
 class Outcome(StrEnum):
@@ -62,14 +62,22 @@ def validate(
     matching = tuple(
         e for e in collection.events if correlates(ctx, e, skew_seconds, ingestion_seconds)
     )
-    alerts = tuple(e for e in matching if e.kind == "alert" and e.rule_id == ctx.expected_rule)
+    alerts = tuple(
+        e
+        for e in matching
+        if e.kind == "alert" and ctx.expected_rule and e.rule_id == ctx.expected_rule
+    )
     if alerts:
         return Verdict(
             Outcome.DETECTED,
             "Execução confirmada; alerta com regra esperada, marcador, ativo, laboratório, comportamento e janela compatíveis.",
             alerts,
         )
-    observed = tuple(e for e in matching if e.kind == "telemetry")
+    observed = tuple(e for e in matching if e.kind in ("telemetry", "alert"))
+    if not ctx.expected_rule:
+        return Verdict(
+            Outcome.INCONCLUSIVE, "Regra esperada não definida no escopo aprovado.", observed
+        )
     if not collection.complete or collection.error or not collection.alerts_available:
         return Verdict(
             Outcome.INCONCLUSIVE,
@@ -79,7 +87,7 @@ def validate(
     if observed:
         return Verdict(
             Outcome.OBSERVED_NOT_ALERTED,
-            "Telemetria correlacionada; consulta completa sem alerta da regra esperada.",
+            "Observação correlacionada; consulta completa sem alerta da regra esperada.",
             observed,
         )
     return Verdict(
