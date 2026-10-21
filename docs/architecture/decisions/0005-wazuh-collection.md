@@ -1,6 +1,6 @@
 # ADR 0005 — Coleta Wazuh aprovada e correlação de identidade
 
-Status: implementação. Data: 2026-10-21. Continuidade de b8c9b0e (101 commits).
+Status: implementado e testado localmente; validação Wazuh externa pendente. Data: 2026-10-21. Continuidade de b8c9b0e (101 commits).
 
 O usuário informou que ainda não possui Wazuh e pediu preparar a integração **sem instalar**. Não iniciar Wazuh, containers Linux, novos marcadores reais ou consultar serviços externos nesta etapa. Validar software com PostgreSQL/runner em fixtures descartáveis, HTTP local de teste e Demo existente.
 
@@ -25,3 +25,5 @@ O usuário informou que ainda não possui Wazuh e pediu preparar a integração 
 - https://docs.opensearch.org/latest/api-reference/search-apis/search/ e https://docs.opensearch.org/latest/api-reference/search-apis/scroll/ — timeout, shards, cursor e permissões read/scroll/clear.
 
 Sem novas dependências ou serviços pagos. Versões efetivas permanecem nos locks existentes. Testes de contrato não são integração Wazuh externa validada.
+
+A implementação usa AsyncClient com asyncio.Runner privado e asyncio.timeout por request inteiro, incluindo headers/TLS/corpo, com streaming sem rebuffering de 64 KiB e rejeição de compressão. SNI é string conforme extensão HTTPX; teste de handshake real revelou/corrigiu incompatibilidade de bytes no backend async. Espera deve cobrir janela temporal; política com mais de 64 rondas é recusada. Observer usa o nome físico UUID.hex do Workspace e emite UUID canônico; fixture usa Workspace real. Fontes adicionais: https://www.python-httpx.org/advanced/extensions/#sni_hostname e https://docs.python.org/3.13/library/asyncio-task.html#asyncio.timeout.

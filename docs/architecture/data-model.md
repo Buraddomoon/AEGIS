@@ -11,6 +11,9 @@ erDiagram
   TestExecution ||--o| RunnerDispatch : prepara
   TestExecution ||--o| RunnerReceipt : comprova
   TestExecution ||--o| RunnerCleanup : limpa
+  Laboratory ||--o| WazuhBinding : revisa
+  Asset ||--o| WazuhBinding : mapeia
+  TestExecution ||--o| TelemetryCollection : documenta
   Laboratory ||--o{ Campaign : delimita
   Campaign ||--o{ CampaignTest : seleciona
   TestDefinition ||--o{ CampaignTest : referencia
@@ -45,3 +48,5 @@ Relatórios e cobertura são projeções dos dados persistidos. Schedule, Schedu
 Retenção inicial: não há expurgo automático. Históricos e auditoria são mantidos; limitação de disco deve ser acompanhada. `make clean-demo` remove somente campanhas/resultados sintéticos, e planos Demo encerrados, exigindo revogar planos abertos e finalizar reservas, com confirmação local, e preserva auditoria/usuários/catalogação. Sessões vencidas deixam de autenticar, mas ainda não são expurgadas automaticamente. Antes de operar Lab Mode, definir política de retenção e arquivo externo de evidências.
 
 Linux: binding com runner único, revisão e hash da configuração pública; verificações append-only com validade e versão do ambiente. Dispatch único por execução persiste spec/hash antes da rede; somente generation pode receber UPDATE no papel runtime. Recibo e cleanup únicos por execução são append-only, com comparação de hash e conteúdo em retries. JSON contém mensagens tipadas do protocolo, não comandos arbitrários. Estes comprovantes não são TelemetryEvent nem DetectionEvidence. Migração d4465b7aca2a preserva registros Demo existentes.
+
+Migração 4b72c7bb8548: WazuhBinding relaciona laboratório/ativo ao agent.id externo único, regra, schema, revisão e hash de configuração. TelemetryCollection é resumo imutável por execução, separado dos documentos originais; contém tentativas/período, disponibilidade/completude/janela e razão pública. Runtime não recebe UPDATE/DELETE em resumos. Payloads de eventos mantêm identificadores originais; policy snapshots guardam mapping usado historicamente, mesmo após remover o vínculo atual.
