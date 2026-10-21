@@ -28,4 +28,10 @@ Na rodada ampliada: **85 testes Python** e **5 testes frontend** passaram; E2E F
 
 `make test-runner` verifica protocolo, filesystem, supervisor, journal, cliente/servidor, TLS real em loopback, morte do pai e isolamento de configuração. Não inicia containers. Fixtures de software criam somente arquivos/processos fixos em diretórios pytest; o programa bloqueante usado em timeout não existe na allowlist runtime. O teste PDEATHSIG utiliza um subreaper separado e recolhe seus próprios filhos.
 
-`make lab-smoke` é um ensaio **real opt-in**, exige autorização e container previamente iniciado; não integra `make test` nem CI. O ensaio de2026-10-21 foi autorizado explicitamente e seu resultado está em PROGRESS. Nenhum Wazuh externo foi acessado.
+`make lab-smoke` é um ensaio **real opt-in**, exige autorização e container previamente iniciado; não integra `make test` nem CI. O ensaio de 2026-10-21 foi autorizado explicitamente e seu resultado está em PROGRESS. Nenhum Wazuh externo foi acessado.
+
+## Campanhas Linux integradas
+
+`tests/test_linux_campaigns.py` exercita API/worker/PostgreSQL reais com runner de fixture em diretório pytest e transporte HTTP local de teste; mTLS real é coberto separadamente no transporte e no ensaio Docker. Abrange aprovação segregada, confirmação real, binding/usuários/allowlist revogados, preflight vencido, agendamento recusado, recibos, indicadores/relatórios por modo, crash/quarentena, geração e respostas perdidas em prepare/start/cleanup e rollback após cleanup remoto. Recuperações concorrentes devem produzir um sucesso e um conflito.
+
+`make linux-platform-smoke` é opt-in real e não faz parte de make test/CI. Requer autorização específica do escopo em labs/linux/README.md. O ensaio integrado de 2026-10-21 executou uma única campanha. Falha inicial da captura opcional por falta de espera pelo formulário foi corrigida; apenas o histórico foi reaberto com conta temporária de visualização, sem novo marcador. As três contas temporárias foram desativadas e o stack próprio encerrado.

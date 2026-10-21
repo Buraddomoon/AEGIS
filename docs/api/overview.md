@@ -8,9 +8,9 @@ Sessão por cookie HttpOnly. Login JSON exige `X-Aegis-Request: browser`; origem
 |---|---|
 | auth | POST login/logout, GET me |
 | users | GET lista, POST cadastro (admin) |
-| labs/assets | GET lista, PATCH lab authorization, POST recover (admin) |
+| labs/assets | GET lista, PATCH lab authorization, POST linux/register e preflight, GET verifications, POST recover (admin para mutações) |
 | techniques | GET pesquisa/filtros/paginação; GET detalhe/history/simulações |
-| tests | GET allowlist demonstrativa |
+| tests | GET allowlist Demo e marcador Linux revisado |
 | campaigns | GET/POST; POST `/{id}/runs` com idempotency_key |
 | executions | GET lista/detalhe, POST approve/start/cancel/reject |
 | schedules | GET/POST lista/criação; GET detalhe e occurrences; POST approve (admin), pause (operador), revoke (admin), com confirmação explícita |
@@ -21,8 +21,8 @@ Sessão por cookie HttpOnly. Login JSON exige `X-Aegis-Request: browser`; origem
 | audit | GET lista paginada (admin) |
 | health | GET live/ready, sem autenticação |
 
-Listagens grandes usam `offset` e `limit` (1–1000), com `items/total`. Catálogos pequenos labs/tests são listas limitadas pela allowlist/configuração. Execuções filtram state/campaign_id; técnicas filtram q/tactic/platform/coverage. Ordenação é determinística por recurso (IDs/nomes ou criação recente), sem SQL de ordenação livre recebido do usuário.
+Listagens grandes usam `offset` e `limit` (1–1000), com `items/total`. Catálogos pequenos labs/tests são listas limitadas pela allowlist/configuração. Execuções filtram state/campaign_id/mode; coverage e techniques aceitam mode=demo|linux, padrão demo; técnicas filtram q/tactic/platform/coverage. Ordenação é determinística por recurso (IDs/nomes ou criação recente), sem SQL de ordenação livre recebido do usuário.
 
 Erros `{error: {code, message, request_id}}`; erros de input incluem somente campo/tipo, sem valores sensíveis. Status: 401 sem sessão, 403 sem papel/CSRF/origem, 404 inexistente, 409 conflito de estado/escopo, 413 payload grande, 422 input inválido, 429 rate limit, 502 conector falhou, 503 dependência indisponível. X-Request-ID auxilia diagnóstico.
 
-Polling controlado da UI acompanha estado e evidências, sem WebSocket fictício. Schedules operam somente Demo, conforme [política](../operations/scheduling.md). Endpoints de execução real e implantação Sigma não existem nesta versão. Integrações ainda não configuradas retornam estado explícito e teste de conexão retorna 409; não inventam sucesso.
+Polling controlado da UI acompanha estado e evidências, sem WebSocket fictício. Schedules operam somente Demo, conforme [política](../operations/scheduling.md). Campanhas Linux usam os mesmos endpoints de execução; approve exige confirm_real_execution=true e aprovador diferente do solicitante. Detalhes incluem runner_dispatch/runner_receipt/runner_cleanup separados de eventos defensivos. Implantação Sigma permanece indisponível. Integrações ainda não configuradas retornam estado explícito e teste de conexão retorna 409; não inventam sucesso.

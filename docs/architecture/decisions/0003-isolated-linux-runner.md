@@ -1,6 +1,6 @@
 # ADR 0003 — Runner Linux restrito antes de habilitar Lab Mode
 
-Status: implementado e validado como runner independente; integração de campanhas Linux pendente. Data: 2026-10-21.
+Status: implementado e validado como runner independente; integração de campanhas entregue posteriormente no ADR 0004. Data: 2026-10-21.
 
 O primeiro incremento Linux entrega um runner executável separado, protocolo tipado, adaptador cliente e implantação opt-in. O fluxo atual de campanhas continua Demo até validar o runner em laboratório autorizado e integrar sua autorização/identidade/persistência ao backend. Não expor um botão de Lab Mode operacional antes desse aceite.
 

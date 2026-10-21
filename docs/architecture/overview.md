@@ -8,6 +8,8 @@ Fora do aceite 0.1: execução remota, instalação de Atomic, implantação de 
 
 Contratos em `aegis/domain/contracts.py`: ExecutionAdapter prepara/executa/limpa; TelemetryProvider coleta eventos; DetectionProvider separa alertas de observações; TestCatalogProvider importa metadados sem aprovar comandos; ReportExporter exporta dados persistidos. Regras de correlação são funções puras independentes de SIEM.
 
-Fila: solicitação aprovada muda para QUEUED na mesma transação do consumo da aprovação e aquisição do laboratório. Worker reclama com SELECT FOR UPDATE SKIP LOCKED. Não há dual-write PostgreSQL/Redis para jobs. Retomada de worker não repete efeitos: execuções abandonadas são encerradas explicitamente. Lab real continua desabilitado.
+Fila: solicitação aprovada muda para QUEUED na mesma transação do consumo da aprovação e aquisição do laboratório. Worker reclama com SELECT FOR UPDATE SKIP LOCKED. Não há dual-write PostgreSQL/Redis para jobs. Retomada de worker não repete efeitos: execuções abandonadas são encerradas explicitamente. Linux opt-in agora usa o mesmo fluxo, com dispatch durável antes da RPC, recibos separados e quarentena real sem replay; ver ADR 0004.
 
 Agendamento de campanhas Demo foi entregue como extensão do MVP, sob aprovação explícita e limites persistentes. Consulte [operação](../operations/scheduling.md) e ADR 0002 para políticas, contratos e validação.
+
+Incremento 0.2: LinuxLabBinding/LabVerification fixam identidade e revisão administrativa; aprovação segregada, marcador único e recibos/cleanup append-only. Ausência de coleta SIEM produz INCONCLUSIVE. Cobertura e detalhes ATT&CK filtram modo. O Compose padrão permanece Demo; overlay integrado é opt-in e separado. [Instalação e recuperação](../../labs/linux/README.md).
