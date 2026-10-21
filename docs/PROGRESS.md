@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **0.2.0, Marco Linux B ao final deste documento**. Demo saudável em localhost:18780; campanha Linux integrada validada sob autorização específica e stack do ensaio encerrado. Os registros anteriores abaixo são históricos, não o estado atual.
+Estado atual: **Demo/Linux 0.2.0 com preparação Wazuh (Marco Wazuh A ao final)**. Demo saudável em localhost:18780; usuário ainda não tem Wazuh e pediu sem instalar. Coleta validada localmente, sem consulta externa ou novo ensaio Linux. Os registros anteriores abaixo são históricos, não o estado atual.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -231,3 +231,52 @@ CI remota do último código **8d7a38b: SUCCESS**, [run 39615555686](https://git
 ## Continuidade — preparação da coleta Wazuh
 
 Início em main limpa/sincronizada b8c9b0e (101 commits). Usuário confirmou: **“Ainda não tenho Wazuh; preparar integração sem instalar”**. Implementar ADR 0005, binding explícito de agente/regra/configuração, consulta limitada com polling, resumo de coleta imutável e UI/relatórios proporcionais. Sem instalar/iniciar Wazuh ou repetir ensaios Linux; testes locais e fixtures não serão apresentados como evidência externa.
+
+## Marco Wazuh A — coleta preparada e validada localmente, sem instalação
+
+Data: 2026-10-21. Continuidade de b8c9b0e (101 commits). O usuário confirmou **“Ainda não tenho Wazuh; preparar integração sem instalar”** e pediu continuidade. Nenhum Wazuh foi instalado/iniciado/consultado; nenhum novo ensaio Docker Linux foi realizado. Testes usaram somente fixtures descartáveis, PostgreSQL/Redis existentes e HTTPS próprio em loopback. O Demo padrão foi atualizado sem acessar alvos externos.
+
+### Entregas e decisões
+
+- ADR 0005 e `integrations/wazuh_config.py`: política opt-in tipada, sem credenciais, fixa laboratório/ativo, agent.id externo, regra, índices, schema/prefixo, janela e limites. Configuração de destino/credenciais/CA permanece na implantação; API não recebe URL/query/comando/segredo.
+- Migração **4b72c7bb8548**: WazuhBinding relaciona namespaces explícitos, com identidade única e revisão administrativa; TelemetryCollection é resumo append-only por execução. Grants runtime recusam UPDATE/DELETE no resumo.
+- `telemetry.py`, API, services e worker: binding exige administrador, confirmação, Linux Lab revogado/sem reserva; versão de ambiente e scope/hash incluem configuração pública aprovada. Mudança de mapping/regra/destino/CA/principal/janelas invalida aprovação. Identidade duplicada retorna 409 com rollback, sem alterar versão. Remover vínculo preserva escopos/auditoria históricos.
+- `integrations/wazuh.py`: Indexer Search/Scroll somente leitura, IP fixado, TLS/SNI/CA validados, sem proxy/redirect. Mapping exige agent.id externo exato, inclusive recusando agente cujo valor coincida com UUID interno. Campos ausentes/errados não são inventados. IDs/índice/payload originais preservados.
+- `wazuh_polling.py`: espera de ingestão cobrindo janela temporal, até 64 rodadas, páginas/documentos/bytes limitados, deduplicação e rejeição de conflito por source/id, guards de cancelamento e reserva de tempo para cleanup. AsyncClient/asyncio.Runner privados e asyncio.timeout limitam request inteiro (conexão/TLS/headers/corpo); sem threads abandonadas. Compressão recusada; clear de cursor conhecido é tentativa limitada, com expiração como fallback.
+- Correlação **1.1**: alerta da regra esperada só confirma DETECTED com execução e identidade/marcador/comportamento/tempo correlacionados. Alerta de outra regra correlacionado é observação, sem afirmar regra esperada; sem regra definida, conclusão é inconclusiva. Worker recusa lógica diferente da aprovada, sem executar silenciosamente versão nova. Negativos exigem consulta final completa/janela cumprida; falha/403/índice ausente/shards zero/timeout/truncamento/orçamento insuficiente não viram falha defensiva confirmada.
+- UI mostra política pública, revisão, agent/regra/hash, estado não verificado e resumo da coleta. Relatórios distinguem SIEM não consultado de consulta tentada, janela, disponibilidade e evidências; recibos/cleanup continuam separados de alertas. Não há badge falso de integração Wazuh externa validada.
+- `marker_observer.py`: observação passiva de arquivo físico, sem criar/apagar/executar teste. Verifica arquivo regular/nlink/43 bytes/UUID/hash, recusa links/FIFO/conteúdo inválido, opera em workspace privado e emite UUID canônico a partir do nome físico UUID.hex. Não inicia automaticamente.
+- `labs/wazuh/`: política com IDs fictícios, XML localfile/regra de pipeline e guia de preparação. `infra/compose.wazuh.example.yml` apenas exemplifica mounts na aplicação; não instala nem inicia SIEM. Arquivos estruturais foram validados, mas **não houve wazuh-logtest nem execução do rules engine real**. Compartilhamento read-only do workspace/log/agente ainda é trabalho de implantação futura autorizada.
+
+### Testes efetivamente executados
+
+| Check | Resultado observado |
+|---|---|
+| `make test` final | **208 Python passaram**, 95,13s; **14 frontend passaram**; aviso upstream TestClient/httpx preservado |
+| `make lint` | Ruff/check/format, mypy do domínio, TypeScript e Prettier aprovados |
+| Contrato Indexer | 36 cenários de política/schema/identidades/shards/índices/falhas/polling/cancelamento/deadlines, sem Wazuh externo |
+| Campanhas com fixture HTTP | 10 cenários de worker/PostgreSQL/runner de teste, classificações, binding/revogação/confirmação/RBAC, lógica antiga recusada e conflito de agente com rollback |
+| TLS real loopback | Transporte HTTPX padrão aceita CA/SNI corretos e recusa CA/hostname incorretos; não usa verify=false |
+| Observer | 10 cenários com Workspace real, sem subprocesso do observer, links/hardlinks/FIFO/paths/conteúdo inválidos recusados |
+| `make e2e` | **PASS**, Firefox, 3 runs / 12 testes sintéticos, repetição/comparação/agendamento/grant/relatórios, 6 capturas e zero erros JavaScript |
+| Docker Demo | build final aplicado; API/SPA atualizadas e health ready DB/Redis confirmado em http://localhost:18780 |
+| `make smoke` | **PASS**, papel SQL runtime restrito (incluindo novos resumos imutáveis), worker, manual/agendado, grant/revogação e 8 resultados sintéticos |
+| Estado do runtime | sem WAZUH_URL/política/vínculo/coleta externa; zero registros Wazuh no banco operacional; nenhum container Linux Lab iniciado |
+| Exemplos | JSON Pydantic, XML estrutural e render do overlay app-only aprovados, sem up do overlay Wazuh |
+| `make audit` | npm zero; Python mantém DiskCache PYSEC-2026-2447 transitivo revisado, sem novo achado desconhecido e sem alegar zero vulnerabilidades |
+
+Os DETECTED nos testes Wazuh são resultados do contrato em schemas descartáveis com documentos fictícios, não evidências defensivas de ambiente real. A captura `docs/images/wazuh-preparation.png` vem do aplicativo em Firefox e mostra **Desconectado**, sem Wazuh. O histórico Linux da etapa anterior permanece intacto; não se fabricou um novo ciclo real para esta preparação.
+
+### Problemas encontrados e corrigidos
+
+Revisão especializada somente leitura apontou fallback de agent.id para UUID interno (falso positivo), buffering/timeout por fase (slow response prolongaria prazo) e incompatibilidade UUID com hífens versus UUID.hex do runner. Corrigidos e cobertos por regressões: namespace estrito, timeout async integral/streaming limitado e fixture usando Workspace real. O teste TLS real também revelou SNI bytes incompatível com AnyIO; corrigido para string conforme API oficial, sem enfraquecer certificados. Escopos usam LOGIC_VERSION e rejeitam aprovação antiga. Tipagem do estado vazio da UI e import de fixture foram ajustados antes da rodada final; checks não foram declarados aprovados enquanto falhavam.
+
+### Pendências reais e próxima etapa
+
+A preparação de software está concluída neste escopo. Para fechar validação externa: Wazuh próprio/isolado, versão/schema/CA/conta read-only e agent.id reais; acesso passivo ao workspace físico e logfile/rotação revisados; instalar regras manualmente só após checar ID/validar com wazuh-logtest; confirmar ingestão/archives/relógios e executar um ciclo específico autorizado. O usuário ainda não possui essa infraestrutura e **não autorizou instalação**. Não buscar alvos presumidos nem repetir laboratório/efeito para contornar isso. A regra de exemplo só verifica pipeline de marcador benigno, sem cobertura ATT&CK artificial ou proteção empresarial.
+
+Persistem limitações anteriores de PKI de desenvolvimento, rotação/recuperação de binding, retenção/fences, Windows, Atomic executável, scheduler Linux, Sigma deployment, PDF e isolamento multi-tenant. Nenhuma nova dependência, serviço pago, PR, branch temporário, force push ou reescrita de histórico.
+
+Este marco acrescenta **18 commits granulares**, incluindo este checkpoint, totalizando **119 commits**. Último código/configuração: **8eb1103**; commits posteriores são documentação/capturas. GitHub AEGIS permanece privado e exclusivamente main; commit/push foram feitos por unidade verificável. Conferir git log -1 e git status -sb após o checkpoint para hash/mensagem/sincronização finais.
+
+CI remota do último código/configuração **8eb1103: SUCCESS**, [run 39645394721](https://github.com/Buraddomoon/AEGIS/actions/runs/39645394721). Instalação dos locks, lint/tipos, PostgreSQL/frontend/build e revisão de advisories passaram. Os commits seguintes são documentação/capturas e não disparam testes remotos redundantes. Foram verificados 36 Markdown sem destinos locais ausentes. Hash/sincronização final serão conferidos após push deste checkpoint.
