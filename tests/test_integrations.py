@@ -118,14 +118,22 @@ def test_wazuh_pagination_preserves_identity_and_correlates():
         if request.method == "DELETE":
             return httpx.Response(200, json={"succeeded": True})
         if request.url.path == "/_search/scroll":
-            return httpx.Response(200, json={"_scroll_id": "cursor", "hits": {"hits": []}})
+            return httpx.Response(
+                200,
+                json={
+                    "_scroll_id": "cursor",
+                    "timed_out": False,
+                    "_shards": {"total": 1, "successful": 1, "failed": 0},
+                    "hits": {"total": {"value": 1, "relation": "eq"}, "hits": []},
+                },
+            )
         return httpx.Response(
             200,
             json={
                 "_scroll_id": "cursor",
                 "timed_out": False,
-                "_shards": {"failed": 0},
-                "hits": {"hits": [hit]},
+                "_shards": {"total": 1, "successful": 1, "failed": 0},
+                "hits": {"total": {"value": 1, "relation": "eq"}, "hits": [hit]},
             },
         )
 
