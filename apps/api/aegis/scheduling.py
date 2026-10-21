@@ -63,6 +63,8 @@ def create(db: Session, data: ScheduleCreate, actor: User) -> Schedule:
         raise HTTPException(409, "Limite global de 64 agendamentos abertos atingido.")
     campaign = services.get_or_404(db, Campaign, data.campaign_id)
     scope = services.snapshot_scope(db, campaign)
+    if scope.get("mode") != "demo":
+        raise HTTPException(409, "Agendamento habilitado somente para Demo.")
     item = Schedule(
         **data.model_dump(),
         laboratory_id=campaign.laboratory_id,
@@ -89,6 +91,8 @@ def locked(db: Session, identifier: str) -> Schedule:
 
 
 def fresh_scope(db: Session, item: Schedule) -> bool:
+    if item.scope.get("mode") != "demo":
+        return False
     if digest(plan(item)) != item.plan_hash or digest(item.scope) != item.scope_hash:
         return False
     try:

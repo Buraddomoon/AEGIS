@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from aegis import linux_labs
 from aegis.domain.states import TERMINAL, State, check_transition
 from aegis.domain.validation import digest
 from aegis.models import (
@@ -50,10 +51,8 @@ def move(
 
 def snapshot_scope(db: Session, campaign: Campaign) -> dict:
     lab = get_or_404(db, Laboratory, campaign.laboratory_id)
-    if not lab.authorized or lab.kind != "demo":
-        raise HTTPException(
-            409, "MVP permite apenas Demo Lab autorizado; execução real indisponível."
-        )
+    if not lab.authorized or lab.kind not in ("demo", "linux"):
+        raise HTTPException(409, "Laboratório não autorizado ou modo de execução indisponível.")
     tests = db.scalars(
         select(TestDefinition)
         .join(CampaignTest, TestDefinition.id == CampaignTest.test_id)
@@ -62,16 +61,29 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
     ).all()
     if not tests or any(not t.approved for t in tests):
         raise HTTPException(409, "Campanha vazia ou teste fora da allowlist.")
-    asset = db.scalar(select(Asset).where(Asset.laboratory_id == lab.id, Asset.synthetic.is_(True)))
+    synthetic = lab.kind == "demo"
+    if any(t.execution_kind != ("demo" if synthetic else "linux_marker") for t in tests):
+        raise HTTPException(409, "Teste incompatível com o modo do laboratório.")
+    if not synthetic and (
+        len(tests) != 1
+        or tests[0].id != linux_labs.TEST_DEFINITION_ID
+        or not linux_labs.verified(db, lab)
+    ):
+        raise HTTPException(409, "Linux exige teste fixo revisado e preflight vigente do binding.")
+    asset = db.scalar(
+        select(Asset).where(Asset.laboratory_id == lab.id, Asset.synthetic.is_(synthetic))
+    )
     if not asset:
-        raise HTTPException(409, "Ativo sintético do laboratório não está cadastrado.")
-    return {
+        raise HTTPException(409, "Ativo autorizado do laboratório não está cadastrado.")
+    if not synthetic and asset.id != linux_labs.descriptor()["asset_id"]:
+        raise HTTPException(409, "Ativo não corresponde ao runner revisado.")
+    scope = {
         "campaign_id": campaign.id,
         "laboratory_id": lab.id,
         "environment_version": lab.environment_version,
         "asset_id": asset.id,
-        "mode": "demo",
-        "synthetic": True,
+        "mode": lab.kind,
+        "synthetic": synthetic,
         "logic_version": "aegis-correlation/1.0",
         "clock_skew_seconds": 5,
         "ingestion_window_seconds": 120,
@@ -85,11 +97,15 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
                 "expected_rule": t.expected_rule,
                 "demo_outcome": t.demo_outcome,
                 "cleanup": t.cleanup,
+                "execution_kind": t.execution_kind,
             }
             for t in tests
         ],
         "rule_versions": {r.id: r.latest_version for r in db.scalars(select(DetectionRule))},
     }
+    if not synthetic:
+        scope["runner"] = linux_labs.descriptor()
+    return scope
 
 
 def request_run(
@@ -115,7 +131,7 @@ def request_run(
         scope=scope,
         scope_hash=digest(scope),
         state=State.CREATED,
-        synthetic=True,
+        synthetic=scope["synthetic"],
     )
     db.add(run)
     db.flush()
@@ -128,12 +144,12 @@ def request_run(
             asset_id=scope["asset_id"],
             marker="aegis-" + uid(),
             state=State.CREATED,
-            synthetic=True,
+            synthetic=scope["synthetic"],
         )
         db.add(execution)
         db.flush()
         move(db, run, State.PENDING_APPROVAL, "Incluído no escopo solicitado.", execution)
-    audit(db, actor.id, "run.request", run.id, scope_hash=run.scope_hash, synthetic=True)
+    audit(db, actor.id, "run.request", run.id, scope_hash=run.scope_hash, synthetic=run.synthetic)
     db.commit() if commit else db.flush()
     return run
 
@@ -145,12 +161,24 @@ def locked_run(db: Session, run_id: str) -> CampaignRun:
     return run
 
 
-def approve_run(db: Session, run_id: str, actor: User, minutes: int, duration: int) -> Approval:
+def approve_run(
+    db: Session,
+    run_id: str,
+    actor: User,
+    minutes: int,
+    duration: int,
+    *,
+    confirm_real: bool = False,
+) -> Approval:
     run = locked_run(db, run_id)
     if run.state != State.PENDING_APPROVAL:
         raise HTTPException(409, "Execução não aguarda aprovação.")
     if db.scalar(select(Approval).where(Approval.run_id == run.id)):
         raise HTTPException(409, "Já existe uma aprovação; crie nova solicitação se expirou.")
+    if not run.synthetic and (not confirm_real or actor.id == run.requested_by):
+        raise HTTPException(
+            409, "Linux exige confirmação real e administrador diferente do solicitante."
+        )
     fresh = snapshot_scope(db, get_or_404(db, Campaign, run.campaign_id))
     if digest(fresh) != run.scope_hash:
         raise HTTPException(409, "Escopo mudou; crie uma nova solicitação.")
@@ -203,6 +231,8 @@ def start_run(
     fresh = snapshot_scope(db, get_or_404(db, Campaign, run.campaign_id))
     if digest(fresh) != run.scope_hash or approval.scope_hash != run.scope_hash:
         raise HTTPException(409, "Configuração mudou após revisão; solicite nova execução.")
+    if not linux_labs.approval_valid(db, run, approval):
+        raise HTTPException(409, "Autorização Linux ou identidades deixaram de ser válidas.")
     approval.used_at = instant
     lab.active_run_id = run.id
     # Absolute queue+execution deadline prevents indefinitely reserved laboratories.
