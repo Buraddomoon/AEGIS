@@ -171,3 +171,7 @@ CI final de `a4f185a`: **SUCCESS**, [run 39602912793](https://github.com/Buraddo
 Pendências reais: registrar Linux Lab/Asset/autorização/isolamento na API; ligar adapter ao worker com aprovações delimitadas e identidade mTLS, receipts imutáveis no PostgreSQL, recuperação real pós-falha e synthetic=false correto; UI e métricas separadas por modo; depois Wazuh com configuração autorizada, tradução Asset/agent e coleta defensiva real. O worker atual continua exclusivamente Demo. PKI é de desenvolvimento (folhas de 2 dias/CA de 7 dias), sem rotação automática. Journal tem quota de 10.000, sem expurgo que elimine fences. Containers não substituem VM; nenhum suporte a Atomic executável, Windows, comandos genéricos ou códigos arbitrários foi habilitado.
 
 Este marco acrescentou **12 commits**, incluindo este checkpoint, totalizando **80 commits**. Hash/mensagem finais e main/origin/main serão conferidos após o push. Nada foi tornado público, nenhum PR/branch temporário/force push foi usado. O ensaio autorizado foi encerrado e não concede autorização para SIEM externo ou outros testes.
+
+## Continuidade — campanhas Linux integradas
+
+Início em main limpa/sincronizada b34c555 (80 commits). Implementação do ADR 0004: binding/admin preflight/autorização, campanha e aprovação separada, dispatch/comprovantes/cleanup persistidos, worker com quarentena real, UI/relatórios/métricas por modo. O ensaio anterior foi encerrado; não reutilizar sua autorização para Wazuh, alvos externos ou novos efeitos sem escopo específico.
