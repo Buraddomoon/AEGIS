@@ -20,7 +20,8 @@ const tactics: Record<string, string> = {
   impact: 'Impacto',
 }
 export function Catalog() {
-  const data = useData<Page<Technique>>('/techniques?limit=1000'),
+  const [mode, setMode] = useState('demo'),
+    data = useData<Page<Technique>>(`/techniques?limit=1000&mode=${mode}`),
     [query, setQuery] = useState(''),
     [tactic, setTactic] = useState(''),
     [platform, setPlatform] = useState(''),
@@ -52,6 +53,17 @@ export function Catalog() {
         description={`${data.data!.total} técnicas e subtécnicas oficiais · Enterprise v${all[0]?.dataset_version ?? '—'} · cobertura avaliada separadamente`}
       />
       <div className="toolbar">
+        <select
+          aria-label="Modo da cobertura ATT&CK"
+          value={mode}
+          onChange={(e) => {
+            setMode(e.target.value)
+            setPage(0)
+          }}
+        >
+          <option value="demo">Cobertura Demo · sintética</option>
+          <option value="linux">Cobertura Linux real</option>
+        </select>
         <div className="search">
           <Search size={17} />
           <input
@@ -239,7 +251,7 @@ export function Catalog() {
       {selected && <TechniqueDetails id={selected} onClose={() => setSelected(null)} />}
       <p className="scope-note">
         Fonte oficial MITRE ATT&CK. Uma técnica catalogada só recebe cobertura após uma avaliação
-        concluída; cores refletem resultados sintéticos.
+        concluída no modo selecionado. O marcador Linux não recebe associação ATT&CK artificial.
       </p>
     </>
   )
@@ -336,7 +348,9 @@ export function TestLibrary() {
               <span className="test-icon">
                 <FlaskConical size={22} />
               </span>
-              <span className="subtle-tag">Demo · v{t.version}</span>
+              <span className="subtle-tag">
+                {t.execution_kind === 'demo' ? 'Demo' : 'Linux real · opt-in'} · v{t.version}
+              </span>
             </div>
             <h2>{t.name}</h2>
             <p>{t.description}</p>
@@ -349,20 +363,32 @@ export function TestLibrary() {
               <dd>{t.prerequisites}</dd>
               <dt>Limpeza</dt>
               <dd>{t.cleanup}</dd>
-              <dt>Cenário demonstrativo</dt>
+              <dt>
+                {t.execution_kind === 'demo' ? 'Cenário demonstrativo' : 'Validação defensiva'}
+              </dt>
               <dd>
-                <Badge value={t.demo_outcome} />
+                {t.execution_kind === 'demo' ? (
+                  <Badge value={t.demo_outcome} />
+                ) : (
+                  'Sem SIEM: inconclusiva'
+                )}
               </dd>
             </dl>
             <div className="test-footer">
-              <ShieldCheck size={16} /> {t.approved ? 'Na allowlist demonstrativa' : 'Não aprovado'}
+              <ShieldCheck size={16} />{' '}
+              {t.approved
+                ? t.execution_kind === 'demo'
+                  ? 'Na allowlist demonstrativa'
+                  : 'Allowlist revisada · exige autorização separada'
+                : 'Não aprovado'}
             </div>
           </Panel>
         ))}
       </div>
       {!tests.length && <Empty title="Nenhuma simulação encontrada" />}
       <div className="notice">
-        Metadados Atomic Red Team não concedem permissão de execução. Lab Mode ainda não habilitado.
+        Metadados Atomic Red Team não concedem permissão de execução. Linux aceita somente o
+        marcador benigno em runner previamente fixado e autorizado.
       </div>
     </>
   )

@@ -157,7 +157,7 @@ export default function App() {
             <strong>Evidências, em primeiro lugar.</strong>
             <p>Simule. Observe. Valide. Evolua.</p>
             <span>
-              ÆGIS <span className="version">v0.1.0 · Demo</span>
+              ÆGIS <span className="version">v0.2.0</span>
             </span>
           </div>
           <div className="profile">
@@ -199,7 +199,7 @@ export default function App() {
               <strong>{title}</strong>
             </div>
             <span className="demo-pill">
-              <CircleDot size={13} /> DEMO · DADOS SINTÉTICOS
+              <CircleDot size={13} /> ESCOPO AUTORIZADO
             </span>
           </header>
           <main id="main">
@@ -293,7 +293,10 @@ function Login({ onLogin }: { onLogin: () => void }) {
             Validar
           </span>
         </div>
-        <div className="notice">Modo demonstrativo · todos os eventos são sintéticos.</div>
+        <div className="notice">
+          Demo disponível sem SIEM. Laboratórios reais exigem configuração e autorização
+          específicas.
+        </div>
       </div>
       <form
         className="login-card"
@@ -355,7 +358,7 @@ function Login({ onLogin }: { onLogin: () => void }) {
 
 function Overview({ user }: { user: User }) {
   const coverage = useData<Coverage>('/coverage', 5000),
-    runs = useData<Page<Run>>('/executions?limit=6', 3000),
+    runs = useData<Page<Run>>('/executions?mode=demo&limit=6', 3000),
     campaigns = useData<Page<Campaign>>('/campaigns?limit=1000'),
     connectors = useData<Connectors>('/connectors', 5000)
   if (coverage.isLoading) return <Loading />
@@ -366,7 +369,7 @@ function Overview({ user }: { user: User }) {
       <PageHeading
         eyebrow="CONTROLE CONTÍNUO. CONFIANÇA COMPROVADA."
         title="Visão geral"
-        description="Da simulação controlada à evidência de detecção."
+        description="Escopo Demo · simulações e evidências sintéticas, com indicadores separados do Linux real."
         action={
           user.role !== 'viewer' && (
             <button className="button primary" onClick={() => navigate('campaigns/new')}>
@@ -541,8 +544,8 @@ function Overview({ user }: { user: User }) {
             </div>
           </div>
           <div className="panel-footnote">
-            Agendamentos Demo exigem aprovação administrativa com validade e limites. Lab Mode
-            permanece indisponível.
+            Agendamentos Demo exigem aprovação administrativa com validade e limites. Linux real
+            exige configuração opt-in e aprovação por outra pessoa.
           </div>
         </Panel>
       </div>
