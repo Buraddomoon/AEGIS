@@ -41,6 +41,7 @@ libc=ctypes.CDLL(None)
 assert libc.prctl(36,1,0,0,0)==0
 p=subprocess.Popen([sys.executable,'-I','-S',sys.argv[1],sys.argv[2]],stdout=subprocess.PIPE,text=True)
 child=int(p.stdout.readline())
+collected=False
 try:
     end=time.monotonic()+3
     while not os.path.exists('bound'):
@@ -51,13 +52,15 @@ try:
     while time.monotonic()<end:
         pid,status=os.waitpid(child,os.WNOHANG)
         if pid:
+            collected=True
             print(json.dumps({'signal':os.WTERMSIG(status)}));sys.exit(0)
         time.sleep(.01)
     raise RuntimeError('Child survived parent death')
 finally:
     if p.poll() is None:p.kill();p.wait()
-    try:os.kill(child,signal.SIGKILL);os.waitpid(child,0)
-    except (ProcessLookupError,ChildProcessError):pass
+    if not collected:
+        try:os.kill(child,signal.SIGKILL);os.waitpid(child,0)
+        except (ProcessLookupError,ChildProcessError):pass
 """)
     result = subprocess.run(
         [sys.executable, "-I", "-S", str(reaper), str(parent), str(child)],
