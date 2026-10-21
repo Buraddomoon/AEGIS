@@ -43,6 +43,7 @@ services:
       WAZUH_USERNAME: ${WAZUH_USERNAME:-}
       WAZUH_PASSWORD: ${WAZUH_PASSWORD:-}
       WAZUH_CA_BUNDLE: ${WAZUH_CA_BUNDLE:-}
+      WAZUH_COLLECTION_CONFIG: ${WAZUH_COLLECTION_CONFIG:-}
       APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Run scripts/init_env.py}
     networks: [backend]
     depends_on:
@@ -61,6 +62,7 @@ services:
       WAZUH_USERNAME: ${WAZUH_USERNAME:-}
       WAZUH_PASSWORD: ${WAZUH_PASSWORD:-}
       WAZUH_CA_BUNDLE: ${WAZUH_CA_BUNDLE:-}
+      WAZUH_COLLECTION_CONFIG: ${WAZUH_COLLECTION_CONFIG:-}
     ports: ['127.0.0.1:18780:8080']
     networks: [backend, ingress]
     depends_on:

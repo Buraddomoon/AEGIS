@@ -1,0 +1,16 @@
+{
+  "laboratory_id": "deef2f0d-142e-4bc3-9762-2527b4dc0001",
+  "asset_id": "deef2f0d-142e-4bc3-9762-2527b4dc0002",
+  "agent_id": "007",
+  "expected_rule": "100200",
+  "schema_id": "aegis-json/1",
+  "alerts_index": "wazuh-alerts-4.x-*",
+  "archives_index": "wazuh-archives-4.x-*",
+  "timestamp_field": "timestamp",
+  "identity_prefix": "data.aegis",
+  "clock_skew_seconds": 5,
+  "ingestion_window_seconds": 10,
+  "ingestion_wait_seconds": 10,
+  "poll_interval_seconds": 1,
+  "request_timeout_seconds": 3
+}

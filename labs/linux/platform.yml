@@ -15,6 +15,7 @@ services:
       WAZUH_USERNAME: ''
       WAZUH_PASSWORD: ''
       WAZUH_CA_BUNDLE: ''
+      WAZUH_COLLECTION_CONFIG: ''
     secrets: [controller_server_ca, controller_client_cert, controller_client_key, controller_connection]
     networks:
       backend: {}

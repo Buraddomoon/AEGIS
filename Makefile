@@ -43,7 +43,7 @@ format:
 test-unit:
 	$(VENV)/pytest tests/test_domain.py -q
 test-integration:
-	$(VENV)/pytest tests/test_flow.py tests/test_security.py tests/test_integrations.py tests/test_migrations.py tests/test_cleanup.py tests/test_transactions.py tests/test_scheduling.py tests/test_linux_campaigns.py -q
+	$(VENV)/pytest tests/test_flow.py tests/test_security.py tests/test_integrations.py tests/test_migrations.py tests/test_cleanup.py tests/test_transactions.py tests/test_scheduling.py tests/test_linux_campaigns.py tests/test_wazuh_campaigns.py -q
 test-web:
 	npm --prefix apps/web test
 test:
@@ -100,3 +100,8 @@ linux-platform-smoke:
 	$(VENV)/python scripts/smoke_linux_platform.py --confirm-integrated-marker
 linux-platform-down:
 	$(LINUX_PLATFORM) down
+
+# Local contract tests only: no Wazuh installation or real lab startup.
+.PHONY: test-wazuh
+test-wazuh:
+	$(VENV)/pytest tests/test_wazuh_collection.py tests/test_wazuh_campaigns.py tests/test_marker_observer.py tests/test_wazuh_tls.py -q

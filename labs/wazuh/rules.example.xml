@@ -1,0 +1,11 @@
+<!-- Pipeline validation only; no ATT&CK mapping or claim of attack coverage. -->
+<group name="aegis_lab,">
+  <rule id="100200" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="aegis.schema" type="pcre2">^aegis-json/1$</field>
+    <field name="aegis.observation" type="pcre2">^marker_file_read$</field>
+    <field name="aegis.behavior" type="pcre2">^temporary-marker$</field>
+    <description>AEGIS: laboratory marker observed; pipeline validation only</description>
+    <group>aegis_lab_marker,</group>
+  </rule>
+</group>

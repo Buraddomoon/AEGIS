@@ -22,7 +22,9 @@ with session_factory()() as db:
           has_column_privilege('aegis_app','schedules','state','UPDATE'),
           NOT has_table_privilege('aegis_app','schedule_authorizations','DELETE'),
           NOT has_table_privilege('aegis_app','schedule_occurrences','UPDATE'),
-          NOT has_table_privilege('aegis_app','schedule_occurrences','DELETE')
+          NOT has_table_privilege('aegis_app','schedule_occurrences','DELETE'),
+          NOT has_table_privilege('aegis_app','telemetry_collections','UPDATE'),
+          NOT has_table_privilege('aegis_app','telemetry_collections','DELETE')
     """)
     ).one()
     assert all(permissions), "Runtime SQL permissions differ from immutable schedule policy"

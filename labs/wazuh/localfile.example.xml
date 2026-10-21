@@ -1,0 +1,7 @@
+<!-- Example only. Review on an authorized lab; never applied by AEGIS. -->
+<ossec_config>
+  <localfile>
+    <log_format>json</log_format>
+    <location>/var/log/aegis/observations.jsonl</location>
+  </localfile>
+</ossec_config>
