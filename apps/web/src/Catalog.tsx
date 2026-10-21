@@ -248,7 +248,7 @@ export function Catalog() {
           </div>
         </Panel>
       )}
-      {selected && <TechniqueDetails id={selected} onClose={() => setSelected(null)} />}
+      {selected && <TechniqueDetails id={selected} mode={mode} onClose={() => setSelected(null)} />}
       <p className="scope-note">
         Fonte oficial MITRE ATT&CK. Uma técnica catalogada só recebe cobertura após uma avaliação
         concluída no modo selecionado. O marcador Linux não recebe associação ATT&CK artificial.
@@ -257,14 +257,22 @@ export function Catalog() {
   )
 }
 
-function TechniqueDetails({ id, onClose }: { id: string; onClose: () => void }) {
+function TechniqueDetails({
+  id,
+  mode,
+  onClose,
+}: {
+  id: string
+  mode: string
+  onClose: () => void
+}) {
   const data = useData<
     Technique & {
       tests: Test[]
       coverage_history: { run_id: string; outcome: string; created_at: string }[]
       limitation: string
     }
-  >(`/techniques/${id}`)
+  >(`/techniques/${id}?mode=${mode}`)
   return (
     <Modal title={id} onClose={onClose}>
       {data.isLoading ? (
@@ -294,7 +302,7 @@ function TechniqueDetails({ id, onClose }: { id: string; onClose: () => void }) 
             ) : (
               <p className="muted-text">Nenhuma simulação implementada para esta técnica.</p>
             )}
-            <h3>Histórico de cobertura</h3>
+            <h3>Histórico de cobertura · {mode === 'demo' ? 'Demo sintético' : 'Linux real'}</h3>
             {data.data.coverage_history.length ? (
               data.data.coverage_history.map((h, i) => (
                 <div className="detail-row" key={i}>

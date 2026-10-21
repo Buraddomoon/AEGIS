@@ -27,6 +27,10 @@ def test_complete_demo_and_repeat_compare_report(admin):
     assert coverage["valid_tests"] == 3
     assert coverage["detected_percentage"] == 33.3
     assert coverage["evaluated_techniques"] == 3
+    linux_technique = admin.get("/api/v1/techniques/T1059.004?mode=linux").json()
+    assert linux_technique["mode"] == "linux"
+    assert linux_technique["coverage_history"] == linux_technique["tests"] == []
+    assert admin.get("/api/v1/techniques/T1059.004?mode=demo").json()["coverage_history"]
     report = admin.get(f"/api/v1/reports/{run['id']}").json()
     assert report["synthetic"] and report["integrity_sha256"]
     from aegis.domain.validation import digest

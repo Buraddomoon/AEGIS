@@ -292,13 +292,18 @@ def techniques(
 
 
 @router.get("/techniques/{technique_id}", tags=["ATT&CK"])
-def technique_detail(technique_id: str, user: Viewer, db: DB) -> dict:
+def technique_detail(
+    technique_id: str, user: Viewer, db: DB, mode: Literal["demo", "linux"] = "demo"
+) -> dict:
     technique = services.get_or_404(db, AttackTechnique, technique_id)
     tests = db.scalars(
-        select(TestDefinition).where(TestDefinition.technique_id == technique_id)
+        select(TestDefinition).where(
+            TestDefinition.technique_id == technique_id,
+            TestDefinition.execution_kind == ("demo" if mode == "demo" else "linux_marker"),
+        )
     ).all()
     history = []
-    for result, execution, run in queries.completed_results(db):
+    for result, execution, run in queries.completed_results(db, mode):
         scoped = next(t for t in run.scope["test_definitions"] if t["id"] == execution.test_id)
         if scoped["technique_id"] == technique_id:
             history.append(
@@ -313,6 +318,7 @@ def technique_detail(technique_id: str, user: Viewer, db: DB) -> dict:
         **queries.record(technique),
         "tests": [queries.record(t) for t in tests],
         "coverage_history": history[-30:],
+        "mode": mode,
         "telemetry_sources": ["aegis-demo"] if tests else [],
         "operational_rules": [],
         "limitation": "Regras Sigma cadastradas não são regras implantadas no SIEM.",
