@@ -82,3 +82,6 @@ lab-smoke: lab-inspect
 	$(LAB) run --rm --no-deps controller marker --confirm-marker-test
 lab-down:
 	$(LAB) down
+.PHONY: test-runner
+test-runner:
+	$(VENV)/pytest tests/test_runner_protocol.py tests/test_runner_engine.py tests/test_runner_transport.py tests/test_runner_parent_death.py tests/test_runner_isolation.py -q
