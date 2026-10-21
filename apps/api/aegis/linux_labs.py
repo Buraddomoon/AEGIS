@@ -281,7 +281,7 @@ def persist_view(db: Session, execution_id: str, view: JobView) -> None:
             .on_conflict_do_nothing(index_elements=["execution_id"])
         )
         previous = db.scalar(select(model).where(model.execution_id == execution_id))
-        if previous.sha256 != fingerprint:
+        if previous.sha256 != fingerprint or previous.content != content:
             raise ValueError("Registro histórico imutável divergiu; revisão necessária.")
     if view.state == "SUCCEEDED" and view.receipt:
         item = db.get(TestExecution, execution_id)
