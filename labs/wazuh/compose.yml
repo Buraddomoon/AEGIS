@@ -64,7 +64,8 @@ services:
       isolated: {ipv4_address: 172.30.89.5}
       telemetry: {ipv4_address: 172.30.90.6}
   wazuh.indexer:
-    image: wazuh/wazuh-indexer:4.14.9
+    image: ${AEGIS_WAZUH_INDEXER_IMAGE:?Prepare pinned image configuration}
+    platform: linux/amd64
     hostname: wazuh.indexer
     user: '1000:0'
     environment:
@@ -106,7 +107,8 @@ services:
     cpus: 2
     restart: 'no'
   wazuh.manager:
-    image: wazuh/wazuh-manager:4.14.9
+    image: ${AEGIS_WAZUH_MANAGER_IMAGE:?Prepare pinned image configuration}
+    platform: linux/amd64
     hostname: wazuh.manager
     environment:
       INDEXER_URL: https://wazuh.indexer:9200
@@ -151,7 +153,8 @@ services:
     cpus: 1.5
     restart: 'no'
   wazuh.agent:
-    image: wazuh/wazuh-agent:4.14.9
+    image: ${AEGIS_WAZUH_AGENT_IMAGE:?Prepare pinned image configuration}
+    platform: linux/amd64
     hostname: aegis-marker
     environment:
       WAZUH_MANAGER_SERVER: wazuh.manager

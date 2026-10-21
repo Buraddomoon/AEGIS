@@ -103,6 +103,10 @@ def test_rendered_compose_preserves_isolation_and_secret_boundaries(prepared):
     )
     config = json.loads(result.stdout)
     services = config["services"]
+    pinned = json.loads((ROOT / "labs/wazuh/images.json").read_text())["images"]
+    for name, reference in pinned.items():
+        assert services[f"wazuh.{name}"]["image"] == reference
+        assert services[f"wazuh.{name}"]["platform"] == "linux/amd64"
     for name in (
         "wazuh.indexer",
         "wazuh.manager",

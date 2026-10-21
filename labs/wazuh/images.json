@@ -1,0 +1,10 @@
+{
+  "version": "4.14.9",
+  "platform": "linux/amd64",
+  "source": "https://github.com/wazuh/wazuh-docker/tree/v4.14.9",
+  "images": {
+    "indexer": "wazuh/wazuh-indexer:4.14.9@sha256:9c43f316f0a4a15951b8667c0a0f97fc945a9e1ac55035b1be22c95d2b9a04e3",
+    "manager": "wazuh/wazuh-manager:4.14.9@sha256:3561b33f8d1edf3d3b05e1819fa9a47fd28d6536787793d1840bfdf1172359ff",
+    "agent": "wazuh/wazuh-agent:4.14.9@sha256:538ce3efc9bb097fad25e7b189d02e7e831f71faa750e2733b6011ea2070de08"
+  }
+}

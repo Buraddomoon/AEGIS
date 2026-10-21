@@ -125,6 +125,12 @@ def prepare(output: Path):
             "AEGIS_INDEXER_INGEST_PASSWORD": credentials["aegis_ingest"],
             "AEGIS_WAZUH_API_PASSWORD": "Aa1!" + secrets.token_hex(24),
         }
+        manifest = json.loads(
+            (Path(__file__).resolve().parents[1] / "labs/wazuh/images.json").read_text()
+        )
+        env.update(
+            {f"AEGIS_WAZUH_{name.upper()}_IMAGE": ref for name, ref in manifest["images"].items()}
+        )
         (output / "lab.env").write_text("".join(f"{key}={value}\n" for key, value in env.items()))
     finally:
         os.umask(previous)
