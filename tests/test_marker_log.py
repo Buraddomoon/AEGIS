@@ -94,3 +94,25 @@ def test_second_writer_cannot_share_log(log_scope):
     directory, lab, asset, _, _ = log_scope
     with ObservationLog(directory, lab, asset), pytest.raises(BlockingIOError):
         ObservationLog(directory, lab, asset)
+
+
+@pytest.mark.parametrize("restart", [False, True])
+def test_conflicting_marker_for_same_job_is_rejected(log_scope, restart):
+    directory, lab, asset, _, record = log_scope
+    conflicting = json.loads(json.dumps(record))
+    marker = "aegis-" + str(uuid4())
+    conflicting["aegis"]["marker"] = marker
+    conflicting["aegis"]["artifact_sha256"] = hashlib.sha256((marker + "\n").encode()).hexdigest()
+    with ObservationLog(directory, lab, asset) as log:
+        log.append(record)
+        if not restart:
+            with pytest.raises(ValueError, match="conflitantes"):
+                log.append(conflicting)
+            assert json.loads((directory / "observations.jsonl").read_text()) == record
+    if restart:
+        with (directory / "observations.jsonl").open("a") as file:
+            file.write(json.dumps(conflicting) + "\n")
+        original = (directory / "observations.jsonl").read_bytes()
+        with pytest.raises(ValueError, match="conflitantes"):
+            ObservationLog(directory, lab, asset)
+        assert (directory / "observations.jsonl").read_bytes() == original

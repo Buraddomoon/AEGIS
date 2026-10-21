@@ -17,6 +17,7 @@ class ObservationLog:
     def __init__(self, directory: Path, laboratory_id: UUID, asset_id: UUID):
         self.laboratory_id, self.asset_id = str(laboratory_id), str(asset_id)
         self.seen: set[str] = set()
+        self.fingerprints: dict[str, tuple[str, str]] = {}
         self.fd = -1
         root = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
         try:
@@ -30,6 +31,7 @@ class ObservationLog:
                 dir_fd=root,
             )
             fcntl.flock(self.fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            os.fsync(root)
             metadata = os.fstat(self.fd)
             if (
                 not stat.S_ISREG(metadata.st_mode)
@@ -48,7 +50,10 @@ class ObservationLog:
             for line in content.splitlines():
                 if len(line) > MAX_LINE:
                     raise ValueError("Registro acima do limite.")
-                self.seen.add(self._identity(json.loads(line)))
+                record = json.loads(line)
+                identifier = self._identity(record)
+                self._check_fingerprint(identifier, record)
+                self.seen.add(identifier)
         except BaseException:
             self.close()
             raise
@@ -81,8 +86,16 @@ class ObservationLog:
             )
         return identifier
 
+    def _check_fingerprint(self, identifier: str, record: dict):
+        event = record["aegis"]
+        fingerprint = (event["marker"], event["artifact_sha256"])
+        if identifier in self.fingerprints and self.fingerprints[identifier] != fingerprint:
+            raise ValueError("Observações conflitantes da mesma execução; preservar log e revisar.")
+        self.fingerprints[identifier] = fingerprint
+
     def append(self, record: dict) -> bool:
         identifier = self._identity(record)
+        self._check_fingerprint(identifier, record)
         if identifier in self.seen:
             return False
         line = json.dumps(record, separators=(",", ":"), ensure_ascii=True).encode() + b"\n"
