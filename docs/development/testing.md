@@ -39,3 +39,16 @@ Na rodada ampliada: **85 testes Python** e **5 testes frontend** passaram; E2E F
 ## Coleta Wazuh preparada sem SIEM
 
 `make test-wazuh` cobre contrato de Search/Scroll, shards/total/paginação, ausência de índice e permissão, agente errado incluindo UUID interno, ingestão atrasada e janela completa, deduplicação/conflitos, cancelamento/HTTP lento e TLS real contra fixture HTTPS loopback. Fixture altera somente a conexão do backend de teste para loopback, mantendo IP aprovado e SNI/TLS do provider de produção; CA errada e hostname incompatível são recusados. Nenhum Wazuh é instalado. Campanhas usam PostgreSQL/worker/runner de fixture descartável; seus DETECTED são resultado de contrato, não evidência externa. Observador é testado contra Workspace real com UUID.hex e links/FIFO/conteúdo inválido recusados. UI cobre configuração ausente, revisão, admin/viewer e laboratório revogado.
+
+`make test-wazuh-preparation` testa recursos insuficientes sem iniciar/download,
+configuração privada e ausência de segredos na saída, certificados reais com SAN
+e DN compatíveis, Compose renderizado com redes/mounts/credenciais separados,
+ambiente externo sem sobrescrever destino, segredo apenas stdin no contrato da
+ferramenta de hash e encerramento sem remoção de volumes. Log real em filesystem:
+fsync/restart/dedupe, conflito da mesma execução, limite, escritor exclusivo,
+links/FIFO/permissões e linha parcial. O hash tool é simulado nesse teste: isso não
+valida BCrypt ou a imagem oficial. Nenhum Wazuh sobe na CI.
+
+O ensaio [real proposto](../../labs/wazuh/ASSAY.md) foi autorizado sob preflight;
+permanece bloqueado por recursos disponíveis. `check-rule` futuro usa log sintético
+no sandbox wazuh-logtest e não equivale à ingestão real do marcador.

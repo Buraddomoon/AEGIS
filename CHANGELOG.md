@@ -1,5 +1,16 @@
 # Changelog
 
+## Continuidade — ensaio Wazuh isolado preparado
+
+- Projeto opt-in separado com Wazuh4.14.9 oficial fixado por digest linux/amd64,
+  credenciais/PKI próprias, roles de leitura/ingestão distintas e mounts/rede limitados.
+- Observer com log JSONL limitado, fsync/flock, deduplicação e recusa de conflitos
+  após restart; tmpfs compartilhado runnerRW/observerRO e agente somente no log.
+- Lifecycle e preflight somente leitura, bloqueando recursos insuficientes e
+  ambiente/contexto externo; encerramento preserva volumes mesmo com pouca RAM.
+- Ensaio único autorizado sob condição de recursos; início bloqueado por RAM
+  disponível. Nenhuma instalação Wazuh ou detecção externa declarada.
+
 ## 0.1.0 — 2026-10-20
 
 - Primeiro MVP Demo com banco e worker reais, sessões/RBAC/CSRF, campanhas de escopo imutável, aprovação de uso único e fila PostgreSQL.

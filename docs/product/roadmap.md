@@ -18,6 +18,12 @@ Exige infraestrutura própria e autorização específica antes de executar. Exe
 
 Preparação entregue sem instalar SIEM: mapping WazuhBinding entre Asset.id e agent.id, política/hash/revisão, coleta no worker, polling/prazo total, schema/índices configuráveis, resumo imutável, UI/relatórios e observador passivo. Validação com fixtures e HTTPS real em loopback. Pendente: Wazuh próprio, agente/instrumentação efetiva, compartilhamento seguro do workspace/log, validação das regras com wazuh-logtest e prova de ciclo defensivo externo autorizado. Evidência original preservada; nenhuma classificação DETECTED sem alerta correlacionado.
 
+Continuidade: deployment isolado e instrumentação compartilhada preparados em
+labs/wazuh, com imagens4.14.9 fixadas, credenciais/PKI novos, RO/sem rede e log
+durável/limitado. Ensaio único autorizado quando o preflight passar; RAM disponível
+ainda insuficiente para o gate8GiB. Não houve instalação, rules engine ou ciclo
+real Wazuh. Essa validação segue sendo a prioridade.
+
 ## 0.4 — Engenharia de detecção
 
 Associação regra/teste, análise semântica, backend/pipeline Sigma oficialmente compatíveis, revisão de regra, histórico de cobertura por ambiente, atualização transacional de catálogo ATT&CK com depreciações preservadas.

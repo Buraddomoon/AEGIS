@@ -2,6 +2,12 @@
 
 **Estado real desta etapa:** o usuário informou que não tem Wazuh e autorizou preparar a integração sem instalar. API/worker/coleta estão ligados e testados com fixtures; handshake TLS foi validado contra servidor HTTPS descartável em loopback. Nenhum Wazuh foi instalado, iniciado ou consultado. Esses testes não comprovam detecção num Wazuh real.
 
+O [ensaio próprio](../../labs/wazuh/ASSAY.md) agora está preparado e recebeu
+autorização específica condicionada ao preflight. Imagens4.14.9/digests, PKI,
+isolamento, leitura mínima e instrumentação têm artefatos revisáveis. A RAM
+disponível ainda não satisfaz o piso8GiB; nenhum serviço Wazuh foi baixado/iniciado.
+Conector operacional e detecção real continuam pendentes de validação.
+
 O fluxo usa Indexer Search/Scroll para alertas e archives opcionais; Server API administra agentes e não substitui busca de eventos. TLS verifica CA e hostname original com SNI; destino é IP fixado na implantação, sem DNS rebinding/proxy ambiente/redirect, URL ou credencial recebidos pela API. HTTPX AsyncClient é usado por facade síncrona com asyncio.Runner privado e timeout integral de conexão/headers/corpo; sem threads de requests abandonadas. Compressão recusada e limites de bytes/documentos/páginas/rodadas protegem memória/tempo.
 
 `WAZUH_COLLECTION_CONFIG` fixa schema, índices, laboratório, Asset.id, agent.id externo, regra e janelas. Binding administrativo em Linux Lab revogado/sem reserva é obrigatório; variáveis de ambiente sozinhas não ativam coleta. Escopo/hash inclui política, destino, IP, CA e fingerprint do principal, nunca senha/token. Worker revalida binding/versão antes dos efeitos e queries. Senha pode ser renovada para o mesmo principal sem divulgar hash de segredo; alteração de identidade/destino exige revisão.

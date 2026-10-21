@@ -23,6 +23,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Inventário Sigma com parsing pySigma, importação YAML limitada e versões imutáveis; nenhuma implantação automática de regras.
 - Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; campanha integrada autorizada validou API/worker/SQL runtime, recibos, cleanup e UI, sem SIEM.
 - Coleta Wazuh opt-in no worker: binding administrativo de agente/regra, política/hash aprovados, polling com prazo integral, paginação, resumo imutável e UI/relatórios. Testes locais incluem TLS real em loopback e fixtures de eventos. **Wazuh não instalado nem validado externamente.**
+- [Ensaio Wazuh isolado preparado](labs/wazuh/ASSAY.md): imagens oficiais fixadas por digest, identidades próprias, observer/log/agente e preflight de recursos. Autorizado sob condição de 8 GiB de RAM disponível; execução real ainda pendente. Não integra o Demo nem os testes padrão.
 
 ## Início rápido
 

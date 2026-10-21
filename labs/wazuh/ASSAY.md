@@ -111,6 +111,9 @@ Antes de criar/aprovar qualquer efeito:
 3. Confirmar log vazio/observador saudável, logcollector acompanhando o caminho,
    relógios UTC, Filebeat conectado e índice de alertas disponível. Usar condições
    de prontidão e limites de espera, não sleeps presumidos.
+   Conferir também API de gestão somente no loopback do container e rotacionar ou
+   desativar usuários padrão desnecessários antes do ensaio; defaults da imagem não
+   constituem a política de credenciais do laboratório.
 4. Usar o conector da aplicação para comprovar CA/SNI, destino fixado e GET/search/
    scroll somente leitura; revisar permissões reais. Nunca passar credencial admin
    para API/worker. Confirmar que escrita e outros índices são recusados.

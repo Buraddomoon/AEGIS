@@ -2,6 +2,12 @@
 
 **Estado:** integração de coleta implementada e testada com fixtures locais. Nenhum Wazuh foi instalado, iniciado ou consultado nesta etapa. O usuário informou não ter Wazuh e pediu somente a preparação. XML, configuração e observador abaixo não constituem validação externa; precisam de ambiente próprio e autorização específica antes de qualquer ensaio.
 
+**Continuidade:** o ensaio separado está preparado em [ASSAY.md](ASSAY.md), com
+Compose opt-in, imagens oficiais fixadas por digest, PKI/segredos novos, conta de
+leitura e instrumentação RO. O usuário autorizou somente esse ensaio quando o
+preflight passar. A RAM disponível ainda está abaixo do piso de 8 GiB; nenhum
+Wazuh foi baixado/iniciado. Não confundir autorização com resultado validado.
+
 ## Contrato e configuração
 
 `collection.example.json` contém IDs **fictícios**, não destinos autorizados. Copie para local ignorado, substitua IDs por Laboratory/Asset reais cadastrados e agent.id por agente inequivocamente pertencente a esse laboratório. `000` é manager, não endpoint. URL/IP/credenciais/CA ficam no ambiente de implantação, não no arquivo de política nem na API. Não envie segredos pelo navegador ou chat.
@@ -32,7 +38,7 @@ Revisar/remover binding exige laboratório revogado/sem reserva e aumenta versã
 
 `python -m aegis.marker_observer` somente lê proof.marker real, com 43 bytes, UUID e hash verificados, dentro do workspace privado do runner. Aceita diretórios físicos UUID.hex produzidos por Workspace; emite execution_id em UUID canônico. Recusa symlinks, hardlinks, FIFO, arquivo estranho, tamanho/conteúdo inválido; não cria, remove ou executa o marcador. Saída JSON descreve marker_file_read e não contém rule.id, sucesso de execução ou alegação de detecção.
 
-Em laboratório futuro revisado, o observador precisa ter acesso read-only ao **mesmo workspace físico** do runner e sua saída deve chegar a um logfile dedicado lido pelo agente. O tmpfs privado atual do runner não é automaticamente compartilhado. Montagens/UID, retenção, rotação do log e ciclo de vida do observador precisam ser desenhados e autorizados no ambiente real; não montar Docker socket nem liberar acesso ao host para facilitar isso. Nenhum sidecar, agente ou processo observador é iniciado por make up/test/CI.
+O observador precisa ter acesso read-only ao **mesmo workspace físico** do runner e sua saída deve chegar a um logfile dedicado lido pelo agente. O tmpfs privado do runner padrão não é automaticamente compartilhado. `compose.yml` prepara essa montagem apenas no novo projeto opt-in: tmpfs compartilhado RW/RO, observer sem rede e logfile persistente limitado a 1 MiB, flock/fsync e deduplicação após restart. Arquivo incompleto ou identidades conflitantes bloqueiam retomada sem truncar dados. Mounts/UID/permissões efetivos ainda precisam ser inspecionados no runtime autorizado; não montar Docker socket nem liberar acesso ao host para facilitar isso. Nenhum sidecar, agente ou processo observador é iniciado por make up/test/CI.
 
 Exemplo de comando futuro (somente em ambiente/paths revisados):
 
