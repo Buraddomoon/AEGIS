@@ -227,3 +227,7 @@ Próxima etapa: ligar coleta defensiva Wazuh ao fluxo Linux por configuração/a
 Este marco acrescenta **21 commits granulares**, incluindo este checkpoint, totalizando **101**. GitHub AEGIS confirmado **PRIVATE**, somente main, sem PR/branch temporário/force push; push após cada commit. Consultar git log -1 e git status -sb para hash/mensagem/sincronização após o checkpoint. O último commit de código é 8d7a38b; commits seguintes são documentação/capturas.
 
 CI remota do último código **8d7a38b: SUCCESS**, [run 39615555686](https://github.com/Buraddomoon/AEGIS/actions/runs/39615555686). Lint/tipos, PostgreSQL/frontend/build e revisão de advisories passaram. Commits posteriores contêm somente documentação/capturas e não iniciam execução redundante. Repositório confirmado privado; sincronização e hash do checkpoint conferidos após push.
+
+## Continuidade — preparação da coleta Wazuh
+
+Início em main limpa/sincronizada b8c9b0e (101 commits). Usuário confirmou: **“Ainda não tenho Wazuh; preparar integração sem instalar”**. Implementar ADR 0005, binding explícito de agente/regra/configuração, consulta limitada com polling, resumo de coleta imutável e UI/relatórios proporcionais. Sem instalar/iniciar Wazuh ou repetir ensaios Linux; testes locais e fixtures não serão apresentados como evidência externa.
