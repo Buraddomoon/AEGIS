@@ -62,3 +62,23 @@ clean-demo:
 	$(VENV)/python scripts/clean_demo.py
 smoke:
 	$(VENV)/python scripts/smoke_compose.py
+
+# Linux lab is opt-in; never started by make up or make test.
+LAB = docker compose --env-file .local/linux-lab/ids.env -f labs/linux/compose.yml
+.PHONY: lab-init lab-config lab-build lab-up lab-preflight lab-inspect lab-smoke lab-down
+lab-init:
+	$(VENV)/python scripts/init_linux_lab.py
+lab-config:
+	$(LAB) config --quiet
+lab-build: lab-config
+	$(LAB) build runner
+lab-up: lab-config
+	$(LAB) up -d runner
+lab-preflight:
+	$(LAB) run --rm --no-deps controller preflight
+lab-inspect:
+	$(VENV)/python scripts/inspect_linux_lab.py
+lab-smoke: lab-inspect
+	$(LAB) run --rm --no-deps controller marker --confirm-marker-test
+lab-down:
+	$(LAB) down

@@ -1,0 +1,63 @@
+name: aegis-linux-lab
+services:
+  runner:
+    build:
+      context: ../..
+      dockerfile: labs/linux/Dockerfile
+    image: aegis-linux-runner:local
+    environment:
+      AEGIS_RUNNER_RUNNER_ID: ${AEGIS_RUNNER_RUNNER_ID:?Run make lab-init}
+      AEGIS_RUNNER_LABORATORY_ID: ${AEGIS_RUNNER_LABORATORY_ID:?Run make lab-init}
+      AEGIS_RUNNER_ASSET_ID: ${AEGIS_RUNNER_ASSET_ID:?Run make lab-init}
+    networks:
+      isolated:
+        ipv4_address: 172.30.88.2
+    volumes: [journal:/state]
+    tmpfs: ['/work:rw,noexec,nosuid,nodev,size=1m,mode=0700,uid=10001,gid=10001']
+    secrets: [runner_server_key, runner_server_cert, runner_client_ca]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 192m
+    cpus: 1
+    stop_grace_period: 10s
+    restart: 'no'
+  controller:
+    image: aegis-linux-runner:local
+    profiles: [manual]
+    entrypoint: [python, -m, aegis.lab_runner.controller]
+    networks: [isolated]
+    secrets: [controller_server_ca, controller_client_cert, controller_client_key, controller_connection]
+    read_only: true
+    tmpfs: ['/tmp:rw,noexec,nosuid,nodev,size=1m']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 16
+    mem_limit: 128m
+    cpus: 0.5
+    restart: 'no'
+networks:
+  isolated:
+    internal: true
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
+    ipam:
+      config: [{subnet: 172.30.88.0/29}]
+volumes:
+  journal:
+secrets:
+  runner_server_key:
+    file: ${AEGIS_LAB_CONFIG_DIR:?Run make lab-init}/runner-server.key
+  runner_server_cert:
+    file: ${AEGIS_LAB_CONFIG_DIR}/runner-server.crt
+  runner_client_ca:
+    file: ${AEGIS_LAB_CONFIG_DIR}/client-ca.crt
+  controller_server_ca:
+    file: ${AEGIS_LAB_CONFIG_DIR}/server-ca.crt
+  controller_client_cert:
+    file: ${AEGIS_LAB_CONFIG_DIR}/runner-client.crt
+  controller_client_key:
+    file: ${AEGIS_LAB_CONFIG_DIR}/runner-client.key
+  controller_connection:
+    file: ${AEGIS_LAB_CONFIG_DIR}/connection.json
