@@ -57,24 +57,42 @@ class Runner:
             self.workspace.close()
             raise
         self.control = threading.RLock()
+        self.close_lock = threading.Lock()
+        self.closed = False
         self.active: ActiveEffect | None = None
         # No replay, no PID loaded from disk, and no implicit cleanup after an ambiguous crash.
         with self.journal.connection() as db:
+            fingerprint = digest(identity.model_dump(mode="json"))
+            db.execute("BEGIN IMMEDIATE")
+            old = db.execute("SELECT value FROM metadata WHERE key='identity'").fetchone()
+            if old and old[0] != fingerprint:
+                self.journal.close()
+                self.workspace.close()
+                raise Conflict(
+                    "Diário pertence a outra identidade; restaure a configuração original."
+                )
+            db.execute(
+                "INSERT OR IGNORE INTO metadata(key,value) VALUES ('identity',?)", (fingerprint,)
+            )
             db.execute(
                 "UPDATE jobs SET state='INTERRUPTED', reason='Runner reiniciado; efeito não repetido; cleanup explícito obrigatório.' WHERE state='RUNNING'"
             )
 
     def close(self):
-        with self.control:
-            active = self.active
-            if active:
-                active.cancelled.set()
-        if active and active.thread:
-            active.thread.join(timeout=7)
-            if active.thread.is_alive():
-                raise RuntimeError("Supervisor não encerrou; não liberar instância.")
-        self.journal.close()
-        self.workspace.close()
+        with self.close_lock:
+            if self.closed:
+                return
+            with self.control:
+                active = self.active
+                if active:
+                    active.cancelled.set()
+            if active and active.thread:
+                active.thread.join(timeout=7)
+                if active.thread.is_alive():
+                    raise RuntimeError("Supervisor não encerrou; não liberar instância.")
+            self.journal.close()
+            self.workspace.close()
+            self.closed = True
 
     def prepare(self, spec: JobSpec) -> JobView:
         if (spec.runner_id, spec.laboratory_id, spec.asset_id) != (

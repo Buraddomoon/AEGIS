@@ -36,6 +36,9 @@ class Journal:
                     action TEXT NOT NULL, timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
                     FOREIGN KEY(job_id) REFERENCES jobs(id))""")
                 db.execute("PRAGMA user_version=1")
+                db.execute(
+                    "CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
+                )
         except BaseException:
             os.close(self.lock_fd)
             raise

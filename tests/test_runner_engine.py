@@ -11,17 +11,6 @@ from aegis.lab_runner.engine import Conflict, Runner
 from aegis.lab_runner.protocol import BoundRequest, JobSpec, RunnerIdentity
 
 
-@pytest.fixture
-def runner(tmp_path):
-    work, state = tmp_path / "work", tmp_path / "state"
-    work.mkdir(mode=0o700)
-    state.mkdir(mode=0o700)
-    identity = RunnerIdentity(runner_id=uuid4(), laboratory_id=uuid4(), asset_id=uuid4())
-    instance = Runner(identity, work, state)
-    yield instance
-    instance.close()
-
-
 def prepare(runner, **changes):
     data = dict(
         runner_id=runner.identity.runner_id,
@@ -216,3 +205,17 @@ def test_no_effect_if_durable_intent_cannot_commit(runner, monkeypatch):
         runner.start(view.spec.job_id, bound(view))
     assert runner.active is None
     assert not list(runner.workspace.root.iterdir())
+
+
+def test_journal_identity_cannot_be_rebound_and_closed_runner_is_idempotent(tmp_path):
+    work, state = tmp_path / "work", tmp_path / "state"
+    work.mkdir(mode=0o700)
+    state.mkdir(mode=0o700)
+    identity = RunnerIdentity(runner_id=uuid4(), laboratory_id=uuid4(), asset_id=uuid4())
+    first = Runner(identity, work, state)
+    first.close()
+    first.close()
+    with pytest.raises(Conflict, match="outra identidade"):
+        Runner(identity.model_copy(update={"runner_id": uuid4()}), work, state)
+    restored = Runner(identity, work, state)
+    restored.close()

@@ -107,3 +107,19 @@ def create_queued(client, tests=None):
     started = client.post(f"/api/v1/executions/{result['id']}/start", json={"confirm": True})
     assert started.status_code == 200, started.text
     return result
+
+
+@pytest.fixture
+def runner(tmp_path):
+    from aegis.lab_runner.engine import Runner
+    from aegis.lab_runner.protocol import RunnerIdentity
+
+    work, state = tmp_path / "work", tmp_path / "state"
+    work.mkdir(mode=0o700)
+    state.mkdir(mode=0o700)
+    identity = RunnerIdentity(
+        runner_id=uuid.uuid4(), laboratory_id=uuid.uuid4(), asset_id=uuid.uuid4()
+    )
+    instance = Runner(identity, work, state)
+    yield instance
+    instance.close()
