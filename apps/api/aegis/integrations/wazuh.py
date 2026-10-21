@@ -102,6 +102,7 @@ class WazuhIndexerProvider:
             timeout = min(timeout, self.budget_end + (1 if cleanup else 0) - time.monotonic())
             if timeout <= 0:
                 raise TimeoutError("Orçamento de consulta esgotado.")
+        request_end = time.monotonic() + timeout
         # Total timeout covers pool/connect/TLS/headers and even a trickling body.
         async with asyncio.timeout(timeout):
             request = self.client.build_request(
@@ -110,7 +111,7 @@ class WazuhIndexerProvider:
                 json=body,
                 timeout=httpx.Timeout(timeout, connect=min(timeout, 2)),
                 headers={"Host": self.authority, "Accept-Encoding": "identity"},
-                extensions={"sni_hostname": self.hostname.encode()},
+                extensions={"sni_hostname": self.hostname},
             )
             response = await self.client.send(request, stream=True)
             try:
@@ -128,7 +129,12 @@ class WazuhIndexerProvider:
                     if size > 8_000_000 or self.bytes_read > 16_000_000:
                         raise ValueError("Resposta excede limite de tamanho.")
                     chunks.append(chunk)
-                value = json.loads(b"".join(chunks))
+                try:
+                    value = json.loads(b"".join(chunks))
+                except RecursionError:
+                    raise ValueError("Documento JSON excessivamente aninhado.") from None
+                if time.monotonic() > request_end:
+                    raise TimeoutError("Orçamento esgotado durante parsing.")
             finally:
                 try:
                     async with asyncio.timeout(0.5):

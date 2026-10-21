@@ -114,7 +114,7 @@ def test_wazuh_pagination_preserves_identity_and_correlates():
         requests.append(request)
         assert request.url.host == "192.0.2.10"
         assert request.headers["host"] == "siem.lab:9200"
-        assert request.extensions["sni_hostname"] == b"siem.lab"
+        assert request.extensions["sni_hostname"] == "siem.lab"
         if request.method == "DELETE":
             return httpx.Response(200, json={"succeeded": True})
         if request.url.path == "/_search/scroll":
