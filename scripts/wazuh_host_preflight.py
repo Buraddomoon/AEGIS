@@ -18,6 +18,25 @@ class Resources:
     max_map_count: int
 
 
+def local_environment(private_keys=()) -> dict[str, str]:
+    environment = os.environ.copy()
+    for name in (
+        "DOCKER_HOST",
+        "DOCKER_CONTEXT",
+        "DOCKER_TLS_VERIFY",
+        "DOCKER_CERT_PATH",
+        "DOCKER_DEFAULT_PLATFORM",
+        "COMPOSE_PROJECT_NAME",
+        "COMPOSE_PROFILES",
+        "COMPOSE_FILE",
+        "COMPOSE_ENV_FILES",
+        "BUILDX_BUILDER",
+        *private_keys,
+    ):
+        environment.pop(name, None)
+    return environment
+
+
 def failures(resources: Resources) -> list[str]:
     issues = []
     if resources.cpus < 4:
@@ -50,6 +69,7 @@ def docker_storage() -> Path:
         capture_output=True,
         text=True,
         timeout=10,
+        env=local_environment(),
     )
     root = Path(json.loads(result.stdout))
     if not root.is_absolute():

@@ -105,3 +105,28 @@ linux-platform-down:
 .PHONY: test-wazuh
 test-wazuh:
 	$(VENV)/pytest tests/test_wazuh_collection.py tests/test_wazuh_campaigns.py tests/test_marker_observer.py tests/test_wazuh_tls.py -q
+
+# A separate real Wazuh assay is never started by default. See labs/wazuh/ASSAY.md.
+.PHONY: wazuh-lab-prepare wazuh-lab-config wazuh-lab-preflight test-wazuh-preparation wazuh-lab-pull wazuh-lab-hash-users wazuh-lab-build wazuh-lab-up wazuh-lab-check-rule wazuh-lab-status wazuh-lab-down
+wazuh-lab-prepare:
+	$(VENV)/python scripts/prepare_wazuh_lab.py
+wazuh-lab-config:
+	$(VENV)/python scripts/wazuh_lab.py config
+wazuh-lab-preflight:
+	$(VENV)/python scripts/wazuh_host_preflight.py
+test-wazuh-preparation:
+	$(VENV)/pytest tests/test_wazuh_host_preflight.py tests/test_wazuh_lab_preparation.py tests/test_wazuh_lab_lifecycle.py tests/test_marker_log.py tests/test_marker_observer.py -q
+wazuh-lab-pull:
+	$(VENV)/python scripts/wazuh_lab.py pull --confirm-local-wazuh
+wazuh-lab-hash-users:
+	$(VENV)/python scripts/wazuh_lab.py hash-users --confirm-local-wazuh
+wazuh-lab-build:
+	$(VENV)/python scripts/wazuh_lab.py build --confirm-local-wazuh
+wazuh-lab-up:
+	$(VENV)/python scripts/wazuh_lab.py up --confirm-local-wazuh
+wazuh-lab-check-rule:
+	$(VENV)/python scripts/wazuh_lab.py check-rule --confirm-local-wazuh
+wazuh-lab-status:
+	$(VENV)/python scripts/wazuh_lab.py status
+wazuh-lab-down:
+	$(VENV)/python scripts/wazuh_lab.py down --confirm-local-wazuh
