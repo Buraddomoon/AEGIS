@@ -28,7 +28,7 @@ class WazuhCollectionConfig(BaseModel):
         default="data.aegis", pattern=r"^data\.[a-zA-Z][a-zA-Z0-9_]{0,39}$"
     )
     clock_skew_seconds: int = Field(default=5, ge=0, le=30)
-    ingestion_window_seconds: int = Field(default=120, ge=1, le=300)
+    ingestion_window_seconds: int = Field(default=10, ge=1, le=120)
     ingestion_wait_seconds: float = Field(default=10, ge=0.1, le=120)
     poll_interval_seconds: float = Field(default=1, ge=0.1, le=10)
     request_timeout_seconds: float = Field(default=3, ge=0.1, le=5)
@@ -42,6 +42,10 @@ class WazuhCollectionConfig(BaseModel):
 
     @model_validator(mode="after")
     def limits(self):
+        if self.ingestion_wait_seconds < self.ingestion_window_seconds:
+            raise ValueError(
+                "Espera de ingestão deve cobrir a janela temporal antes de concluir ausência de alerta."
+            )
         if self.poll_interval_seconds > self.ingestion_wait_seconds:
             raise ValueError("Intervalo de polling excede a janela de espera.")
         if math.ceil(self.ingestion_wait_seconds / self.poll_interval_seconds) + 1 > 64:

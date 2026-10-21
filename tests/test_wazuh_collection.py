@@ -208,7 +208,10 @@ class Clock:
 def test_polling_waits_for_late_alert_and_deduplicates_repeated_archive_hits():
     ctx, clock, calls = context(), Clock(), []
     cfg = policy(
-        ingestion_wait_seconds=1, poll_interval_seconds=0.5, archives_index="wazuh-archives-4.x-*"
+        ingestion_window_seconds=1,
+        ingestion_wait_seconds=1,
+        poll_interval_seconds=0.5,
+        archives_index="wazuh-archives-4.x-*",
     )
 
     def handle(request):
@@ -237,7 +240,10 @@ def test_polling_waits_for_late_alert_and_deduplicates_repeated_archive_hits():
 def test_negative_waits_until_window_and_requires_final_complete_snapshot():
     ctx, clock = context(), Clock()
     cfg = policy(
-        ingestion_wait_seconds=1, poll_interval_seconds=0.5, archives_index="wazuh-archives-4.x-*"
+        ingestion_window_seconds=1,
+        ingestion_wait_seconds=1,
+        poll_interval_seconds=0.5,
+        archives_index="wazuh-archives-4.x-*",
     )
 
     def handle(request):
@@ -275,7 +281,10 @@ def test_run_budget_reserves_cleanup_and_cannot_prove_a_negative():
 def test_changed_source_document_is_not_reused_as_evidence():
     ctx, clock = context(), Clock()
     cfg = policy(
-        ingestion_wait_seconds=1, poll_interval_seconds=0.5, archives_index="wazuh-archives-4.x-*"
+        ingestion_window_seconds=1,
+        ingestion_wait_seconds=1,
+        poll_interval_seconds=0.5,
+        archives_index="wazuh-archives-4.x-*",
     )
     start = clock.value
 
