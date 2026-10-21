@@ -9,12 +9,14 @@ from datetime import timedelta
 from redis.exceptions import RedisError
 from sqlalchemy import select
 
+from aegis import linux_labs
 from aegis.config import settings
 from aegis.db import session_factory
-from aegis.domain.contracts import ExecutionAdapter, ExecutionContext
+from aegis.domain.contracts import Collection, ExecutionAdapter, ExecutionContext
 from aegis.domain.states import ACTIVE, State
 from aegis.domain.validation import LOGIC_VERSION, digest, validate
 from aegis.integrations.demo import DemoExecutionAdapter, DemoTelemetryProvider
+from aegis.integrations.linux_runner import LinuxMarkerAdapter
 from aegis.models import (
     Approval,
     CampaignRun,
@@ -60,10 +62,12 @@ def claim_next() -> str | None:
             or digest(run.scope) != run.scope_hash
             or not lab
             or not lab.authorized
-            or lab.kind != "demo"
+            or lab.kind not in ("demo", "linux")
             or lab.active_run_id != run.id
             or lab.environment_version != run.scope["environment_version"]
             or not authorization_valid(db, run, approval)
+            or not linux_labs.approval_valid(db, run, approval)
+            or (not run.synthetic and not linux_labs.verified(db, lab))
         ):
             move(
                 db,
@@ -91,7 +95,9 @@ def claim_next() -> str | None:
         move(db, run, State.PREPARING, "Worker adquiriu a execução de forma exclusiva.")
         run.started_at = run.heartbeat_at = now()
         for item in db.scalars(select(TestExecution).where(TestExecution.run_id == run.id)):
-            move(db, run, State.PREPARING, "Verificação de pré-requisitos sintéticos.", item)
+            move(
+                db, run, State.PREPARING, "Verificação dos pré-requisitos do escopo aprovado.", item
+            )
         db.commit()
         return run.id
 
@@ -108,10 +114,17 @@ def guard(run_id: str) -> None:
         lab = db.get(Laboratory, run.laboratory_id)
         if (
             not lab
+            or lab.active_run_id != run.id
             or not lab.authorized
             or lab.environment_version != run.scope["environment_version"]
         ):
             raise Interrupted(State.FAILED, "Autorização ou versão do laboratório mudou.")
+        if not run.synthetic:
+            approval = db.scalar(select(Approval).where(Approval.run_id == run.id))
+            if not linux_labs.approval_valid(db, run, approval):
+                raise Interrupted(
+                    State.CANCELLED, "Autorização/identidade/configuração Linux mudou."
+                )
         if stop.is_set():
             raise Interrupted(State.CANCELLED, "Worker encerrando de forma controlada.")
         if run.schedule_id:
@@ -142,7 +155,7 @@ def context_for(run: CampaignRun, item: TestExecution, test: dict) -> ExecutionC
         test["behavior"],
         item.started_at or now(),
         item.ended_at or now(),
-        True,
+        run.synthetic,
         test["expected_rule"],
     )
 
@@ -155,7 +168,7 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
             return
         owned.processing_started = True
         db.commit()
-    adapter = adapter or DemoExecutionAdapter()
+    remote = None
     contexts: dict[str, ExecutionContext] = {}
     collections = {}
     target, error = State.COMPLETED, None
@@ -172,10 +185,35 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
             ).all()
             for item in items:
                 contexts[item.id] = context_for(run, item, tests[item.test_id])
+        if not run.synthetic:
+            if run.scope["runner"] != linux_labs.descriptor():
+                raise ValueError("Configuração Linux mudou antes da preparação.")
+            remote = linux_labs.client()
+            adapter = LinuxMarkerAdapter(
+                remote, run.deadline_at, run.scope_hash, lambda: guard(run_id)
+            )
+            with session_factory()() as db:
+                for item in items:
+                    linux_labs.ensure_dispatch(db, run, item)
+                db.commit()  # Before ANY prepare RPC.
+        else:
+            adapter = adapter or DemoExecutionAdapter()
         for context in contexts.values():
             guard(run_id)
             adapter.prepare(context)
-        set_phase(run_id, State.RUNNING, "Executando simulações em memória; dados sintéticos.")
+            if not run.synthetic:
+                with session_factory()() as db:
+                    linux_labs.persist_view(
+                        db, context.execution_id, adapter.jobs[context.execution_id]
+                    )
+                    db.commit()
+        set_phase(
+            run_id,
+            State.RUNNING,
+            "Executando simulações em memória; dados sintéticos."
+            if run.synthetic
+            else "Executando marcador Linux revisado no runner isolado.",
+        )
         for item in items:
             guard(run_id)
             with session_factory()() as db:
@@ -184,17 +222,33 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
                 db.commit()
                 context = context_for(run, persisted, tests[item.test_id])
             executed = adapter.execute(context)
+            if not run.synthetic:
+                with session_factory()() as db:
+                    linux_labs.persist_view(db, item.id, adapter.jobs[item.id])
+                    db.commit()
             guard(run_id)
             with session_factory()() as db:
                 persisted = db.get(TestExecution, item.id)
-                persisted.executed, persisted.ended_at = executed, now()
+                persisted.executed = executed
+                if run.synthetic:
+                    persisted.ended_at = now()
                 contexts[item.id] = context_for(run, persisted, tests[item.test_id])
                 db.commit()
         set_phase(run_id, State.COLLECTING, "Coletando eventos pelo contrato TelemetryProvider.")
         for item in items:
             guard(run_id)
-            collection = DemoTelemetryProvider(tests[item.test_id]["demo_outcome"]).collect(
-                contexts[item.id]
+            collection = (
+                DemoTelemetryProvider(tests[item.test_id]["demo_outcome"]).collect(
+                    contexts[item.id]
+                )
+                if run.synthetic
+                else Collection(
+                    (),
+                    False,
+                    False,
+                    False,
+                    "SIEM não configurado/consultado; comprovante do executor não é telemetria defensiva.",
+                )
             )
             collections[item.id] = collection
             with session_factory()() as db:
@@ -235,7 +289,7 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
                     outcome=verdict.outcome,
                     reason=verdict.reason,
                     logic_version=LOGIC_VERSION,
-                    synthetic=True,
+                    synthetic=run.synthetic,
                     collection_complete=collection.complete,
                     telemetry_available=collection.telemetry_available,
                     alerts_available=collection.alerts_available,
@@ -276,19 +330,38 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
                     )
                 for item in db.scalars(select(TestExecution).where(TestExecution.run_id == run_id)):
                     if item.state in ACTIVE and item.state != State.CLEANING_UP:
-                        move(db, current, State.CLEANING_UP, "Liberando contexto sintético.", item)
+                        move(
+                            db,
+                            current,
+                            State.CLEANING_UP,
+                            "Executando cleanup obrigatório do contexto.",
+                            item,
+                        )
                 current.requested_outcome = target
                 db.commit()
         cleanup_failed = False
         for context in contexts.values():
             try:
-                adapter.cleanup(context)
+                if adapter is not None:
+                    adapter.cleanup(context)
+                if not run.synthetic and isinstance(adapter, LinuxMarkerAdapter):
+                    with session_factory()() as db:
+                        view = adapter.jobs.get(context.execution_id)
+                        if view:
+                            linux_labs.persist_view(db, context.execution_id, view)
+                        db.commit()
             except Exception:
                 cleanup_failed = True
                 log.exception("Cleanup failed for execution %s", context.execution_id)
+        if remote:
+            remote.close()
         if cleanup_failed:
             target = State.CLEANUP_FAILED
-            error = "Cleanup falhou. Demo: nenhum efeito externo; revise logs, confirme contexto descartado e libere laboratório após inspeção."
+            error = (
+                "Cleanup falhou. Demo: nenhum efeito externo; revise logs, confirme contexto descartado e libere laboratório após inspeção."
+                if run.synthetic
+                else "Cleanup Linux não confirmado; reserva retida. Solicite recuperação verificada do job original, sem replay."
+            )
         with session_factory()() as db:
             current = db.scalar(
                 select(CampaignRun).where(CampaignRun.id == run_id).with_for_update()
@@ -305,7 +378,17 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
                             State.CANCELLED,
                             "Autorização recorrente revogada durante cleanup.",
                         )
-                move(db, current, target, error or "Execução e cleanup demonstrativos concluídos.")
+                move(
+                    db,
+                    current,
+                    target,
+                    error
+                    or (
+                        "Execução e cleanup demonstrativos concluídos."
+                        if current.synthetic
+                        else "Execução Linux e cleanup confirmados; SIEM não consultado."
+                    ),
+                )
                 current.error, current.ended_at, current.heartbeat_at = error, now(), now()
                 for item in db.scalars(select(TestExecution).where(TestExecution.run_id == run_id)):
                     if item.state == State.CLEANING_UP:
@@ -317,7 +400,7 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
 
 
 def recover_abandoned() -> int:
-    """Demo-only safe recovery: no automatic replay of unknown side effects."""
+    """Demo recovery and real quarantine; never replay unknown remote effects."""
     recovered = 0
     with session_factory()() as db:
         stale = db.scalars(
@@ -331,6 +414,38 @@ def recover_abandoned() -> int:
         ).all()
         for run in stale:
             if not run.synthetic:
+                if run.state != State.CLEANING_UP:
+                    move(
+                        db, run, State.CLEANING_UP, "Worker interrompido; efeito real não repetido."
+                    )
+                for item in db.scalars(select(TestExecution).where(TestExecution.run_id == run.id)):
+                    if item.state in ACTIVE:
+                        if item.state != State.CLEANING_UP:
+                            move(
+                                db,
+                                run,
+                                State.CLEANING_UP,
+                                "Estado real desconhecido; iniciando quarentena.",
+                                item,
+                            )
+                        move(
+                            db,
+                            run,
+                            State.CLEANUP_FAILED,
+                            "Cleanup remoto exige recuperação verificada.",
+                            item,
+                        )
+                move(
+                    db,
+                    run,
+                    State.CLEANUP_FAILED,
+                    "Worker interrompido; reserve laboratório até confirmar cleanup do job original.",
+                )
+                run.error, run.ended_at = (
+                    "Efeito real desconhecido; recuperação administrativa necessária.",
+                    now(),
+                )
+                recovered += 1
                 continue
             if run.state != State.CLEANING_UP:
                 move(
@@ -373,7 +488,9 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
-    log.info("AEGIS worker: transactional PostgreSQL queue; demo adapter only")
+    log.info(
+        "AEGIS worker: transactional PostgreSQL queue; Demo and opt-in allowlisted Linux marker"
+    )
     scheduler = threading.Thread(
         target=scheduler_loop, args=(stop,), name="demo-scheduler", daemon=True
     )
