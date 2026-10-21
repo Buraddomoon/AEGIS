@@ -83,6 +83,24 @@ def seed(db: Session) -> dict:
                     approved=True,
                 )
             )
+    if not db.get(TestDefinition, "linux-file-marker-v1"):
+        db.add(
+            TestDefinition(
+                id="linux-file-marker-v1",
+                name="Linux • marcador benigno real",
+                description="Cria e remove 43 bytes no tmpfs do runner isolado. Comprovante não é telemetria defensiva.",
+                technique_id=None,
+                behavior="temporary-marker",
+                execution_kind="linux_marker",
+                platform="Linux",
+                cleanup="Remover somente proof.marker e receipt.json do diretório UUID; confirmação pelo runner.",
+                prerequisites="Binding revisado, preflight mTLS vigente, laboratório autorizado e aprovação separada.",
+                risk="low",
+                approved=True,
+                expected_rule="",
+                demo_outcome="",
+            )
+        )
     db.commit()
     return {
         "laboratory_id": lab.id,

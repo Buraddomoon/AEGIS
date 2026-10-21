@@ -87,6 +87,9 @@ class AttackTechnique(Base):
 
 class TestDefinition(Base):
     __tablename__ = "test_definitions"
+    __table_args__ = (
+        CheckConstraint("execution_kind in ('demo','linux_marker')", name="test_execution_kind"),
+    )
     id: Mapped[str] = mapped_column(String(60), primary_key=True)
     name: Mapped[str] = mapped_column(String(160))
     description: Mapped[str] = mapped_column(Text)
@@ -100,6 +103,27 @@ class TestDefinition(Base):
     approved: Mapped[bool] = mapped_column(Boolean, default=True)
     expected_rule: Mapped[str] = mapped_column(String(80))
     demo_outcome: Mapped[str] = mapped_column(String(40))
+    execution_kind: Mapped[str] = mapped_column(String(20), default="demo")
+
+
+class LinuxLabBinding(Base):
+    __tablename__ = "linux_lab_bindings"
+    laboratory_id: Mapped[str] = mapped_column(ForeignKey("laboratories.id"), primary_key=True)
+    runner_id: Mapped[str] = mapped_column(String(36), unique=True)
+    configuration_hash: Mapped[str] = mapped_column(String(64))
+    reviewed_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    isolation_review: Mapped[str] = mapped_column(Text)
+
+
+class LabVerification(Entity, Base):
+    __tablename__ = "lab_verifications"
+    laboratory_id: Mapped[str] = mapped_column(ForeignKey("laboratories.id"), index=True)
+    checked_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    configuration_hash: Mapped[str] = mapped_column(String(64))
+    environment_version: Mapped[int] = mapped_column(Integer)
+    success: Mapped[bool] = mapped_column(Boolean)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    reason: Mapped[str] = mapped_column(Text)
 
 
 class Campaign(Entity, Base):
@@ -164,6 +188,28 @@ class TestExecution(Entity, Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __table_args__ = (UniqueConstraint("run_id", "test_id"),)
+
+
+class RunnerDispatch(Entity, Base):
+    __tablename__ = "runner_dispatches"
+    execution_id: Mapped[str] = mapped_column(ForeignKey("test_executions.id"), unique=True)
+    spec: Mapped[dict] = mapped_column(JSONB)
+    spec_hash: Mapped[str] = mapped_column(String(64))
+    generation: Mapped[str | None] = mapped_column(String(36))
+
+
+class RunnerReceipt(Entity, Base):
+    __tablename__ = "runner_receipts"
+    execution_id: Mapped[str] = mapped_column(ForeignKey("test_executions.id"), unique=True)
+    content: Mapped[dict] = mapped_column(JSONB)
+    sha256: Mapped[str] = mapped_column(String(64))
+
+
+class RunnerCleanup(Entity, Base):
+    __tablename__ = "runner_cleanups"
+    execution_id: Mapped[str] = mapped_column(ForeignKey("test_executions.id"), unique=True)
+    content: Mapped[dict] = mapped_column(JSONB)
+    sha256: Mapped[str] = mapped_column(String(64))
 
 
 class ExecutionStep(Entity, Base):

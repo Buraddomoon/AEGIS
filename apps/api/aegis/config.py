@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     wazuh_password: str | None = None
     wazuh_ca_bundle: str | None = None
     wazuh_allowed_ip: str | None = None
+    linux_runner_config: Path | None = None
 
 
 @lru_cache

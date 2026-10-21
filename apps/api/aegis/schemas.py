@@ -43,6 +43,7 @@ class Approve(Input):
     confirm_scope_hash: str = Field(min_length=64, max_length=64)
     validity_minutes: int = Field(default=15, ge=1, le=60)
     max_duration_seconds: int = Field(default=60, ge=10, le=300)
+    confirm_real_execution: bool = False
 
 
 class Confirm(Input):
@@ -51,6 +52,13 @@ class Confirm(Input):
 
 class LabAuthorization(Input):
     authorized: bool
+
+
+class LinuxRegistration(Input):
+    name: str = Field(min_length=3, max_length=120)
+    owner: str = Field(min_length=3, max_length=120)
+    isolation_review: str = Field(min_length=20, max_length=4000)
+    confirm_isolation_review: Literal[True]
 
 
 class SigmaImport(Input):
