@@ -12,7 +12,7 @@ dependencies = [
   "fastapi==0.156.0", "pydantic==2.14.1", "pydantic-settings==2.16.1",
   "sqlalchemy==2.1.5", "alembic==1.20.0", "psycopg[binary]==3.3.6",
   "redis==8.1.0", "httpx==0.28.1", "argon2-cffi==25.1.0",
-  "uvicorn==0.54.0", "pysigma==2.0.1", "PyYAML>=6.0.3,<7"
+  "uvicorn==0.54.0", "pysigma==2.0.1", "packaging==26.3", "PyYAML>=6.0.3,<7"
 ]
 
 [project.optional-dependencies]

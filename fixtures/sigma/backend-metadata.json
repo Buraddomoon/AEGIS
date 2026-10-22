@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-10-22",
+  "packages": [
+    {
+      "name": "pySigma-backend-opensearch",
+      "version": "2.0.3",
+      "requires_python": ">=3.10,<4.0",
+      "requires_dist": [
+        "pysigma (>=1.0.0,<2.0.0)",
+        "pysigma-backend-elasticsearch (>=2.0.0)"
+      ],
+      "license": "LGPL-3.0-only",
+      "source": "https://pypi.org/pypi/pysigma-backend-opensearch/2.0.3/json",
+      "wheel_sha256": "bcb90e21207385fadb56ac5358242c86d32736a897289f2e0cb5d6949670e927",
+      "metadata_sha256": "b656d697c82d05549a23f260c46a25396f2e8ad2746c936fd6a3febff49958e1"
+    },
+    {
+      "name": "pySigma-backend-elasticsearch",
+      "version": "2.1.1",
+      "requires_python": ">=3.10,<4.0",
+      "requires_dist": [
+        "pysigma (>=1.4.0,<2.0.0)"
+      ],
+      "license": "LGPL-3.0-only",
+      "source": "https://pypi.org/pypi/pysigma-backend-elasticsearch/2.1.1/json",
+      "wheel_sha256": "0bb514ae02445d2053d530bd732c8747ffac9184246d45f3fa2669d0862a5af4",
+      "metadata_sha256": "0a0ee6aee8d9219e810b3bc1c0b7d58d76683a7c2cfbebf75270fc1a9e63954b"
+    }
+  ]
+}
