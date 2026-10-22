@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e associações Sigma/teste revisadas (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
+Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e associações Sigma/teste revisadas com análise estática de versões (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -735,3 +735,102 @@ totalizando **157**. Somente main, AEGIS privado, push após cada commit, sem
 branch/PR/force. Último código 4ef1408 com CI verde acima; commits seguintes são
 capturas/documentação. Consultar log/status após o checkpoint para hash/mensagem
 e sincronização finais; não incorporar seu próprio hash neste arquivo.
+
+
+## 2026-10-22 — Análise estática Sigma por versão e proteção pré-parser
+
+### Funcionalidades e decisões
+
+Entregue análise real sobre o conteúdo persistido de cada RuleVersion. O serviço
+é puro, determinístico e identificado por sigma-static/1, pySigma2.0.1 e SHA-256.
+Nenhuma tabela/cache, migração, dependência ou serviço pago foi acrescentado.
+[ADR0008](architecture/decisions/0008-sigma-static-analysis.md) e
+[contrato/limites](integrations/sigma.md#análise-estática-de-versões).
+
+- Cinco checks AEGIS sobre o parser/modelo oficiais: resolução de condições,
+  seleções não referenciadas, all sem contains, curingas consecutivos e
+  caracteres de controle. Resultados ordenados, campos/seleções de contexto e
+  prioridade de revisão; não representam risco de negócio ou eficácia.
+- Fatos incluem logsource, condições, seleções e campos declarados. Ausência de
+  achados é limitada aos checks listados. Condição não resolvida impede o check
+  de seleção não referenciada, explicitamente marcado como não executado.
+- GET /rules/{rule_id}/versions/{version_id}/analysis exige sessão, permite
+  viewer, verifica associação da versão à regra e hash, limita60/min por usuário.
+  409 por integridade divergente,422 por conteúdo não analisável e429 por limite.
+  Não grava vínculos, evidências, aprovações, scopes ou veredictos.
+- Regras → Análise estática seleciona versões atuais/históricas, exibe achados,
+  limites e identificação/hash do conteúdo. Recusa identidade/hash divergentes,
+  não mistura resposta pendente de outra versão, trata erro/ausência de versões.
+- Compatibilidade not_configured, backend/pipeline null, conversão/implantação
+  false. Documentação oficial lista backend OpenSearch e pipelines de mapeamento;
+  isso não demonstra compatibilidade com schema Wazuh ou regra XML no manager.
+
+Arquivos principais: apps/api/aegis/integrations/sigma_analysis.py,
+yaml_import.py e api.py; apps/web/src/RuleAnalysis.tsx, Management.tsx e types.ts;
+tests/test_sigma_analysis.py e UI sigma-analysis.test.tsx; harnesses E2E/smoke e
+scripts/audit_dependencies.py. [Revisão](security/review-sigma-analysis-2026-10-22.md).
+
+### Problemas encontrados e correções verificadas
+
+Importar um validador de sigma.validators.core executa descoberta/importação de
+outros módulos, inclusive loaders MITRE/DiskCache. Inspeção e teste revelaram o
+caminho antes da entrega. Usar checks locais explícitos sobre parser/modelo e
+manter regressão/auditoria de DiskCache ausente; nenhum validador upstream copiado.
+
+Revisão especializada somente leitura identificou expansão de modificadores
+antes dos budgets de análise e bypass via dispatch de documento filter. Corrigidos
+na entrada compartilhada de importação/análise ANTES de SigmaCollection:
+
+- YAML até32 níveis antes de safe_load,64KiB/5000eventos e aliases proibidos.
+- Somente regra individual: rejeitar filter/correlation/action e detection não
+  objeto antes do dispatch. Até6 modificadores por campo, sem repetição.
+- Estimativa conservadora de transformação:256KiB/valor,1MiB total,4096variantes,
+  considerando encodings/base64offset/windash da versão pySigma fixada. Não mede
+  RAM total do interpretador e pode recusar regras legítimas complexas. Revisar
+  política ao atualizar a biblioteca; conteúdo legado fora da política não é
+  apagado, mas sua análise retorna422.
+
+Testes substituem o parser por função proibida para provar recusa antecipada,
+sem executar expansões perigosas. Encoding normal também foi aceito. Processo
+novo com audit hook verifica ausência de importação DiskCache, rede e gravações.
+Revisão estática final não identificou bloqueador concreto restante nesses deltas.
+O teste UI de falha foi ajustado à tentativa adicional de consulta, preservando o
+retry da aplicação e o estado de erro real.
+
+### Verificações executadas
+
+| Check | Resultado observado |
+|---|---|
+| `make test`, rodada final | **362 Python passaram**,143,20s; **27 frontend passaram**,4,61s |
+| `make lint` | Ruff/check/format de93 arquivos, mypy domínio, TypeScript e Prettier passaram |
+| PostgreSQL/API/análise direcionados | **52 passaram**,6,39s, incluindo expansão/dispatch antes do parser; sem payload perigoso |
+| `make e2e`, após hardening | **PASS** Firefox/API/worker/PG/Redis:4 runs/16 testes sintéticos,9 capturas,0 erros JavaScript |
+| Histórico no navegador | Consulta versão atual com achado e anterior sem achados; revisões/retirada, relatório anterior idêntico e comparação histórica |
+| Docker Compose | Build de produção/migrate/seed/grants e API/worker saudáveis; ready database/redis=true |
+| `make smoke`, imagem corrigida | **PASS**, papel SQL runtime, importação/análise Sigma, campanha+ocorrência,8 resultados sintéticos, grant/revogação e relatórios; conta temporária desativada |
+| `make audit` | **PASS**:1 advisory transitivo DiskCache revisado visível; parsing/análise não importam seu cache; npm0 vulnerabilidades |
+| Documentos |10 Markdown/40 links locais verificados antes deste checkpoint; scanner staged/diff-check antes de cada commit |
+| CI do código final | **SUCCESS**,8fcd0d6, [run39829087308](https://github.com/Buraddomoon/AEGIS/actions/runs/39829087308): lint/tipos/PG/UI/build/advisories |
+
+Rodadas anteriores344 e349 Python/27frontend passaram antes dos complementos de
+segurança; tabela acima registra a rodada final. Aviso upstream TestClient/httpx
+permanece. Captura real da análise em docs/images/sigma-analysis.png, inspecionada;
+imagens Demo atualizadas pelo fluxo de navegador, sem inserir dados do ensaio real.
+
+### Estado operacional e próxima etapa
+
+Demo atualizado em http://localhost:18780. Wazuh permanece encerrado com9volumes
+preservados, sem novo marcador/consulta SIEM; autorização do ensaio anterior
+continua consumida. Nenhum serviço de outro projeto foi parado ou reconfigurado.
+
+Próximo passo recomendado: avaliar backend/pipeline oficial e mapeamento de campos
+para um destino definido, com testes offline de conversão e limites explícitos.
+Não há conversão ou implantação Sigma validada; semântica completa, correspondência
+à telemetria e eficácia permanecem pendentes. Mantêm-se roadmap de retenção/restore,
+PKI, atualização ATT&CK, Windows, archives e scheduler restrito a Demo.
+
+Este marco acrescenta **12 commits granulares**, incluindo este checkpoint,
+totalizando **169**. Main exclusiva, AEGIS privado e push após cada commit, sem
+branch/PR/force. Último código8fcd0d6; mudanças seguintes só documentação/capturas.
+Consultar git log/status após o checkpoint para último hash/mensagem e sync;
+não incorporar seu próprio hash neste documento.
