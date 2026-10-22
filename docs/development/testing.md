@@ -61,3 +61,23 @@ runtime Wazuh nem substituem a inspeção das permissões/mounts dentro do conta
 O ensaio [real proposto](../../labs/wazuh/ASSAY.md) foi autorizado sob preflight;
 permanece bloqueado por recursos disponíveis. `check-rule` futuro usa log sintético
 no sandbox wazuh-logtest e não equivale à ingestão real do marcador.
+
+## Ensaio Wazuh real registrado em 2026-10-22
+
+O único ensaio autorizado foi executado: uma campanha, marcador de 43 bytes,
+alerta Wazuh original 100200, COMPLETED/DETECTED/CLEANED com synthetic=false.
+[Artefatos, hashes e limites](../evidence/wazuh-2026-10-22/README.md). Laboratório
+revogado, contas desativadas, containers/redes encerrados e volumes preservados.
+Essa autorização foi consumida; nenhum teste padrão inicia esse stack ou efeito.
+
+`tests/test_wazuh_assay_guard.py` usa HTTP de fixture para conferir ordem durável
+de START_INTENT, um único start, ausência de retry em resposta ambígua, recusa de
+histórico prévio, revogação e retenção de credenciais para recuperação. Credenciais
+temporárias são removidas somente após desativação confirmada. Faz parte de
+`make test-wazuh-preparation`; não executa marcador real.
+
+`pytest tests/test_wazuh_recorded_assay.py -q` verifica os artefatos gravados,
+normalização do schema real e recusa de identidade/regra alteradas, sem serviços
+ou acesso ao SIEM. Esse reprocessamento offline não equivale a nova coleta real.
+Última rodada: make test, **311 Python e 14 frontend passaram**; lint e CI aprovados.
+Não foi repetido E2E de navegador nem criado screenshot Wazuh nesta rodada.

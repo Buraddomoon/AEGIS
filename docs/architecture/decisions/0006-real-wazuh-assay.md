@@ -1,6 +1,6 @@
 # ADR 0006 — Ensaio Wazuh próprio e opt-in
 
-Status: preparação; ensaio autorizado sob preflight, execução real não validada.
+Status: implementado; ensaio único autorizado concluído em 2026-10-22, limitado ao pipeline de marcador.
 Data: 2026-10-21.
 
 ## Contexto
@@ -71,8 +71,18 @@ O usuário posteriormente autorizou **“Autorizar somente esse ensaio quando o
 preflight passar”**, respondendo ao escopo integral registrado em
 [ASSAY.md](../../../labs/wazuh/ASSAY.md). Autorização de um único ciclo, imagens
 fixadas, infraestrutura própria, um marcador e encerramento com evidências/volumes
-preservados. Não pedir novamente a mesma autorização. O host ainda não satisfaz
+preservados. Não pedir novamente a mesma autorização. Na preparação inicial o host não satisfazia
 a margem de RAM disponível; não iniciar nem baixar o stack enquanto o gate falhar.
+
+Continuidade 2026-10-22: após o usuário encerrar o Firefox, o preflight passou com
+8,78 GiB MemAvailable e o ensaio foi executado uma única vez. Resultado
+COMPLETED/DETECTED/CLEANED, synthetic=false, alerta 100200 original e um evento/
+evidência persistidos; [artefatos](../../evidence/wazuh-2026-10-22/README.md).
+Corrigido grant bulk no cluster somente para ingestão, mantendo documentos
+limitados aos índices aprovados; RESTSecurity habilitada somente para aegis_admin.
+Bulk fora do escopo recusado por item403 e reader sem escrita. Laboratório
+revogado, contas desativadas, containers/redes encerrados; autorização consumida.
+Não iniciar/repetir esse ensaio sob a autorização encerrada.
 
 ## Fontes oficiais consultadas
 
@@ -82,6 +92,7 @@ a margem de RAM disponível; não iniciar nem baixar o stack enquanto o gate fal
 - [Volumes tmpfs Docker](https://docs.docker.com/engine/storage/volumes/#use-a-tmpfs-volume)
 - [Inspeção de objetos Docker](https://docs.docker.com/reference/cli/docker/inspect/)
 - [Redes bridge Docker](https://docs.docker.com/engine/network/drivers/bridge/)
+- [Permissões OpenSearch2.19, incluindo bulk nos níveis cluster/índice](https://docs.opensearch.org/2.19/security/access-control/permissions/)
 
 A documentação oficial pede host com pelo menos 4 CPUs, 8 GB de RAM, 50 GB de
 armazenamento e `vm.max_map_count >= 262144`. Não reproduzir os defaults de senha

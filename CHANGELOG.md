@@ -1,5 +1,18 @@
 # Changelog
 
+## Continuidade 2026-10-22 — pipeline Wazuh real validado
+
+- Ensaio único autorizado com imagens 4.14.9 fixadas, mTLS, agenteActive, TLS,
+  ACLs negativas, marcador43 bytes, um alerta/evidência original e cleanup físico.
+  COMPLETED/DETECTED/CLEANED, synthetic=false, sem atribuição ATT&CK artificial.
+- Corrigido grant bulk de ingestão no nível cluster; reader preservado. Security
+  REST habilitada somente para administrador local do Indexer.
+- Harness de uso único com intenção fsync antes de start, sem retries ambíguos,
+  aprovação separada de 120s, captura de relatórios e revogação/desativação de contas.
+- Alert/log/resumo registrados com hashes e testes offline. Containers/redes
+  encerrados, volumes/journal preservados; autorização consumida. Nova execução
+  exige novo escopo aprovado; não repetir marcador para capturas ou testes.
+
 ## Continuidade — inspeção Wazuh antes do efeito real
 
 - Novo `make wazuh-lab-inspect`: valida metadados efetivos de isolamento do projeto
@@ -13,7 +26,7 @@
 
 ## Continuidade — ensaio Wazuh isolado preparado
 
-- Projeto opt-in separado com Wazuh4.14.9 oficial fixado por digest linux/amd64,
+- Projeto opt-in separado com Wazuh 4.14.9 oficial fixado por digest linux/amd64,
   credenciais/PKI próprias, roles de leitura/ingestão distintas e mounts/rede limitados.
 - Observer com log JSONL limitado, fsync/flock, deduplicação e recusa de conflitos
   após restart; tmpfs compartilhado runnerRW/observerRO e agente somente no log.

@@ -1,14 +1,22 @@
-# Ensaio integrado Wazuh — escopo para revisão
+# Ensaio integrado Wazuh — escopo autorizado e resultado
 
-**Estado: preparado, sem execução Wazuh real.** Em 2026-10-21 o usuário autorizou
+**Estado: executado e encerrado em 2026-10-22.** Campanha
+`987bd48f-fafc-4a34-bf2a-2d310e7ca794`: uma execução, marcador43 bytes,
+COMPLETED/DETECTED/CLEANED, synthetic=false, alerta original 100200 e uma evidência.
+[Registro verificável e limites](../../docs/evidence/wazuh-2026-10-22/README.md).
+Laboratório revogado, contas desativadas e senhas temporárias removidas;
+containers/redes encerrados, volumes/journal preservados. **A autorização foi
+consumida. Não repetir o marcador nem iniciar novamente o stack sem novo escopo.**
+
+Em 2026-10-21 o usuário autorizou
 **“Autorizar somente esse ensaio quando o preflight passar”**, respondendo ao escopo
-integral abaixo. Essa autorização persiste para um único ensaio, sem repetição ou
+integral abaixo. Essa autorização permitiu um único ensaio, sem repetição ou
 ampliação, e não permite ignorar recursos insuficientes ou parar outros projetos.
 Renderizar Compose e passar testes
 locais não valida entrypoints, permissões efetivas, rules engine ou ingestão. O
 usuário anteriormente escolheu **sem instalar**; a autorização específica posterior
-permite os passos abaixo somente quando o preflight passar. Não pedir a mesma
-autorização novamente sem mudança material de escopo.
+permitiu os passos abaixo quando o preflight passou. O procedimento abaixo é
+referência histórica/operacional, não autorização recorrente.
 
 ## Escopo proposto
 
@@ -139,11 +147,22 @@ cleanup. Não alterar allowlist, conceder recorrência, acessar Wazuh corporativ
 outros endpoints ou habilitar comandos remotos. Persistir run ID e intenção local
 antes de start; erro/timeout de resposta não autoriza criar outra execução.
 
+`make wazuh-lab-assay` usa o harness `smoke_wazuh_platform.py` após essas revisões,
+exclusivamente com autorização específica. Não inicia serviços. Cria uma intenção
+privada append/fsync com O_EXCL antes de qualquer mutação, recusa banco com execução
+prévia, registra runID e START_INTENT antes do único POSTstart e não repete respostas
+ambíguas. Contas/senhas aleatórias passam por stdin ao container de migração, nunca
+por argv ou ao processo API/worker. Captura relatório/detalhes antes de avaliar o
+resultado, revoga laboratório e desativa contas; remove as senhas temporárias após
+desativação confirmada. Ambiguidade/CLEANUP_FAILED mantém acesso para recuperação
+do original e exige revisão antes do down. Intent existente impede novo ensaio;
+não apagá-lo para contornar essa proteção. O ensaio registrado já consumiu esse uso.
+
 ## Critério de aceite e encerramento
 
 - Preservar a linha do observador e documento **original** do Indexer com `_index`,
   `_id`, agent.id, rule.id, timestamp e data.aegis; conferir identidade completa,
-  marcador/hash, relação temporal e regra100200. Sem documento correspondente,
+  marcador/hash, relação temporal e regra 100200. Sem documento correspondente,
   não declarar DETECTED nem reconstruir payload com dados do receipt.
 - Verificar resumo imutável da coleta, recibo de execução separado, workspace
   limpo, cleanup CLEANED, indicadores do modo Linux e relatórios HTML/JSON.
@@ -159,10 +178,21 @@ antes de start; erro/timeout de resposta não autoriza criar outra execução.
   recuperar o job original conforme ADR0004, sem novo start. Encerramento não deve
   destruir o único acesso à recuperação antes de registrar o estado.
 
-## Pendências que só o ensaio pode resolver
+## Resultado observado e limites restantes
 
-Compatibilidade efetiva das imagens/entrypoints, bootstrap dos usuários/roles,
-API interna loopback, permissões de arquivos copiadas pelo Wazuh, montagem tmpfs,
-wazuh-logtest, agent Active, Filebeat, schema indexado, scroll/clear, negativa de
-escrita, classificação e cleanup reais. Não listar esses itens como aprovados com
-base em renderização, mocks ou fixtures. Consulte [ADR0006](../../docs/architecture/decisions/0006-real-wazuh-assay.md).
+O ensaio confirmou entrypoints, hashes oficiais/roles, defaults API rejeitados,
+listenerAPI127.0.0.1, tmpfsRW/RO/UID10001/0700, log 0600 lido pelo agente root,
+163 verificações Docker, regra 100200 sandbox e agente 001 Active. Filebeat TLS 1.3,
+reader Search/Scroll/Clear e negativas de escrita/acesso fora de escopo passaram.
+O perfil ingest precisou de bulk no cluster; a alteração foi aplicada pelo admin
+local e o bulk fora dos índices de alertas foi recusado por item403. Nenhum documento
+fictício foi inserido no Indexer. Dois alertas reais de inicialização já existiam;
+somente o alerta com identidade/marcador/hash/tempo/regra do teste virou evidência.
+
+Persistidos um evento e uma evidência na aplicação, seis tentativas de coleta,
+hashes conferidos contra recibo e observação independentes, workspace vazio,
+aprovação distinta consumida de 120s, zero contas temporárias ativas e reserva liberada.
+Archives ficaram desativados; o ruleset mínimo emitiu avisos por listas CDB não
+habilitadas. Não demonstra cobertura de regras padrão, outras versões, Windows,
+ATT&CK ou eficácia de EDR. Não houve nova rodada E2E de navegador ou screenshot
+Wazuh. Consulte [ADR0006](../../docs/architecture/decisions/0006-real-wazuh-assay.md).

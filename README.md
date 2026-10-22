@@ -6,7 +6,7 @@ Simulações controladas, resultados reproduzíveis e decisões de detecção su
 
 Equipes defensivas precisam verificar se seus controles observam e detectam comportamentos de ataque. O ÆGIS conecta campanhas, aprovação de escopo, execução, coleta, correlação e acompanhamento histórico num único fluxo.
 
-**Estado: 0.2 — Demo persistente e campanhas Linux opt-in validadas localmente.** Demo mantém eventos sintéticos explícitos. Linux admite somente um marcador benigno revisado, com mTLS, aprovação por outra pessoa, recibos e cleanup persistidos. Coleta Wazuh preparada e testada localmente, **sem instalação nem validação Wazuh externa**; Atomic Red Team não executa. Não é um SIEM, EDR ou shell remoto.
+**Estado: Demo/Linux 0.2 com pipeline Wazuh validado em um ensaio local autorizado.** Demo mantém eventos sintéticos explícitos. Linux admite somente um marcador benigno revisado, com mTLS, aprovação por outra pessoa, recibos e cleanup persistidos. Wazuh 4.14.9 gerou um alerta original correlacionado: **DETECTED, synthetic=false**, sem atribuição ATT&CK artificial. Atomic Red Team não executa. Não é um SIEM, EDR ou shell remoto.
 
 ![Dashboard real do Demo Mode, com evidências explicitamente sintéticas](docs/images/overview.png)
 
@@ -22,8 +22,8 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
 - Inventário Sigma com parsing pySigma, importação YAML limitada e versões imutáveis; nenhuma implantação automática de regras.
 - Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; campanha integrada autorizada validou API/worker/SQL runtime, recibos, cleanup e UI, sem SIEM.
-- Coleta Wazuh opt-in no worker: binding administrativo de agente/regra, política/hash aprovados, polling com prazo integral, paginação, resumo imutável e UI/relatórios. Testes locais incluem TLS real em loopback e fixtures de eventos. **Wazuh não instalado nem validado externamente.**
-- [Ensaio Wazuh isolado preparado](labs/wazuh/ASSAY.md): imagens oficiais fixadas por digest, identidades próprias, observer/log/agente e preflight de recursos. Autorizado sob condição de 8 GiB de RAM disponível; execução real ainda pendente. Não integra o Demo nem os testes padrão.
+- Coleta Wazuh opt-in no worker: binding administrativo de agente/regra, política/hash aprovados, polling com prazo integral, paginação, resumo imutável e UI/relatórios. Validação real do pipeline incluiu TLS, agente, regra, ACLs, evento original, evidência e relatório.
+- [Ensaio Wazuh registrado](docs/evidence/wazuh-2026-10-22/README.md): uma campanha, um marcador de 43 bytes, um alerta da regra 100200, cleanup conferido. Containers/redes encerrados; volumes preservados. Não integra o Demo nem os testes padrão; nova execução requer novo escopo autorizado.
 
 ## Início rápido
 
@@ -81,11 +81,13 @@ O segundo ensaio, autorizado separadamente, percorreu cadastro/revisão → pref
 
 ![Histórico real da única campanha Linux autorizada, resultado inconclusivo e recibo separado de evidência defensiva](docs/images/linux-execution.png)
 
-## Preparação Wazuh — sem instalar
+## Wazuh — ensaio local real validado
 
-O próximo fluxo está implementado no código: política de implantação → revisão do binding → escopo de campanha → coleta limitada → evidências/resultado/relatório. O usuário informou não possuir Wazuh; esta entrega usa apenas fixtures e testes locais, sem iniciar o SIEM ou repetir ensaio Linux.
+O ensaio autorizado de 2026-10-22 percorreu arquivo real → observador passivo RO → agente 001 → manager/regra 100200 → Filebeat TLS → Indexer → worker/correlação → evidência e relatórios. Campanha `987bd48f-fafc-4a34-bf2a-2d310e7ca794`: **COMPLETED / DETECTED / CLEANED**, `synthetic=false`. Aprovação segregada de 120s, apenas um marcador de 43 bytes. O pipeline usou imagens oficiais4.14.9 fixadas por digest e credenciais/PKI próprias.
 
-[Guia de preparação](labs/wazuh/README.md) inclui mapping entre agent.id e Asset.id, observador passivo sem executar marcadores, arquivos JSON/XML exemplificados e montagem de configuração. A regra de exemplo valida somente o pipeline de um marcador benigno; não representa cobertura ATT&CK ou proteção empresarial. Agent, compartilhamento read-only do workspace, ingestão/archives e validação com wazuh-logtest continuam pendentes de ambiente/autorização próprios.
+[Alerta original, observação e resultado verificáveis](docs/evidence/wazuh-2026-10-22/README.md) incluem IDs/hash, limites e encerramento. A regra valida somente a instrumentação desse marcador: **um teste válido, zero técnicas ATT&CK avaliadas**, sem comprovar eficácia de EDR ou proteção empresarial. Archives não foram habilitados. O [procedimento](labs/wazuh/ASSAY.md) não autoriza repetição; o stack foi encerrado, o laboratório revogado e as contas temporárias desativadas. Relatórios completos e banco do ensaio foram preservados localmente.
+
+A captura abaixo mostra o Demo padrão, que continua sem conector configurado. O ensaio usou banco/porta18786 separados; seus dados não foram inseridos artificialmente no Demo.
 
 ![Estado real da aplicação: Wazuh desconectado e configuração por implantação](docs/images/wazuh-preparation.png)
 
@@ -105,8 +107,8 @@ flowchart LR
   Telemetry --> Validate[Correlação independente de SIEM]
   Validate --> Evidence[Evidências / resultados / relatórios]
   Evidence --> DB
-  Worker --> Wazuh[Coleta Wazuh aprovada: testes locais]
-  Wazuh -. Sem validação externa .-> Validate
+  Worker --> Wazuh[Coleta Wazuh aprovada]
+  Wazuh -->|Alerta original correlacionado| Validate
 ```
 
 Monólito modular, sem microsserviços desnecessários. PostgreSQL é fonte de verdade e fila durável (`FOR UPDATE SKIP LOCKED`); Redis não transporta jobs serializados. API e worker usam papel de banco sem privilégios administrativos; evidências, versões Sigma e auditoria têm escrita append-only. [Arquitetura e decisões](docs/architecture/overview.md).
@@ -139,7 +141,7 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 
 - MVP de workspace único: usuários autenticados compartilham as consultas; não há isolamento multi-tenant, MFA, SSO ou recuperação de senha pela interface.
 - Linux real é limitado a um marcador fixo, sem atribuição ATT&CK artificial, Atomic ou comandos genéricos. Recuperação após crash mantém quarentena até cleanup confirmado; rotação de binding/certificado original ainda exige intervenção manual. Demo usa cancelamento cooperativo; Linux supervisiona processo e lease.
-- Wazuh foi testado com fixtures locais e HTTPS em loopback, sem SIEM externo. O mapping aprovado e worker estão implementados; agente/instrumentação, compartilhamento do workspace, archives, regras e ingestão reais ainda precisam de ambiente e autorização. Não declarar DETECTED externo com base nas fixtures.
+- Wazuh validado apenas em um laboratório próprio com versão 4.14.9, schema aegis-json/1, agente Linux e regra de instrumentação100200. Isso não valida outras versões, Windows, regras padrão ou técnicas ATT&CK. Archives e coleta de ambientes empresariais não foram testados. Fixtures e reprocessamento de evidência gravada não são novas validações externas.
 - Sigma validado sintaticamente não equivale a detecção implantada. Associação operacional com testes e conversão de SIEM ficam para próxima etapa.
 - Agendamento habilitado somente para Demo: até 16 planos ativos, 100 horários por plano, mínimo 60 segundos de intervalo e validade máxima de 90 dias. Sem cron livre, Lab real, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
 - Há um aviso transitivo conhecido em DiskCache, exigido pelo pySigma. O caminho de parsing usado não importa/utiliza o cache vulnerável; a revisão e sua verificação estão em [advisories](docs/security/dependency-advisories.json). Não alegamos ausência de vulnerabilidades.
@@ -149,6 +151,6 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 
 ## Uso autorizado e licença
 
-Utilize somente em ambientes previamente autorizados. A plataforma não fornece comandos arbitrários, evasão, persistência maliciosa, coleta de credenciais ou exfiltração. Somente os ensaios benignos Linux explicitamente autorizados foram executados; nenhum alvo externo ou Wazuh foi acessado.
+Utilize somente em ambientes previamente autorizados. A plataforma não fornece comandos arbitrários, evasão, persistência maliciosa, coleta de credenciais ou exfiltração. Somente os ensaios benignos Linux e o pipeline Wazuh próprio explicitamente autorizados foram executados; nenhum alvo empresarial ou externo foi acessado.
 
 Código ÆGIS sob [MIT](LICENSE). Dataset MITRE e bibliotecas mantêm suas próprias licenças. A disponibilidade da licença não altera a visibilidade privada do repositório.

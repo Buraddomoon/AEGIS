@@ -16,13 +16,18 @@ Exige infraestrutura própria e autorização específica antes de executar. Exe
 
 ## 0.3 — Wazuh real
 
-Preparação entregue sem instalar SIEM: mapping WazuhBinding entre Asset.id e agent.id, política/hash/revisão, coleta no worker, polling/prazo total, schema/índices configuráveis, resumo imutável, UI/relatórios e observador passivo. Validação com fixtures e HTTPS real em loopback. Pendente: Wazuh próprio, agente/instrumentação efetiva, compartilhamento seguro do workspace/log, validação das regras com wazuh-logtest e prova de ciclo defensivo externo autorizado. Evidência original preservada; nenhuma classificação DETECTED sem alerta correlacionado.
+Implementados mapping WazuhBinding entre Asset.id e agent.id, política/hash/revisão,
+coleta no worker, polling/prazo total, schemas/índices configuráveis, resumo imutável,
+UI/relatórios e observador passivo. Em2026-10-22, o ensaio próprio autorizado
+confirmou Wazuh 4.14.9, tmpfs/logRO/agentActive, regra 100200 no engine, FilebeatTLS,
+ACLs, um evento/evidência original, DETECTED com synthetic=false e cleanup físico.
+[Artefatos e limites](../evidence/wazuh-2026-10-22/README.md).
 
-Continuidade: deployment isolado e instrumentação compartilhada preparados em
-labs/wazuh, com imagens4.14.9 fixadas, credenciais/PKI novos, RO/sem rede e log
-durável/limitado. Ensaio único autorizado quando o preflight passar; RAM disponível
-ainda insuficiente para o gate8GiB. Não houve instalação, rules engine ou ciclo
-real Wazuh. Essa validação segue sendo a prioridade.
+Laboratório revogado, contas desativadas, containers/redes encerrados e volumes
+preservados. Autorização consumida; não repetir para capturas. Pendente: outras
+versões/schemas, Windows, archives, regras operacionais além do marcador, rotação
+de PKI e retenção/restore do laboratório. O teste valida somente seu pipeline,
+sem técnica ATT&CK ou eficácia de EDR. Não é maturidade operacional geral do SIEM.
 
 ## 0.4 — Engenharia de detecção
 

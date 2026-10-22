@@ -1,12 +1,11 @@
-# Preparação Wazuh — sem instalação automática
+# Wazuh — integração e ensaio local isolado
 
-**Estado:** integração de coleta implementada e testada com fixtures locais. Nenhum Wazuh foi instalado, iniciado ou consultado nesta etapa. O usuário informou não ter Wazuh e pediu somente a preparação. XML, configuração e observador abaixo não constituem validação externa; precisam de ambiente próprio e autorização específica antes de qualquer ensaio.
+**Estado:** um ensaio local autorizado em 2026-10-22 validou o pipeline real no Wazuh 4.14.9: COMPLETED/DETECTED/CLEANED, synthetic=false, um marcador43 bytes/alerta 100200/evidência. [Artefatos e limites](../../docs/evidence/wazuh-2026-10-22/README.md). Serviços encerrados e volumes preservados; a autorização foi consumida. Fixtures e leitura dos artefatos não são novos testes externos.
 
-**Continuidade:** o ensaio separado está preparado em [ASSAY.md](ASSAY.md), com
-Compose opt-in, imagens oficiais fixadas por digest, PKI/segredos novos, conta de
-leitura e instrumentação RO. O usuário autorizou somente esse ensaio quando o
-preflight passar. A RAM disponível ainda está abaixo do piso de 8 GiB; nenhum
-Wazuh foi baixado/iniciado. Não confundir autorização com resultado validado.
+**Operação:** [ASSAY.md](ASSAY.md) registra o escopo, procedimento e resultado:
+Compose opt-in, imagens fixadas, PKI/segredos próprios, reader e instrumentaçãoRO.
+O preflight passou com 8,78 GiB disponíveis, sem parar outros projetos. Nova execução
+exige novo escopo autorizado; não remover intent/journal para repetir o marcador.
 
 Depois do início autorizado, `make wazuh-lab-inspect` compara o estado Docker
 efetivo com o isolamento revisado, sem executar dentro dos containers nem expor
@@ -30,7 +29,7 @@ Janela temporal e espera padrão: 10s; espera precisa cobrir toda a janela antes
 
 ## Fluxo administrativo futuro
 
-1. Preparar Wazuh próprio/isolado e revisar agente, TLS, permissões, instrumentação e índices. Isso **não foi realizado** nesta entrega.
+1. Preparar Wazuh próprio/isolado e revisar agente, TLS, permissões, instrumentação e índices. O ensaio registrado cumpriu isso somente no projeto separado descrito em ASSAY.md; não autoriza outro ambiente ou execução.
 2. Disponibilizar variáveis/arquivos ao runtime. `infra/compose.wazuh.example.yml` é somente referência de montagem; não inicia Wazuh nem pertence ao make up padrão.
 3. Cadastrar Linux Lab/Asset pelo fluxo existente; manter laboratório revogado e sem reserva.
 4. Abrir Laboratórios → Revisar coleta Wazuh, conferir política pública e registrar a revisão. Isso não consulta o SIEM.
@@ -44,7 +43,7 @@ Revisar/remover binding exige laboratório revogado/sem reserva e aumenta versã
 
 `python -m aegis.marker_observer` somente lê proof.marker real, com 43 bytes, UUID e hash verificados, dentro do workspace privado do runner. Aceita diretórios físicos UUID.hex produzidos por Workspace; emite execution_id em UUID canônico. Recusa symlinks, hardlinks, FIFO, arquivo estranho, tamanho/conteúdo inválido; não cria, remove ou executa o marcador. Saída JSON descreve marker_file_read e não contém rule.id, sucesso de execução ou alegação de detecção.
 
-O observador precisa ter acesso read-only ao **mesmo workspace físico** do runner e sua saída deve chegar a um logfile dedicado lido pelo agente. O tmpfs privado do runner padrão não é automaticamente compartilhado. `compose.yml` prepara essa montagem apenas no novo projeto opt-in: tmpfs compartilhado RW/RO, observer sem rede e logfile persistente limitado a 1 MiB, flock/fsync e deduplicação após restart. Arquivo incompleto ou identidades conflitantes bloqueiam retomada sem truncar dados. Mounts/UID/permissões efetivos ainda precisam ser inspecionados no runtime autorizado; não montar Docker socket nem liberar acesso ao host para facilitar isso. Nenhum sidecar, agente ou processo observador é iniciado por make up/test/CI.
+O observador precisa ter acesso read-only ao **mesmo workspace físico** do runner e sua saída deve chegar a um logfile dedicado lido pelo agente. O tmpfs privado do runner padrão não é automaticamente compartilhado. `compose.yml` oferece essa montagem apenas no projeto opt-in: tmpfs compartilhado RW/RO, observer sem rede e logfile persistente limitado a 1 MiB, flock/fsync e deduplicação após restart. Arquivo incompleto ou identidades conflitantes bloqueiam retomada sem truncar dados. Mounts/UID/permissões foram inspecionados no ensaio e devem ser revistos em qualquer implantação autorizada futura. Nenhum sidecar, agente ou processo observador é iniciado por make up/test/CI.
 
 Exemplo de comando futuro (somente em ambiente/paths revisados):
 
@@ -52,7 +51,7 @@ Exemplo de comando futuro (somente em ambiente/paths revisados):
 python -m aegis.marker_observer --workspace /work --laboratory-id UUID_DO_LAB --asset-id UUID_DO_ATIVO
 ```
 
-O agente pode coletar JSON usando o exemplo localfile, e o manager pode ter a regra de pipeline exemplificada. **Não copie receipt.json para logs como se fosse observação defensiva.** A regra de nível 3 existe apenas para validar o transporte/correlação desse marcador; não demonstra eficácia contra ataques, não representa uma técnica ATT&CK e não é uma regra Sigma convertida. Checar conflito do ID 100200 e validar com wazuh-logtest antes de instalar manualmente qualquer regra. XML foi validado estruturalmente, não no engine Wazuh.
+O agente coleta JSON usando localfile, e o manager usa a regra de pipeline exemplificada. **Não copie receipt.json para logs como se fosse observação defensiva.** A regra de nível 3 existe apenas para validar transporte/correlação desse marcador; não demonstra eficácia contra ataques, não representa técnica ATT&CK e não é Sigma convertida. O ensaio confirmou seu parsing no wazuh-logtest real e um alerta original posterior ao efeito real. Checar conflito do ID 100200 e validar o engine em qualquer implantação futura autorizada.
 
 ## Archives e conclusões
 

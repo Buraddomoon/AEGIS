@@ -22,3 +22,15 @@ Consulte docs/PROGRESS.md para a rodada final de testes e estado real da CI. Nã
 ## Aceite Linux 0.2 limitado ao marcador
 
 Campanha única no ensaio autorizado: cadastro/preflight mTLS/autorização → solicitante operador → administrador distinto → PostgreSQL/worker → marcador real de 43 bytes → CLEANED → recibos e relatório → INCONCLUSIVE sem SIEM. Runtime SQL sem UPDATE/DELETE em comprovantes, workspace vazio, contas temporárias desativadas, laboratório revogado e containers/redes encerrados. Captura do histórico em Firefox real, sem repetir o efeito. Testes de crash, resposta perdida, configuração/usuários revogados, 404 sem liberação e comparação entre modos. Não equivale a validação Wazuh.
+
+## Aceite do pipeline Wazuh próprio — 2026-10-22
+
+Uma campanha real `987bd48f-fafc-4a34-bf2a-2d310e7ca794`: preflight de recursos,
+imagens 4.14.9 fixadas, mounts efetivos, mTLS, agente 001 Active, regra 100200sandbox,
+TLS/ACLs e aprovação segregada de 120s → um marcador43 bytes → log passivo → alerta
+original no Indexer → uma evidência persistida, DETECTED/synthetic=false → CLEANED
+e workspace vazio → relatório HTML/JSON → revogação/desativação/encerramento.
+Diário/volumes preservados e autorização consumida. [Evidência registrada](../evidence/wazuh-2026-10-22/README.md).
+Esse aceite cobre só o pipeline de instrumentação; zero técnicas ATT&CK avaliadas,
+sem archives, outras versões, Windows ou eficácia de EDR. Testes offline dos
+artefatos não constituem outro ensaio real. Não houve nova rodada E2E de navegador.
