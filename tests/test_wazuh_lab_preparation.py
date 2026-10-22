@@ -105,6 +105,19 @@ def test_repeat_preparation_preserves_identity_and_secrets(prepared):
     assert (path / "indexer-passwords.json").read_bytes() == credentials
 
 
+def test_ingestion_bulk_is_separate_from_reader_and_security_administration():
+    roles = yaml.safe_load((ROOT / "labs/wazuh/config/roles.yml").read_text())
+    ingest, reader = roles["aegis_ingest"], roles["aegis_reader"]
+    assert "indices:data/write/bulk*" in ingest["cluster_permissions"]
+    assert ingest["index_permissions"][0]["index_patterns"] == ["wazuh-alerts-4.x-*"]
+    assert reader["index_permissions"] == [
+        {"index_patterns": ["wazuh-alerts-4.x-*"], "allowed_actions": ["read"]}
+    ]
+    assert reader["cluster_permissions"] == ["cluster:monitor/main", "indices:data/read/scroll*"]
+    config = yaml.safe_load((ROOT / "labs/wazuh/config/indexer.yml").read_text())
+    assert config["plugins.security.restapi.roles_enabled"] == ["aegis_admin"]
+
+
 def test_rendered_compose_preserves_isolation_and_secret_boundaries(prepared):
     if not shutil.which("docker"):
         pytest.skip("Compose structural check requires Docker CLI, not daemon startup.")

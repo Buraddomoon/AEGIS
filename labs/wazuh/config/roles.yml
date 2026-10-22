@@ -15,6 +15,7 @@ aegis_ingest:
   # Filebeat bootstrap is confined to this disposable Indexer, never the app.
   cluster_permissions:
     - cluster_monitor
+    - 'indices:data/write/bulk*'
     - 'indices:admin/template/*'
     - 'cluster:admin/ingest/pipeline/*'
   index_permissions:

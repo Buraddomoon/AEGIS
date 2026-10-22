@@ -16,5 +16,6 @@ plugins.security.ssl.transport.enforce_hostname_verification: true
 plugins.security.nodes_dn: ['O=AEGIS Lab,OU=AEGIS,CN=wazuh.indexer']
 plugins.security.authcz.admin_dn: ['O=AEGIS Lab,OU=AEGIS,CN=admin']
 plugins.security.allow_default_init_securityindex: true
+plugins.security.restapi.roles_enabled: ['aegis_admin']
 plugins.security.check_snapshot_restore_write_privileges: true
 cluster.routing.allocation.disk.threshold_enabled: true
