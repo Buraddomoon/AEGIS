@@ -4,9 +4,13 @@ This does not start services, execute inside containers, query a SIEM or approve
 a marker. A passing inspection is only one prerequisite of labs/wazuh/ASSAY.md.
 """
 
+import argparse
+import json
+import re
+import subprocess
 from pathlib import Path
 
-from wazuh_lab import IMAGES, PRIVATE, PROJECT, ROOT
+from wazuh_lab import DOCKER, IMAGES, PRIVATE, PROJECT, ROOT, execute
 
 MIB = 1024**2
 NETWORKS = {
@@ -311,3 +315,159 @@ def validate(
                 "Options"
             )
     return checks
+
+
+def projection(fields: dict[str, str]) -> str:
+    """Go template with an explicit field allowlist, excluding Config.Env."""
+    return (
+        "{"
+        + ",".join(json.dumps(key) + ":{{json " + value + "}}" for key, value in fields.items())
+        + "}"
+    )
+
+
+HOST_FIELDS = (
+    "Privileged",
+    "CapAdd",
+    "Devices",
+    "DeviceRequests",
+    "VolumesFrom",
+    "PidMode",
+    "IpcMode",
+    "UTSMode",
+    "CgroupnsMode",
+    "NetworkMode",
+    "Memory",
+    "PidsLimit",
+    "NanoCpus",
+    "SecurityOpt",
+    "CapDrop",
+    "ReadonlyRootfs",
+    "PortBindings",
+    "PublishAllPorts",
+    "Tmpfs",
+)
+CONTAINER_FORMAT = (
+    projection(
+        {
+            "id": ".Id",
+            "service": '(index .Config.Labels "com.docker.compose.service")',
+            "project": '(index .Config.Labels "com.docker.compose.project")',
+            "oneoff": '(index .Config.Labels "com.docker.compose.oneoff")',
+            "status": ".State.Status",
+            "exit_code": ".State.ExitCode",
+            "restarting": ".State.Restarting",
+            "oom_killed": ".State.OOMKilled",
+            "user": ".Config.User",
+            "image_reference": ".Config.Image",
+            "ports": ".NetworkSettings.Ports",
+            "networks": ".NetworkSettings.Networks",
+            "mounts": ".Mounts",
+        }
+    )[:-1]
+    + ',"host":'
+    + projection({name: ".HostConfig." + name for name in HOST_FIELDS})
+    + ',"health":{{if .State.Health}}{{json .State.Health.Status}}{{else}}""{{end}}}'
+)
+PROJECT_LABEL = ',"Labels":{"com.docker.compose.project":{{json (index .Labels "com.docker.compose.project")}}}}'
+NETWORK_FORMAT = (
+    projection(
+        {
+            name: "." + name
+            for name in (
+                "Name",
+                "Driver",
+                "Internal",
+                "EnableIPv6",
+                "Options",
+                "IPAM",
+                "Containers",
+            )
+        }
+    )[:-1]
+    + PROJECT_LABEL
+)
+VOLUME_FORMAT = (
+    projection(
+        {
+            name: "." + name
+            for name in (
+                "Name",
+                "Driver",
+                "Scope",
+                "Options",
+            )
+        }
+    )[:-1]
+    + PROJECT_LABEL
+)
+
+
+def collect() -> tuple[list[dict], list[dict], list[dict]]:
+    """Only ps/ls/inspect on the explicit local daemon; no exec/up/run/search."""
+    snapshots = []
+    for kind, listing, template, limit in (
+        ("container", ["ps", "--all", "--quiet", "--no-trunc"], CONTAINER_FORMAT, 16),
+        ("network", ["network", "ls", "--quiet", "--no-trunc"], NETWORK_FORMAT, 8),
+        ("volume", ["volume", "ls", "--quiet"], VOLUME_FORMAT, 16),
+    ):
+        identifiers = execute(
+            [*DOCKER, *listing, "--filter", "label=com.docker.compose.project=" + PROJECT],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        ).stdout.splitlines()
+        if (
+            not identifiers
+            or len(identifiers) > limit
+            or any(not re.fullmatch(r"[a-z0-9][a-z0-9_.-]{0,127}", value) for value in identifiers)
+        ):
+            raise ValueError("Inventário local ausente ou incompatível; nenhum ensaio iniciado.")
+        output = execute(
+            [*DOCKER, "inspect", "--type", kind, "--format", template, *identifiers],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        ).stdout
+        items = [json.loads(line) for line in output.splitlines()]
+        if len(items) != len(identifiers) or any(not isinstance(item, dict) for item in items):
+            raise ValueError("Snapshot Docker incompleto; inspeção não aprovada.")
+        snapshots.append(items)
+    return tuple(snapshots)
+
+
+def main() -> int:
+    argparse.ArgumentParser(description=__doc__).parse_args()
+    try:
+        checks = validate(*collect())
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):
+        # No raw Docker diagnostics, paths, env, daemon responses or secret values.
+        print(
+            json.dumps(
+                {
+                    "inspection_completed": False,
+                    "isolation_verified": False,
+                    "reason": "Laboratório ausente ou inspeção local indisponível/incompatível; não executar marcador.",
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 1
+    passed = bool(checks) and all(checks.values())
+    print(
+        json.dumps(
+            {
+                "inspection_completed": True,
+                "isolation_verified": passed,
+                "checks": checks,
+                "limitation": "Metadados Docker somente. Ainda exige conferir mounts/permissões dentro dos containers, mTLS, agente Active, regra, ingestão e permissões Indexer. Não autoriza início ou marcador.",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return int(not passed)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

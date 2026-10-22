@@ -1,6 +1,10 @@
 import copy
 import importlib
+import json
+import subprocess
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -272,3 +276,92 @@ def test_process_presence_alone_does_not_pass(inspector, snapshot, change):
     else:
         snapshot[0].remove(service(snapshot, "wazuh.agent"))
     assert not all(inspector.validate(*snapshot).values())
+
+
+def test_collector_only_reads_exact_project_and_uses_safe_projections(
+    inspector, snapshot, monkeypatch
+):
+    calls = []
+    by_kind = dict(zip(("container", "network", "volume"), snapshot, strict=True))
+
+    def execute(command, **kwargs):
+        calls.append(command)
+        assert command[: len(inspector.DOCKER)] == inspector.DOCKER
+        assert kwargs == {"capture_output": True, "text": True, "timeout": 10}
+        arguments = command[len(inspector.DOCKER) :]
+        if arguments[0] == "inspect":
+            kind = arguments[arguments.index("--type") + 1]
+            return SimpleNamespace(stdout="\n".join(json.dumps(item) for item in by_kind[kind]))
+        assert arguments[0] in {"ps", "network", "volume"}
+        assert arguments[-2:] == ["--filter", "label=com.docker.compose.project=aegis-wazuh-lab"]
+        kind = "container" if arguments[0] == "ps" else arguments[0]
+        return SimpleNamespace(
+            stdout="\n".join("fixture-" + str(i) for i in range(len(by_kind[kind])))
+        )
+
+    monkeypatch.setattr(inspector, "execute", execute)
+    assert inspector.collect() == snapshot
+    assert len(calls) == 6
+    for command in calls:
+        assert not set(command).intersection(
+            {"exec", "up", "run", "pull", "build", "stop", "down", "rm"}
+        )
+    assert ".Config.Env" not in inspector.CONTAINER_FORMAT
+    assert "{{json .Config}}" not in inspector.CONTAINER_FORMAT
+    assert "{{json .HostConfig}}" not in inspector.CONTAINER_FORMAT
+
+
+@pytest.mark.parametrize("listing", ["", "--host=external", "\n".join(["a"] * 17)])
+def test_bad_inventory_never_reaches_inspect(inspector, monkeypatch, listing):
+    calls = []
+
+    def execute(command, **kwargs):
+        calls.append(command)
+        return SimpleNamespace(stdout=listing)
+
+    monkeypatch.setattr(inspector, "execute", execute)
+    with pytest.raises(ValueError):
+        inspector.collect()
+    assert len(calls) == 1 and "inspect" not in calls[0]
+
+
+def test_truncated_daemon_snapshot_is_not_accepted(inspector, monkeypatch):
+    monkeypatch.setattr(
+        inspector,
+        "execute",
+        lambda command, **kwargs: SimpleNamespace(
+            stdout="{}\n" if "inspect" in command else "a\nb\n",
+        ),
+    )
+    with pytest.raises(ValueError, match="incompleto"):
+        inspector.collect()
+
+
+def test_cli_reports_only_checks_and_never_raw_daemon_failure(
+    inspector, snapshot, monkeypatch, capsys
+):
+    monkeypatch.setattr(sys, "argv", ["inspect_wazuh_lab.py"])
+    monkeypatch.setattr(inspector, "collect", lambda: snapshot)
+    assert inspector.main() == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["isolation_verified"] and output["inspection_completed"]
+    assert "fixture-" not in json.dumps(output) and str(inspector.PRIVATE) not in json.dumps(output)
+    service(snapshot, "api")["host"]["ReadonlyRootfs"] = False
+    assert inspector.main() == 1
+    assert not json.loads(capsys.readouterr().out)["isolation_verified"]
+
+    def fail():
+        raise subprocess.CalledProcessError(1, ["sensitive-command"], stderr="private-value")
+
+    monkeypatch.setattr(inspector, "collect", fail)
+    assert inspector.main() == 1
+    output = capsys.readouterr().out
+    assert not json.loads(output)["inspection_completed"]
+    assert "private-value" not in output and "sensitive-command" not in output
+
+
+def test_unknown_volume_names_do_not_escape_as_output_keys(inspector, snapshot):
+    snapshot[2].append({"Name": "unexpected-sensitive-value"})
+    checks = inspector.validate(*snapshot)
+    assert not checks["volume_inventory"]
+    assert "unexpected-sensitive-value" not in json.dumps(checks)
