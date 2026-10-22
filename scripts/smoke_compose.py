@@ -85,6 +85,17 @@ detection:
         assert analysis["status"] == "no_findings_in_selected_checks"
         assert analysis["compatibility"]["status"] == "not_configured"
         assert not analysis["compatibility"]["conversion_performed"]
+        prepared = client.get(f"/rules/{rule_id}/versions/{versions[0]['id']}/conversion-readiness")
+        prepared.raise_for_status()
+        prepared = prepared.json()
+        assert prepared["sha256"] == versions[0]["sha256"]
+        assert prepared["status"] == "blocked" and not prepared["can_convert"]
+        assert not prepared["conversion_performed"] and not prepared["deployment_performed"]
+        assert not prepared["field_mapping_complete"]
+        assert "dependency_unsatisfied" in {b["code"] for b in prepared["blockers"]}
+        assert not client.get("/sigma/conversion-profiles").json()["items"][0][
+            "index_mapping_verified"
+        ]
         lab = client.get("/labs").json()["items"][0]
         campaign = client.post(
             "/campaigns",
@@ -176,7 +187,7 @@ detection:
         assert client.get(f"/schedules/{schedule['id']}").json()["state"] == "REVOKED"
         client.post("/auth/logout").raise_for_status()
         print(
-            "PASS: Compose API + restricted SQL role + worker + manual and scheduled runs + exact grant + revoke + 8 synthetic outcomes + JSON reports + read-only Sigma analysis."
+            "PASS: Compose API + restricted SQL role + worker + manual and scheduled runs + exact grant + revoke + 8 synthetic outcomes + JSON reports + read-only Sigma analysis and conversion preparation blockers."
         )
 finally:
     with session_factory()() as db:
