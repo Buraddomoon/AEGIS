@@ -320,3 +320,53 @@ export interface SigmaAnalysis {
   }
   limitations: string[]
 }
+
+export interface ConversionProfile {
+  id: string
+  name: string
+  sha256: string
+  status: 'candidate_not_executable'
+  target: string
+  logsource: Record<string, string>
+  fields: Record<string, string>
+  index_mapping_verified: false
+}
+export interface BackendCompatibility {
+  status: 'blocked' | 'declared_requirements_satisfied_only'
+  snapshot_reviewed_at: string
+  snapshot_sha256: string
+  blockers: { code: string; message: string }[]
+  packages: {
+    name: string
+    version: string
+    installed: string | null
+    license: string
+    source: string
+    requirements: { name: string; required: string; installed: string | null; satisfied: boolean }[]
+  }[]
+}
+export interface ConversionProfiles {
+  items: ConversionProfile[]
+  backend: BackendCompatibility
+  readiness_version: string
+}
+export interface ConversionReadiness {
+  rule_id: string
+  rule_version_id: string
+  rule_version: number
+  sha256: string
+  readiness_version: string
+  pysigma_version: string
+  profile: ConversionProfile
+  backend: BackendCompatibility
+  status: 'blocked'
+  can_convert: false
+  conversion_performed: false
+  deployment_performed: false
+  logsource_matches: boolean
+  field_mapping_complete: boolean
+  mappings: { source_field: string; target_field: string | null }[]
+  keyword_selections: string[]
+  blockers: { code: string; message: string }[]
+  limitations: string[]
+}

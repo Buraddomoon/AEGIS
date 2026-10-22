@@ -3,6 +3,7 @@ import { LinuxRegistration } from './LinuxRegistration'
 import { WazuhBinding } from './WazuhBinding'
 import { RuleTestLinks } from './RuleTestLinks'
 import { RuleAnalysis } from './RuleAnalysis'
+import { RuleReadiness } from './RuleReadiness'
 import {
   CheckCircle2,
   FileCode2,
@@ -224,7 +225,8 @@ export function Rules({ user }: { user: User }) {
     [creating, setCreating] = useState(false),
     [selected, setSelected] = useState<Rule | null>(null),
     [linked, setLinked] = useState<Rule | null>(null),
-    [analyzed, setAnalyzed] = useState<Rule | null>(null)
+    [analyzed, setAnalyzed] = useState<Rule | null>(null),
+    [prepared, setPrepared] = useState<Rule | null>(null)
   return (
     <>
       <PageHeading
@@ -273,16 +275,21 @@ export function Rules({ user }: { user: User }) {
                       <span className="subtle-tag">Sintaxe validada · não implantada</span>
                     </td>
                     <td>
-                      <button className="text-link" onClick={() => setSelected(r)}>
-                        <History size={16} />
-                        Versões e comparação
-                      </button>
-                      <button className="text-link" onClick={() => setAnalyzed(r)}>
-                        Análise estática
-                      </button>
-                      <button className="text-link" onClick={() => setLinked(r)}>
-                        Testes e revisões
-                      </button>
+                      <div className="rule-actions">
+                        <button className="text-link" onClick={() => setSelected(r)}>
+                          <History size={16} />
+                          Versões e comparação
+                        </button>
+                        <button className="text-link" onClick={() => setAnalyzed(r)}>
+                          Análise estática
+                        </button>
+                        <button className="text-link" onClick={() => setLinked(r)}>
+                          Testes e revisões
+                        </button>
+                        <button className="text-link" onClick={() => setPrepared(r)}>
+                          Preparação de conversão
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -297,6 +304,7 @@ export function Rules({ user }: { user: User }) {
       </Panel>
       {creating && <SigmaForm onClose={() => setCreating(false)} />}{' '}
       {selected && <RuleHistory rule={selected} onClose={() => setSelected(null)} />}
+      {prepared && <RuleReadiness rule={prepared} onClose={() => setPrepared(null)} />}
       {analyzed && <RuleAnalysis rule={analyzed} onClose={() => setAnalyzed(null)} />}
       {linked && <RuleTestLinks rule={linked} user={user} onClose={() => setLinked(null)} />}
     </>
