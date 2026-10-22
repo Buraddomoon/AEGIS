@@ -185,6 +185,49 @@ def technique_outcomes(db: Session, mode: str = "demo") -> dict[str, str]:
     return result
 
 
+def scope_changes(before: dict, after: dict) -> dict:
+    def differences(old: dict, new: dict) -> list[dict]:
+        return [
+            {"key": key, "before": old.get(key), "after": new.get(key)}
+            for key in sorted(old.keys() | new.keys())
+            if old.get(key) != new.get(key)
+        ]
+
+    recorded = "rule_test_links" in before and "rule_test_links" in after
+    environment_keys = (
+        "laboratory_id",
+        "environment_version",
+        "asset_id",
+        "mode",
+        "synthetic",
+        "runner",
+        "telemetry",
+        "logic_version",
+        "clock_skew_seconds",
+        "ingestion_window_seconds",
+    )
+    return {
+        "rule_versions": differences(
+            before.get("rule_versions", {}), after.get("rule_versions", {})
+        ),
+        "test_definitions": differences(
+            {t["id"]: t for t in before["test_definitions"]},
+            {t["id"]: t for t in after["test_definitions"]},
+        ),
+        "environment": differences(
+            {k: before.get(k) for k in environment_keys},
+            {k: after.get(k) for k in environment_keys},
+        ),
+        "link_context_recorded": recorded,
+        "rule_test_links": differences(
+            {f"{x['rule_id']}:{x['test_id']}": x for x in before["rule_test_links"]},
+            {f"{x['rule_id']}:{x['test_id']}": x for x in after["rule_test_links"]},
+        )
+        if recorded
+        else None,
+    }
+
+
 def compare(db: Session, before_id: str, after_id: str) -> dict:
     before, after = execution_detail(db, before_id), execution_detail(db, after_id)
     if before["campaign_id"] != after["campaign_id"]:
@@ -192,13 +235,14 @@ def compare(db: Session, before_id: str, after_id: str) -> dict:
 
         raise HTTPException(409, "Selecione execuções da mesma campanha.")
     previous = {item["test_id"]: item for item in before["executions"]}
+    current = {item["test_id"]: item for item in after["executions"]}
     rows = []
-    for item in after["executions"]:
-        old = previous.get(item["test_id"], {}).get("result")
-        new = item.get("result")
+    for test_id in sorted(previous.keys() | current.keys()):
+        old = previous.get(test_id, {}).get("result")
+        new = current.get(test_id, {}).get("result")
         rows.append(
             {
-                "test_id": item["test_id"],
+                "test_id": test_id,
                 "before": old["outcome"] if old else "NOT_TESTED",
                 "after": new["outcome"] if new else "NOT_TESTED",
                 "changed": (old or {}).get("outcome") != (new or {}).get("outcome"),
@@ -216,6 +260,7 @@ def compare(db: Session, before_id: str, after_id: str) -> dict:
         "same_scope": before["scope_hash"] == after["scope_hash"],
         "before_scope": before["scope"],
         "after_scope": after["scope"],
+        "scope_changes": scope_changes(before["scope"], after["scope"]),
         "tests": rows,
         "limitation": "Mudanças de ambiente, versões de regras ou testes exigem revisão da comparabilidade. Recibos do executor não comprovam detecção defensiva.",
     }
