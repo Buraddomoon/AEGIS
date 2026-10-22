@@ -9,7 +9,7 @@ from uuid import UUID
 
 import httpx
 import pytest
-from aegis.domain.contracts import ExecutionContext
+from aegis.domain.contracts import Collection, ExecutionContext
 from aegis.domain.validation import validate
 from aegis.integrations.wazuh import WazuhIndexerProvider
 from aegis.integrations.wazuh_config import WazuhCollectionConfig
@@ -276,6 +276,39 @@ def test_run_budget_reserves_cleanup_and_cannot_prove_a_negative():
     result = poll.collect(ctx)
     assert poll.summary["attempts"] == 0 and not result.complete
     assert validate(ctx, result, True).outcome == "INCONCLUSIVE"
+
+
+def test_polling_guard_can_exhaust_a_sleep_slice_without_sleeping_negative(monkeypatch):
+    # A real guard checks approval/ownership in PostgreSQL. If it takes longer
+    # than a short sleep slice, the next delay must be recomputed after it.
+    ctx, clock, delays = context(), Clock(), []
+    remote = provider(
+        lambda _: pytest.fail("No HTTP needed for this polling regression"),
+        policy(
+            ingestion_window_seconds=1,
+            ingestion_wait_seconds=1,
+            poll_interval_seconds=0.1,
+        ),
+    )
+    monkeypatch.setattr(remote, "collect_once", lambda _: Collection((), True, True, True))
+
+    def sleep(delay):
+        if delay < 0:
+            raise ValueError("sleep length must be non-negative")
+        delays.append(delay)
+        clock.sleep(delay)
+
+    poll = WazuhPollingProvider(
+        remote,
+        datetime.now(UTC) + timedelta(seconds=30),
+        lambda: clock.sleep(0.2),
+        clock=clock.now,
+        sleep=sleep,
+    )
+    result = poll.collect(ctx)
+    assert result.complete and poll.summary["window_satisfied"]
+    assert validate(ctx, result, True).outcome == "NO_TELEMETRY"
+    assert all(delay >= 0 for delay in delays) and remote.closed
 
 
 def test_changed_source_document_is_not_reused_as_evidence():

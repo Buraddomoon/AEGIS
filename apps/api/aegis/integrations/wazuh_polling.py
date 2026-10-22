@@ -84,7 +84,10 @@ class WazuhPollingProvider:
                     end = self.clock() + wait
                     while self.clock() < end:
                         self.guard()
-                        self.sleep(min(0.1, end - self.clock()))
+                        # Ownership/approval checks may outlast this slice.
+                        remaining = end - self.clock()
+                        if remaining > 0:
+                            self.sleep(min(0.1, remaining))
             complete = (
                 last.complete
                 and self.summary["window_satisfied"]
