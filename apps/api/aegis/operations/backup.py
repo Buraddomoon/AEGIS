@@ -15,6 +15,7 @@ from typing import Any
 from aegis.domain.validation import digest
 
 FORMAT = "aegis-demo-backup/1"
+INVENTORY_FORMAT = "aegis-pg-inventory/2"
 Query = Callable[[str], Iterable[str]]
 STRUCTURE_COMPARISON = "pg17-literal-array-casts/1"
 SQL_LITERAL = r"'(?:[^']|'')*'::character varying"
@@ -161,6 +162,7 @@ def inventory(query: Query, schema: str = "public") -> dict[str, Any]:
         raise ValueError("Missing AEGIS migration schema")
     qualified = identifier(schema)
     return {
+        "format": INVENTORY_FORMAT,
         "tables": {
             table: fingerprint(
                 query(

@@ -18,7 +18,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from aegis.config import settings
-from aegis.operations.backup import FORMAT, compare, inventory, retention_plan
+from aegis.operations.backup import FORMAT, INVENTORY_FORMAT, compare, inventory, retention_plan
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
@@ -227,7 +227,7 @@ def backup():
         engine.dispose()
 
 
-def load_backup(identifier):
+def load_backup(identifier, *, require_current_inventory=True):
     if not re.fullmatch(r"\d{8}T\d{6}Z-[a-f0-9]{32}", identifier):
         raise BackupError("Invalid backup ID")
     private_directory(ROOT / ".local")
@@ -246,6 +246,13 @@ def load_backup(identifier):
         ):
             raise BackupError("Backup files must be private regular files owned by this user")
     manifest = json.loads((folder / "manifest.json").read_text())
+    if (
+        require_current_inventory
+        and manifest.get("inventory", {}).get("format") != INVENTORY_FORMAT
+    ):
+        raise BackupError(
+            "Unsupported inventory format; create a new backup without rewriting history"
+        )
     if (
         manifest.get("format") != FORMAT
         or manifest.get("id") != identifier
@@ -376,6 +383,8 @@ def rehearse(identifier):
         # A failed cleanup produces no success receipt. The backup itself remains.
     receipt = {
         "format": FORMAT,
+        "inventory_format": INVENTORY_FORMAT,
+        "structure_comparison": manifest["inventory"].get("structure_comparison"),
         "backup_id": identifier,
         "dump_sha256": manifest["dump_sha256"],
         "status": "verified" if verified else "failed",
@@ -398,14 +407,21 @@ def rehearse(identifier):
 
 def plan():
     records = []
+    unsupported = set()
     if BACKUPS.is_symlink():
         raise BackupError("Symlink backup directory refused")
     if BACKUPS.exists():
         for folder in sorted(BACKUPS.iterdir()):
             if folder.is_dir() and (folder / "manifest.json").exists():
-                _, manifest = load_backup(folder.name)
+                _, manifest = load_backup(folder.name, require_current_inventory=False)
                 records.append(manifest)
-    return {"deletion_performed": False, "plan": retention_plan(records, datetime.now(UTC))}
+                if manifest.get("inventory", {}).get("format") != INVENTORY_FORMAT:
+                    unsupported.add(manifest["id"])
+    result = retention_plan(records, datetime.now(UTC))
+    for entry in result:
+        if entry["id"] in unsupported:
+            entry.update(action="keep", reason="unsupported_inventory_preserved")
+    return {"deletion_performed": False, "plan": result}
 
 
 def main():

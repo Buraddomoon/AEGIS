@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 import pytest
-from aegis.operations.backup import FORMAT
+from aegis.operations.backup import FORMAT, INVENTORY_FORMAT
 
 SPEC = importlib.util.spec_from_file_location(
     "demo_backup", Path(__file__).resolve().parents[1] / "scripts/demo_backup.py"
@@ -34,7 +34,11 @@ def archive(tmp_path, monkeypatch):
         "created_at": "2026-10-22T21:00:00+00:00",
         "dump_sha256": backup_cli.file_hash(dump),
         "source": {"image_id": "sha256:" + "b" * 64, "postgres_major": 17},
-        "inventory": {"tables": {"test": {"rows": 4}}, "migration": ["test"]},
+        "inventory": {
+            "format": INVENTORY_FORMAT,
+            "tables": {"test": {"rows": 4}},
+            "migration": ["test"],
+        },
     }
     backup_cli.write_json(folder / "manifest.json", manifest)
     return folder, manifest
@@ -186,3 +190,24 @@ def test_json_publication_syncs_parent_and_refuses_replacement(archive, monkeypa
     assert synced == [folder]
     with pytest.raises(FileExistsError):
         backup_cli.write_json(folder / "durable-test.json", {})
+
+
+def test_legacy_inventory_is_refused_before_docker(archive, monkeypatch):
+    folder, manifest = archive
+    del manifest["inventory"]["format"]
+    (folder / "manifest.json").write_text(json.dumps(manifest))
+    monkeypatch.setattr(backup_cli, "docker", lambda *a, **kw: pytest.fail("Docker called"))
+    with pytest.raises(backup_cli.BackupError, match="inventory format"):
+        backup_cli.rehearse(ID)
+
+
+def test_retention_preserves_legacy_inventory_without_rewriting_it(archive):
+    folder, manifest = archive
+    del manifest["inventory"]["format"]
+    path = folder / "manifest.json"
+    path.write_text(json.dumps(manifest))
+    before = path.read_bytes()
+    result = backup_cli.plan()
+    assert result["plan"][0]["reason"] == "unsupported_inventory_preserved"
+    assert result["plan"][0]["action"] == "keep"
+    assert not result["deletion_performed"] and path.read_bytes() == before
