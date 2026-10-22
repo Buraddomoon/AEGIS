@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e engenharia Sigma com revisões, análise estática e diagnóstico de preparação (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
+Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e engenharia Sigma com revisões, análise estática e diagnóstico de preparação; backup/restore Demo verificado (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -938,3 +938,107 @@ totalizando **180**. Main exclusiva, AEGIS privado e push após cada commit,
 sem branch/PR/force. Último código3479f01; seguintes só capturas/documentação.
 Consultar git log/status após o checkpoint para último hash/mensagem e sync;
 não incorporar seu próprio hash neste arquivo.
+
+
+## 2026-10-22 — Backup consistente e recuperação verificável do Demo
+
+### Entrega
+
+Implementada ferramenta operacional host-only, sem endpoint administrativo novo:
+`make backup-demo`, `make verify-backup BACKUP_ID=...`,
+`make backup-retention-plan` e `make test-recovery`.
+[ADR0010](architecture/decisions/0010-demo-backup-rehearsal.md),
+[procedimento/limites](operations/backup-recovery.md),
+[revisão](security/review-recovery-2026-10-22.md).
+
+- Fonte restrita ao projeto aegis/db, PostgreSQL17/public e conexão administrativa
+  local18782. Identidade do cluster/banco conferida, snapshot REPEATABLE READ READ
+  ONLY compartilhado entre inventário e pg_dump; nenhuma pausa ou escrita no
+  banco em uso. Inventário inclui todas as linhas/tabelas, migração, colunas,
+  tipos/typmods/collations, constraints, índices/flags, triggers e funções cobertas.
+- SHA-256 do dump e recálculo dos hashes internos de eventos, versões Sigma e
+  scopes. Dados e contas do dump são privados; manifesto não é assinatura.
+  Arquivos0600, diretórios0700, fsync de arquivos/diretórios, criação exclusiva,
+  symlinks recusados e dumps adicionados ao ignore/scanner staged.
+- Restore somente em clone próprio aegis-recovery-UUID, mesma imagem local porID,
+  sem pull, rede, portas, mounts do host, volumes duráveis, API, worker ou scheduler.
+  Tmpfs limitado,1CPU/768MiB/128PIDs, read-only/no-new-privileges. Restore em transação
+  única, sem ACL/owner; nenhuma troca de destino de aplicação.
+- Intenção privada persistida antes de create e reconciliação por nome exato/label
+  mesmo após resposta ambígua. Sem receipt verificado quando restore/comparação/
+  cleanup falham. Docker CLI com config temporário vazio e ambiente saneado:
+  não herdar proxies com credenciais nem contexto remoto do usuário.
+- Inventário aegis-pg-inventory/2, envelope aegis-demo-backup/1 e normalização
+  pg17-literal-array-casts/1 explícitos. Formato antigo é recusado antes de Docker;
+  histórico não é regravado e plano de retenção preserva os legados.
+- Retenção é somente plano: mantém sete mais recentes/todos até30dias e legados;
+  review_only exige revisão humana específica, sem exclusão automática. Nada
+  removeu backups, evidências, auditoria, volumes ou journals de laboratórios.
+
+Arquivos centrais: apps/api/aegis/operations/backup.py,
+scripts/demo_backup.py, tests/test_backup_inventory.py/test_backup_cli.py,
+Makefile, scanner staged, docs operacionais e recibo público sem dados de linhas.
+Nenhuma dependência nova, migração ou mudança de API/frontend.
+
+### Problemas encontrados e corrigidos
+
+Primeiro restore recusou schema public já existente no initdb; agora remove
+somente o schema vazio do clone sem CASCADE antes de restaurar. Quatro constraints
+foram reescritas pelo PostgreSQL de cast de array varchar→text para casts em cada
+literal. Normalização restrita cobre apenas esse caso, preservando valores/aspas;
+NULLs/funções/outros casts não são equivalência genérica. Diferenças restantes
+continuam bloqueadas. O primeiro backup experimental foi preservado, não editado.
+
+Revisão especializada somente leitura apontou: create ambíguo sem reconciliação,
+falta de fsync de diretórios, typmod de arrays ausente e configuração Docker global
+podendo injetar proxies. Quatro correções implementadas com regressões. Recusar
+RLS/policies, tipos customizados, procedures, sequences/views e outros recursos
+não inventariados evita declarar recuperação não coberta. Revisão estática final
+não encontrou novo bloqueador; observação menor de versionamento também tratada.
+Revisor não executou testes, Docker ou efeitos reais.
+
+Uma rodada ampla teve420pass/1fail em rate limiting porque executei pytest
+concorrente com outra suíte que limpa Redis DB15. Essa rodada não foi aprovada.
+A documentação exige executar essas suítes serialmente; controle de produção
+permaneceu inalterado. Rodada exclusiva final passou integralmente.
+
+### Evidência e validação
+
+- `make test` final, sozinho: **423 Python passaram**,156,13s; **35 frontend**,
+  4,59s. `make lint` passou: Ruff/check/format100arquivos, mypy domínio, TS/Prettier.
+- `make test-recovery`: **45 passaram**; PG real para inventário, snapshot com
+  commit posterior excluído, constraints e typmods. Mocks de Docker somente para
+  falhas de create/start/restore/comparação/ownership/cleanup e configuração CLI.
+- `make backup-demo`/`make verify-backup` reais finais: **30tabelas/2.884linhas**,
+  hashes/estrutura conferidos, **clone removido**. ID final
+  20261022T210359Z-e689b5a47fa44a69b969a726982324de. Recibo9,488s é uma medição
+  desse restore, não benchmark/RTO. [Evidência](evidence/recovery-2026-10-22/README.md).
+- `make backup-retention-plan` passou: quatro arquivos preservados, legados
+  sinalizados, nenhuma exclusão. Permissões0700/0600 conferidas no host.
+- Recibo público foi comparado ao original privado;9Markdown/42links locais
+  verificados no commit de operação e scanner/diff-check em cada commit.
+- E2E de navegador/smoke/deploy não foram repetidos: API/UI/worker não mudaram.
+  Demo segue ready database/redis=true. Nenhum clone remanescente nem container
+  Wazuh presente;9volumes do ensaio anterior preservados, nenhum ensaio real
+  Linux/Wazuh repetido.
+- CI final: **SUCCESS**,fba4494, [run39854484061](https://github.com/Buraddomoon/AEGIS/actions/runs/39854484061),validate3m12s: lint/tipos/PG/frontend/build/advisories. Advisory transitivo DiskCache revisado continua visível; não foi declarado zero vulnerabilidades Python.
+
+### Limites e próximo passo
+
+Backup cobre schema public do Demo confiável; não roles/ACLs, secrets/.env/PKI,
+Redis, journals do runner ou artefatos externos. Hash não é assinatura e0700/0600
+não é criptografia. Cópia criptografada fora do host e guarda de imagens/configuração
+são pendências operacionais. Queda abrupta/daemon indisponível pode exigir revisão
+de intenções/clones; observed_absent não comprova término futuro de create ambíguo.
+
+Não foi testado boot da API/worker recuperados, failover, cutover ou retomada de
+jobs; não há RPO/RTO garantido. Próxima etapa recomendada: recuperação operacional
+em Demo separado, com execução automática bloqueada e reconciliação explícita de
+sessões/jobs/agendamentos antes de qualquer worker. Mantêm-se pendências Sigma
+backend/pipeline/mapping, atualização ATT&CK, PKI, Windows/archives, PDF e
+multi-workspace. A autorização real Wazuh continua consumida.
+
+Este marco acrescenta **11 commits granulares**, incluindo este checkpoint,
+totalizando **191**. Main exclusiva, AEGIS privado e push após cada commit; último
+código b55d22a, recibo público fba4494 e documentação9f6ed3d. Consultar git log/status
+para hash/mensagem finais e sincronização; não incorporar seu próprio hash aqui.

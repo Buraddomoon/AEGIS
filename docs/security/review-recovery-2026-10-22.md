@@ -50,3 +50,8 @@ Uma rodada da suíte ampla falhou no rate limit porque dois processos pytest loc
 compartilharam/limparam Redis DB15. Essa rodada não foi considerada aprovada; a
 validação final precisa executar sem concorrência entre suítes. Não se modificou
 o rate limit da aplicação para fazer o teste passar.
+
+Validação exclusiva final concluída:423Python/35frontend passaram, lint/tipos
+aprovados e CI [39854484061](https://github.com/Buraddomoon/AEGIS/actions/runs/39854484061)
+SUCCESS, incluindo build/auditoria. A falha de interferência anterior não foi
+mascarada ou usada como resultado aprovado.
