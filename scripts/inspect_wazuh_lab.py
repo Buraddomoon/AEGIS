@@ -188,6 +188,7 @@ def validate(
             and not host["CapAdd"]
             and not host["Devices"]
             and not host["DeviceRequests"]
+            and not host["DeviceCgroupRules"]
             and not host["VolumesFrom"]
             and host["PidMode"] == ""
             and host["IpcMode"] in {"private", ""}
@@ -331,6 +332,7 @@ HOST_FIELDS = (
     "CapAdd",
     "Devices",
     "DeviceRequests",
+    "DeviceCgroupRules",
     "VolumesFrom",
     "PidMode",
     "IpcMode",
@@ -366,8 +368,8 @@ CONTAINER_FORMAT = (
         }
     )[:-1]
     + ',"host":'
-    + projection({name: ".HostConfig." + name for name in HOST_FIELDS})
-    + ',"health":{{if .State.Health}}{{json .State.Health.Status}}{{else}}""{{end}}}'
+    + projection({name: '(index .HostConfig "' + name + '")' for name in HOST_FIELDS})
+    + ',"health":{{with (index .State "Health")}}{{json (index . "Status")}}{{else}}""{{end}}}'
 )
 PROJECT_LABEL = ',"Labels":{"com.docker.compose.project":{{json (index .Labels "com.docker.compose.project")}}}}'
 NETWORK_FORMAT = (

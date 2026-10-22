@@ -1,6 +1,7 @@
 import copy
 import importlib
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -25,6 +26,7 @@ def snapshot(inspector):
             "CapAdd": None,
             "Devices": [],
             "DeviceRequests": None,
+            "DeviceCgroupRules": None,
             "VolumesFrom": None,
             "PidMode": "",
             "IpcMode": "private",
@@ -174,6 +176,7 @@ def test_project_boundaries_fail_closed(inspector, snapshot, change):
         ("runner", "PidsLimit", 0),
         ("wazuh.manager", "NanoCpus", 0),
         ("observer", "Devices", [{"PathOnHost": "/dev/sda"}]),
+        ("wazuh.manager", "DeviceCgroupRules", ["a *:* rwm"]),
         ("db", "SecurityOpt", ["seccomp:unconfined"]),
         ("runner", "CapDrop", []),
         ("runner", "Tmpfs", {"/work": "size=1m"}),
@@ -365,3 +368,67 @@ def test_unknown_volume_names_do_not_escape_as_output_keys(inspector, snapshot):
     checks = inspector.validate(*snapshot)
     assert not checks["volume_inventory"]
     assert "unexpected-sensitive-value" not in json.dumps(checks)
+
+
+@pytest.mark.parametrize(
+    ("kind", "label", "format_name"),
+    [
+        ("container", "com.docker.compose.service=worker", "CONTAINER_FORMAT"),
+        ("container", "com.docker.compose.service=db", "CONTAINER_FORMAT"),
+        ("network", "com.docker.compose.network=backend", "NETWORK_FORMAT"),
+        ("volume", "com.docker.compose.volume=postgres-data", "VOLUME_FORMAT"),
+    ],
+)
+def test_projection_against_existing_demo_objects_only_if_present(
+    inspector, kind, label, format_name
+):
+    """Read-only regression: Go lookup of absent Health/Tmpfs must not crash.
+
+    CI without the existing Demo skips this optional check; no container, network
+    or volume is ever created. These are not Wazuh runtime acceptance tests.
+    """
+    if not shutil.which("docker"):
+        pytest.skip("Docker CLI unavailable; no installation/startup in tests.")
+    listing = ["ps", "--all", "--quiet"] if kind == "container" else [kind, "ls", "--quiet"]
+    try:
+        identifiers = inspector.execute(
+            [
+                *inspector.DOCKER,
+                *listing,
+                "--filter",
+                "label=com.docker.compose.project=aegis",
+                "--filter",
+                "label=" + label,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        ).stdout.splitlines()
+    except (OSError, subprocess.SubprocessError):
+        pytest.skip("Local Docker unavailable; do not start daemon/services.")
+    if len(identifiers) != 1:
+        pytest.skip("Existing own Demo object unavailable; do not create one.")
+    output = inspector.execute(
+        [
+            *inspector.DOCKER,
+            "inspect",
+            "--type",
+            kind,
+            "--format",
+            getattr(inspector, format_name),
+            identifiers[0],
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    ).stdout
+    item = json.loads(output)
+    if kind == "container":
+        assert "Env" not in item and "Env" not in item.get("host", {})
+        assert "DeviceCgroupRules" in item["host"]
+        if label.endswith("=worker"):
+            assert item["health"] == ""
+        else:
+            assert item["host"]["Tmpfs"] is None
+    else:
+        assert item["Labels"]["com.docker.compose.project"] == "aegis"
