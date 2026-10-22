@@ -35,14 +35,17 @@ class BackupError(RuntimeError):
 def docker(*args, stdin=None, stdout=subprocess.PIPE, timeout=300):
     # Use the Unix socket only, ignoring Docker contexts and remote env overrides.
     try:
-        result = subprocess.run(
-            ["docker", "--host", "unix:///var/run/docker.sock", *args],
-            stdin=stdin,
-            stdout=stdout,
-            stderr=subprocess.PIPE,
-            timeout=timeout,
-            check=True,
-        )
+        # An empty CLI config also prevents injection of global proxy credentials.
+        with tempfile.TemporaryDirectory(prefix="aegis-docker-") as config:
+            result = subprocess.run(
+                ["docker", "--config", config, "--host", "unix:///var/run/docker.sock", *args],
+                env={"PATH": os.defpath, "LANG": "C.UTF-8"},
+                stdin=stdin,
+                stdout=stdout,
+                stderr=subprocess.PIPE,
+                timeout=timeout,
+                check=True,
+            )
     except subprocess.CalledProcessError as error:
         # Diagnostics stay private: PostgreSQL errors may contain row values.
         directory = ROOT / ".local" / "recovery-errors"
@@ -111,6 +114,16 @@ def private_directory(path):
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
     if path.stat().st_uid != os.getuid() or stat.S_IMODE(path.stat().st_mode) != 0o700:
         raise BackupError("Backup directories must be owned by this user and mode0700")
+    sync_directory(path)
+    sync_directory(path.parent)
+
+
+def sync_directory(path):
+    fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 def write_json(path, value):
@@ -120,6 +133,7 @@ def write_json(path, value):
         out.write("\n")
         out.flush()
         os.fsync(out.fileno())
+    sync_directory(path.parent)
 
 
 def file_hash(path):
@@ -150,6 +164,9 @@ def backup():
             connection.execute(text("SET TRANSACTION READ ONLY"))
             connection.execute(text("SET LOCAL timezone='UTC'"))
             connection.execute(text("SET LOCAL statement_timeout='60s'"))
+            if connection.execute(text("SELECT current_database()")).scalar_one() != "aegis":
+                raise BackupError("Unexpected source database")
+            transaction_at = connection.execute(text("SELECT CURRENT_TIMESTAMP")).scalar_one()
             cluster = connection.execute(
                 text("SELECT system_identifier::text FROM pg_control_system()")
             ).scalar_one()
@@ -162,7 +179,11 @@ def backup():
             if major != 17:
                 raise BackupError("Only PostgreSQL17 has been reviewed")
             snapshot = connection.execute(text("SELECT pg_export_snapshot()")).scalar_one()
-            expected = inventory(lambda sql: connection.execute(text(sql)).scalars().yield_per(100))
+            expected = inventory(
+                lambda sql: connection.execute(
+                    text(sql), execution_options={"yield_per": 100}
+                ).scalars()
+            )
             dump = destination / "database.dump"
             fd = os.open(dump, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
             with os.fdopen(fd, "wb") as stream:
@@ -187,7 +208,8 @@ def backup():
         manifest = {
             "format": FORMAT,
             "id": identifier,
-            "created_at": datetime.now(UTC).isoformat(),
+            "created_at": transaction_at.isoformat(),
+            "dump_completed_at": datetime.now(UTC).isoformat(),
             "source": {
                 "project": "aegis",
                 "database": "aegis",
@@ -235,16 +257,50 @@ def load_backup(identifier):
     return folder, manifest
 
 
+def remove_clone(name, token):
+    names = (
+        docker("ps", "-a", "--filter", "name=^/" + name + "$", "--format", "{{.Names}}")
+        .decode()
+        .split()
+    )
+    if not names:
+        return "observed_absent"
+    if names != [name]:
+        raise BackupError("Unexpected clone names; cleanup refused")
+    actual = (
+        docker("inspect", "--format", '{{index .Config.Labels "' + LABEL + '"}}', name)
+        .decode()
+        .strip()
+    )
+    if actual != token:
+        raise BackupError("Clone ownership mismatch; cleanup refused")
+    docker("rm", "--force", name, timeout=30)
+    return "removed"
+
+
 def rehearse(identifier):
     folder, manifest = load_backup(identifier)
     token = uuid.uuid4().hex
     name = "aegis-recovery-" + token
     started = time.monotonic()
-    created = False
+    attempted = False
     verified = False
+    intents = ROOT / ".local" / "recovery-intents"
+    private_directory(intents)
+    write_json(
+        intents / (token + ".json"),
+        {
+            "clone_name": name,
+            "ownership_token": token,
+            "backup_id": identifier,
+            "image_id": manifest["source"]["image_id"],
+            "intent_at": datetime.now(UTC).isoformat(),
+        },
+    )
     try:
         # Image must already exist locally. No network, ports, bind mounts,
         # persistent volumes, API, Redis, worker, scheduler or SIEM credentials.
+        attempted = True
         docker(
             "create",
             "--pull=never",
@@ -270,7 +326,6 @@ def rehearse(identifier):
             "POSTGRES_DB=aegis_restore",
             manifest["source"]["image_id"],
         )
-        created = True
         docker("start", name)
         for _ in range(60):
             try:
@@ -308,15 +363,16 @@ def rehearse(identifier):
         compare(manifest["inventory"], restored)
         verified = True
     finally:
-        if created:
-            actual = (
-                docker("inspect", "--format", '{{index .Config.Labels "' + LABEL + '"}}', name)
-                .decode()
-                .strip()
+        if attempted:
+            cleanup = remove_clone(name, token)
+            write_json(
+                intents / (token + "-cleanup.json"),
+                {
+                    "clone_name": name,
+                    "state": cleanup,
+                    "at": datetime.now(UTC).isoformat(),
+                },
             )
-            if actual != token:
-                raise BackupError("Clone ownership mismatch; cleanup refused")
-            docker("rm", "--force", name, timeout=30)
         # A failed cleanup produces no success receipt. The backup itself remains.
     receipt = {
         "format": FORMAT,
@@ -378,7 +434,7 @@ def main():
         raise SystemExit(
             str(error) + "; source unchanged. No sensitive details displayed."
         ) from None
-    except (ValueError, KeyError, OSError, SQLAlchemyError):
+    except (ValueError, KeyError, TypeError, AttributeError, OSError, SQLAlchemyError):
         raise SystemExit(
             "Backup/recovery failed; source unchanged. Review private files and clone status; no sensitive details displayed."
         ) from None

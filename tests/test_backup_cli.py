@@ -66,18 +66,38 @@ def test_unsafe_or_changed_archive_never_starts_container(archive, monkeypatch, 
 
 
 @pytest.mark.parametrize(
-    "fail_stage", [None, "start", "restore", "inventory", "cleanup", "ownership"]
+    "fail_stage",
+    [
+        None,
+        "create-before",
+        "create-after",
+        "start",
+        "restore",
+        "inventory",
+        "cleanup",
+        "ownership",
+    ],
 )
 def test_rehearsal_is_offline_owned_and_never_emits_false_success(archive, monkeypatch, fail_stage):
     folder, manifest = archive
     calls = []
     owned = None
+    exists = False
+    clone_name = None
 
     def docker(*args, **kwargs):
-        nonlocal owned
+        nonlocal owned, exists, clone_name
         calls.append(args)
         if args[0] == "create":
+            if fail_stage == "create-before":
+                raise backup_cli.BackupError("Injected failure before create")
+            exists = True
+            clone_name = args[args.index("--name") + 1]
             owned = args[args.index("--label") + 1].split("=", 1)[1]
+            if fail_stage == "create-after":
+                raise backup_cli.BackupError("Injected ambiguous create response")
+        if args[0] == "ps":
+            return clone_name.encode() if exists else b""
         if args[0] == "inspect":
             return ("wrong" if fail_stage == "ownership" else owned).encode()
         if args[0] == "exec" and "cat" in args:
@@ -113,7 +133,7 @@ def test_rehearsal_is_offline_owned_and_never_emits_false_success(archive, monke
     assert create[-1] == manifest["source"]["image_id"]
     assert not any(arg in create for arg in ("-p", "--publish", "--volume", "-v", "--mount"))
     removed = [c for c in calls if c[0] == "rm"]
-    assert bool(removed) == (fail_stage != "ownership")
+    assert bool(removed) == (fail_stage not in {"ownership", "create-before"})
     assert all(c[-1].startswith("aegis-recovery-") for c in removed)
     assert (folder / "database.dump").is_file()
 
@@ -135,3 +155,34 @@ def test_symlink_backup_root_is_refused(tmp_path):
     link.symlink_to(real, target_is_directory=True)
     with pytest.raises(backup_cli.BackupError, match="Symlink"):
         backup_cli.private_directory(link)
+
+
+def test_docker_config_and_environment_cannot_inherit_proxy_secrets(monkeypatch):
+    import subprocess
+
+    calls = []
+
+    def run(args, **kwargs):
+        config = Path(args[args.index("--config") + 1])
+        assert config.is_dir() and list(config.iterdir()) == []
+        assert args[args.index("--host") + 1] == "unix:///var/run/docker.sock"
+        assert kwargs["env"] == {"PATH": os.defpath, "LANG": "C.UTF-8"}
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0, stdout=b"local-only", stderr=b"")
+
+    monkeypatch.setenv("HTTP_PROXY", "http://private-proxy.invalid")
+    monkeypatch.setenv("DOCKER_HOST", "tcp://remote.invalid")
+    monkeypatch.setattr(backup_cli.subprocess, "run", run)
+    assert backup_cli.docker("ps", "-q") == b"local-only"
+    assert len(calls) == 1
+    assert not Path(calls[0][calls[0].index("--config") + 1]).exists()
+
+
+def test_json_publication_syncs_parent_and_refuses_replacement(archive, monkeypatch):
+    folder, _ = archive
+    synced = []
+    monkeypatch.setattr(backup_cli, "sync_directory", synced.append)
+    backup_cli.write_json(folder / "durable-test.json", {"ok": True})
+    assert synced == [folder]
+    with pytest.raises(FileExistsError):
+        backup_cli.write_json(folder / "durable-test.json", {})
