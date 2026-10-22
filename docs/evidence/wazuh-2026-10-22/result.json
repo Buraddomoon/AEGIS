@@ -1,0 +1,154 @@
+{
+  "kind": "authorized_local_pipeline_validation",
+  "synthetic": false,
+  "project": "aegis-wazuh-lab",
+  "wazuh_version": "4.14.9",
+  "run_id": "987bd48f-fafc-4a34-bf2a-2d310e7ca794",
+  "state": "COMPLETED",
+  "outcome": "DETECTED",
+  "scope": {
+    "purpose": "Only the benign marker pipeline; no ATT&CK/EDR/enterprise protection claim",
+    "technique_id": null,
+    "expected_rule": "100200",
+    "agent_id": "001",
+    "clock_skew_seconds": 5,
+    "ingestion_window_seconds": 60,
+    "approved_duration_seconds": 120
+  },
+  "execution": {
+    "id": "a54831d6-5517-4a15-b0c8-adc9faee97d8",
+    "asset_id": "40ba5412-0034-4096-b88f-78a2ccdb789a",
+    "marker": "aegis-da764734-dc3f-4909-bd16-425498852427",
+    "started_at": "2026-10-22T13:29:54.468665Z",
+    "ended_at": "2026-10-22T13:29:54.468733Z",
+    "synthetic": false,
+    "executed": true
+  },
+  "laboratory_id": "cbf6e0ec-962c-450e-861e-ba7a313c2a5a",
+  "runner_receipt": {
+    "execution_id": "a54831d6-5517-4a15-b0c8-adc9faee97d8",
+    "content": {
+      "kind": "execution_receipt",
+      "job_id": "a54831d6-5517-4a15-b0c8-adc9faee97d8",
+      "marker": "aegis-da764734-dc3f-4909-bd16-425498852427",
+      "source": "aegis-linux-runner",
+      "test_id": "linux-file-marker/v1",
+      "asset_id": "40ba5412-0034-4096-b88f-78a2ccdb789a",
+      "ended_at": "2026-10-22T13:29:54.468733Z",
+      "exit_code": 0,
+      "runner_id": "3fa6fd77-e493-4d3d-b85d-aff08cb0e356",
+      "synthetic": false,
+      "scope_hash": "836a1271d17ab352e6332ac240571fb7166bfdcd6c4e1d7fe1d259edae20b052",
+      "started_at": "2026-10-22T13:29:54.468665Z",
+      "laboratory_id": "cbf6e0ec-962c-450e-861e-ba7a313c2a5a",
+      "artifact_bytes": 43,
+      "artifact_sha256": "56333c1a389c2975bcb5492eae461484d062a61d778f631bdeb1f0086750b9c6"
+    },
+    "sha256": "126fa03b26e349e0a9ca2ff7cfa32502fcb6f56a6f55131fe596160fa5b92979",
+    "id": "c9ce1084-75a5-4567-b4ce-50478623533c",
+    "created_at": "2026-10-22T13:29:54.515736Z"
+  },
+  "runner_cleanup": {
+    "execution_id": "a54831d6-5517-4a15-b0c8-adc9faee97d8",
+    "content": {
+      "spec": {
+        "job_id": "a54831d6-5517-4a15-b0c8-adc9faee97d8",
+        "marker": "aegis-da764734-dc3f-4909-bd16-425498852427",
+        "test_id": "linux-file-marker/v1",
+        "asset_id": "40ba5412-0034-4096-b88f-78a2ccdb789a",
+        "protocol": "aegis-linux-runner/1",
+        "runner_id": "3fa6fd77-e493-4d3d-b85d-aff08cb0e356",
+        "scope_hash": "836a1271d17ab352e6332ac240571fb7166bfdcd6c4e1d7fe1d259edae20b052",
+        "deadline_at": "2026-10-22T13:31:53.628650Z",
+        "laboratory_id": "cbf6e0ec-962c-450e-861e-ba7a313c2a5a"
+      },
+      "state": "SUCCEEDED",
+      "reason": "Criação e hash do marcador confirmados pelo executor; sem evidência defensiva.",
+      "receipt": {
+        "kind": "execution_receipt",
+        "job_id": "a54831d6-5517-4a15-b0c8-adc9faee97d8",
+        "marker": "aegis-da764734-dc3f-4909-bd16-425498852427",
+        "source": "aegis-linux-runner",
+        "test_id": "linux-file-marker/v1",
+        "asset_id": "40ba5412-0034-4096-b88f-78a2ccdb789a",
+        "ended_at": "2026-10-22T13:29:54.468733Z",
+        "exit_code": 0,
+        "runner_id": "3fa6fd77-e493-4d3d-b85d-aff08cb0e356",
+        "synthetic": false,
+        "scope_hash": "836a1271d17ab352e6332ac240571fb7166bfdcd6c4e1d7fe1d259edae20b052",
+        "started_at": "2026-10-22T13:29:54.468665Z",
+        "laboratory_id": "cbf6e0ec-962c-450e-861e-ba7a313c2a5a",
+        "artifact_bytes": 43,
+        "artifact_sha256": "56333c1a389c2975bcb5492eae461484d062a61d778f631bdeb1f0086750b9c6"
+      },
+      "spec_hash": "f40ce1e56967d8193cf1aefab2e1b7c27480a320317ec9fc43f1bd2889873f5a",
+      "generation": "059dacfe-43a4-4876-a7ba-03c91c9a2ac4",
+      "cleanup_state": "CLEANED",
+      "receipt_sha256": "126fa03b26e349e0a9ca2ff7cfa32502fcb6f56a6f55131fe596160fa5b92979"
+    },
+    "sha256": "caa7858fd0fe60993811a24798102d748480511e08d00a6e8bd26e8b74f08eac",
+    "id": "a5b57dd9-ff5c-486b-b2ac-b3f71ebecb6d",
+    "created_at": "2026-10-22T13:30:05.486201Z"
+  },
+  "alert_sha256": "1e6ae0f64dd6fe8344bfc1eeac0cad17cd8eb0761660a35a7d01893392ba0b1a",
+  "collection": {
+    "execution_id": "a54831d6-5517-4a15-b0c8-adc9faee97d8",
+    "provider": "wazuh-indexer",
+    "configuration_hash": "2be91124fdcea62fcd285a20def49e2c5b42b00784a59b02b46dbaef478f999d",
+    "schema_id": "aegis-json/1",
+    "started_at": "2026-10-22T13:29:54.727888Z",
+    "ended_at": "2026-10-22T13:30:05.207767Z",
+    "attempts": 6,
+    "complete": true,
+    "telemetry_available": false,
+    "alerts_available": true,
+    "window_satisfied": false,
+    "reason": "Consulta concluída; interpretação depende da evidência correlacionada.",
+    "id": "0334c572-f783-46bd-9260-8cc03ea9e351",
+    "created_at": "2026-10-22T13:30:05.210113Z"
+  },
+  "approval_segregated": true,
+  "approval_used": true,
+  "closure": {
+    "lab_authorized": false,
+    "lab_reserved": false,
+    "temporary_users": 2,
+    "active_temporary_users": 0,
+    "runs": 1,
+    "executions": 1,
+    "events": 1,
+    "evidence": 1,
+    "approval_segregated": true,
+    "approval_used": true,
+    "approved_seconds": 120,
+    "immutable_events": true
+  },
+  "coverage": {
+    "synthetic": false,
+    "mode": "linux",
+    "scope": "Laboratórios Linux reais • execuções concluídas • todas as datas",
+    "catalogued_techniques": 706,
+    "evaluated_techniques": 0,
+    "total_runs": 1,
+    "completed_tests": 1,
+    "valid_tests": 1,
+    "outcomes": {
+      "DETECTED": 1
+    },
+    "detected_percentage": 100.0,
+    "denominator": "DETECTED + OBSERVED_NOT_ALERTED + NO_TELEMETRY, somente testes com execução concluída; INCONCLUSIVE e EXECUTION_FAILED excluídos",
+    "limitation": "Percentual somente deste modo e escopo de testes; não representa proteção da organização. Comprovantes de execução não são detecções.",
+    "trend": [
+      {
+        "run_id": "987bd48f-fafc-4a34-bf2a-2d310e7ca794",
+        "date": "2026-10-22T13:29:53.565514Z",
+        "detected": 1,
+        "evaluated": 1
+      }
+    ]
+  },
+  "limitations": [
+    "Coleta Wazuh registrada neste escopo; disponibilidade, janela e evidências devem ser inspecionadas. Recibo do executor não é alerta. Uma regra de instrumentação do marcador benigno valida somente esse pipeline, sem comprovar proteção empresarial ou técnica ATT&CK.",
+    "Recorded evidence is not a new live integration test. Hashes detect changes, not operator authenticity. Docker tmpfs, TLS, ACLs and physical cleanup were inspected during this single authorized assay. Services are stopped; volumes/journals are retained."
+  ]
+}
