@@ -63,6 +63,18 @@ clean-demo:
 smoke:
 	$(VENV)/python scripts/smoke_compose.py
 
+# Operator-only Demo recovery. Verify always creates its own offline clone.
+.PHONY: backup-demo verify-backup backup-retention-plan test-recovery
+backup-demo:
+	$(VENV)/python scripts/demo_backup.py create
+verify-backup:
+	@test -n "$(BACKUP_ID)" || (echo 'Use make verify-backup BACKUP_ID=<id>'; exit 2)
+	$(VENV)/python scripts/demo_backup.py verify "$(BACKUP_ID)"
+backup-retention-plan:
+	$(VENV)/python scripts/demo_backup.py retention-plan
+test-recovery:
+	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py -q
+
 # Linux lab is opt-in; never started by make up or make test.
 LAB = docker compose --env-file .local/linux-lab/ids.env -f labs/linux/compose.yml
 .PHONY: lab-init lab-config lab-build lab-up lab-preflight lab-inspect lab-smoke lab-down
