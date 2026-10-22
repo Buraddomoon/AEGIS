@@ -11,7 +11,9 @@ conexão local administrativa e o container db do projeto exato aegis.
 Restaurar apenas em container efêmero próprio, usando o mesmo image ID local do
 PostgreSQL de origem, network=none, sem portas, volumes persistentes ou aplicação.
 pg_restore --single-transaction --exit-on-error --no-owner --no-privileges.
-Comparar o inventário e conferir hashes de eventos, versões Sigma e scopes.
+Comparar o inventário com normalização restrita pg17-literal-array-casts/1
+para conversão de arrays de literais varchar→text (sem equivalência SQL genérica),
+recusando sequences/views não cobertas. Conferir hashes de eventos, versões Sigma e scopes.
 Workers, scheduler, Redis, agentes e SIEM nunca são conectados ao clone. Histórico
 com jobs pendentes pode ser preservado no arquivo, mas não deve ser reativado.
 
@@ -33,3 +35,13 @@ Fontes oficiais consultadas:
 - https://www.postgresql.org/docs/17/app-pgrestore.html
 - https://www.postgresql.org/docs/17/functions-admin.html#FUNCTIONS-SNAPSHOT-SYNCHRONIZATION
 - https://www.postgresql.org/docs/17/backup-dump.html
+
+Revisão endureceu a ferramenta: configuração Docker vazia/ambiente saneado evita
+proxies com segredos herdados; intenção persistida antes de create e reconciliação
+por nome+label após resposta ambígua; fsync de arquivos e diretórios. Inventário
+inclui typmod/format_type/collation e flags de índices. RLS/policies, tipos
+customizados e procedures são recusados nesta versão, não ignorados.
+
+Inventário expandido é aegis-pg-inventory/2, separado do envelope
+aegis-demo-backup/1 e normalização pg17-literal-array-casts/1. Legados sem essa
+versão são recusados antes de Docker e preservados pelo plano de retenção.

@@ -1,5 +1,16 @@
 # Changelog
 
+## Continuidade2026-10-22 — backup e recuperação verificável do Demo
+
+- Dump PostgreSQL por snapshot compartilhado com inventário de30tabelas, hashes
+  internos e estrutura; arquivos privados fora do Git.
+- Restauração em clone efêmero sem rede/portas/workers, mesma imagem local porID,
+  comparação estrita e recibo somente após cleanup. Sem alteração do banco ativo.
+- Normalização restrita de casts de arrays literais que PostgreSQL reescreve no
+  roundtrip; divergências restantes bloqueiam verificação.
+- Plano de retenção somente leitura. Não há failover, cutover, RPO/RTO garantido
+  ou recuperação de roles/secrets/journals.
+
 ## Continuidade2026-10-22 — preparação Sigma verificável
 
 - Diagnóstico por versão/hash/perfil, campos candidatos e bloqueios de requisitos

@@ -87,3 +87,19 @@ Revisões Sigma/teste: `pytest tests/test_rule_links.py tests/test_coverage_comp
 Análise estática Sigma: `pytest tests/test_sigma_analysis.py -q` inclui parser/condições, fatos, checks, versões históricas, hash divergente, RBAC, rate limit, limites de seleções/condições e processo novo com audit hook que recusa importação de DiskCache, rede e gravações. `sigma-analysis.test.tsx` cobre versões/erro/hash e resposta atrasada. E2E Firefox consulta versões com/sem achados, sem alterar o relatório anterior. `make smoke` usa a imagem implantada com papel SQL runtime para importar uma regra demonstrativa e consultar sua análise; `make audit` exercita parsing/análise e preserva a ocorrência transitiva revisada. Regressões de expansão e filter/correlation/action substituem SigmaCollection por função proibida e provam que o parser não é chamado para entrada fora do escopo/orçamento, sem expandir payloads perigosos.
 
 Preparação Sigma: `pytest tests/test_sigma_readiness.py tests/test_sigma_analysis.py -q` exercita constraints publicadas versus runtime, perfil/paths do alerta gravado, campos ausentes/logsource/keywords, história de versões, sessão/viewer, hash, rate limit e metadados ausentes/malformados. Guard offline em processo novo também chama assess, recusando cache/rede/gravação. UI sigma-readiness.test.tsx cobre histórico, erro/vazio e identidade/perfil divergentes. Firefox E2E inclui regra genérica não mapeada e exemplo candidato mapeado com conversão bloqueada; relatório anterior idêntico. Smoke Compose verifica essas APIs no papel SQL runtime. Não há backend ou pipeline executado.
+
+
+Recuperação: `make test-recovery` verifica inventário/estrutura em PostgreSQL real,
+hashes internos, snapshot exportado excluindo alterações posteriores, roundtrip
+de constraints e retenção somente leitura. Guardas da CLI usam mocks de Docker
+para falha de start/restore/comparação/ownership/cleanup, rejeição de dump alterado,
+permissões e symlinks. `make test` inclui esses testes, sem iniciar clones ou labs.
+O ensaio operacional `make backup-demo` seguido de `make verify-backup BACKUP_ID=...`
+é local e explícito; cria só PostgreSQL offline e compara o dump real. Não é
+executado pelo CI nem testa boot de API/worker recuperados. Ver [procedimento](../operations/backup-recovery.md).
+
+As suítes locais compartilham Redis DB15 e limpam seus contadores entre casos.
+Não executar dois processos pytest/E2E com essa mesma configuração em paralelo.
+Schemas PostgreSQL são exclusivos por processo, mas isso não isola Redis. Uma
+rodada deste marco confirmou essa interferência no teste de rate limit; executar
+a suíte completa sozinha, sem reduzir limites ou alterar o controle da aplicação.

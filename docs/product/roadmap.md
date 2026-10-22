@@ -53,3 +53,9 @@ atualização transacional do ATT&CK com depreciações preservadas.
 Extensão do agendamento aprovado para Lab Mode, após isolamento efetivo; relatórios comparativos automáticos e PDF; retenção/arquivo, backup/restore verificado, isolamento por workspace e gestão de usuários mais completa.
 
 Futuro: Caldera, outros SIEM/EDR, Windows em VM própria, CI/CD e assistência por IA sem controle autônomo sobre evidências/detecção/alterações críticas. Núcleo independente de IA comercial.
+
+
+Marco recuperação Demo: backup/restore e comparação de dados/estrutura em clone
+sem rede foram executados; plano de retenção é somente leitura. Seguem pendentes
+restauração operacional de aplicação/roles/secrets, armazenamento criptografado
+externo, política de RPO/RTO e gestão de retenção por ambiente. [Limites](../operations/backup-recovery.md).

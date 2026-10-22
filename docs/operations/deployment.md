@@ -11,3 +11,9 @@ Health: `/api/v1/health/live` informa processo; `/health/ready` verifica Postgre
 Locks Python possuem hashes; imagem frontend usa npm ci. Tags de imagens recebem patches da linha 17/8/3.13/24 no build; registrar digests no processo de release antes de uso além do Demo. Não existem benchmarks ou garantia de alta disponibilidade. Não habilitamos infraestrutura paga, Wazuh completo ou publicação pública.
 
 Linux opt-in: seguir [escopo e instalação](../../labs/linux/README.md), usando o overlay separado com API 18785 e banco próprio. Apenas API/worker desse projeto recebem configuração/certificado cliente, sem chaves de CA. Wazuh é explicitamente vazio no overlay de ensaio. make up padrão não inicia runner nem monta chaves Linux. Não confundir autorização de ensaio anterior com autorização permanente.
+
+
+Backup e ensaio de recuperação: [procedimento operacional](backup-recovery.md).
+A ferramenta host-only precisa do acesso administrativo loopback de desenvolvimento;
+ela nunca é exposta à API e não publica portas no clone. Não usar um dump para
+iniciar workers sem revisar jobs/agendamentos e efeitos externos do snapshot.

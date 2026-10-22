@@ -48,3 +48,21 @@ Associações Sigma/teste (ADR0007): planejamento humano, nunca sinal de implant
 Análise Sigma (ADR0008): somente leitura, por versão/hash; sigma-static/1 identifica checks parciais AEGIS sobre parser/modelo pySigma. Não importar sigma.validators.core (descoberta transitiva carrega DiskCache), não usar cache/loaders MITRE ou plugin dinâmico. Preservar teste de DiskCache ausente. safe_sigma_document deve limitar expansão ANTES do parser tanto no import quanto no analyze: cadeia até6 sem repetição, estimativa256KiB/valor,1MiB total,4096variantes; YAML depth32. Rejeitar filter/correlation/action e detection não objeto antes do dispatch. Não testar com expansão real grande. Revisar estimativas/novos modificadores ao atualizar pySigma. Campo declarado não comprova telemetria e zero achados não comprova semântica/eficácia. Sem backend/pipeline, compatibility permanece not_configured e não realizar conversão/implantação. UI confere identidade/hash e não mostra resposta atrasada de outra versão. Testes: tests/test_sigma_analysis.py, UI sigma-analysis.test.tsx e fluxo Demo E2E.
 
 Preparação Sigma (ADR0009): diagnóstico offline, can_convert=false; não converter nem instalar backends ignorando constraints. Wheels revisados OpenSearch2.0.3/Elastic2.1.1 exigem pySigma<2; core2.0.1 permanece. METADATA/snapshot versionado em fixtures/sigma, verificado por hash na captura; runtime não acessa rede nem importa backend. Perfil wazuh-aegis-marker/1 só mapeia logsource product=aegis/service=marker_observer e campos próprios do alerta registrado; nunca Image/CommandLine→full_log. _source não comprova mapping físico. Perfil não é pipeline executável. fieldref precisa de bloqueio explícito e field_mapping_complete=false até tratamento de pipeline, incluindo referências de nome conhecido. UI confere versão/hash e perfil/hash; novos perfis/metadados exigem revisão controlada. Testes: test_sigma_readiness.py e UI sigma-readiness.test.tsx; E2E somente Demo.
+
+Backup Demo (ADR0010): ferramenta host-only scripts/demo_backup.py, nunca API/worker
+ou mount Docker na app. Fonte somente projeto aegis/db local18782 e public/PG17;
+cluster deve coincidir, snapshot compartilhado READ ONLY com pg_dump. Restore só
+em clone aegis-recovery-UUID network=none, tmpfs, sem portas/volumes/workers e
+mesma imagem local por ID. Não aceitar destino arbitrário, reativar jobs, restaurar
+no banco em uso ou apagar backups/journals/volumes de labs. Recibo verificado só
+após hashes/estrutura/linhas/cleanup. pg17-literal-array-casts/1 normaliza somente
+casts de literais varchar[]→text[]; não enfraquecer comparação SQL genericamente.
+Arquivos privados0700/0600, .local e dumps fora do Git; logs de erro também privados.
+Retenção só plano, sem exclusão. Testes: make test-recovery; ensaio real de restore
+Demo é explícito e não autoriza laboratório ofensivo ou Wazuh.
+
+Backup: não herdar config/proxies do Docker do usuário. Manter config vazia/env
+saneado, intenção durável antes de create, reconciliação por nome exato/label
+mesmo após erro ambíguo e fsync dos diretórios. Preservar typmod de arrays,
+collation/flags e rejeição de RLS/tipos/procedures não suportados. Não declarar
+recuperação de recursos que o inventário não verifica.
