@@ -62,6 +62,29 @@ try:
         )
         result.raise_for_status()
         client.headers["x-csrf-token"] = result.json()["csrf_token"]
+        probe = f"""title: Smoke Compose - regra demonstrativa nao implantada
+id: {uuid.uuid4()}
+status: experimental
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection:
+    CommandLine|contains: aegis-marker
+  condition: selection
+"""
+        imported = client.post("/rules", json={"content": probe})
+        imported.raise_for_status()
+        rule_id = imported.json()["id"]
+        versions = client.get(f"/rules/{rule_id}/versions").json()["items"]
+        analysis = client.get(f"/rules/{rule_id}/versions/{versions[0]['id']}/analysis")
+        analysis.raise_for_status()
+        analysis = analysis.json()
+        assert analysis["sha256"] == versions[0]["sha256"]
+        assert analysis["rule_version_id"] == versions[0]["id"]
+        assert analysis["status"] == "no_findings_in_selected_checks"
+        assert analysis["compatibility"]["status"] == "not_configured"
+        assert not analysis["compatibility"]["conversion_performed"]
         lab = client.get("/labs").json()["items"][0]
         campaign = client.post(
             "/campaigns",
@@ -153,7 +176,7 @@ try:
         assert client.get(f"/schedules/{schedule['id']}").json()["state"] == "REVOKED"
         client.post("/auth/logout").raise_for_status()
         print(
-            "PASS: Compose API + restricted SQL role + worker + manual and scheduled runs + exact grant + revoke + 8 synthetic outcomes + JSON reports."
+            "PASS: Compose API + restricted SQL role + worker + manual and scheduled runs + exact grant + revoke + 8 synthetic outcomes + JSON reports + read-only Sigma analysis."
         )
 finally:
     with session_factory()() as db:
