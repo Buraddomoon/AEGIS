@@ -1,5 +1,6 @@
 """Offline field-mapping diagnostics. Does not import, install or execute a backend."""
 
+import hashlib
 import json
 import platform
 from importlib import metadata
@@ -49,7 +50,18 @@ def installed_version(name: str) -> str | None:
         return None
 
 
+class BackendMetadataUnavailable(Exception):
+    pass
+
+
 def backend_status() -> dict:
+    try:
+        return _backend_status()
+    except (OSError, ValueError, KeyError, TypeError):
+        raise BackendMetadataUnavailable("Metadados revisados indisponíveis.") from None
+
+
+def _backend_status() -> dict:
     raw = (settings().fixtures_path / "sigma/backend-metadata.json").read_text()
     snapshot = json.loads(raw)
     expected = {"pysigma-backend-opensearch", "pysigma-backend-elasticsearch"}
@@ -106,7 +118,7 @@ def backend_status() -> dict:
     return {
         "status": "blocked" if blockers else "declared_requirements_satisfied_only",
         "snapshot_reviewed_at": snapshot["reviewed_at"],
-        "snapshot_sha256": digest(raw),
+        "snapshot_sha256": hashlib.sha256(raw.encode()).hexdigest(),
         "packages": packages,
         "blockers": blockers,
     }

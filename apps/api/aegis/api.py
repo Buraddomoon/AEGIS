@@ -14,6 +14,7 @@ from aegis import linux_labs, queries, rule_links, scheduling, schemas, services
 from aegis.config import settings
 from aegis.db import get_db
 from aegis.domain.validation import digest
+from aegis.integrations import sigma_readiness
 from aegis.integrations.sigma_analysis import analyze as analyze_sigma
 from aegis.integrations.yaml_import import parse_sigma
 from aegis.models import (
@@ -600,20 +601,62 @@ def rule_versions(rule_id: str, user: Viewer, db: DB) -> dict:
     }
 
 
-@router.get("/rules/{rule_id}/versions/{version_id}/analysis", tags=["Sigma"])
-def rule_analysis(rule_id: str, version_id: str, user: Viewer, db: DB) -> dict:
+def checked_rule_version(db: Session, rule_id: str, version_id: str) -> RuleVersion:
     saved = services.get_or_404(db, RuleVersion, version_id)
     if saved.rule_id != rule_id:
         raise HTTPException(404, "Versão não encontrada nesta regra.")
-    rate_limit("sigma-analysis:" + user.id, 60, 60)
     if digest(saved.content) != saved.sha256:
         raise HTTPException(409, "Integridade do conteúdo da versão não confere.")
+    return saved
+
+
+@router.get("/rules/{rule_id}/versions/{version_id}/analysis", tags=["Sigma"])
+def rule_analysis(rule_id: str, version_id: str, user: Viewer, db: DB) -> dict:
+    saved = checked_rule_version(db, rule_id, version_id)
+    rate_limit("sigma-analysis:" + user.id, 60, 60)
     try:
         result = analyze_sigma(saved.content)
     except (SigmaError, yaml.YAMLError, ValueError, TypeError, RecursionError):
         raise HTTPException(
             422,
             "Conteúdo não analisável dentro dos limites estáticos; consulte o YAML e o guia Sigma.",
+        ) from None
+    return {
+        "rule_id": rule_id,
+        "rule_version_id": saved.id,
+        "rule_version": saved.version,
+        **result,
+    }
+
+
+@router.get("/sigma/conversion-profiles", tags=["Sigma"])
+def conversion_profiles(user: Viewer) -> dict:
+    rate_limit("sigma-profiles:" + user.id, 60, 60)
+    try:
+        return sigma_readiness.profiles()
+    except sigma_readiness.BackendMetadataUnavailable:
+        raise HTTPException(503, "Metadados revisados de conversão indisponíveis.") from None
+
+
+@router.get("/rules/{rule_id}/versions/{version_id}/conversion-readiness", tags=["Sigma"])
+def conversion_readiness(
+    rule_id: str,
+    version_id: str,
+    user: Viewer,
+    db: DB,
+    profile_id: Annotated[str, Query(max_length=80)] = sigma_readiness.PROFILE_ID,
+) -> dict:
+    if profile_id != sigma_readiness.PROFILE_ID:
+        raise HTTPException(404, "Perfil de conversão não encontrado.")
+    saved = checked_rule_version(db, rule_id, version_id)
+    rate_limit("sigma-readiness:" + user.id, 30, 60)
+    try:
+        result = sigma_readiness.assess(saved.content, profile_id)
+    except sigma_readiness.BackendMetadataUnavailable:
+        raise HTTPException(503, "Metadados revisados de conversão indisponíveis.") from None
+    except (SigmaError, yaml.YAMLError, ValueError, TypeError, RecursionError):
+        raise HTTPException(
+            422, "Conteúdo não analisável dentro dos limites de preparação Sigma."
         ) from None
     return {
         "rule_id": rule_id,

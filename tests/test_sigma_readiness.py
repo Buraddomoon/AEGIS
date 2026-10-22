@@ -116,3 +116,89 @@ def test_unreviewed_backend_and_unknown_profile_fail_closed(monkeypatch):
     }
     with pytest.raises(LookupError):
         readiness.assess(MARKER, "../../other")
+
+
+def test_readiness_api_pins_history_and_does_not_change_coverage_or_audit(admin):
+    from aegis.db import session_factory
+    from aegis.models import AuditEvent
+    from sqlalchemy import func, select
+
+    rule = admin.post("/api/v1/rules", json={"content": MARKER}).json()
+    version = admin.get(f"/api/v1/rules/{rule['id']}/versions").json()["items"][0]
+    url = f"/api/v1/rules/{rule['id']}/versions/{version['id']}/conversion-readiness"
+    first = admin.get(url)
+    assert first.status_code == 200, first.text
+    assert first.json()["field_mapping_complete"] and not first.json()["can_convert"]
+    assert first.json()["sha256"] == version["sha256"]
+    assert (
+        admin.get("/api/v1/sigma/conversion-profiles").json()["items"][0]["id"]
+        == readiness.PROFILE_ID
+    )
+    changed = admin.post(
+        "/api/v1/rules", json={"content": MARKER.replace("AegisSchema:", "UnknownField:")}
+    )
+    assert changed.status_code == 201
+    coverage = admin.get("/api/v1/coverage").json()
+    with session_factory()() as db:
+        count = db.scalar(select(func.count()).select_from(AuditEvent))
+    assert admin.get(url).json() == first.json()
+    assert admin.get("/api/v1/coverage").json() == coverage
+    assert admin.get(url, params={"profile_id": "absent"}).status_code == 404
+    assert admin.get(url.replace(rule["id"], "other")).status_code == 404
+    assert admin.get(url.replace(version["id"], "absent")).status_code == 404
+    with session_factory()() as db:
+        assert db.scalar(select(func.count()).select_from(AuditEvent)) == count
+
+
+def test_readiness_viewer_session_and_integrity(admin):
+    from aegis.db import session_factory
+    from aegis.models import RuleVersion
+
+    rule = admin.post("/api/v1/rules", json={"content": MARKER}).json()
+    version = admin.get(f"/api/v1/rules/{rule['id']}/versions").json()["items"][0]
+    url = f"/api/v1/rules/{rule['id']}/versions/{version['id']}/conversion-readiness"
+    admin.post("/api/v1/auth/logout")
+    assert admin.get(url).status_code == 401
+    assert admin.get("/api/v1/sigma/conversion-profiles").status_code == 401
+    admin.post(
+        "/api/v1/auth/login",
+        headers={"x-aegis-request": "browser"},
+        json={"username": "viewer", "password": "Test-only-randomized-scope-23!"},
+    ).raise_for_status()
+    admin.headers.pop("x-csrf-token", None)
+    assert admin.get(url).status_code == 200
+    with session_factory()() as db:
+        db.get(RuleVersion, version["id"]).content = "changed"
+        db.commit()
+    assert admin.get(url).status_code == 409
+
+
+def test_readiness_limits_and_missing_metadata(admin, monkeypatch, tmp_path):
+    from aegis.config import settings
+    from aegis.db import session_factory
+    from aegis.models import User
+    from aegis.security import redis_client, token_hash
+    from sqlalchemy import select
+
+    rule = admin.post("/api/v1/rules", json={"content": MARKER}).json()
+    version = admin.get(f"/api/v1/rules/{rule['id']}/versions").json()["items"][0]
+    url = f"/api/v1/rules/{rule['id']}/versions/{version['id']}/conversion-readiness"
+    monkeypatch.setattr(settings(), "fixtures_path", tmp_path)
+    assert admin.get(url).status_code == 503
+    assert admin.get("/api/v1/sigma/conversion-profiles").status_code == 503
+    with session_factory()() as db:
+        user_id = db.scalar(select(User.id).where(User.username == "administrator"))
+    redis_client().set("aegis:limit:" + token_hash("sigma-readiness:" + user_id), 30, ex=60)
+    response = admin.get(url)
+    assert response.status_code == 429 and response.headers["retry-after"] == "60"
+
+
+def test_malformed_snapshot_is_unavailable_not_compatible(admin, monkeypatch, tmp_path):
+    from aegis.config import settings
+
+    (tmp_path / "sigma").mkdir()
+    (tmp_path / "sigma/backend-metadata.json").write_text('{"schema_version":1,"packages":[]}')
+    monkeypatch.setattr(settings(), "fixtures_path", tmp_path)
+    with pytest.raises(readiness.BackendMetadataUnavailable):
+        readiness.backend_status()
+    assert admin.get("/api/v1/sigma/conversion-profiles").status_code == 503
