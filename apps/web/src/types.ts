@@ -367,6 +367,7 @@ export interface ConversionReadiness {
   field_mapping_complete: boolean
   mappings: { source_field: string; target_field: string | null }[]
   keyword_selections: string[]
+  field_references: string[]
   blockers: { code: string; message: string }[]
   limitations: string[]
 }

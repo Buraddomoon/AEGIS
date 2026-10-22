@@ -142,6 +142,9 @@ function ReadinessResult({
       {data.keyword_selections.length > 0 && (
         <p>Palavras-chave sem destino: {data.keyword_selections.join(', ')}</p>
       )}
+      {data.field_references.length > 0 && (
+        <p>Referências fieldref sem tratamento: {data.field_references.join(', ')}</p>
+      )}
       <details>
         <summary>Metadados e proveniência</summary>
         <p>

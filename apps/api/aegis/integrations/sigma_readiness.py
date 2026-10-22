@@ -12,6 +12,7 @@ from packaging.utils import canonicalize_name
 from aegis.config import settings
 from aegis.domain.validation import digest
 from aegis.integrations.sigma_analysis import analyze
+from aegis.integrations.yaml_import import safe_sigma_document
 
 READINESS_VERSION = "sigma-readiness/1"
 PROFILE_ID = "wazuh-aegis-marker/1"
@@ -147,7 +148,26 @@ def assess(content: str, profile_id: str = PROFILE_ID) -> dict:
         {"source_field": field, "target_field": profile["fields"].get(field) if matches else None}
         for field in facts["declared_fields"]
     ]
+    # A fieldref value names another field; mapping only item.field would overstate coverage.
+    references = set()
+    stack = [safe_sigma_document(content)["detection"]]
+    while stack:
+        value = stack.pop()
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if "fieldref" in key.split("|")[1:]:
+                    references.update(child if isinstance(child, list) else [child])
+                stack.append(child)
+        elif isinstance(value, list):
+            stack.extend(value)
     blockers = list(backend["blockers"])
+    if references:
+        blockers.append(
+            {
+                "code": "field_reference_mapping_unspecified",
+                "message": "Referências fieldref precisam de tratamento explícito no pipeline; mapeamento incompleto.",
+            }
+        )
     if not matches:
         blockers.append(
             {
@@ -201,8 +221,10 @@ def assess(content: str, profile_id: str = PROFILE_ID) -> dict:
         "field_mapping_complete": matches
         and bool(mappings)
         and all(row["target_field"] is not None for row in mappings)
-        and not facts["keyword_selections"],
+        and not facts["keyword_selections"]
+        and not references,
         "mappings": mappings,
+        "field_references": sorted(references),
         "keyword_selections": facts["keyword_selections"],
         "blockers": blockers,
         "limitations": [

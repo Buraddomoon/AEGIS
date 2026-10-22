@@ -62,6 +62,7 @@ function diagnostic(v: number): ConversionReadiness {
     field_mapping_complete: v === 1,
     mappings: [{ source_field: 'AegisSchema', target_field: v === 1 ? 'data.aegis.schema' : null }],
     keyword_selections: [],
+    field_references: [],
     blockers: [
       {
         code: 'dependency_unsatisfied',
@@ -167,4 +168,13 @@ it('handles an empty profile catalog explicitly', async () => {
   mount(async (path) => (path.endsWith('/versions') ? { items: versions } : { items: [], backend }))
   await screen.findByText('Preparação indisponível')
   expect(screen.queryByText('Conversão bloqueada')).not.toBeInTheDocument()
+})
+it('makes unresolved field references visible even when declared names have paths', async () => {
+  mount(async (path) => {
+    if (path.endsWith('/versions')) return { items: [versions[1]] }
+    if (path.endsWith('/conversion-profiles')) return { items: [profile], backend }
+    return { ...diagnostic(1), field_mapping_complete: false, field_references: ['UnknownField'] }
+  })
+  await screen.findByText('Referências fieldref sem tratamento: UnknownField')
+  expect(screen.getByText(/Campos declarados mapeados: Não/)).toBeInTheDocument()
 })

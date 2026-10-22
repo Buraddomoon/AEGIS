@@ -202,3 +202,12 @@ def test_malformed_snapshot_is_unavailable_not_compatible(admin, monkeypatch, tm
     with pytest.raises(readiness.BackendMetadataUnavailable):
         readiness.backend_status()
     assert admin.get("/api/v1/sigma/conversion-profiles").status_code == 503
+
+
+@pytest.mark.parametrize("reference", ["UnknownField", "AegisSchema"])
+def test_field_references_require_explicit_pipeline_treatment(reference):
+    content = MARKER.replace("AegisSchema: aegis-json/1", f"AegisMarker|fieldref: {reference}")
+    result = readiness.assess(content)
+    assert result["field_references"] == [reference]
+    assert not result["field_mapping_complete"] and not result["can_convert"]
+    assert "field_reference_mapping_unspecified" in {b["code"] for b in result["blockers"]}
