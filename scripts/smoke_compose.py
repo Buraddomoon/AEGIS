@@ -24,7 +24,15 @@ with session_factory()() as db:
           NOT has_table_privilege('aegis_app','schedule_occurrences','UPDATE'),
           NOT has_table_privilege('aegis_app','schedule_occurrences','DELETE'),
           NOT has_table_privilege('aegis_app','telemetry_collections','UPDATE'),
-          NOT has_table_privilege('aegis_app','telemetry_collections','DELETE')
+          NOT has_table_privilege('aegis_app','telemetry_collections','DELETE'),
+          has_table_privilege('aegis_app','rule_test_links','INSERT'),
+          NOT has_table_privilege('aegis_app','rule_test_links','DELETE'),
+          NOT has_column_privilege('aegis_app','rule_test_links','rule_version_id','UPDATE'),
+          NOT has_column_privilege('aegis_app','rule_test_links','rationale','UPDATE'),
+          has_column_privilege('aegis_app','rule_test_links','retired_at','UPDATE'),
+          has_column_privilege('aegis_app','rule_test_links','retired_by','UPDATE'),
+          EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid='rule_test_links'::regclass
+            AND tgname='rule_test_history_guard' AND tgenabled='O')
     """)
     ).one()
     assert all(permissions), "Runtime SQL permissions differ from immutable schedule policy"
