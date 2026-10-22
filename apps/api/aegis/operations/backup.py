@@ -16,6 +16,26 @@ from aegis.domain.validation import digest
 
 FORMAT = "aegis-demo-backup/1"
 Query = Callable[[str], Iterable[str]]
+STRUCTURE_COMPARISON = "pg17-literal-array-casts/1"
+SQL_LITERAL = r"'(?:[^']|'')*'::character varying"
+ARRAY_CAST = re.compile(r"\(ARRAY\[(" + SQL_LITERAL + r"(?:, " + SQL_LITERAL + r")*)\]\)::text\[\]")
+
+
+def constraint_rows(rows: Iterable[str]) -> Iterable[str]:
+    """Normalize only PostgreSQL's literal varchar[] -> text[] round trip.
+
+    No general SQL equivalence inference. Functions, NULLs, other casts/types and
+    arbitrary expressions are preserved and must compare exactly.
+    """
+    for encoded in rows:
+        row = json.loads(encoded)
+
+        def cast_elements(match: re.Match) -> str:
+            literals = re.findall(SQL_LITERAL, match[1])
+            return "ARRAY[" + ", ".join("(" + value + ")::text" for value in literals) + "]"
+
+        row["definition"] = ARRAY_CAST.sub(cast_elements, row["definition"])
+        yield json.dumps(row)
 
 
 def identifier(value: str) -> str:
@@ -111,8 +131,10 @@ def inventory(query: Query, schema: str = "public") -> dict[str, Any]:
             for table in tables
         },
         "structure": {
-            name: fingerprint(query(sql)) for name, sql in structure_queries(schema).items()
+            name: fingerprint(constraint_rows(query(sql)) if name == "constraints" else query(sql))
+            for name, sql in structure_queries(schema).items()
         },
+        "structure_comparison": STRUCTURE_COMPARISON,
         "migration": [
             json.loads(row)
             for row in query(
@@ -130,12 +152,14 @@ def compare(expected: dict, restored: dict) -> None:
 
 def retention_plan(records: list[dict], at: datetime) -> list[dict]:
     """Advisory only: no deletion API, preserve at least seven and thirty days."""
-    ordered = sorted(records, key=lambda r: r["created_at"], reverse=True)
+    if at.tzinfo is None:
+        raise ValueError("Retention timestamps must include timezone")
+    parsed = [(record, datetime.fromisoformat(record["created_at"])) for record in records]
+    if any(created.tzinfo is None for _, created in parsed):
+        raise ValueError("Retention timestamps must include timezone")
+    ordered = sorted(parsed, key=lambda pair: pair[1], reverse=True)
     result = []
-    for position, record in enumerate(ordered):
-        created = datetime.fromisoformat(record["created_at"])
-        if created.tzinfo is None or at.tzinfo is None:
-            raise ValueError("Retention timestamps must include timezone")
+    for position, (record, created) in enumerate(ordered):
         keep = position < 7 or created >= at - timedelta(days=30)
         result.append(
             {

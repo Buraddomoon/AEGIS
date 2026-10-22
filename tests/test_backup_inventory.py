@@ -101,3 +101,42 @@ def test_inventory_rejects_sequence_state_outside_snapshot(db_ready, pg_engine):
                 inventory(lambda sql: conn.execute(text(sql)).scalars(), schema)
         finally:
             conn.execute(text("DROP SEQUENCE backup_test_sequence"))
+
+
+def test_pg17_constraint_roundtrip_normalizes_only_literal_array_casts():
+    from aegis.operations.backup import constraint_rows
+
+    before = "CHECK (((role)::text = ANY ((ARRAY['administrator'::character varying, 'viewer'::character varying])::text[])))"
+    after = "CHECK (((role)::text = ANY (ARRAY[('administrator'::character varying)::text, ('viewer'::character varying)::text])))"
+    assert list(constraint_rows([json.dumps({"definition": before})])) == list(
+        constraint_rows([json.dumps({"definition": after})])
+    )
+    # Same quoting and exact values are retained, including commas and escaped quotes.
+    quoted = "CHECK (x = ANY ((ARRAY['a, b''c'::character varying])::text[]))"
+    normalized = json.loads(next(iter(constraint_rows([json.dumps({"definition": quoted})]))))[
+        "definition"
+    ]
+    assert "('a, b''c'::character varying)::text" in normalized
+    for expression in [
+        "ARRAY[NULL::character varying]",
+        "ARRAY[lower('x')::character varying]",
+        "ARRAY['x'::varchar]",
+        "ARRAY['x'::integer]",
+    ]:
+        raw = {"definition": f"CHECK (x = ANY (({expression})::text[]))"}
+        assert json.loads(next(iter(constraint_rows([json.dumps(raw)])))) == raw
+    different = after.replace("viewer", "operator")
+    assert list(constraint_rows([json.dumps({"definition": different})])) != list(
+        constraint_rows([json.dumps({"definition": before})])
+    )
+
+
+def test_retention_sorts_actual_instants_across_timezone_offsets():
+    records = [
+        {"id": "later", "created_at": "2026-10-22T08:00:00+00:00"},
+        {"id": "earlier", "created_at": "2026-10-22T09:00:00+03:00"},
+    ]
+    assert [r["id"] for r in retention_plan(records, datetime(2026, 10, 22, tzinfo=UTC))] == [
+        "later",
+        "earlier",
+    ]
