@@ -70,6 +70,15 @@ class SigmaImport(Input):
     content: str = Field(min_length=10, max_length=65536)
 
 
+class RuleTestReview(Input):
+    rule_version_id: str = Field(min_length=36, max_length=36)
+    test_id: str = Field(min_length=1, max_length=60)
+    confirm_rule_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    confirm_test_version: int = Field(ge=1)
+    rationale: str = Field(min_length=20, max_length=4000)
+    replaces_id: str | None = Field(default=None, min_length=36, max_length=36)
+
+
 class RunRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str

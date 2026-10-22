@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from aegis import linux_labs, telemetry
+from aegis import linux_labs, rule_links, telemetry
 from aegis.domain.states import TERMINAL, State, check_transition
 from aegis.domain.validation import LOGIC_VERSION, digest
 from aegis.models import (
@@ -102,6 +102,7 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
             for t in tests
         ],
         "rule_versions": {r.id: r.latest_version for r in db.scalars(select(DetectionRule))},
+        "rule_test_links": rule_links.snapshot_links(db, [t.id for t in tests]),
     }
     if not synthetic:
         scope["runner"] = linux_labs.descriptor()

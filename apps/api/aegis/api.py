@@ -8,7 +8,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from aegis import linux_labs, queries, scheduling, schemas, services, telemetry
+from aegis import linux_labs, queries, rule_links, scheduling, schemas, services, telemetry
 from aegis.config import settings
 from aegis.db import get_db
 from aegis.domain.validation import digest
@@ -352,6 +352,7 @@ def technique_detail(
         "mode": mode,
         "telemetry_sources": ["aegis-demo"] if tests else [],
         "operational_rules": [],
+        "planned_rule_links": rule_links.snapshot_links(db, [t.id for t in tests]),
         "limitation": "Regras Sigma cadastradas não são regras implantadas no SIEM.",
     }
 
@@ -539,6 +540,36 @@ def revoke_schedule(schedule_id: str, data: schemas.Confirm, user: Admin, db: DB
 @router.get("/coverage/compare", tags=["Coverage"])
 def compare(before: str, after: str, user: Viewer, db: DB) -> dict:
     return queries.compare(db, before, after)
+
+
+@router.get("/rule-test-links", tags=["Sigma"])
+def test_rule_links(
+    user: Viewer,
+    db: DB,
+    rule_id: str | None = None,
+    test_id: str | None = None,
+    include_retired: bool = False,
+    offset: Offset = 0,
+    limit: Limit = 50,
+) -> dict:
+    return rule_links.list_links(
+        db,
+        rule_id=rule_id,
+        test_id=test_id,
+        include_retired=include_retired,
+        offset=offset,
+        limit=limit,
+    )
+
+
+@router.post("/rules/{rule_id}/test-links", status_code=201, tags=["Sigma"])
+def review_test_rule(rule_id: str, data: schemas.RuleTestReview, user: Operator, db: DB) -> dict:
+    return queries.record(rule_links.review(db, rule_id, data, user))
+
+
+@router.delete("/rules/{rule_id}/test-links/{link_id}", tags=["Sigma"])
+def retire_test_rule(rule_id: str, link_id: str, user: Operator, db: DB) -> dict:
+    return queries.record(rule_links.retire(db, rule_id, link_id, user))
 
 
 @router.get("/rules", tags=["Sigma"])
