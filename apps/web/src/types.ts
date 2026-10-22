@@ -68,6 +68,7 @@ export interface Scope {
   mode: string
   synthetic: boolean
   rule_versions: Record<string, number>
+  rule_test_links?: RuleTestLink[]
   clock_skew_seconds: number
   ingestion_window_seconds: number
   test_definitions: {
@@ -232,6 +233,31 @@ export interface RuleVersion {
   sha256: string
   created_at: string
 }
+export interface RuleTestLink {
+  id: string
+  rule_id: string
+  current_rule_title: string
+  rule_version_id: string
+  rule_version: number
+  rule_sha256: string
+  latest_rule_version: number
+  test_id: string
+  test_name: string
+  test_version: number
+  current_test_version: number
+  rationale: string
+  created_by: string
+  created_at: string
+  retired_at: string | null
+  retired_by: string | null
+  review_required: boolean
+  purpose: 'planning_only_not_deployed'
+}
+export interface ScopeChange {
+  key: string
+  before: unknown
+  after: unknown
+}
 export interface Audit {
   id: string
   actor_id: string | null
@@ -248,6 +274,13 @@ export interface Comparison {
   same_scope: boolean
   before_scope: Scope
   after_scope: Scope
+  scope_changes: {
+    rule_versions: ScopeChange[]
+    test_definitions: ScopeChange[]
+    environment: ScopeChange[]
+    rule_test_links: ScopeChange[] | null
+    link_context_recorded: boolean
+  }
   tests: { test_id: string; before: string; after: string; changed: boolean }[]
   limitation: string
 }

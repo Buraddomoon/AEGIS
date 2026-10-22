@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ExternalLink, FlaskConical, Grid2X2, List, Search, ShieldCheck } from 'lucide-react'
 import { Badge, date, Empty, Failure, Go, Loading, Modal, PageHeading, Panel, useData } from './lib'
-import type { Page, Technique, Test } from './types'
+import type { Page, RuleTestLink, Technique, Test } from './types'
 
 const tactics: Record<string, string> = {
   reconnaissance: 'Reconhecimento',
@@ -271,6 +271,7 @@ function TechniqueDetails({
       tests: Test[]
       coverage_history: { run_id: string; outcome: string; created_at: string }[]
       limitation: string
+      planned_rule_links: RuleTestLink[]
     }
   >(`/techniques/${id}?mode=${mode}`)
   return (
@@ -302,6 +303,25 @@ function TechniqueDetails({
             ) : (
               <p className="muted-text">Nenhuma simulação implementada para esta técnica.</p>
             )}
+            <h3>Regras associadas para planejamento</h3>
+            {data.data.planned_rule_links?.length ? (
+              data.data.planned_rule_links.map((link) => (
+                <div className="detail-row" key={link.id}>
+                  <span>
+                    {link.current_rule_title} · Sigma v{link.rule_version} · {link.test_id}
+                  </span>
+                  <span className="subtle-tag">
+                    {link.review_required ? 'Revisão necessária' : 'Planejamento · não implantada'}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="muted-text">Nenhum vínculo revisado para os testes deste modo.</p>
+            )}
+            <p className="muted-text">
+              Associação não comprova implantação ou detecção.{' '}
+              <Go to="rules">Consultar regras e revisões</Go>
+            </p>
             <h3>Histórico de cobertura · {mode === 'demo' ? 'Demo sintético' : 'Linux real'}</h3>
             {data.data.coverage_history.length ? (
               data.data.coverage_history.map((h, i) => (

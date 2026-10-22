@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LinuxRegistration } from './LinuxRegistration'
 import { WazuhBinding } from './WazuhBinding'
+import { RuleTestLinks } from './RuleTestLinks'
 import {
   CheckCircle2,
   FileCode2,
@@ -220,7 +221,8 @@ function VerificationHistory({ id, onClose }: { id: string; onClose: () => void 
 export function Rules({ user }: { user: User }) {
   const data = useData<Page<Rule>>('/rules?limit=1000'),
     [creating, setCreating] = useState(false),
-    [selected, setSelected] = useState<Rule | null>(null)
+    [selected, setSelected] = useState<Rule | null>(null),
+    [linked, setLinked] = useState<Rule | null>(null)
   return (
     <>
       <PageHeading
@@ -273,6 +275,9 @@ export function Rules({ user }: { user: User }) {
                         <History size={16} />
                         Versões e comparação
                       </button>
+                      <button className="text-link" onClick={() => setLinked(r)}>
+                        Testes e revisões
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -287,6 +292,7 @@ export function Rules({ user }: { user: User }) {
       </Panel>
       {creating && <SigmaForm onClose={() => setCreating(false)} />}{' '}
       {selected && <RuleHistory rule={selected} onClose={() => setSelected(null)} />}
+      {linked && <RuleTestLinks rule={linked} user={user} onClose={() => setLinked(null)} />}
     </>
   )
 }
