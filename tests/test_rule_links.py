@@ -10,7 +10,7 @@ from aegis.schemas import RuleTestReview
 from aegis.worker import claim_next, process_run
 from conftest import create_queued
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from test_integrations import SIGMA
 
@@ -174,6 +174,23 @@ def test_database_rejects_duplicate_active_links_and_mismatched_version(admin):
             )
             with pytest.raises(IntegrityError):
                 db.commit()
+
+
+def test_database_history_cannot_be_rewritten_or_deleted(admin):
+    rule, version = import_rule(admin)
+    url = f"/api/v1/rules/{rule['id']}/test-links"
+    link = admin.post(url, json=review_body(version)).json()
+    assert admin.delete(url + "/" + link["id"]).status_code == 200
+    for statement in [
+        update(RuleTestLink)
+        .where(RuleTestLink.id == link["id"])
+        .values(retired_at=None, retired_by=None),
+        update(RuleTestLink).where(RuleTestLink.id == link["id"]).values(rationale="rewritten"),
+        delete(RuleTestLink).where(RuleTestLink.id == link["id"]),
+    ]:
+        with session_factory()() as db, pytest.raises(IntegrityError):
+            db.execute(statement)
+    assert links(admin, rule, include_retired=True)["items"][0]["rationale"] == link["rationale"]
 
 
 def test_scope_and_report_preserved_after_rule_review(admin):

@@ -22,7 +22,7 @@ def describe(link: RuleTestLink, version: RuleVersion, rule: DetectionRule, test
     return {
         "id": link.id,
         "rule_id": rule.id,
-        "rule_title": rule.title,
+        "current_rule_title": rule.title,
         "sigma_id": rule.sigma_id,
         "rule_version_id": version.id,
         "rule_version": version.version,
