@@ -1,5 +1,14 @@
 # Changelog
 
+## Continuidade — inspeção Wazuh antes do efeito real
+
+- Novo `make wazuh-lab-inspect`: valida metadados efetivos de isolamento do projeto
+  exato via Docker somente leitura, sem iniciar serviços ou executar dentro deles.
+- Recusa deriva de portas/redes/mounts/privilégios/limites e serviços extras;
+  saída contém checks e booleans, sem Environment, segredos ou diagnóstico bruto.
+- Testes de snapshots verificam fronteiras e falhas. Wazuh real permanece pendente
+  sob o preflight/autorização existente; não inferir ingestão desses checks.
+
 ## Continuidade — ensaio Wazuh isolado preparado
 
 - Projeto opt-in separado com Wazuh4.14.9 oficial fixado por digest linux/amd64,

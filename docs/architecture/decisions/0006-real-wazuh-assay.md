@@ -46,6 +46,14 @@ um novo marcador dependem de autorização específica, conforme a instrução o
   rule.id, IDs de laboratório/ativo/execução, marcador, timestamp, hash, resumo de
   coleta, cleanup e relatório. DETECTED fica condicionado às evidências reais.
   Falha de captura visual não autoriza repetir o efeito.
+- Conferir metadados do runtime com `make wazuh-lab-inspect`: política explícita
+  independente do Compose, daemon Unix local, apenas ps/ls/inspect do projeto
+  exato. Inventários, mounts, redes/membros/IPs, portas, limites e privilégios
+  precisam coincidir. Não imprimir Config.Env, caminhos privados ou diagnóstico
+  bruto. Campos opcionais Docker são lidos sem falhar na ausência; grants de
+  dispositivos adicionais são recusados. Esse check não executa dentro dos
+  containers, corrige configuração ou demonstra ingestão; completar inspeção
+  interna de mounts/permissões e os demais passos do ensaio antes de aprovar.
 
 ## Situação do host e autorização
 

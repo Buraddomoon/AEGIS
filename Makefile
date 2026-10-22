@@ -107,7 +107,7 @@ test-wazuh:
 	$(VENV)/pytest tests/test_wazuh_collection.py tests/test_wazuh_campaigns.py tests/test_marker_observer.py tests/test_wazuh_tls.py -q
 
 # A separate real Wazuh assay is never started by default. See labs/wazuh/ASSAY.md.
-.PHONY: wazuh-lab-prepare wazuh-lab-config wazuh-lab-preflight test-wazuh-preparation wazuh-lab-pull wazuh-lab-hash-users wazuh-lab-build wazuh-lab-up wazuh-lab-check-rule wazuh-lab-status wazuh-lab-down
+.PHONY: wazuh-lab-prepare wazuh-lab-config wazuh-lab-preflight test-wazuh-preparation wazuh-lab-pull wazuh-lab-hash-users wazuh-lab-build wazuh-lab-up wazuh-lab-inspect wazuh-lab-check-rule wazuh-lab-status wazuh-lab-down
 wazuh-lab-prepare:
 	$(VENV)/python scripts/prepare_wazuh_lab.py
 wazuh-lab-config:
@@ -115,7 +115,7 @@ wazuh-lab-config:
 wazuh-lab-preflight:
 	$(VENV)/python scripts/wazuh_host_preflight.py
 test-wazuh-preparation:
-	$(VENV)/pytest tests/test_wazuh_host_preflight.py tests/test_wazuh_lab_preparation.py tests/test_wazuh_lab_lifecycle.py tests/test_marker_log.py tests/test_marker_observer.py -q
+	$(VENV)/pytest tests/test_wazuh_host_preflight.py tests/test_wazuh_lab_preparation.py tests/test_wazuh_lab_lifecycle.py tests/test_wazuh_runtime_inspection.py tests/test_marker_log.py tests/test_marker_observer.py -q
 wazuh-lab-pull:
 	$(VENV)/python scripts/wazuh_lab.py pull --confirm-local-wazuh
 wazuh-lab-hash-users:
@@ -124,6 +124,8 @@ wazuh-lab-build:
 	$(VENV)/python scripts/wazuh_lab.py build --confirm-local-wazuh
 wazuh-lab-up:
 	$(VENV)/python scripts/wazuh_lab.py up --confirm-local-wazuh
+wazuh-lab-inspect:
+	$(VENV)/python scripts/inspect_wazuh_lab.py
 wazuh-lab-check-rule:
 	$(VENV)/python scripts/wazuh_lab.py check-rule --confirm-local-wazuh
 wazuh-lab-status:

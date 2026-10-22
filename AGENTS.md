@@ -1,5 +1,14 @@
 # ÆGIS — instruções de engenharia
 
+Inspeção Wazuh antes do efeito: `make wazuh-lab-inspect` só usa ps/ls/inspect do
+daemon Unix local e projeto exato; não iniciar, executar dentro de containers ou
+consultar SIEM nesse comando. Política revisada independente de Compose, campos
+opcionais com index nos templates Docker; nunca imprimir Config.Env/inspect bruto.
+Recusar DeviceCgroupRules, mounts e membros inesperados. Testes opcionais de
+projeção só leem objetos Demo já existentes; ausentes significam skip, sem criar
+infraestrutura. Passar metadados não substitui mounts/permissões internos, mTLS,
+agente Active, regras, ACL ou ingestão nem autoriza marcador. Ver ADR0006/ASSAY.
+
 ## Política obrigatória de versionamento
 
 Use exclusivamente `main`. Não criar branches temporárias nem pull requests. Reutilizar `origin` privado; o nome autorizado do repositório GitHub é `AEGIS`, em maiúsculas, em `Buraddomoon/AEGIS`. Se o remoto estiver ausente, reutilizar esse repositório privado antes de considerar criar outro. `ÆGIS` permanece o nome do produto; GitHub aceita somente ASCII no nome do repositório. Verificar visibilidade antes do primeiro push. Nunca tornar público nem mudar visibilidade sem autorização.

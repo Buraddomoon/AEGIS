@@ -49,6 +49,15 @@ fsync/restart/dedupe, conflito da mesma execução, limite, escritor exclusivo,
 links/FIFO/permissões e linha parcial. O hash tool é simulado nesse teste: isso não
 valida BCrypt ou a imagem oficial. Nenhum Wazuh sobe na CI.
 
+O mesmo target inclui `test_wazuh_runtime_inspection.py`: snapshots Docker
+explicitamente fictícios, com mutações de portas, socket Docker, mounts RO/RW,
+volumes de outro projeto, namespaces do host, usuário root, rede extra, membro
+externo, imagem sem digest, ausência de limites e saúde/migração incompletas.
+Testa também que o coletor só usa ps/ls/inspect no daemon local e no projeto exato,
+omite Config.Env e não expõe erros/paths brutos. `make wazuh-lab-inspect` é somente
+leitura e retorna exit1 se o projeto não existe. Esses testes não validam um
+runtime Wazuh nem substituem a inspeção das permissões/mounts dentro do container.
+
 O ensaio [real proposto](../../labs/wazuh/ASSAY.md) foi autorizado sob preflight;
 permanece bloqueado por recursos disponíveis. `check-rule` futuro usa log sintético
 no sandbox wazuh-logtest e não equivale à ingestão real do marcador.

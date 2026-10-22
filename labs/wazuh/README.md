@@ -8,6 +8,12 @@ leitura e instrumentação RO. O usuário autorizou somente esse ensaio quando o
 preflight passar. A RAM disponível ainda está abaixo do piso de 8 GiB; nenhum
 Wazuh foi baixado/iniciado. Não confundir autorização com resultado validado.
 
+Depois do início autorizado, `make wazuh-lab-inspect` compara o estado Docker
+efetivo com o isolamento revisado, sem executar dentro dos containers nem expor
+Environment. Serviços ausentes/divergentes retornam exit1. Não substitui conferir
+mounts/permissões internos, mTLS, agente, regra, ACL e ingestão real; consulte o
+checklist completo do ensaio.
+
 ## Contrato e configuração
 
 `collection.example.json` contém IDs **fictícios**, não destinos autorizados. Copie para local ignorado, substitua IDs por Laboratory/Asset reais cadastrados e agent.id por agente inequivocamente pertencente a esse laboratório. `000` é manager, não endpoint. URL/IP/credenciais/CA ficam no ambiente de implantação, não no arquivo de política nem na API. Não envie segredos pelo navegador ou chat.

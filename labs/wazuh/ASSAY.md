@@ -92,6 +92,7 @@ make wazuh-lab-hash-users
 make wazuh-lab-build
 make wazuh-lab-up
 make wazuh-lab-status
+make wazuh-lab-inspect
 make wazuh-lab-check-rule
 ```
 
@@ -105,6 +106,15 @@ Antes de criar/aprovar qualquer efeito:
    mounts RO/RW, opções tmpfs reais, UID/caps, isolamento e ausência de Docker socket.
    Validar o isolamento não apenas pelo YAML. Imagens podem exigir ajustes que
    só serão conhecidos no runtime; não desabilitar TLS/controles para fazê-las subir.
+   `make wazuh-lab-inspect` consulta somente ps/ls/inspect no daemon Unix local,
+   filtra o projeto exato e compara os metadados efetivos com uma allowlist
+   independente do Compose: membros/redes/IPs/portas, volumes/mounts, privilégios,
+   usuários, limites, imagens fixadas, saúde e migração concluída. Recusa serviços
+   extras, rede com outro container e volumes de outro projeto. Laboratório
+   ausente ou divergente retorna exit1, sem iniciar/reparar nada. Não imprime
+   Environment, credenciais, paths privados ou inspect completo. Ainda conferir
+   dentro dos containers as opções de montagem e permissões do filesystem: a
+   inspeção de metadados não demonstra isolamento do kernel, mTLS ou ingestão.
 2. `check-rule` usa `wazuh-logtest -U 100200:3:json` com JSON **sintético de sandbox**,
    não gravado no log do agente nem no banco de evidências. Checar conflitos do ID e
    status Active do agente exato. Isso testa parsing/regra, não ingestão real.
