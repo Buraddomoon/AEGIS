@@ -1,0 +1,20 @@
+{
+  "application_started": false,
+  "backup_id": "20261022T210359Z-e689b5a47fa44a69b969a726982324de",
+  "clone_removed": true,
+  "dump_sha256": "ee0013a880912a08fd5d2920c24ae927a8d1b71f4e3cd2b0d444a81536e40bcc",
+  "elapsed_seconds": 9.488,
+  "format": "aegis-demo-backup/1",
+  "inventory_format": "aegis-pg-inventory/2",
+  "limitations": [
+    "No failover or application restart tested",
+    "No RPO/RTO guarantee",
+    "No roles, secrets, Redis or runner journals backed up"
+  ],
+  "network": "none",
+  "rows": 2884,
+  "status": "verified",
+  "structure_comparison": "pg17-literal-array-casts/1",
+  "tables": 30,
+  "verified_at": "2026-10-22T21:04:41.989119+00:00"
+}
