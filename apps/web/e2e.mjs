@@ -168,6 +168,79 @@ try {
   assert.equal(scheduledReport.run.approval.schedule_authorization_id, scheduledReport.run.schedule_occurrence.authorization_id)
   assert.ok(scheduledReport.run.schedule_id)
   assert.equal(scheduledReport.run.schedule_plan.plan_hash, scheduledReport.run.schedule_authorization.plan_hash)
+  const sigma = `title: AEGIS demo planning review
+id: 8b065c14-928c-4f6c-898c-aef9e9729028
+status: experimental
+description: Synthetic demonstration of planning metadata; not deployed
+logsource:
+  product: linux
+  category: process_creation
+detection:
+  selection:
+    CommandLine|contains: aegis-marker
+  condition: selection
+tags:
+  - attack.t1059.004
+level: informational
+`
+  async function importSigma(content) {
+    await button('Importar regra Sigma')
+    await page.type('dialog textarea', content)
+    const saved = page.waitForResponse(r => r.url().endsWith('/api/v1/rules') && r.request().method() === 'POST')
+    await button('Validar e salvar', 'dialog button')
+    assert.equal((await saved).status(), 201, 'Sigma import must succeed')
+    await page.waitForFunction(() => !document.querySelector('dialog[open]'))
+  }
+  async function reviewLink() {
+    await page.select('dialog form select', 'demo-shell')
+    await page.type('dialog form textarea', 'Planejamento Demo: avaliar a fonte de criação de processos e o comportamento benigno de shell. Não comprova implantação nem detecção.')
+    await page.waitForFunction(() => {
+      const checkbox = document.querySelector('dialog form input[type="checkbox"]')
+      return checkbox && !checkbox.disabled
+    })
+    await page.$eval('dialog form input[type="checkbox"]', el => el.scrollIntoView({block: 'center'}))
+    await page.locator('dialog form input[type="checkbox"]').click()
+    await page.waitForFunction(() => document.querySelector('dialog form input[type="checkbox"]')?.checked)
+    await button('Registrar revisão', 'dialog button')
+    await page.waitForFunction(() => document.querySelector('dialog form textarea')?.value === '')
+  }
+  await navigate('rules')
+  await importSigma(sigma)
+  await button('Testes e revisões')
+  await reviewLink()
+  await text('Revisado para planejamento')
+  await screenshot('rule-test-links')
+  await page.click('dialog button[aria-label="Fechar"]')
+  await navigate('campaigns')
+  await button('Solicitar execução')
+  await page.waitForFunction(() => location.hash.includes('executions/'))
+  const reviewedId = await page.evaluate(() => location.hash.split('/')[1])
+  await approveAndRun()
+  const reviewedReport = await page.evaluate(async id => (await fetch('/api/v1/reports/' + id)).json(), reviewedId)
+  assert.equal(reviewedReport.run.scope.rule_test_links.length, 1)
+  assert.equal(reviewedReport.run.scope.rule_test_links[0].rule_version, 1)
+  await navigate('rules')
+  await importSigma(sigma.replace('level: informational', 'level: low'))
+  await button('Testes e revisões')
+  await text('Revisão necessária')
+  await reviewLink()
+  await button('Retirar vínculo', 'dialog button')
+  await button('Confirmar retirada', 'dialog button')
+  await text('Nenhum vínculo registrado')
+  await page.click('dialog .toolbar input[type="checkbox"]')
+  await text('Retirado')
+  await page.click('dialog button[aria-label="Fechar"]')
+  const historicalReport = await page.evaluate(async id => (await fetch('/api/v1/reports/' + id)).json(), reviewedId)
+  assert.deepEqual(historicalReport, reviewedReport, 'Rule reviews must not rewrite historical reports')
+  await navigate('coverage')
+  await page.select('.comparison-form select', firstId)
+  const diffSelects = await page.$$('.comparison-form select')
+  await diffSelects[1].select(reviewedId)
+  await button('Comparar execuções')
+  await text('Configurações diferentes')
+  await text('Versões do inventário Sigma · 1 alteração(ões)')
+  await text('Associações entre regras e testes · 1 alteração(ões)')
+  await screenshot('scope-comparison')
   for (const [route, heading] of [
     ['tests', 'Biblioteca de testes'],
     ['reports', 'Relatórios'],
@@ -182,7 +255,7 @@ try {
   await screenshot('wazuh-preparation')
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
   await navigate('overview')
-  await text('12 testes concluídos')
+  await text('16 testes concluídos')
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     true,
@@ -193,11 +266,11 @@ try {
   console.log(
     JSON.stringify({
       result: 'PASS',
-      flow: 'login → catalog → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report',
-      runs: 3,
-      tests: 12,
+      flow: 'login → catalog → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report → Sigma review → version change → retirement → historical scope comparison',
+      runs: 4,
+      tests: 16,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 6,
+      screenshots: 8,
       browserErrors: errors.length,
     }),
   )

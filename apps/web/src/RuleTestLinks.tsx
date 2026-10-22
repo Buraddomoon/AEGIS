@@ -49,7 +49,7 @@ export function RuleTestLinks({
         comprova detecção. Alterar vínculos exige nova solicitação/aprovação dos escopos afetados.
       </div>
       <div className="toolbar">
-        <label>
+        <label className="checkbox-label">
           <input
             type="checkbox"
             checked={history}
@@ -254,7 +254,7 @@ export function RuleTestLinks({
               }}
             />
           </label>
-          <label>
+          <label className="checkbox-label">
             <input
               type="checkbox"
               required
