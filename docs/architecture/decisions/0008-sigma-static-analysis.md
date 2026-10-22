@@ -7,9 +7,13 @@ analisar uma versão imutável, sem executar consultas, modificar aprovações o
 implantar regras. Resposta identifica hash, versão do analisador e pySigma.
 Não criar tabela/cache: análise pura e determinística sobre conteúdo salvo.
 
-Usar allowlist explícita de validadores oficiais já instalados no pySigma2.0.1:
-DanglingDetection, InvalidModifierCombinations, DoubleWildcard e ControlCharacter.
-Resolver condições com o parser para detectar referências inválidas. Severidade
+Usar o modelo e parser oficiais pySigma2.0.1 com checks próprios explícitos:
+resolução de condições, seleção não referenciada, all sem contains, curingas
+consecutivos e caracteres de controle. Não importar sigma.validators.core:
+seu __init__ descobre todos os módulos e importa loaders MITRE/DiskCache, mesmo
+quando só um validador é solicitado. Inspeção e teste revelaram essa dependência;
+não enfraquecer a revisão existente do advisory para habilitar esse caminho.
+Não copiar validadores upstream; checks locais são parciais e identificados AEGIS. Severidade
 do validador é prioridade de revisão da regra, não risco de negócio. Retornar
 achados normalizados ordenados e detalhes mínimos (campo/seleção), sem objetos
 Python, exceções brutas, plugins dinâmicos, cache DiskCache ou acesso à rede.
