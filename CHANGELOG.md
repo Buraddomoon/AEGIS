@@ -1,5 +1,17 @@
 # Changelog
 
+## Continuidade 2026-10-22 — revisões Sigma e comparação de escopos
+
+- Associações versionadas entre regras e testes, justificativa/autor, revisão
+  necessária após nova versão, substituição otimista, retirada e histórico.
+- FK composta, unicidade ativa, trigger monotônico, RBAC/CSRF, auditoria e
+  privilégios SQL por coluna; sem alteração de expected_rule ou veredictos.
+- Escopos novos guardam vínculos; comparação explica mudanças de inventário,
+  testes e ambiente, distinguindo contexto legado desconhecido. Histórico intacto.
+- UI em regras/matriz/cobertura, confirmação atrelada ao payload revisado e
+  seletores estáveis enquanto comparação é consultada. Nenhuma implantação Sigma
+  ou novo ensaio real; autorização Wazuh encerrada permanece consumida.
+
 ## Continuidade 2026-10-22 — pipeline Wazuh real validado
 
 - Ensaio único autorizado com imagens 4.14.9 fixadas, mTLS, agenteActive, TLS,

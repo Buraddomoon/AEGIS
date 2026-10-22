@@ -20,7 +20,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Agendamentos Demo com aprovação explícita, validade, duração, limite de horários, pausa/revogação e histórico de autorizações.
 - Eventos originais, hashes SHA-256, justificativas de correlação, evidências inspecionáveis e auditoria.
 - Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
-- Inventário Sigma com parsing pySigma, importação YAML limitada e versões imutáveis; nenhuma implantação automática de regras.
+- Inventário Sigma com parsing pySigma, YAML limitado e versões imutáveis; associação revisada com testes, histórico e sinalização de revisão necessária. Nenhuma implantação automática de regras.
 - Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; campanha integrada autorizada validou API/worker/SQL runtime, recibos, cleanup e UI, sem SIEM.
 - Coleta Wazuh opt-in no worker: binding administrativo de agente/regra, política/hash aprovados, polling com prazo integral, paginação, resumo imutável e UI/relatórios. Validação real do pipeline incluiu TLS, agente, regra, ACLs, evento original, evidência e relatório.
 - [Ensaio Wazuh registrado](docs/evidence/wazuh-2026-10-22/README.md): uma campanha, um marcador de 43 bytes, um alerta da regra 100200, cleanup conferido. Containers/redes encerrados; volumes preservados. Não integra o Demo nem os testes padrão; nova execução requer novo escopo autorizado.
@@ -68,6 +68,16 @@ Isso representa **1 detectado / 3 testes válidos = 33,3% neste escopo sintétic
 Para automatizar: abra **Agendamentos**, crie um plano para a campanha, defina início/fim, intervalo e limite de horários, revise e autorize como administrador. O worker executa automaticamente dentro desses limites. Atrasos acima de 30 segundos e laboratório ocupado geram descartes auditados, consumindo o orçamento sem backlog. Pausar exige nova aprovação para retomar; revogar encerra o plano. [Política e operação](docs/operations/scheduling.md).
 
 ![Agendamento Demo real com ocorrência e autorização rastreáveis](docs/images/schedules.png)
+
+Regras Sigma podem ser associadas a testes após revisão explícita de versões,
+com justificativa, histórico e retirada. Novas versões sinalizam revisão
+necessária. A comparação explica mudanças dos escopos registrados, preservando
+relatórios antigos. Vínculos não comprovam implantação nem detecção.
+[Guia de operação](docs/operations/rule-test-reviews.md).
+
+![Revisão real da interface usando uma regra de demonstração não implantada](docs/images/rule-test-links.png)
+
+![Comparação real de dois escopos Demo com versões e vínculos diferentes](docs/images/scope-comparison.png)
 
 ## Linux Lab integrado — etapa 3
 
@@ -142,7 +152,7 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 - MVP de workspace único: usuários autenticados compartilham as consultas; não há isolamento multi-tenant, MFA, SSO ou recuperação de senha pela interface.
 - Linux real é limitado a um marcador fixo, sem atribuição ATT&CK artificial, Atomic ou comandos genéricos. Recuperação após crash mantém quarentena até cleanup confirmado; rotação de binding/certificado original ainda exige intervenção manual. Demo usa cancelamento cooperativo; Linux supervisiona processo e lease.
 - Wazuh validado apenas em um laboratório próprio com versão 4.14.9, schema aegis-json/1, agente Linux e regra de instrumentação100200. Isso não valida outras versões, Windows, regras padrão ou técnicas ATT&CK. Archives e coleta de ambientes empresariais não foram testados. Fixtures e reprocessamento de evidência gravada não são novas validações externas.
-- Sigma validado sintaticamente não equivale a detecção implantada. Associação operacional com testes e conversão de SIEM ficam para próxima etapa.
+- Sigma validado sintaticamente não equivale a detecção implantada. Associação com testes registra planejamento revisado; conversão compatível, validação semântica e implantação no SIEM continuam pendentes.
 - Agendamento habilitado somente para Demo: até 16 planos ativos, 100 horários por plano, mínimo 60 segundos de intervalo e validade máxima de 90 dias. Sem cron livre, Lab real, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
 - Há um aviso transitivo conhecido em DiskCache, exigido pelo pySigma. O caminho de parsing usado não importa/utiliza o cache vulnerável; a revisão e sua verificação estão em [advisories](docs/security/dependency-advisories.json). Não alegamos ausência de vulnerabilidades.
 - Instalação padrão é HTTP em loopback. Exposição externa exige TLS, cookie Secure, revisão operacional e gestão própria de segredos. Não anunciar como enterprise-ready.

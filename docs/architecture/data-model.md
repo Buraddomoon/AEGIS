@@ -27,6 +27,8 @@ erDiagram
   ValidationResult ||--o{ DetectionEvidence : justifica
   TelemetryEvent ||--o{ DetectionEvidence : sustenta
   DetectionRule ||--o{ RuleVersion : versiona
+  RuleVersion ||--o{ RuleTestLink : revisada
+  TestDefinition ||--o{ RuleTestLink : planeja
   User ||--o{ AuditEvent : atribui
   Campaign ||--o{ Schedule : agenda
   Schedule ||--o{ ScheduleAuthorization : autoriza
@@ -50,3 +52,5 @@ Retenção inicial: não há expurgo automático. Históricos e auditoria são m
 Linux: binding com runner único, revisão e hash da configuração pública; verificações append-only com validade e versão do ambiente. Dispatch único por execução persiste spec/hash antes da rede; somente generation pode receber UPDATE no papel runtime. Recibo e cleanup únicos por execução são append-only, com comparação de hash e conteúdo em retries. JSON contém mensagens tipadas do protocolo, não comandos arbitrários. Estes comprovantes não são TelemetryEvent nem DetectionEvidence. Migração d4465b7aca2a preserva registros Demo existentes.
 
 Migração 4b72c7bb8548: WazuhBinding relaciona laboratório/ativo ao agent.id externo único, regra, schema, revisão e hash de configuração. TelemetryCollection é resumo imutável por execução, separado dos documentos originais; contém tentativas/período, disponibilidade/completude/janela e razão pública. Runtime não recebe UPDATE/DELETE em resumos. Payloads de eventos mantêm identificadores originais; policy snapshots guardam mapping usado historicamente, mesmo após remover o vínculo atual.
+
+Migrações ec3020ae8711/977fd0c42ae8: RuleTestLink fixa versão/hash Sigma (via FK composta), versão do teste, justificativa e responsável. Índice parcial garante um vínculo ativo por par regra/teste. Somente primeira retirada é permitida por trigger; versões/autores/justificativas e retiradas anteriores não recebem UPDATE nem DELETE. Scopes novos guardam snapshots ordenados dos vínculos relevantes; ausência do campo em histórico antigo é contexto desconhecido. Associação não participa dos veredictos de detecção.

@@ -79,5 +79,7 @@ temporárias são removidas somente após desativação confirmada. Faz parte de
 `pytest tests/test_wazuh_recorded_assay.py -q` verifica os artefatos gravados,
 normalização do schema real e recusa de identidade/regra alteradas, sem serviços
 ou acesso ao SIEM. Esse reprocessamento offline não equivale a nova coleta real.
-Última rodada: make test, **311 Python e 14 frontend passaram**; lint e CI aprovados.
+Na rodada do marco Wazuh: make test, **311 Python e 14 frontend passaram**; lint e CI aprovados.
 Não foi repetido E2E de navegador nem criado screenshot Wazuh nesta rodada.
+
+Revisões Sigma/teste: `pytest tests/test_rule_links.py tests/test_coverage_comparison.py tests/test_migrations.py -q` verifica revisões concorrentes/obsoletas, RBAC/CSRF, imutabilidade no banco, invalidação de início/agendamento, migração populada e comparação histórica. `npm --prefix apps/web test` cobre payload confirmado versus atualização de cache e resposta atrasada da comparação. `make e2e` inclui importar/revisar/versionar/retirar vínculos e prova de relatório histórico idêntico, somente Demo sintético. `make smoke` confere também privilégios SQL/trigger no papel runtime. Nada inicia ou repete Wazuh.

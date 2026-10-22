@@ -34,3 +34,5 @@ Diário/volumes preservados e autorização consumida. [Evidência registrada](.
 Esse aceite cobre só o pipeline de instrumentação; zero técnicas ATT&CK avaliadas,
 sem archives, outras versões, Windows ou eficácia de EDR. Testes offline dos
 artefatos não constituem outro ensaio real. Não houve nova rodada E2E de navegador.
+
+Incremento de engenharia de detecção: testes PostgreSQL/API cobrem vínculos/versões, concorrência, revisão obsoleta, retirada monotônica, RBAC/CSRF, migração populada, invalidação de início/agendamento e preservação de relatórios. UI permite revisão/retirada/histórico e explica mudanças do escopo. Associação é planejamento; conversão/implantação de regras não estão aceitas. Fluxo Firefox Demo validado com 4 runs/16 testes sintéticos, incluindo troca de versão, retirada e relatório histórico idêntico. Contagens finais e CI em PROGRESS.

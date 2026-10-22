@@ -31,7 +31,14 @@ sem técnica ATT&CK ou eficácia de EDR. Não é maturidade operacional geral do
 
 ## 0.4 — Engenharia de detecção
 
-Associação regra/teste, análise semântica, backend/pipeline Sigma oficialmente compatíveis, revisão de regra, histórico de cobertura por ambiente, atualização transacional de catálogo ATT&CK com depreciações preservadas.
+Entregue: associação regra/teste como planejamento humano revisado, versões fixadas,
+histórico monotônico, revisão necessária após nova versão, snapshot por execução e
+comparação de diferenças de regras/vínculos/testes/ambiente. Nenhuma associação
+altera veredictos ou implica implantação. [Operação](../operations/rule-test-reviews.md).
+
+Pendente: análise semântica, backend/pipeline Sigma oficialmente compatíveis,
+implantação validada de regras, análise de cobertura entre ambientes distintos e
+atualização transacional do ATT&CK com depreciações preservadas.
 
 ## 0.5 — Automação e operação
 

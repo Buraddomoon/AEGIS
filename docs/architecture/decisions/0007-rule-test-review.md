@@ -1,6 +1,6 @@
 # ADR 0007 — Associações revisadas entre regras Sigma e testes
 
-Status: aceito para implementação. Data: 2026-10-22.
+Status: implementado e validado com PostgreSQL, API, UI e navegador Demo. Data: 2026-10-22.
 
 O inventário Sigma possui versões imutáveis, mas não permite registrar qual teste
 foi escolhido para avaliar uma regra. Acrescentar essa relação ao planejamento
@@ -34,3 +34,5 @@ sem confundi-la com implantação, execução ou evidência de detecção.
 Validar migração populada, unicidade/concorrência, RBAC/CSRF, revisão obsoleta,
 preservação de escopo/evidências e comparação, UI e um fluxo Demo no navegador.
 As APIs e padrões PostgreSQL/SQLAlchemy existentes dos ADRs 0001/0002 são mantidos.
+
+Referências oficiais conferidas: [triggers PostgreSQL17](https://www.postgresql.org/docs/17/plpgsql-trigger.html) e [índices parciais/únicos](https://www.postgresql.org/docs/17/indexes-partial.html). A retirada monotônica é imposta também por trigger, além dos privilégios por coluna.
