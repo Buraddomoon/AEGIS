@@ -43,7 +43,7 @@ format:
 test-unit:
 	$(VENV)/pytest tests/test_domain.py -q
 test-integration:
-	$(VENV)/pytest tests/test_flow.py tests/test_security.py tests/test_integrations.py tests/test_migrations.py tests/test_cleanup.py tests/test_transactions.py tests/test_scheduling.py tests/test_linux_campaigns.py tests/test_wazuh_campaigns.py -q
+	$(VENV)/pytest tests/test_flow.py tests/test_security.py tests/test_integrations.py tests/test_migrations.py tests/test_cleanup.py tests/test_transactions.py tests/test_scheduling.py tests/test_linux_campaigns.py tests/test_wazuh_campaigns.py tests/test_rule_links.py tests/test_coverage_comparison.py -q
 test-web:
 	npm --prefix apps/web test
 test:

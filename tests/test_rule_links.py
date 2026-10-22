@@ -220,3 +220,35 @@ def test_scope_and_report_preserved_after_rule_review(admin):
         ).status_code
         == 409
     )
+
+
+def test_link_change_invalidates_approved_start_and_recurring_grant(admin):
+    from aegis import scheduling
+    from test_scheduling import ready
+
+    rule, version = import_rule(admin)
+    original = create_queued(admin, ["demo-shell"])
+    admin.post(f"/api/v1/executions/{original['id']}/cancel")
+    pending = admin.post(
+        f"/api/v1/campaigns/{original['campaign_id']}/runs",
+        json={"idempotency_key": uuid.uuid4().hex},
+    ).json()
+    assert (
+        admin.post(
+            f"/api/v1/executions/{pending['id']}/approve",
+            json={"confirm_scope_hash": pending["scope_hash"]},
+        ).status_code
+        == 200
+    )
+    schedule, instant = ready(admin)
+    assert (
+        admin.post(f"/api/v1/rules/{rule['id']}/test-links", json=review_body(version)).status_code
+        == 201
+    )
+    assert (
+        admin.post(f"/api/v1/executions/{pending['id']}/start", json={"confirm": True}).status_code
+        == 409
+    )
+    scheduling.dispatch_one(instant)
+    assert admin.get(f"/api/v1/schedules/{schedule['id']}").json()["state"] == "INVALIDATED"
+    assert admin.get(f"/api/v1/schedules/{schedule['id']}/occurrences").json()["items"] == []

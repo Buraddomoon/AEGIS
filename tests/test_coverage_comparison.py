@@ -1,11 +1,12 @@
 import uuid
 
 from aegis.db import session_factory
-from aegis.models import CampaignRun
+from aegis.models import CampaignRun, CampaignTest
 from aegis.models import TestDefinition as Definition
 from aegis.queries import scope_changes
 from aegis.worker import claim_next, process_run
 from conftest import create_queued
+from sqlalchemy import delete
 from test_rule_links import import_rule, review_body
 
 
@@ -60,6 +61,12 @@ def test_legacy_scope_has_unknown_link_context_and_removed_test_is_visible(admin
     with session_factory()() as db:
         run = db.get(CampaignRun, first["id"])
         run.scope = {k: v for k, v in run.scope.items() if k != "rule_test_links"}
+        db.execute(
+            delete(CampaignTest).where(
+                CampaignTest.campaign_id == first["campaign_id"],
+                CampaignTest.test_id == "demo-file-marker",
+            )
+        )
         db.commit()
     later = admin.post(
         f"/api/v1/campaigns/{first['campaign_id']}/runs", json={"idempotency_key": uuid.uuid4().hex}
@@ -69,6 +76,8 @@ def test_legacy_scope_has_unknown_link_context_and_removed_test_is_visible(admin
     ).json()
     assert not compared["scope_changes"]["link_context_recorded"]
     assert compared["scope_changes"]["rule_test_links"] is None
+    removed = next(x for x in compared["tests"] if x["test_id"] == "demo-file-marker")
+    assert removed["before"] == "INCONCLUSIVE" and removed["after"] == "NOT_TESTED"
 
 
 def test_scope_diff_reports_test_and_environment_changes_without_inference():
