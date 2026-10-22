@@ -7,11 +7,13 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -269,7 +271,41 @@ class RuleVersion(Entity, Base):
     sha256: Mapped[str] = mapped_column(String(64))
     techniques: Mapped[list[str]] = mapped_column(ARRAY(String(20)))
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
-    __table_args__ = (UniqueConstraint("rule_id", "version"),)
+    __table_args__ = (
+        UniqueConstraint("rule_id", "version"),
+        UniqueConstraint("id", "rule_id", name="uq_rule_versions_id_rule_id"),
+    )
+
+
+class RuleTestLink(Entity, Base):
+    __tablename__ = "rule_test_links"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["rule_version_id", "rule_id"],
+            ["rule_versions.id", "rule_versions.rule_id"],
+            name="fk_rule_test_links_version_rule",
+        ),
+        Index(
+            "uq_rule_test_links_active",
+            "rule_id",
+            "test_id",
+            unique=True,
+            postgresql_where=text("retired_at IS NULL"),
+        ),
+        CheckConstraint("test_version > 0", name="link_test_version"),
+        CheckConstraint(
+            "(retired_at IS NULL) = (retired_by IS NULL)",
+            name="link_retirement",
+        ),
+    )
+    rule_id: Mapped[str] = mapped_column(ForeignKey("detection_rules.id"), index=True)
+    rule_version_id: Mapped[str] = mapped_column(String(36), index=True)
+    test_id: Mapped[str] = mapped_column(ForeignKey("test_definitions.id"), index=True)
+    test_version: Mapped[int] = mapped_column(Integer)
+    rationale: Mapped[str] = mapped_column(Text)
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    retired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    retired_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
 
 
 class AuditEvent(Entity, Base):

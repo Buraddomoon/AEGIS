@@ -78,6 +78,8 @@ def grant_runtime():
             cursor.execute(
                 "GRANT UPDATE (state, reason, next_due_at, occurrences_count) ON schedules TO aegis_app"
             )
+            cursor.execute("REVOKE UPDATE, DELETE ON rule_test_links FROM aegis_app")
+            cursor.execute("GRANT UPDATE (retired_at, retired_by) ON rule_test_links TO aegis_app")
             cursor.execute("GRANT UPDATE (generation) ON runner_dispatches TO aegis_app")
             cursor.execute("GRANT UPDATE (revoked_at) ON schedule_authorizations TO aegis_app")
         connection.commit()
