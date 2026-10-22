@@ -907,7 +907,7 @@ export function CoveragePage() {
                 </tbody>
               </table>
             </div>
-            <p className="mono muted-text">
+            <p className="mono muted-text comparison-context">
               Execuções: {comparison.before_id} → {comparison.after_id}
             </p>
             <ScopeChanges changes={comparison.scope_changes} />

@@ -8,7 +8,7 @@ export function ScopeChanges({ changes }: { changes: Comparison['scope_changes']
     ['Ambiente e coleta', changes.environment],
   ]
   return (
-    <section>
+    <section className="scope-differences">
       <h3>Alterações do escopo registrado</h3>
       <p className="muted-text">
         Diferenças de configuração são contexto da avaliação; não demonstram que uma regra causou

@@ -209,6 +209,7 @@ level: informational
   await button('Testes e revisões')
   await reviewLink()
   await text('Revisado para planejamento')
+  await page.$eval('dialog[open]', el => { el.scrollTop = 0 })
   await screenshot('rule-test-links')
   await page.click('dialog button[aria-label="Fechar"]')
   await navigate('campaigns')

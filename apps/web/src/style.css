@@ -1446,6 +1446,21 @@ dd {
   margin: 20px 0;
   font-size: 11px;
 }
+.scope-differences {
+  padding: 0 22px 20px;
+}
+.scope-differences h3 {
+  margin: 18px 0 12px;
+  font-size: 14px;
+}
+.scope-differences > p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.comparison-context {
+  padding: 20px 22px 0;
+  font-size: 11px;
+}
 .scope-details p {
   margin-top: 15px;
   font-size: 10px;
