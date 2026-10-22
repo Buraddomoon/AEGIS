@@ -76,3 +76,87 @@ def test_nested_and_keyword_selections_are_facts_not_required_telemetry():
 def test_analysis_rejects_unsafe_or_over_budget_content(content):
     with pytest.raises((ValueError, yaml.YAMLError)):
         analyze(content)
+
+
+def test_api_analysis_is_version_specific_and_read_only(admin):
+    from aegis.db import session_factory
+    from aegis.models import AuditEvent, RuleTestLink
+    from sqlalchemy import func, select
+
+    rule = admin.post("/api/v1/rules", json={"content": SIGMA}).json()
+    old = admin.get(f"/api/v1/rules/{rule['id']}/versions").json()["items"][0]
+    path = f"/api/v1/rules/{rule['id']}/versions/{old['id']}/analysis"
+    baseline = admin.get(path).json()
+    changed = SIGMA.replace(
+        "  condition: selection", "  unused:\n    Image: /bin/sh\n  condition: selection"
+    )
+    admin.post("/api/v1/rules", json={"content": changed}).raise_for_status()
+    versions = admin.get(f"/api/v1/rules/{rule['id']}/versions").json()["items"]
+    with session_factory()() as db:
+        count = db.scalar(select(func.count()).select_from(AuditEvent))
+    result = admin.get(path)
+    assert result.status_code == 200, result.text
+    assert result.json() == baseline
+    new_result = admin.get(
+        f"/api/v1/rules/{rule['id']}/versions/{versions[0]['id']}/analysis"
+    ).json()
+    assert new_result["findings"][0]["code"] == "unused_selection"
+    assert new_result["rule_version"] == 2 and new_result["sha256"] == versions[0]["sha256"]
+    assert admin.get(f"/api/v1/rules/other/versions/{old['id']}/analysis").status_code == 404
+    assert admin.get(f"/api/v1/rules/{rule['id']}/versions/absent/analysis").status_code == 404
+    with session_factory()() as db:
+        assert db.scalar(select(func.count()).select_from(AuditEvent)) == count
+        assert db.scalar(select(func.count()).select_from(RuleTestLink)) == 0
+
+
+def test_analysis_requires_session_and_allows_viewer_without_csrf(admin):
+    rule = admin.post("/api/v1/rules", json={"content": SIGMA}).json()
+    saved = admin.get(f"/api/v1/rules/{rule['id']}/versions").json()["items"][0]
+    path = f"/api/v1/rules/{rule['id']}/versions/{saved['id']}/analysis"
+    admin.post("/api/v1/auth/logout")
+    assert admin.get(path).status_code == 401
+    admin.post(
+        "/api/v1/auth/login",
+        json={"username": "viewer", "password": "Test-only-randomized-scope-23!"},
+        headers={"x-aegis-request": "browser"},
+    ).raise_for_status()
+    admin.headers.pop("x-csrf-token", None)
+    assert admin.get(path).status_code == 200
+    assert admin.post("/api/v1/rules", json={"content": SIGMA}).status_code == 403
+
+
+def test_analysis_fails_closed_on_corrupt_content_and_legacy_invalid_yaml(admin):
+    from aegis.db import session_factory
+    from aegis.models import RuleVersion
+
+    rule = admin.post("/api/v1/rules", json={"content": SIGMA}).json()
+    saved = admin.get(f"/api/v1/rules/{rule['id']}/versions").json()["items"][0]
+    path = f"/api/v1/rules/{rule['id']}/versions/{saved['id']}/analysis"
+    with session_factory()() as db:
+        stored = db.get(RuleVersion, saved["id"])
+        stored.content = "invalid: legacy"
+        db.commit()
+    assert admin.get(path).status_code == 409
+    with session_factory()() as db:
+        stored = db.get(RuleVersion, saved["id"])
+        stored.sha256 = digest(stored.content)
+        db.commit()
+    response = admin.get(path)
+    assert response.status_code == 422
+    assert "Traceback" not in response.text and "legacy" not in response.text
+
+
+def test_analysis_rate_limit(admin):
+    from aegis.db import session_factory
+    from aegis.models import User
+    from aegis.security import redis_client, token_hash
+    from sqlalchemy import select
+
+    rule = admin.post("/api/v1/rules", json={"content": SIGMA}).json()
+    saved = admin.get(f"/api/v1/rules/{rule['id']}/versions").json()["items"][0]
+    with session_factory()() as db:
+        user_id = db.scalar(select(User.id).where(User.username == "administrator"))
+    key = "aegis:limit:" + token_hash("sigma-analysis:" + user_id)
+    redis_client().set(key, 60, ex=60)
+    response = admin.get(f"/api/v1/rules/{rule['id']}/versions/{saved['id']}/analysis")
+    assert response.status_code == 429 and response.headers["retry-after"] == "60"

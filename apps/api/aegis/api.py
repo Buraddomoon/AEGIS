@@ -1,9 +1,11 @@
 import secrets
 from typing import Annotated, Literal
 
+import yaml
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse
 from redis.exceptions import RedisError
+from sigma.exceptions import SigmaError
 from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -12,6 +14,7 @@ from aegis import linux_labs, queries, rule_links, scheduling, schemas, services
 from aegis.config import settings
 from aegis.db import get_db
 from aegis.domain.validation import digest
+from aegis.integrations.sigma_analysis import analyze as analyze_sigma
 from aegis.integrations.yaml_import import parse_sigma
 from aegis.models import (
     Asset,
@@ -594,6 +597,29 @@ def rule_versions(rule_id: str, user: Viewer, db: DB) -> dict:
                 .order_by(RuleVersion.version.desc())
             )
         ]
+    }
+
+
+@router.get("/rules/{rule_id}/versions/{version_id}/analysis", tags=["Sigma"])
+def rule_analysis(rule_id: str, version_id: str, user: Viewer, db: DB) -> dict:
+    saved = services.get_or_404(db, RuleVersion, version_id)
+    if saved.rule_id != rule_id:
+        raise HTTPException(404, "Versão não encontrada nesta regra.")
+    rate_limit("sigma-analysis:" + user.id, 60, 60)
+    if digest(saved.content) != saved.sha256:
+        raise HTTPException(409, "Integridade do conteúdo da versão não confere.")
+    try:
+        result = analyze_sigma(saved.content)
+    except (SigmaError, yaml.YAMLError, ValueError, TypeError, RecursionError):
+        raise HTTPException(
+            422,
+            "Conteúdo não analisável dentro dos limites estáticos; consulte o YAML e o guia Sigma.",
+        ) from None
+    return {
+        "rule_id": rule_id,
+        "rule_version_id": saved.id,
+        "rule_version": saved.version,
+        **result,
     }
 
 
