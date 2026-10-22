@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import puppeteer from 'puppeteer-core'
 
 let input = ''
@@ -206,6 +206,11 @@ level: informational
   }
   await navigate('rules')
   await importSigma(sigma)
+  await button('Preparação de conversão')
+  await text('Sem mapeamento')
+  await text('Conversão bloqueada')
+  await text('dependency_unsatisfied')
+  await page.click('dialog button[aria-label="Fechar"]')
   await button('Análise estática')
   await text('Nenhum achado nos checks executados')
   await text('Backend e pipeline não configurados')
@@ -256,6 +261,19 @@ level: informational
   await text('Versões do inventário Sigma · 1 alteração(ões)')
   await text('Associações entre regras e testes · 1 alteração(ões)')
   await screenshot('scope-comparison')
+  await navigate('rules')
+  await importSigma(await readFile('../../fixtures/sigma/aegis-marker-candidate.yml', 'utf8'))
+  await text('AEGIS marker mapping candidate')
+  await button('Preparação de conversão')
+  await text('Campos declarados mapeados: Sim')
+  await text('Conversão bloqueada')
+  await text('data.aegis.observation')
+  await text('index_mapping_unverified')
+  await page.$eval('dialog[open]', el => { el.scrollTop = 0 })
+  await screenshot('sigma-readiness')
+  await page.click('dialog button[aria-label="Fechar"]')
+  const afterPreparation = await page.evaluate(async id => (await fetch('/api/v1/reports/' + id)).json(), reviewedId)
+  assert.deepEqual(afterPreparation, reviewedReport, 'Preparation must not rewrite historical reports')
   for (const [route, heading] of [
     ['tests', 'Biblioteca de testes'],
     ['reports', 'Relatórios'],
@@ -281,11 +299,11 @@ level: informational
   console.log(
     JSON.stringify({
       result: 'PASS',
-      flow: 'login → catalog → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report → Sigma static analysis → review → version change → historical analysis → retirement → historical scope comparison',
+      flow: 'login → catalog → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report → Sigma static analysis → review → version change → historical analysis → retirement → historical scope comparison → blocked backend diagnostics → candidate marker field mapping',
       runs: 4,
       tests: 16,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 9,
+      screenshots: 10,
       browserErrors: errors.length,
     }),
   )
