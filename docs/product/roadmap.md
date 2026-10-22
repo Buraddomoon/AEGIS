@@ -40,6 +40,10 @@ Entregue também: análise estática parcial por versão/hash, cinco checks loca
 sobre o parser/modelo pySigma, fatos declarados e contexto histórico na UI.
 Não comprova correção semântica completa ou eficácia.
 
+Entregue também: preparação offline por versão/perfil/hash, campos candidatos do
+schema de marcador e diagnóstico de requisitos de backends revisados. Compatibilidade
+bloqueada por pySigma<2 nos backends versus core2.0.1. Perfil não é pipeline executável.
+
 Pendente: semântica completa e correspondência à telemetria, backend/pipeline Sigma oficialmente compatíveis,
 implantação validada de regras, análise de cobertura entre ambientes distintos e
 atualização transacional do ATT&CK com depreciações preservadas.

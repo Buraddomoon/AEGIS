@@ -63,3 +63,69 @@ Decisão e descoberta de importação transitiva:
 `sigma.validators.core`: seu inicializador descobre módulos e carrega loaders de
 dados com DiskCache. AEGIS usa diretamente o parser/modelo e checks locais, sem
 copiar validadores upstream ou enfraquecer a regressão de ausência de DiskCache.
+
+## Preparação de conversão e campos candidatos
+
+Em **Regras → Preparação de conversão**, selecione versão e perfil. Este recurso
+é um diagnóstico offline operacional; não gera consultas nem implanta regras.
+Campos mapeados não equivalem a conversão disponível. A análise estática anterior
+continua independente, com compatibility=not_configured.
+
+A verificação em2026-10-22 encontrou os wheels oficiais OpenSearch2.0.3 e
+Elasticsearch2.1.1 declarando pySigma<2.0.0, enquanto ÆGIS usa2.0.1. Snapshot
+normalizado em `fixtures/sigma/backend-metadata.json`, após conferir SHA-256 do
+wheel e ler METADATA sem instalar/executar código. Os requisitos publicados do
+wheel OpenSearch diferem do pyproject atual do repositório; o diagnóstico usa o
+wheel efetivamente publicado. Licença declarada de ambos: LGPL-3.0-only; nenhum
+backend ou código deles é distribuído pelo ÆGIS neste estágio.
+
+Fontes oficiais das versões revisadas:
+[OpenSearch2.0.3](https://pypi.org/pypi/pysigma-backend-opensearch/2.0.3/json) e
+[Elasticsearch2.1.1](https://pypi.org/pypi/pysigma-backend-elasticsearch/2.1.1/json).
+Não forçar instalação ignorando dependências nem fazer downgrade do parser.
+`packaging` já estava travado em26.3 e passa a dependência direta para interpretar
+requisitos; nenhum pacote adicional instalado.
+
+O diagnóstico compara requisitos do snapshot às versões realmente instaladas,
+sem importar backends ou acessar PyPI durante a consulta. Exibe a data/hash do
+snapshot, versões, fontes e requisitos não atendidos. Mudança do ambiente ou de
+metadados revisados pode mudar esse diagnóstico; ele não é evidência histórica
+imutável de detecção. Backend ausente ou versão diferente da revisada são
+bloqueios explícitos. Metadados ausentes/malformados retornam503.
+
+O único perfil é **wazuh-aegis-marker/1**, candidato local versionado por hash:
+logsource product=aegis/service=marker_observer e caminhos próprios do schema
+aegis-json/1, como AegisSchema→data.aegis.schema e
+AegisObservation→data.aegis.observation. A associação é sustentada pelos caminhos
+presentes no [alerta registrado](../evidence/wazuh-2026-10-22/alert.json), sem nova
+consulta ao Indexer. Nenhum Image/CommandLine ou evento Windows é remapeado para
+full_log. Logsource adicional/desconhecido e campos ausentes são sinalizados.
+
+O alerta _source não registra tipos/analisadores/subcampos do índice; mapping
+físico permanece **não verificado**. artifact_bytes apareceu como string no
+JSON decodificado, o que não permite supor campo numérico no índice. Valores,
+modificadores, equivalência de condição e disponibilidade atual não são validados
+pelo mapeamento de nomes. Referências fieldref recebem tratamento pendente
+explícito e impedem indicar mapeamento completo, inclusive quando o nome tem
+caminho candidato. Palavras-chave sem destino e achados estáticos também
+sinalizam pendências. Não confundir este perfil com ProcessingPipeline executado.
+
+`can_convert`, `conversion_performed` e `deployment_performed` permanecem false,
+mesmo com campos mapeados e requisitos declarados hipoteticamente atendidos:
+pipeline executável e verificação do índice continuam pendentes. Não há botão
+Converter/Implantar decorativo. A UI confere regra/versão/hash e perfil/hash.
+
+API, somente leitura autenticada, inclusive viewer:
+
+- GET `/api/v1/sigma/conversion-profiles`: perfis candidatos e diagnóstico de
+  pacotes,60 consultas por usuário/minuto.
+- GET `/api/v1/rules/{rule_id}/versions/{version_id}/conversion-readiness?profile_id=wazuh-aegis-marker%2F1`:
+  versão exata,30/minuto; perfil ausente404, hash divergente409, conteúdo fora
+  da política422 e metadados indisponíveis503. Nenhum destino/índice/plugin/
+  pipeline/consulta é recebido pela API.
+
+Exemplo autoral importável: `fixtures/sigma/aegis-marker-candidate.yml`, somente
+planejamento, não implantado, sem técnica ATT&CK artificial. Criar um perfil
+futuro exige revisão de código/proveniência, atualização controlada de metadados,
+backend oficialmente compatível e testes de saída/escopo. Operação sobre SIEM
+requer infraestrutura e autorização próprias. Ver [ADR0009](../architecture/decisions/0009-sigma-conversion-readiness.md).

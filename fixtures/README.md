@@ -4,3 +4,6 @@
 - `wazuh-alert.json`: fixture de contrato **escrita manualmente**, com identificadores fictícios e formato semelhante ao Indexer. Não foi coletada de um ambiente real e não constitui evidência operacional. O adapter real usa `synthetic=false` ao normalizar esse schema nos testes unitários; o fixture é fornecido por MockTransport, não integrado ao dashboard nem a uma execução real.
 
 Os testes Demo em execução utilizam `synthetic=true` de ponta a ponta. Não há dados empresariais ou credenciais nestes fixtures.
+
+- `sigma/backend-metadata.json`: fatos extraídos dos METADATA de wheels oficiais PyPI, após verificar SHA-256 do artefato, sem instalar/executar código. Snapshot revisado em2026-10-22, fontes/versionamento/hashes preservados; não é consulta em tempo real nem prova de compatibilidade.
+- `sigma/aegis-marker-candidate.yml`: exemplo autoral MIT de planejamento de campos do schema registrado, não convertido/implantado, sem técnica ATT&CK associada. Não é evidência defensiva.

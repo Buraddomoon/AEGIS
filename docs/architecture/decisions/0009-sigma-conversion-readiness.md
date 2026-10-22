@@ -1,6 +1,6 @@
 # ADR 0009 — Preparação verificável para conversão Sigma
 
-Data: 2026-10-22. Status: contrato para implementação.
+Data: 2026-10-22. Status: diagnóstico implementado; conversão bloqueada explicitamente.
 
 A inspeção oficial encontrou pySigma2.0.1 no ÆGIS e backends publicados
 OpenSearch2.0.3/Elasticsearch2.1.1 com Requires-Dist pySigma<2.0.0. Não instalar

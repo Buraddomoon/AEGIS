@@ -1,5 +1,17 @@
 # Changelog
 
+## Continuidade2026-10-22 — preparação Sigma verificável
+
+- Diagnóstico por versão/hash/perfil, campos candidatos e bloqueios de requisitos
+  instalados versus metadados oficiais revisados, sem importar backends.
+- Snapshot de METADATA de wheels verificados e perfil restrito ao marcador ÆGIS;
+  dados _source não são apresentados como mapping físico do índice.
+- Referências fieldref são identificadas e impedem mapeamento completo prematuro.
+- UI com histórico, contexto conferido e estados explícitos; ações do inventário
+  reorganizadas para legibilidade. Exemplo autoral sem ATT&CK artificial.
+- Conversão continua indisponível: backends revisados exigem pySigma<2, core2.0.1;
+  pipeline executável/mapping físico pendentes. Nenhum downgrade ou ensaio real.
+
 ## Continuidade 2026-10-22 — análise estática Sigma
 
 - Análise autenticada por versão/hash, condições, campos declarados e cinco

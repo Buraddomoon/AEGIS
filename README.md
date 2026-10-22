@@ -20,7 +20,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Agendamentos Demo com aprovação explícita, validade, duração, limite de horários, pausa/revogação e histórico de autorizações.
 - Eventos originais, hashes SHA-256, justificativas de correlação, evidências inspecionáveis e auditoria.
 - Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
-- Inventário Sigma com parsing pySigma, YAML limitado e versões imutáveis; associação revisada com testes, histórico e sinalização de revisão necessária. Análise estática por versão com achados explicáveis. Nenhuma implantação automática de regras.
+- Inventário Sigma com parsing pySigma, YAML limitado e versões imutáveis; associação revisada com testes, histórico e sinalização de revisão necessária. Análise estática por versão e diagnóstico de preparação/mapeamento com bloqueios explícitos. Nenhuma implantação automática de regras.
 - Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; campanha integrada autorizada validou API/worker/SQL runtime, recibos, cleanup e UI, sem SIEM.
 - Coleta Wazuh opt-in no worker: binding administrativo de agente/regra, política/hash aprovados, polling com prazo integral, paginação, resumo imutável e UI/relatórios. Validação real do pipeline incluiu TLS, agente, regra, ACLs, evento original, evidência e relatório.
 - [Ensaio Wazuh registrado](docs/evidence/wazuh-2026-10-22/README.md): uma campanha, um marcador de 43 bytes, um alerta da regra 100200, cleanup conferido. Containers/redes encerrados; volumes preservados. Não integra o Demo nem os testes padrão; nova execução requer novo escopo autorizado.
@@ -85,6 +85,14 @@ ausência de achados não comprova eficácia. Conversão Sigma/SIEM não configu
 [Checks e limites](docs/integrations/sigma.md#análise-estática-de-versões).
 
 ![Análise real de uma versão Sigma de demonstração com seleção não referenciada](docs/images/sigma-analysis.png)
+
+Em **Regras → Preparação de conversão**, veja campos candidatos e requisitos
+pendentes por versão/hash. O backend oficial revisado exige pySigma<2, enquanto
+a aplicação usa2.0.1; conversão permanece bloqueada. Perfil de marcador não é
+pipeline executável e não comprova mapping físico do índice.
+[Contrato e fontes](docs/integrations/sigma.md#preparação-de-conversão-e-campos-candidatos).
+
+![Diagnóstico real com campos do marcador mapeados e conversão bloqueada](docs/images/sigma-readiness.png)
 
 ## Linux Lab integrado — etapa 3
 
