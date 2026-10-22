@@ -199,6 +199,9 @@ from aegis.integrations.sigma_analysis import analyze
 content = sys.stdin.read()
 assert analyze(content)['status'] == 'no_findings_in_selected_checks'
 assert analyze(content.replace('condition: selection', 'condition: absent'))['status'] == 'findings'
+from aegis.integrations.sigma_readiness import assess
+assert not assess(content)['can_convert']
+assert 'sigma.backends.opensearch' not in sys.modules
 assert 'diskcache' not in sys.modules
 """
     result = subprocess.run(

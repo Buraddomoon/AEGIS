@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from aegis.integrations.sigma_analysis import analyze
+from aegis.integrations.sigma_readiness import assess
 from aegis.integrations.yaml_import import parse_sigma
 
 result = subprocess.run(
@@ -40,6 +41,7 @@ detection:
 parse_sigma(probe)
 analyze(probe)
 analyze(probe.replace("condition: selection", "condition: missing"))
+assert not assess(probe)["can_convert"]
 if "diskcache" in sys.modules:
     raise SystemExit(
         "Parser or analysis imported diskcache: reviewed advisory requires reassessment."

@@ -1,0 +1,14 @@
+# Exemplo autoral de planejamento; não implantado. Não representa técnica ATT&CK.
+title: AEGIS marker mapping candidate
+id: e984b7c4-6655-40d7-970b-bc5eb4a27935
+status: experimental
+description: Candidate field mapping for the recorded aegis-json/1 schema; not converted or deployed.
+logsource:
+  product: aegis
+  service: marker_observer
+detection:
+  selection:
+    AegisSchema: aegis-json/1
+    AegisObservation: marker_file_read
+  condition: selection
+level: informational
