@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e associações Sigma/teste revisadas com análise estática de versões (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
+Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e engenharia Sigma com revisões, análise estática e diagnóstico de preparação (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -834,3 +834,107 @@ totalizando **169**. Main exclusiva, AEGIS privado e push após cada commit, sem
 branch/PR/force. Último código8fcd0d6; mudanças seguintes só documentação/capturas.
 Consultar git log/status após o checkpoint para último hash/mensagem e sync;
 não incorporar seu próprio hash neste documento.
+
+
+## 2026-10-22 — Diagnóstico Sigma de compatibilidade e mapeamento candidato
+
+### Entrega e decisão de escopo
+
+Implementados serviço, APIs e UI reais de **preparação de conversão**, calculados
+sobre RuleVersion persistida e perfil/hash. Não há conversão executada nem query
+fabricada. [ADR0009](architecture/decisions/0009-sigma-conversion-readiness.md),
+[contrato/limites](integrations/sigma.md#preparação-de-conversão-e-campos-candidatos).
+
+A pesquisa encontrou um impedimento real: wheels oficiais OpenSearch2.0.3 e
+Elasticsearch2.1.1 exigem pySigma<2.0.0, mas o núcleo usa2.0.1. Os artefatos foram
+baixados somente para conferir SHA-256 e extrair METADATA, sem instalar/executar
+código. Requisitos do wheel OpenSearch diferem do pyproject atual do repositório;
+a fonte operacional do diagnóstico é o wheel publicado, registrado em snapshot.
+Não forçar instalação com --no-deps, copiar backend nem reduzir o parser.
+Conversão/implantação permanecem indisponíveis, com motivos consultáveis.
+
+- Serviço sigma_readiness.py compara requisitos oficiais capturados às versões
+  realmente instaladas, sem importar backends ou acessar rede durante consulta.
+  Identifica readiness_version, versão/hash da regra e perfil/hash, snapshot/data/
+  fonte/hash, requisitos ausentes/conflitantes e licença declarada LGPL-3.0-only.
+- Perfil fixo wazuh-aegis-marker/1 mapeia apenas logsource próprio e campos
+  presentes no alerta aegis-json/1 registrado. Não inventar Image/CommandLine→
+  full_log. _source demonstra presença do valor, não tipos/analisadores/keyword
+  no índice. artifact_bytes apareceu como string, não garantia de campo numérico.
+- Campos/logsource ausentes, seleções keyword, achados estáticos e referências
+  fieldref geram pendências explícitas. Mesmo com nomes mapeados, can_convert/
+  conversion_performed/deployment_performed=false: perfil candidato não é
+  ProcessingPipeline e mapping físico continua não verificado.
+- GET /sigma/conversion-profiles permite viewer autenticado,60/min por usuário.
+  GET /rules/{id}/versions/{version_id}/conversion-readiness?profile_id=... fixa
+  versão e perfil,30/min. Sem destinos, plugins, índices ou pipelines arbitrários.
+  Helper compartilhado confere associação da versão/hash; metadados indisponíveis
+  falham503. Diagnósticos não modificam scopes, aprovações, relatórios ou veredictos.
+- UI Regras → Preparação de conversão seleciona histórico, lista bloqueios e
+  campos candidatos, confere identidade/hash/perfil e trata erro/ausência de
+  perfis. Resposta atrasada de outra versão não aparece sob a seleção atual.
+  Ações da tabela reorganizadas em lista legível, sem botão Converter decorativo.
+
+Arquivos centrais: apps/api/aegis/integrations/sigma_readiness.py e api.py;
+fixtures/sigma/backend-metadata.json e aegis-marker-candidate.yml;
+apps/web/src/RuleReadiness.tsx/types.ts/Management.tsx; testes sigma_readiness,
+sigma-readiness.test.tsx, guard de análise, harnesses E2E/smoke e auditoria.
+packaging26.3 passa de dependência transitiva a direta; versão/locks mantidos,
+nenhum pacote adicional instalado ou serviço pago ativado. Sem migração.
+
+### Revisão e problemas corrigidos
+
+Revisão especializada somente leitura confirmou limites de execução, hash/contexto,
+separação entre _source e mapping e ausência de importação de backend/cache.
+Apontou imprecisão de fieldref: o nome referenciado não constava de declared_fields.
+Corrigido com coleta dessas referências no documento pré-validado, bloqueio
+field_reference_mapping_unspecified e field_mapping_complete=false, inclusive
+quando o nome tem caminho candidato. UI explicita referências pendentes. Dois
+casos backend e um UI validam o comportamento; revisão estática final não apontou
+bloqueador concreto restante nesse delta.
+
+Testes iniciais de UI ajustados para verificar método GET no objeto de opções
+real do cliente HTTP, mantendo os headers/sessão. Nenhum bypass de confirmação,
+controle ou efeito real foi introduzido. O diagnóstico é atual sob dependências/
+metadados/perfil identificados, não uma evidência histórica imutável de detecção.
+[Revisão registrada](security/review-sigma-readiness-2026-10-22.md).
+
+### Validações executadas
+
+| Check | Resultado observado |
+|---|---|
+| `make test`, rodada final | **378 Python passaram**,162,41s; **35 frontend passaram**,4,63s |
+| `make lint` | Ruff/check/format de95 arquivos, mypy domínio, TypeScript e Prettier passaram |
+| Diagnóstico direcionado | **16 passaram**,4,54s, incluindo conflitos de requisitos, perfis, paths gravados, história, sessão/hash/rate limit, metadados inválidos e fieldref |
+| `make e2e`, após correção | **PASS**,Firefox/API/worker/PG/Redis:4 runs/16 testes sintéticos,10 capturas,0 erros JavaScript |
+| Cenários no navegador | Regra genérica sem mapeamento; exemplo de marcador com campos mapeados e conversão bloqueada; relatório anterior permaneceu idêntico |
+| Compose | Build de produção/migrate/seed/grants e API/worker saudáveis; ready database/redis=true |
+| `make smoke`, imagem corrigida | **PASS**,papel SQL runtime, APIs de análise/preparação, campanha+agendamento,8 resultados sintéticos, grant/revogação e relatórios; conta temporária desativada |
+| `make audit` | **PASS**,advisory transitivo DiskCache revisado visível; parsing/análise/assess sem cache/rede/escritas no guard; npm0 vulnerabilidades |
+| Compatibilidade de instalação | `pip check`: **No broken requirements found**; nenhum backend forçado/instalado |
+| Documentos |11 Markdown/45 links locais verificados antes deste checkpoint; scanner staged e diff-check em cada commit |
+| CI final | **SUCCESS**,3479f01, [run39841661856](https://github.com/Buraddomoon/AEGIS/actions/runs/39841661856): lint/tipos/PG/UI/build/advisories |
+
+A rodada anterior376 Python/34frontend passou antes da correção fieldref; tabela
+acima registra a final. Aviso upstream TestClient/httpx e advisory DiskCache
+permanecem. Captura real docs/images/sigma-readiness.png inspecionada; dados Demo
+e exemplo autoral estão identificados, sem técnica ATT&CK artificial.
+
+### Estado e continuidade
+
+Demo atualizado em http://localhost:18780. Nenhum serviço Wazuh iniciado ou novo
+marcador real executado;9volumes/evidências do ensaio anterior preservados, nenhum
+container desse projeto presente. Autorização real anterior continua consumida.
+
+Conversão requer backend oficialmente compatível com o core, pipeline executável
+revisado, mapping físico e validação de saída; consulta/implantação em SIEM exigem
+seu próprio escopo autorizado. Este marco não remove esses bloqueios. Próxima
+etapa sem essa dependência externa: backup/restore verificável do Demo em banco
+isolado e política de retenção. Mantêm-se pendências de PKI, atualização ATT&CK,
+Windows, archives, multi-workspace, PDF e scheduler restrito a Demo.
+
+Este marco acrescenta **11 commits granulares**, incluindo este checkpoint,
+totalizando **180**. Main exclusiva, AEGIS privado e push após cada commit,
+sem branch/PR/force. Último código3479f01; seguintes só capturas/documentação.
+Consultar git log/status após o checkpoint para último hash/mensagem e sync;
+não incorporar seu próprio hash neste arquivo.
