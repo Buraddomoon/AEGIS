@@ -500,3 +500,21 @@ frontend/build e revisão de dependências passaram. Não confundir com
 run39780201407 que falhou antes da correção. Este checkpoint muda só documentação
 e não dispara validação redundante. Os runs intermediários são cancelados pela
 concurrency existente. Consultar git log -1/status -sb para hash e sync finais.
+
+
+## 2026-10-22 — Ensaio Wazuh autorizado em preparação de runtime
+
+O usuário encerrou o Firefox e pediu prosseguir. Às 13:13 UTC, o preflight real
+passou: 16 CPUs, 9.426.079.744 bytes (8,78 GiB) MemAvailable, 440.363.372.544 bytes
+livres no filesystem Docker e vm.max_map_count1048576. Redes revistas/porta18786
+livres, certificados válidos até 2026-10-23 18:57:22 UTC, main limpa/remoto privado.
+A condição da autorização foi satisfeita sem parar outros projetos ou alterar
+swap/sysctl/cache. Iniciado somente o download das três imagens oficiais4.14.9
+fixadas por digest de images.json; Indexer amd64 já conferido. Nenhum marcador
+ou campanha Wazuh iniciado neste checkpoint. Bootstrap/readiness e ensaio seguem
+pendentes; os próximos registros devem trazer somente resultados observados.
+
+Revisão especializada somente leitura contra entrypoints oficiais v4.14.9 confirmou
+caminhos de cópia dos arquivos manager/agente, parametrização Filebeat fullTLS e
+bootstrap que altera wazuh e randomiza wazuh-wui. Não usar certificados admin demo
+embutidos. Isso é inspeção de fonte, não validação de credenciais, regra ou ingestão.
