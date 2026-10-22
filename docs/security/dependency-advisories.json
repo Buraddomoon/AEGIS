@@ -3,10 +3,14 @@
     {
       "package": "diskcache",
       "version": "5.6.3",
-      "ids": ["PYSEC-2026-2447", "CVE-2025-69872", "GHSA-w8v5-vhqr-4h9v"],
+      "ids": [
+        "PYSEC-2026-2447",
+        "CVE-2025-69872",
+        "GHSA-w8v5-vhqr-4h9v"
+      ],
       "status": "not_affected_in_current_parser_path",
-      "reason": "Transitive pySigma requirement. AEGIS only uses SigmaCollection.from_dicts with bounded in-memory YAML. No DiskCache import, instance or cache directory is used. Regression test asserts diskcache is absent from sys.modules after parsing. Runtime filesystem is read-only. Enabling pySigma plugins or caching requires a fresh review.",
-      "reviewed_at": "2026-10-20",
+      "reason": "Transitive pySigma requirement. AEGIS uses bounded in-memory SigmaCollection parsing plus explicit local checks of the parsed model/conditions. No sigma.validators.core, DiskCache import, instance or cache directory is used. Regression tests and audit exercise parsing and analysis, including invalid conditions, and require diskcache absent from sys.modules. Runtime filesystem is read-only. Enabling pySigma validators, plugins, data loaders or caching requires fresh review.",
+      "reviewed_at": "2026-10-22",
       "source": "https://github.com/advisories/GHSA-w8v5-vhqr-4h9v"
     }
   ]

@@ -5,6 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from aegis.integrations.sigma_analysis import analyze
 from aegis.integrations.yaml_import import parse_sigma
 
 result = subprocess.run(
@@ -27,7 +28,7 @@ if result.returncode not in {0, 1}:
     raise SystemExit(result.returncode)
 report = json.loads(result.stdout)
 baseline = json.loads(Path("docs/security/dependency-advisories.json").read_text())["reviewed"]
-parse_sigma("""title: Cache path audit
+probe = """title: Cache path audit
 id: 73e12878-5870-4588-a7b6-79704ad821a4
 logsource:
   category: process_creation
@@ -35,9 +36,14 @@ detection:
   selection:
     Image: marker
   condition: selection
-""")
+"""
+parse_sigma(probe)
+analyze(probe)
+analyze(probe.replace("condition: selection", "condition: missing"))
 if "diskcache" in sys.modules:
-    raise SystemExit("Parser started importing diskcache: reviewed advisory requires reassessment.")
+    raise SystemExit(
+        "Parser or analysis imported diskcache: reviewed advisory requires reassessment."
+    )
 unreviewed = []
 seen = set()
 for dependency in report["dependencies"]:

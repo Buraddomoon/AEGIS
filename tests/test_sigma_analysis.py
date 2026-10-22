@@ -160,3 +160,48 @@ def test_analysis_rate_limit(admin):
     redis_client().set(key, 60, ex=60)
     response = admin.get(f"/api/v1/rules/{rule['id']}/versions/{saved['id']}/analysis")
     assert response.status_code == 429 and response.headers["retry-after"] == "60"
+
+
+@pytest.mark.parametrize("kind", ["conditions", "selections"])
+def test_analysis_limits_condition_and_selection_counts(kind):
+    if kind == "conditions":
+        content = SIGMA.replace("condition: selection", "condition:\n" + "    - selection\n" * 33)
+    else:
+        content = SIGMA.replace(
+            "  condition: selection",
+            "".join(f"  extra_{i}:\n    Image: /bin/sh\n" for i in range(128))
+            + "  condition: selection",
+        )
+    with pytest.raises(ValueError, match="Análise limitada"):
+        analyze(content)
+
+
+@pytest.mark.parametrize("condition", ["not selection", "all of select*"])
+def test_selection_references_handle_negation_and_matching_wildcards(condition):
+    assert not analyze(SIGMA.replace("condition: selection", f"condition: {condition}"))["findings"]
+
+
+def test_fresh_analysis_never_imports_cache_connects_or_writes_files():
+    import subprocess
+
+    probe = """import os, sys
+
+def guard(event, args):
+    if event == 'import' and args[0] == 'diskcache':
+        raise AssertionError('DiskCache import prohibited')
+    if event in {'socket.connect', 'socket.getaddrinfo', 'os.mkdir'}:
+        raise AssertionError('Analysis attempted network or directory creation')
+    if event == 'open' and args[2] & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC):
+        raise AssertionError('Analysis attempted a file write')
+
+sys.addaudithook(guard)
+from aegis.integrations.sigma_analysis import analyze
+content = sys.stdin.read()
+assert analyze(content)['status'] == 'no_findings_in_selected_checks'
+assert analyze(content.replace('condition: selection', 'condition: absent'))['status'] == 'findings'
+assert 'diskcache' not in sys.modules
+"""
+    result = subprocess.run(
+        [sys.executable, "-B", "-c", probe], input=SIGMA, text=True, capture_output=True, timeout=15
+    )
+    assert result.returncode == 0, result.stderr
