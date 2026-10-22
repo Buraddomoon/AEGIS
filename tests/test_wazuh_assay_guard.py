@@ -139,10 +139,12 @@ def test_one_start_is_durable_and_ambiguous_response_keeps_recovery_access(
         assay.assay()
         assert account_actions == [False, True]
         assert (assay.PRIVATE / "execution.json").exists()
+        assert not (assay.PRIVATE / "assay-accounts.json").exists()
     else:
         with pytest.raises(httpx.ReadTimeout if scenario == "ambiguous-start" else ValueError):
             assay.assay()
         assert account_actions == ([False] if scenario == "ambiguous-start" else [False, True])
+        assert (assay.PRIVATE / "assay-accounts.json").exists() == (scenario == "ambiguous-start")
     starts = [call for call in calls if call[1].endswith("/start")]
     assert len(starts) == (0 if scenario == "previous-execution" else 1)
     if scenario != "previous-execution":

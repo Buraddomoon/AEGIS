@@ -265,6 +265,8 @@ def assay():
             ):
                 accounts_local(accounts, disable=True)
                 intent.append("ACCOUNTS_DISABLED")
+                (PRIVATE / "assay-accounts.json").unlink()
+                intent.append("TEMPORARY_CREDENTIALS_REMOVED")
             elif bootstrapped:
                 intent.append("RECOVERY_REQUIRED", run_id=run["id"] if run else None)
         finally:
