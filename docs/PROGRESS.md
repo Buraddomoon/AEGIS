@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **Demo/Linux 0.2.0 com pipeline Wazuh real validado em um único ensaio encerrado (Marco Wazuh B ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
+Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e associações Sigma/teste revisadas (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -647,3 +647,91 @@ totalizando **143**. Somente main, AEGIS privado, push após cada commit, sem
 branch/PR/force. Último código/testes 42d3d1d; CI verde acima. Commits seguintes são
 só documentação e não disparam validação redundante. Conferir log/status após
 este checkpoint para hash/mensagem/sincronização finais.
+
+## 2026-10-22 — Revisões Sigma/teste e comparação histórica de escopos
+
+### Entrega e decisões
+
+Associações entre regras e testes agora são metadados reais, persistentes e
+revisados na API/UI. Não são regras implantadas e não participam da correlação,
+do expected_rule, das classificações ou dos denominadores de cobertura.
+
+- [ADR0007](architecture/decisions/0007-rule-test-review.md): RuleTestLink fixa
+  RuleVersion/hash, versão do teste, justificativa e autor. Um vínculo ativo por
+  par, FK composta versão/regra, substituição otimista e lock compartilhado com
+  importação Sigma. Migrações explícitas ec3020ae8711/977fd0c42ae8.
+- Retirada preserva histórico; trigger PostgreSQL impede reescrita, reativação e
+  exclusão. Papel runtime tem somente INSERT/SELECT e UPDATE das duas colunas de
+  retirada. Administrador do banco continua privilegiado; hash não é assinatura.
+- GET paginado /rule-test-links e POST/DELETE /rules/{id}/test-links, com
+  RBAC/CSRF e auditoria. Viewer consulta; operador/admin registra revisão.
+  Hash/versão/replaces_id obsoletos retornam conflito, sem sobrescrever revisão.
+- UI permite examinar YAML, confirmar payload exato, associar, revisar, retirar
+  e consultar histórico. Nova versão sinaliza revisão necessária. Matriz separa
+  vínculos planejados de regras operacionais e cobertura observada.
+- Solicitações e planos novos capturam vínculos relevantes no scope/hash.
+  Mudança relevante invalida aprovação anterior ao início e plano recorrente.
+  Scopes antigos não recebem campo ou hash retroativo: solicitar/aprovar um
+  novo escopo. Runs iniciadas e relatórios mantêm seu contexto original.
+- Comparação usa exclusivamente snapshots históricos, inclui testes retirados
+  e mostra diferenças de regras, vínculos, testes e ambiente/coleta. Ausência do
+  campo no legado significa contexto desconhecido. Inventário global Sigma
+  continua conservador: nova versão de qualquer regra pode invalidar aprovação.
+  Diferença de configuração/resultado não demonstra causalidade.
+
+Arquivos centrais: apps/api/aegis/rule_links.py, models.py, services.py, queries.py,
+api.py, cli.py, migrações; apps/web/src/RuleTestLinks.tsx e
+ScopeChanges.tsx, páginas de catálogo/regras/cobertura, testes API/UI/E2E.
+[Guia operacional e contrato](operations/rule-test-reviews.md),
+[revisão de segurança](security/review-rule-links-2026-10-22.md).
+
+### Problemas encontrados e corrigidos
+
+Revisão especializada somente leitura identificou retirada reversível por SQL,
+título atual confundível com versão histórica, confirmação sobrevivendo a uma
+atualização de cache e resposta de comparação sob filtros alterados. Corrigidos
+com trigger monotônico, current_rule_title explícito, confirmação do payload
+serializado e bloqueio dos seletores durante consulta. Testes exercitam as quatro
+situações; a verificação final foi realizada pelo agente principal.
+
+O E2E inicialmente encontrou entrada multilinha incompatível com locator.fill
+no Firefox/BiDi e clique em confirmação antes de o formulário estar pronto ou
+visível. Automação corrigida com digitação, espera da resposta/estado habilitado
+e posicionamento visível; confirmação e validações da aplicação mantidas.
+Última rodada completa passou. Captura do modal corrigida para começar no topo.
+
+### Verificações executadas
+
+| Check | Resultado observado |
+|---|---|
+| `make test` | **329 Python passaram**,100,00s; **22 frontend passaram** |
+| `make lint` | Ruff/check/format de 91 arquivos, mypy domínio, TypeScript e Prettier passaram |
+| PostgreSQL/API direcionados | **19 passaram**,14,58s: vínculos, comparação e migração populada |
+| `make e2e` | Firefox, API/worker/PG/Redis reais: **4 runs/16 testes sintéticos**, **8 capturas**, **0 erros JavaScript** |
+| Preservação histórica no E2E | Importação, revisão, versão seguinte, substituição e retirada; relatório anterior permaneceu idêntico e comparação conservou snapshots |
+| Build/implantação Demo | Compose com migrations/seed/grants e build frontend passou; API/DB/Redis/worker saudáveis, ready database/redis=true |
+| `make smoke` | API/worker/runtime SQL, campanha e ocorrência agendada, revogação e relatório; conferiu privilégios por coluna e trigger |
+| Documentos | 13 Markdown/37 links locais verificados antes deste checkpoint; scanner staged/diff-check por commit |
+| CI final do código | **SUCCESS**, código 4ef1408, [run39799833294](https://github.com/Buraddomoon/AEGIS/actions/runs/39799833294); execuções anteriores redundantes canceladas |
+
+Nenhuma dependência ou recurso pago adicionado. Aviso upstream TestClient/httpx
+e advisory transitivo DiskCache previamente revisado permanecem. CI incluiu
+advisories; não foi feita nova auditoria local além das verificações registradas.
+O Demo atualizado está em http://localhost:18780. Nenhum container Wazuh está
+presente; volumes/evidências do ensaio anterior preservados. Sua autorização
+continua consumida: esta etapa só executou fluxos Demo e testes locais.
+
+### Pendências e continuidade
+
+Próxima etapa recomendada: análise semântica determinística das regras e avaliação
+de compatibilidade de backend/pipeline Sigma oficial, com limites explícitos.
+Ainda não há conversão ou implantação Sigma validada no Wazuh. Associação humana
+não prova que a regra detecta o comportamento. Permanecem pendentes comparação
+entre ambientes, atualização controlada ATT&CK, retenção/restore/rotação de PKI,
+Windows, archives e PDF. Scheduler segue restrito a Demo e workspace único.
+
+Este marco acrescenta **14 commits granulares**, incluindo este checkpoint,
+totalizando **157**. Somente main, AEGIS privado, push após cada commit, sem
+branch/PR/force. Último código 4ef1408 com CI verde acima; commits seguintes são
+capturas/documentação. Consultar log/status após o checkpoint para hash/mensagem
+e sincronização finais; não incorporar seu próprio hash neste arquivo.
