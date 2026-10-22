@@ -2,15 +2,22 @@ import re
 
 import yaml
 from sigma.collection import SigmaCollection
-from yaml.events import AliasEvent
+from yaml.events import AliasEvent, CollectionEndEvent, CollectionStartEvent
 
 
 def safe_document(content: str) -> dict:
     if len(content.encode()) > 65536:
         raise ValueError("YAML excede 64 KiB.")
     count = 0
+    depth = 0
     for event in yaml.parse(content, Loader=yaml.SafeLoader):
         count += 1
+        if isinstance(event, CollectionStartEvent):
+            depth += 1
+        elif isinstance(event, CollectionEndEvent):
+            depth -= 1
+        if depth > 32:
+            raise ValueError("YAML excede profundidade máxima de 32 coleções.")
         if count > 5000 or isinstance(event, AliasEvent) or getattr(event, "anchor", None):
             raise ValueError("Aliases, âncoras ou YAML excessivamente complexo não são permitidos.")
     value = yaml.safe_load(content)
@@ -19,8 +26,55 @@ def safe_document(content: str) -> dict:
     return value
 
 
-def parse_sigma(content: str) -> dict:
+def safe_sigma_document(content: str) -> dict:
+    """Reject expansion before pySigma applies modifiers; conservative UTF-8 budgets."""
     document = safe_document(content)
+    if any(key in document for key in ("filter", "correlation", "action")) or not isinstance(
+        document.get("detection"), dict
+    ):
+        raise ValueError(
+            "Forneça regra individual com detection objeto, sem filter/correlation/action."
+        )
+    stack = [(document["detection"], ())]
+    expanded_bytes = variants_total = 0
+    while stack:
+        value, modifiers = stack.pop()
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if not isinstance(key, str):
+                    raise ValueError("Chaves de detection devem ser strings.")
+                chain = tuple(key.split("|")[1:])
+                if len(chain) > 6 or len(set(chain)) != len(chain):
+                    raise ValueError("Cadeia Sigma limitada a 6 modificadores sem repetição.")
+                stack.append((child, chain))
+        elif isinstance(value, list):
+            stack.extend((child, modifiers) for child in value)
+        elif isinstance(value, str):
+            size, variants = len(value.encode()), 1
+            for modifier in modifiers:
+                if modifier in {"wide", "utf16", "utf16le", "utf16be"}:
+                    size = 4 * size + 8
+                elif modifier == "base64":
+                    size = ((size + 2) // 3) * 4 + 8
+                elif modifier == "base64offset":
+                    size = ((size + 4) // 3) * 4 + 8
+                    variants *= 3
+                elif modifier == "windash":
+                    size = 3 * size + 8
+                    variants *= 125  # pySigma2.0.1 caps expansion at three dash positions.
+                else:
+                    size += 8  # Other pinned modifiers do not multiply strings/variants.
+                if size * variants > 262144:
+                    raise ValueError("Expansão Sigma excede orçamento por valor de 256 KiB.")
+            expanded_bytes += size * variants
+            variants_total += variants
+            if expanded_bytes > 1048576 or variants_total > 4096:
+                raise ValueError("Expansão Sigma excede orçamento total de 1 MiB/4096 variantes.")
+    return document
+
+
+def parse_sigma(content: str) -> dict:
+    document = safe_sigma_document(content)
     collection = SigmaCollection.from_dicts([document])
     if collection.errors or len(collection.rules) != 1:
         raise ValueError("Forneça exatamente uma regra Sigma válida.")

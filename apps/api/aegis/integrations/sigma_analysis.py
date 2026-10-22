@@ -11,7 +11,7 @@ from sigma.rule import SigmaDetection, SigmaRule
 from sigma.types import SigmaString, SpecialChars
 
 from aegis.domain.validation import digest
-from aegis.integrations.yaml_import import safe_document
+from aegis.integrations.yaml_import import safe_sigma_document
 
 ANALYZER_VERSION = "sigma-static/1"
 CHECKS = [
@@ -24,7 +24,7 @@ CHECKS = [
 
 
 def analyze(content: str) -> dict:
-    document = safe_document(content)
+    document = safe_sigma_document(content)
     collection = SigmaCollection.from_dicts([document])
     if collection.errors or len(collection.rules) != 1:
         raise ValueError("Esperada exatamente uma regra Sigma.")

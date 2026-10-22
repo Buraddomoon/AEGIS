@@ -205,3 +205,77 @@ assert 'diskcache' not in sys.modules
         [sys.executable, "-B", "-c", probe], input=SIGMA, text=True, capture_output=True, timeout=15
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    "detection",
+    [
+        {"selection": {"CommandLine" + "|wide" * 80: "x"}, "condition": "selection"},
+        {"selection": {"CommandLine" + "|base64" * 80: "x"}, "condition": "selection"},
+        {"selection": {"CommandLine|windash": "x" * 3000}, "condition": "selection"},
+        {
+            "selection": {"Image|contains|all|wide|utf16le|utf16be|utf16|base64": "x"},
+            "condition": "selection",
+        },
+        {"selection": [{"Image|windash": "x"} for _ in range(33)], "condition": "selection"},
+        {"selection": [{"Image|windash": "x" * 500} for _ in range(6)], "condition": "selection"},
+    ],
+)
+def test_import_and_analysis_reject_expansion_before_pysigma(detection, monkeypatch):
+    from aegis.integrations.yaml_import import parse_sigma
+    from sigma.collection import SigmaCollection
+
+    document = yaml.safe_load(SIGMA)
+    document["detection"] = detection
+    content = yaml.safe_dump(document)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("pySigma must not receive over-budget content")
+
+    monkeypatch.setattr(SigmaCollection, "from_dicts", forbidden)
+    for action in (parse_sigma, analyze):
+        with pytest.raises(ValueError, match="Cadeia Sigma|Expansão Sigma"):
+            action(content)
+
+
+def test_regular_encoding_chain_remains_accepted():
+    content = SIGMA.replace("CommandLine|contains:", "CommandLine|wide|base64offset|contains:")
+    assert analyze(content)["status"] == "no_findings_in_selected_checks"
+
+
+def test_yaml_depth_rejected_before_constructing_python_tree():
+    from aegis.integrations.yaml_import import safe_document
+
+    with pytest.raises(ValueError, match="profundidade"):
+        safe_document("a: " + "[" * 40 + "1" + "]" * 40)
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {
+            "filter": {
+                "rules": "any",
+                "condition": "selection",
+                "selection": {"Image" + "|wide" * 80: "x"},
+            }
+        },
+        {"correlation": {"type": "event_count"}},
+        {"action": "global"},
+        {"detection": ["selection"]},
+        {"detection": None},
+    ],
+)
+def test_non_detection_documents_rejected_before_collection_dispatch(extra, monkeypatch):
+    from aegis.integrations.yaml_import import parse_sigma
+    from sigma.collection import SigmaCollection
+
+    document = {**yaml.safe_load(SIGMA), **extra}
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Non-detection document must not reach SigmaCollection")
+
+    monkeypatch.setattr(SigmaCollection, "from_dicts", forbidden)
+    for action in (parse_sigma, analyze):
+        with pytest.raises(ValueError, match="regra individual"):
+            action(yaml.safe_dump(document))

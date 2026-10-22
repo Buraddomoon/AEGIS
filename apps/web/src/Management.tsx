@@ -356,8 +356,9 @@ function SigmaForm({ onClose }: { onClose: () => void }) {
           />
         </label>
         <p className="muted-text">
-          Um documento por importação, máximo 64 KiB, sem aliases YAML. Para criar nova versão,
-          mantenha o mesmo UUID.
+          Um documento por importação, máximo 64 KiB, sem aliases YAML. Até 6 modificadores sem
+          repetição por campo, com orçamento de expansão. Para criar nova versão, mantenha o mesmo
+          UUID.
         </p>
         <div className="form-actions">
           <button className="button" type="button" onClick={onClose}>

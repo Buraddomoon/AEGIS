@@ -630,7 +630,7 @@ def import_rule(data: schemas.SigmaImport, user: Operator, db: DB) -> dict:
     except Exception:
         raise HTTPException(
             422,
-            "Sigma inválido. Verifique UUID, logsource, detection e condition; aliases YAML são proibidos.",
+            "Sigma inválido. Verifique UUID, logsource, detection, condition e limites YAML/modificadores; aliases são proibidos.",
         ) from None
     if any(not db.get(AttackTechnique, t) for t in parsed["techniques"]):
         raise HTTPException(422, "Técnica referenciada não existe no catálogo ativo.")
