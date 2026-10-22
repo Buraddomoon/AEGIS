@@ -19,3 +19,5 @@ playwright-report/
 *.egg-info/
 *.tsbuildinfo
 .local-*.json
+*.dump
+*.dump.partial

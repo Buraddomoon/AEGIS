@@ -14,7 +14,7 @@ for path in paths:
             part in {"node_modules", ".venv", "__pycache__", ".local", "dist"}
             for part in path.split("/")
         )
-        or path.endswith((".log", ".pyc", ".tsbuildinfo"))
+        or path.endswith((".log", ".pyc", ".tsbuildinfo", ".dump", ".dump.partial"))
         or (path.split("/")[-1].startswith(".env") and path != ".env.example")
     ):
         bad.append(path + ": sensitive/generated path")
