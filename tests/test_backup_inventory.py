@@ -188,3 +188,46 @@ def test_constraint_roundtrip_uses_postgres_and_preserves_allowed_values(db_read
         with pytest.raises(IntegrityError), conn.begin_nested():
             conn.execute(text("INSERT INTO backup_role_roundtrip VALUES ('unexpected')"))
         conn.rollback()
+
+
+@pytest.mark.parametrize(
+    "create,drop",
+    [
+        (
+            "ALTER TABLE users ENABLE ROW LEVEL SECURITY",
+            "ALTER TABLE users DISABLE ROW LEVEL SECURITY",
+        ),
+        ("CREATE POLICY backup_policy ON users USING (true)", "DROP POLICY backup_policy ON users"),
+        ("CREATE TYPE backup_enum AS ENUM ('safe')", "DROP TYPE backup_enum"),
+        (
+            "CREATE PROCEDURE backup_procedure() LANGUAGE plpgsql AS 'BEGIN NULL; END'",
+            "DROP PROCEDURE backup_procedure()",
+        ),
+    ],
+)
+def test_inventory_rejects_unsupported_security_and_custom_objects(
+    db_ready, pg_engine, create, drop
+):
+    with pg_engine.begin() as conn:
+        schema = conn.execute(text("SELECT current_schema()")).scalar_one()
+        conn.execute(text(create))
+        try:
+            with pytest.raises(ValueError, match="Unsupported database features"):
+                inventory(lambda sql: conn.execute(text(sql)).scalars(), schema)
+        finally:
+            conn.execute(text(drop))
+
+
+def test_array_element_typmod_change_is_not_silently_equivalent(db_ready, pg_engine):
+    with pg_engine.connect() as conn:
+        schema = conn.execute(text("SELECT current_schema()")).scalar_one()
+        conn.execute(text("CREATE TABLE backup_typmod (items varchar(80)[])"))
+        first = inventory(lambda sql: conn.execute(text(sql)).scalars(), schema)
+        conn.execute(text("ALTER TABLE backup_typmod ALTER COLUMN items TYPE varchar(90)[]"))
+        changed = inventory(lambda sql: conn.execute(text(sql)).scalars(), schema)
+        assert first["tables"] == changed["tables"]
+        assert first["structure"]["columns"] == changed["structure"]["columns"]
+        assert first["structure"]["column_attributes"] != changed["structure"]["column_attributes"]
+        with pytest.raises(ValueError, match="differs"):
+            compare(first, changed)
+        conn.rollback()

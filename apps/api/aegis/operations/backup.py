@@ -47,6 +47,24 @@ def identifier(value: str) -> str:
 def structure_queries(schema: str) -> dict[str, str]:
     identifier(schema)
     return {
+        "table_properties": f"""SELECT to_jsonb(x)::text FROM (
+          SELECT c.relname, c.relpersistence, c.relreplident, c.reloptions,
+            c.relrowsecurity, c.relforcerowsecurity FROM pg_class c
+          JOIN pg_namespace n ON n.oid=c.relnamespace
+          WHERE n.nspname='{schema}' AND c.relkind='r'
+          ORDER BY c.relname COLLATE "C") x""",
+        "column_attributes": f"""SELECT to_jsonb(x)::text FROM (
+          SELECT c.relname, a.attnum, a.attname, a.atttypmod,
+            format_type(a.atttypid,a.atttypmod) AS formatted_type,
+            a.attnotnull, a.attidentity, a.attgenerated,
+            cn.nspname AS collation_schema, co.collname AS collation
+          FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid
+          JOIN pg_namespace n ON n.oid=c.relnamespace
+          LEFT JOIN pg_collation co ON co.oid=a.attcollation
+          LEFT JOIN pg_namespace cn ON cn.oid=co.collnamespace
+          WHERE n.nspname='{schema}' AND c.relkind='r'
+            AND a.attnum>0 AND NOT a.attisdropped
+          ORDER BY c.relname COLLATE "C", a.attnum) x""",
         "columns": f"""SELECT to_jsonb(x)::text FROM (
           SELECT table_name, ordinal_position, column_name, data_type, udt_name,
             is_nullable, column_default, character_maximum_length
@@ -61,6 +79,11 @@ def structure_queries(schema: str) -> dict[str, str]:
         "indexes": f"""SELECT to_jsonb(x)::text FROM (
           SELECT tablename, indexname, indexdef FROM pg_indexes
           WHERE schemaname='{schema}' ORDER BY indexname COLLATE "C") x""",
+        "index_state": f"""SELECT to_jsonb(x)::text FROM (
+          SELECT c.relname, i.indisvalid, i.indisready, i.indislive, i.indisreplident
+          FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid
+          JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='{schema}'
+          ORDER BY c.relname COLLATE "C") x""",
         "triggers": f"""SELECT to_jsonb(x)::text FROM (
           SELECT c.relname, t.tgname, t.tgenabled, pg_get_triggerdef(t.oid) AS definition
           FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
@@ -111,6 +134,24 @@ def inventory(query: Query, schema: str = "public") -> dict[str, Any]:
     )
     if unsupported:
         raise ValueError("Unsupported relation types in backup schema")
+    unsupported_features = [
+        f"""SELECT to_jsonb(tablename)::text FROM pg_policies WHERE schemaname='{schema}'""",
+        f"""SELECT to_jsonb(c.relname)::text FROM pg_class c
+          JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='{schema}'
+          AND (c.relrowsecurity OR c.relforcerowsecurity OR c.reloftype<>0 OR c.relispartition)""",
+        f"""SELECT to_jsonb(p.proname)::text FROM pg_proc p
+          JOIN pg_namespace n ON n.oid=p.pronamespace
+          WHERE n.nspname='{schema}' AND p.prokind<>'f'""",
+        f"""SELECT to_jsonb(t.typname)::text FROM pg_type t
+          JOIN pg_namespace n ON n.oid=t.typnamespace WHERE n.nspname='{schema}'
+          AND NOT ((t.typtype='c' AND t.typrelid IN
+            (SELECT oid FROM pg_class WHERE relkind='r'))
+            OR (t.typtype='b' AND t.typelem IN
+              (SELECT oid FROM pg_type WHERE typtype='c' AND typrelid IN
+                (SELECT oid FROM pg_class WHERE relkind='r'))))""",
+    ]
+    if any(list(query(sql)) for sql in unsupported_features):
+        raise ValueError("Unsupported database features in backup schema")
     tables = [
         json.loads(row)
         for row in query(f"""SELECT to_jsonb(tablename)::text
