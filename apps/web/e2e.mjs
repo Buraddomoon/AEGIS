@@ -206,6 +206,11 @@ level: informational
   }
   await navigate('rules')
   await importSigma(sigma)
+  await button('Análise estática')
+  await text('Nenhum achado nos checks executados')
+  await text('Backend e pipeline não configurados')
+  const firstAnalysisVersion = await page.$eval('dialog select', el => el.value)
+  await page.click('dialog button[aria-label="Fechar"]')
   await button('Testes e revisões')
   await reviewLink()
   await text('Revisado para planejamento')
@@ -221,7 +226,16 @@ level: informational
   assert.equal(reviewedReport.run.scope.rule_test_links.length, 1)
   assert.equal(reviewedReport.run.scope.rule_test_links[0].rule_version, 1)
   await navigate('rules')
-  await importSigma(sigma.replace('level: informational', 'level: low'))
+  await importSigma(sigma.replace('level: informational', 'level: low').replace('  condition: selection', '  unused:\n    Image: /bin/sh\n  condition: selection'))
+  await button('Análise estática')
+  await text('A seleção declarada não é referenciada pela condição.')
+  await text('unused_selection')
+  await page.$eval('dialog[open]', el => { el.scrollTop = 0 })
+  await screenshot('sigma-analysis')
+  await page.select('dialog select', firstAnalysisVersion)
+  await text('Nenhum achado nos checks executados')
+  assert.equal(await page.$eval('dialog select', el => el.value), firstAnalysisVersion)
+  await page.click('dialog button[aria-label="Fechar"]')
   await button('Testes e revisões')
   await text('Revisão necessária')
   await reviewLink()
@@ -267,11 +281,11 @@ level: informational
   console.log(
     JSON.stringify({
       result: 'PASS',
-      flow: 'login → catalog → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report → Sigma review → version change → retirement → historical scope comparison',
+      flow: 'login → catalog → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report → Sigma static analysis → review → version change → historical analysis → retirement → historical scope comparison',
       runs: 4,
       tests: 16,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 8,
+      screenshots: 9,
       browserErrors: errors.length,
     }),
   )
