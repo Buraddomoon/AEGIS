@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **Demo/Linux 0.2.0 com preparação Wazuh (Marco Wazuh A ao final)**. Demo saudável em localhost:18780; usuário ainda não tem Wazuh e pediu sem instalar. Coleta validada localmente, sem consulta externa ou novo ensaio Linux. Os registros anteriores abaixo são históricos, não o estado atual.
+Estado atual: **Demo/Linux 0.2.0; ensaio Wazuh autorizado sob preflight (continuidade de 2026-10-22 ao final)**. Demo saudável em localhost:18780. Integração preparada/testada localmente; ensaio real ainda não iniciado por RAM disponível abaixo de 8 GiB. A autorização específica substitui o pedido inicial sem instalar somente no escopo de ASSAY.md. Registros anteriores abaixo são históricos.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -402,3 +402,101 @@ commit, sem branch/PR/force ou reescrita. Último código **6e6464b**; CI
 frontend/build e revisão de advisories passaram. Commits seguintes contêm somente
 documentação e não iniciam validação redundante. Conferir git log -1 e git status
 -sb após o checkpoint para hash/mensagem/sincronização finais.
+
+
+## 2026-10-22 — Continuidade Wazuh: inspeção de isolamento antes do ensaio
+
+O usuário pediu seguir para o próximo passo. A autorização de ASSAY.md persiste
+sem nova pergunta, condicionada ao preflight. Às **12:40 UTC**, a medição somente
+leitura encontrou **16 CPUs, 7.678.832.640 bytes (7,15 GiB) MemAvailable,
+440.305.610.752 bytes livres no filesystem Docker e vm.max_map_count=1048576**.
+O piso de 8 GiB disponíveis ainda falha; não baixar/construir/iniciar o stack nem
+parar outros serviços, alterar swap/sysctl/cache para contornar essa condição.
+Após a suíte completa, nova medição encontrou **7.288.549.376 bytes (6,79 GiB)**
+disponíveis; gate continuou recusando início. MemAvailable varia durante a sessão.
+Nenhuma imagem wazuh/* ou container do projeto foi encontrado. Não houve novo
+marcador, consulta SIEM, evidência defensiva ou alteração dos ensaios anteriores.
+
+### Unidade entregue e decisões
+
+- `scripts/inspect_wazuh_lab.py` e `make wazuh-lab-inspect`: somente ps/ls/inspect
+  no daemon Unix local, filtrando o projeto aegis-wazuh-lab; não executa dentro de
+  containers nem recebe destino/comando livre. Ausência/divergência retorna exit1.
+- Compara com allowlist explícita independente do Compose: todos os serviços e
+  somente eles, migração concluída, saúde disponível, memórias/CPU/PIDs, namespaces,
+  usuários/read-only/capabilities/no-new-privileges, portas solicitadas/efetivas,
+  redes/IPs/membros, volumes do projeto e mounts/source/RO/RW, workspace tmpfs com
+  opções revisadas e referências Wazuh fixadas por digest. Recusa dispositivos
+  adicionais, namespaces host, sockets/mounts extras e volumes remotos.
+- Saída só contém nomes conhecidos de checks e booleans. Template não solicita
+  Config.Env; falhas não imprimem comando, daemon response, paths ou valores
+  privados. Coleta não depende de memória disponível, para poder diagnosticar o
+  projeto após seu início autorizado ou quando estiver com poucos recursos.
+- Integração no Makefile, ADR0006, AGENTS, changelog, runbook e documentação de
+  testes. Cabeçalho deste progresso corrigido para refletir a autorização atual.
+- Esse check cobre **metadados Docker**, não a configuração/conteúdo dentro dos
+  containers, opções efetivas do kernel, mTLS, ACL, rule engine ou ingestão.
+  Completar esses passos do checklist continua obrigatório antes do único efeito.
+  Não criar novos guardas como substituto indefinido do ensaio pendente.
+
+### Verificações efetivamente executadas
+
+| Check | Resultado observado |
+|---|---|
+| `make test-wazuh-preparation` | **97 passaram**, 0,70s, sem novos serviços; inclui 51 testes do novo verificador |
+| Projeções Docker reais | Quatro regressões somente leitura em objetos Demo já existentes: worker sem Health, db sem Tmpfs, rede e volume; todas passaram, sem restart/exec |
+| `make lint` | Ruff/check/format83arquivos, mypy domínio, TypeScript e Prettier passaram |
+| Regressão do polling | Falhou antes com sleep=-0,1s; 47 testes de coleta/campanhas passaram após correção, 20,70s |
+| `make test` após correção | **296 Python passaram**,92,66s; **14 frontend passaram**,sem falha |
+| CI c61000b | **SUCCESS**,run39780994246; lint/tipos, PostgreSQL/frontend/build e revisão de dependências passaram |
+| `make wazuh-lab-config` | Compose renderizado/validado sem iniciar e sem imprimir segredos |
+| `make wazuh-lab-inspect` | Recusa esperada: projeto não iniciado, inspection_completed=false/isolation_verified=false; nenhum efeito |
+| `make wazuh-lab-preflight` | Recusa esperada por RAM disponível; outros pisos aprovados |
+| Demo existente | localhost:18780/api/v1/health/ready: ready, database=true, redis=true |
+| Git | Scanner staged, inspeção dos arquivos e diff --check aprovados antes de cada commit; nenhum dado .local/.env/PKI incluído |
+
+Os snapshots de testes são fictícios, não resultados Wazuh. Quatro testes de
+projeção somente leitura usam objetos próprios Demo existentes e pulam quando
+estes estiverem ausentes na CI; não criam infraestrutura. O aviso upstream
+Starlette TestClient/httpx permanece. Sem nova dependência, rebuild do Demo ou
+rodada E2E. A suíte completa local foi repetida após a mudança no backend e passou.
+
+### Revisão especializada e correções
+
+Revisão somente leitura reproduziu dois problemas: dot lookup em campos opcionais
+Docker falhava quando Health/Tmpfs estavam ausentes e DeviceCgroupRules não era
+inspecionado. Corrigidos com index/with e recusa de grants adicionais de
+dispositivos. Regressões executadas, inclusive templates no Docker29 real.
+Revisor confirmou ambos resolvidos no commit7727862, sem outro bloqueador concreto.
+Isso não equivale à validação do runtime Wazuh.
+
+A CI do código c39708f encontrou uma falha no teste de contrato NO_TELEMETRY:
+retornava INCONCLUSIVE. Investigação reproduziu deterministicamente a causa na
+espera de polling: guard de autorização/ownership PostgreSQL podia consumir uma
+fatia de espera e o cálculo posterior passar um valor negativo a sleep. ValueError
+era capturado como falha de configuração/coleta. `wazuh_polling.py` agora recalcula
+o restante após guard e dorme somente se positivo. O teste novo falhou antes e
+passou após a mudança; coleção/campanhas completas passaram. Revisão especializada
+confirmou preservados janela, deadline, reserva de cleanup, cancelamento, fechamento
+do provider e critérios de classificação. Sem alterar LOGIC_VERSION1.1 ou evidências
+históricas: corrige espera operacional, sem mudar regras aprovadas/correlação.
+
+### Continuidade e versionamento
+
+Próximo passo continua sendo o único ensaio real **já autorizado**, quando houver
+8 GiB MemAvailable e os demais pisos passarem: imagens/hash/build/up, inspeção de
+runtime e interna, readiness/TLS/ACL/agente/regra, uma campanha/execução/marcador,
+evidências originais e cleanup/revogação/encerramento preservando volumes.
+Não repetir autorização ou efeito ambíguo. Certificados atuais expiram em
+**2026-10-23 18:57:22 UTC**: verificar validade antes de iniciar; não recriar
+identidades/journals ou apagar evidências para contornar estados ambíguos.
+
+Este marco tem **6 commits**, incluindo este checkpoint, totalizando **136**.
+Somente main e repositório AEGIS privado, push após cada commit. Último commit de
+código: **c61000b**. A CI posterior à correção
+[run39780994246](https://github.com/Buraddomoon/AEGIS/actions/runs/39780994246)
+concluiu **SUCCESS**, consultada após finalizar: lint/tipos, testes PostgreSQL/
+frontend/build e revisão de dependências passaram. Não confundir com
+run39780201407 que falhou antes da correção. Este checkpoint muda só documentação
+e não dispara validação redundante. Os runs intermediários são cancelados pela
+concurrency existente. Consultar git log -1/status -sb para hash e sync finais.

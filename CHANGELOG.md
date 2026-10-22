@@ -8,6 +8,8 @@
   saída contém checks e booleans, sem Environment, segredos ou diagnóstico bruto.
 - Testes de snapshots verificam fronteiras e falhas. Wazuh real permanece pendente
   sob o preflight/autorização existente; não inferir ingestão desses checks.
+- Corrigida espera negativa no polling quando o guard de autorização demora mais
+  que a fatia de sleep, evitando INCONCLUSIVE indevido sem afrouxar janela/deadline.
 
 ## Continuidade — ensaio Wazuh isolado preparado
 

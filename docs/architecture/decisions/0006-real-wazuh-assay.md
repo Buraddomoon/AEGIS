@@ -80,6 +80,8 @@ a margem de RAM disponível; não iniciar nem baixar o stack enquanto o gate fal
 - [Deploy oficial fixado em v4.14.9](https://github.com/wazuh/wazuh-docker/tree/v4.14.9)
 - [Teste de regras](https://documentation.wazuh.com/current/user-manual/ruleset/testing.html)
 - [Volumes tmpfs Docker](https://docs.docker.com/engine/storage/volumes/#use-a-tmpfs-volume)
+- [Inspeção de objetos Docker](https://docs.docker.com/reference/cli/docker/inspect/)
+- [Redes bridge Docker](https://docs.docker.com/engine/network/drivers/bridge/)
 
 A documentação oficial pede host com pelo menos 4 CPUs, 8 GB de RAM, 50 GB de
 armazenamento e `vm.max_map_count >= 262144`. Não reproduzir os defaults de senha
