@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **Demo/Linux 0.2.0; ensaio Wazuh autorizado sob preflight (continuidade de 2026-10-22 ao final)**. Demo saudável em localhost:18780. Integração preparada/testada localmente; ensaio real ainda não iniciado por RAM disponível abaixo de 8 GiB. A autorização específica substitui o pedido inicial sem instalar somente no escopo de ASSAY.md. Registros anteriores abaixo são históricos.
+Estado atual: **Demo/Linux 0.2.0 com pipeline Wazuh real validado em um único ensaio encerrado (Marco Wazuh B ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -518,3 +518,132 @@ Revisão especializada somente leitura contra entrypoints oficiais v4.14.9 confi
 caminhos de cópia dos arquivos manager/agente, parametrização Filebeat fullTLS e
 bootstrap que altera wazuh e randomiza wazuh-wui. Não usar certificados admin demo
 embutidos. Isso é inspeção de fonte, não validação de credenciais, regra ou ingestão.
+
+
+## 2026-10-22 — Marco Wazuh B: pipeline real validado e encerrado
+
+### Resultado e escopo efetivamente executado
+
+Após o usuário encerrar o Firefox e pedir prosseguir, o preflight passou às
+13:13 UTC com 16 CPUs, 8,78 GiB disponíveis, 410 GiB livres e vm.max_map_count=1048576. Foi usado
+somente o projeto aegis-wazuh-lab autorizado, imagens oficiais 4.14.9 linux/amd64
+fixadas por digest, builds próprios, novos banco/identidades/PKI, API loopback:18786,
+SIEM sem portas publicadas, runner em rede isolada e observador sem rede.
+Não foi parado outro projeto ou alterado sysctl/swap/cache. O Demo permaneceu pronto.
+
+**Campanha única:** `987bd48f-fafc-4a34-bf2a-2d310e7ca794`.
+**Execução:** `a54831d6-5517-4a15-b0c8-adc9faee97d8`.
+Resultado observado **COMPLETED / DETECTED / CLEANED**, `synthetic=false`.
+Intenção de start persistida às 13:29:53UTC, resultado capturado às 13:30:05UTC.
+Um único teste linux-file-marker-v1; um marcador de 43 bytes, filho limitado a 5s,
+operador solicitante e administrador distinto, aprovação consumida de 120s.
+Não houve replay do efeito, agendamento, ATT&CK artificial, credenciais coletadas
+ou alvos empresariais/externos.
+
+Fluxo real: arquivo → observador passivo → logfile 0600 → agente 001/aegis-marker →
+manager/regra 100200 → Filebeat TLS → Indexer → worker/correlação → evento/evidência
+no PostgreSQL → relatório HTML/JSON. Alerta original preservado:
+`wazuh-alerts-4.x-2026.10.22 / H5fNY6EB3Gh75NYK5xtJ`.
+
+### Verificações reais e encerramento
+
+- 163 checks Docker passaram. Conferidos dentro dos containers: tmpfs 1MiB
+  noexec/nosuid/nodev, UID10001/0700, runnerRW/observerRO, log 0600 inicialmente
+  vazio, agente root/logcollector somente no logfile RO; nenhum socketDocker.
+- Regra100200 validada no wazuh-logtest com JSON sintético somente no sandbox,
+  sem inseri-lo no Indexer. Agente001 Active conferido. ManagerAPI somente em
+  127.0.0.1 interno; SQLiteRO/hashverify confirmou defaults wazuh/wazuh-wui
+  rejeitados e senha configurada de wazuh correspondente, sem expor hashes/senhas.
+- Reader autenticou com CA/SNI/IP fixado, Filebeat testoutput verificou TLS 1.3,
+  Search/Scroll/Clear passaram. Reader recebeu 403 para create-index e para acesso
+  ao índice de segurança. Ingest bulk fora dos índices de alertas recebeu HTTP200
+  com item403: status do item conferido, não somente HTTP. Probe usou índice vazio
+  e delete de ID inexistente; nenhum documento de teste inserido, índice removido.
+- Um evento e uma evidência persistidos, correlacionados à execução/laboratório/
+  ativo/marcador/comportamento/tempo/regra 100200. Hash do evento, recibo e cleanup
+  conferidos. Única linha do observador preservada e comparada ao full_log e hash
+  dos 43 bytes, independentemente do receipt. Não foi convertido recibo em alerta.
+- Coleta: seis tentativas, completa/alerts_available=true, archives não configurado
+  (telemetry_available=false), window_satisfied=false. Alerta positivo exato
+  permite conclusão antes do horizonte; não tirar conclusão negativa dessa janela.
+- Conferidos estado CLEANED e workspace fisicamente vazio, uma campanha/execução/
+  evento/evidência no banco, aprovação segregada usada por 120s, coleção append-only,
+  laboratório revogado/sem reserva e duas contas temporárias inativas.
+- Containers e quatro redes do projeto encerrados; nove volumes, diário/fences e
+  evidências preservados. Senhas temporárias das duas contas removidas após
+  confirmação, sem remover segredos de implantação necessários aos volumes.
+  Nenhuma imagem/volume foi apagada por prune/down-v. Às 13:41UTC, 9,23 GiB de RAM
+  estavam disponíveis; Demo localhost:18780 pronto com DB/Redis true.
+
+**A autorização de um único ensaio foi consumida.** Não iniciar novamente o stack,
+repetir marcador ou apagar intent/journal para contornar replay. Nova execução
+real exige novo escopo específico. Leitura dos arquivos/testes offline não
+reexecutam o efeito nem consultam serviços externos.
+
+### Código, problemas encontrados e evidências
+
+- `smoke_wazuh_platform.py`: harness opt-in, intent O_EXCL append/fsync antes de
+  mutações e START_INTENT antes do único POSTstart. Recusa histórico prévio, sem
+  retry de resposta ambígua; contas aleatórias no container owner/migrate via
+  stdin, API/worker sem credencial owner/admin Indexer. Captura antes de avaliar,
+  revoga lab/desativa contas/remove senhas temporárias ao confirmar encerramento.
+  CLEANUP_FAILED/ambiguidade preservam acesso para recuperação original.
+- Runtime encontrou 403 por falta de bulk no nível cluster do perfil ingest.
+  Corrigido em roles.yml mantendo index_patterns dos alertas e reader inalterado;
+  RESTSecurity habilitada só para aegis_admin. Perfil aplicado viaREST local Indexer
+  com senha somente stdin. Não usar certificados admin demo da imagem. ACLs
+  negativas reais confirmaram separação; templates/pipelines globais de bootstrap
+  do ingest continuam explicitamente documentados, sem alegação de isolamento
+  administrativo total por índice.
+- Consultas de diagnóstico iniciais usaram scroll size0 e HEAD com curl inadequados;
+  corrigidas para size1/GET antes do efeito, sem afrouxar TLS/permissões. Config
+  mínima do manager gerou avisos por listas CDB omitidas: não foi avaliada cobertura
+  do ruleset padrão, só a regra de instrumentação100200.
+- [Alerta, observação, resumo e hashes](evidence/wazuh-2026-10-22/README.md) publicados
+  após revisão contra senhas de implantação/client.keys e chave privada. IDs/IPs
+  são somente desse lab próprio. Resumo curado sem credenciais ou chave de
+  idempotência; originais HTML/JSON completos permanecem em `.local/wazuh-lab`.
+  Hashes conferem integridade, não assinatura/autenticidade do operador.
+- README, AGENTS, ADR0006, guias de laboratório/integração/testes, roadmap, aceite e
+  changelog atualizados. A captura Wazuh anterior continua identificada como Demo
+  sem conector; não inventar screenshot ou inserir o ensaio no banco Demo.
+
+### Verificações automatizadas executadas
+
+| Check | Resultado observado |
+|---|---|
+| `make test` | **311 Python passaram**,84,33s; **14 frontend passaram** |
+| `make lint` | Ruff/check/format de 86 arquivos, mypy domínio, TypeScript e Prettier passaram |
+| `make test-wazuh-preparation` | **106 passaram**,0,93s; fixtures/arquivos/projeçõesreadonly, sem novo marcador |
+| Harness de uso único | **8 passaram**, incluindo start durável, resposta ambígua sem retry/acesso retido, recusa de histórico e remoção de credencial após desativação |
+| Artefatos gravados | **6 passaram**, hashes byte/canônico, normalização do schema real e recusa de agente/regra alterados; offline, não nova validação externa |
+| Preparação corrigida | **8 passaram**, incluindo separação reader/ingest/admin e render Compose |
+| Documentos | 11 Markdown/42 links locais verificados, sem destinos ausentes; scanner staged/diff-check por commit |
+| CI | **SUCCESS**, código 42d3d1d, [run39788294808](https://github.com/Buraddomoon/AEGIS/actions/runs/39788294808), consultada após concluir; lint/tipos/PostgreSQL/frontend/build/advisories aprovados |
+
+Aviso upstream TestClient/httpx e advisory transitivo DiskCache previamente
+revisado permanecem; sem dependências novas ou recurso pago. Não houve nova rodada
+E2E de navegador, screenshot Wazuh ou rebuild do Demo. Revisões especializadas
+somente leitura confirmaram configuração oficial, escopo bulk, método seguro de
+verificar defaults e ausência de bloqueador no harness. Nenhum agente executou
+marcador ou serviços em paralelo.
+
+### Limitações e próximo passo
+
+O resultado confirma **somente o pipeline da regra própria de marcador** em
+Wazuh 4.14.9/schema aegis-json/1/Linux. Um teste válido e zero técnicas ATT&CK
+avaliadas; não demonstra eficácia de EDR, detecção padrão Wazuh ou proteção
+empresarial. Windows, archives, outras versões, regras operacionais, retenção e
+restore/rotação de PKI continuam pendentes. Os volumes guardam histórico, não uma
+implantação SIEM mantida em execução. Não anunciar integração universal pronta.
+
+Próxima etapa de software recomendada: associação operacional entre regras e
+testes e análise comparativa de cobertura baseada nas evidências existentes,
+sem novos efeitos reais. Mantêm-se limites anteriores de Sigma deployment, PDF,
+workspace único e scheduler somente Demo.
+
+Este marco acrescenta **7 commits granulares**, incluindo este checkpoint,
+totalizando **143**. Somente main, AEGIS privado, push após cada commit, sem
+branch/PR/force. Último código/testes 42d3d1d; CI verde acima. Commits seguintes são
+só documentação e não disparam validação redundante. Conferir log/status após
+este checkpoint para hash/mensagem/sincronização finais.
