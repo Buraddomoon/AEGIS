@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ScopeChanges } from './ScopeChanges'
 import {
   ArrowLeft,
   ArrowRight,
@@ -761,6 +762,7 @@ export function CoveragePage() {
           Escopo dos indicadores
           <select
             aria-label="Modo dos indicadores"
+            disabled={busy}
             value={mode}
             onChange={(e) => {
               setMode(e.target.value)
@@ -828,6 +830,7 @@ export function CoveragePage() {
             Execução anterior
             <select
               required
+              disabled={busy}
               value={before}
               onChange={(e) => {
                 setBefore(e.target.value)
@@ -847,6 +850,7 @@ export function CoveragePage() {
             Execução atual
             <select
               required
+              disabled={busy}
               value={after}
               onChange={(e) => {
                 setAfter(e.target.value)
@@ -903,6 +907,10 @@ export function CoveragePage() {
                 </tbody>
               </table>
             </div>
+            <p className="mono muted-text">
+              Execuções: {comparison.before_id} → {comparison.after_id}
+            </p>
+            <ScopeChanges changes={comparison.scope_changes} />
             <details className="scope-details">
               <summary>Inspecionar configurações, regras e ambiente</summary>
               <pre>
