@@ -1,6 +1,6 @@
 # ADR 0008 — Análise estática versionada de Sigma
 
-Data: 2026-10-22. Status: contrato aprovado para implementação.
+Data: 2026-10-22. Status: implementado e validado em API/PostgreSQL, UI, Firefox Demo e Compose.
 
 Oferecer GET autenticado `/rules/{rule_id}/versions/{version_id}/analysis` para
 analisar uma versão imutável, sem executar consultas, modificar aprovações ou
@@ -14,7 +14,7 @@ seu __init__ descobre todos os módulos e importa loaders MITRE/DiskCache, mesmo
 quando só um validador é solicitado. Inspeção e teste revelaram essa dependência;
 não enfraquecer a revisão existente do advisory para habilitar esse caminho.
 Não copiar validadores upstream; checks locais são parciais e identificados AEGIS. Severidade
-do validador é prioridade de revisão da regra, não risco de negócio. Retornar
+do check é prioridade de revisão da regra, não risco de negócio. Retornar
 achados normalizados ordenados e detalhes mínimos (campo/seleção), sem objetos
 Python, exceções brutas, plugins dinâmicos, cache DiskCache ou acesso à rede.
 
@@ -37,4 +37,10 @@ Fontes oficiais consultadas em 2026-10-22:
 Validar regras com achados, condições inválidas, nested/list/keyword detections,
 ordenação, versões históricas, RBAC, entradas legadas inválidas, hash e ausência
 de mutação de vínculos/evidências/escopos. UI deve tratar loading/erro/vazio e
-seleção histórica; fluxo de navegador apenas Demo. Limites YAML existentes mantidos.
+seleção histórica; fluxo de navegador apenas Demo. Limites YAML mantidos e profundidade limitada a32. Revisão identificou expansão
+exponencial de modificadores antes dos budgets de análise. Importação e análise
+agora compartilham preflight anterior ao parser: até6 modificadores sem repetição,
+estimativa conservadora256KiB por valor/1MiB total/4096variantes. A estimativa
+considera encodings e expansão base64offset/windash na versão fixada; não mede RAM
+Python total e pode recusar regras legítimas complexas. Testes substituem o parser
+por função que falha se chamada, provando recusa anterior sem expandir payloads.

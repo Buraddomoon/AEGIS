@@ -1,5 +1,16 @@
 # Changelog
 
+## Continuidade 2026-10-22 — análise estática Sigma
+
+- Análise autenticada por versão/hash, condições, campos declarados e cinco
+  checks explicáveis AEGIS; resultado determinístico com versão do analisador.
+- Interface permite consultar versões anteriores e recusa resposta de outro
+  conteúdo; erros, ausência de versões e checks omitidos são explícitos.
+- Preflight compartilhado limita cadeias/expansão antes do parser na importação
+  e análise; profundidade YAML limitada, sem expandir payloads grandes nos testes.
+- Backend/pipeline de conversão não configurado. Sem novos plugins, cache,
+  implantação de regras ou execução real de laboratório.
+
 ## Continuidade 2026-10-22 — revisões Sigma e comparação de escopos
 
 - Associações versionadas entre regras e testes, justificativa/autor, revisão

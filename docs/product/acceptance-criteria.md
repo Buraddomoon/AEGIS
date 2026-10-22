@@ -36,3 +36,5 @@ sem archives, outras versões, Windows ou eficácia de EDR. Testes offline dos
 artefatos não constituem outro ensaio real. Não houve nova rodada E2E de navegador.
 
 Incremento de engenharia de detecção: testes PostgreSQL/API cobrem vínculos/versões, concorrência, revisão obsoleta, retirada monotônica, RBAC/CSRF, migração populada, invalidação de início/agendamento e preservação de relatórios. UI permite revisão/retirada/histórico e explica mudanças do escopo. Associação é planejamento; conversão/implantação de regras não estão aceitas. Fluxo Firefox Demo validado com 4 runs/16 testes sintéticos, incluindo troca de versão, retirada e relatório histórico idêntico. Contagens finais e CI em PROGRESS.
+
+Incremento Sigma estático: GET autenticado de versão/hash, checks AEGIS sobre parser/modelo pySigma e consulta de versões atuais/históricas na UI validados por testes e Firefox. Compatibilidade/conversão não configuradas; zero achados não comprova semântica/eficácia. Análise não altera escopos ou veredictos. Compose/smoke confirmaram a leitura pelo papel SQL runtime; contagens finais em PROGRESS.

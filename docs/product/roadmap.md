@@ -36,7 +36,11 @@ histórico monotônico, revisão necessária após nova versão, snapshot por ex
 comparação de diferenças de regras/vínculos/testes/ambiente. Nenhuma associação
 altera veredictos ou implica implantação. [Operação](../operations/rule-test-reviews.md).
 
-Pendente: análise semântica, backend/pipeline Sigma oficialmente compatíveis,
+Entregue também: análise estática parcial por versão/hash, cinco checks locais
+sobre o parser/modelo pySigma, fatos declarados e contexto histórico na UI.
+Não comprova correção semântica completa ou eficácia.
+
+Pendente: semântica completa e correspondência à telemetria, backend/pipeline Sigma oficialmente compatíveis,
 implantação validada de regras, análise de cobertura entre ambientes distintos e
 atualização transacional do ATT&CK com depreciações preservadas.
 
