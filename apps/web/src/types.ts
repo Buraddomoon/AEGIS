@@ -284,3 +284,39 @@ export interface Comparison {
   tests: { test_id: string; before: string; after: string; changed: boolean }[]
   limitation: string
 }
+
+export interface SigmaAnalysis {
+  rule_id: string
+  rule_version_id: string
+  rule_version: number
+  sha256: string
+  analyzer_version: string
+  pysigma_version: string
+  status: 'findings' | 'no_findings_in_selected_checks'
+  checks: string[]
+  skipped_checks: string[]
+  findings: {
+    code: string
+    severity: string
+    message: string
+    origin: string
+    selection?: string
+    field?: string | null
+    condition_index?: number
+  }[]
+  facts: {
+    logsource: Record<string, string>
+    conditions: string[]
+    selections: string[]
+    declared_fields: string[]
+    keyword_selections: string[]
+  }
+  compatibility: {
+    status: 'not_configured'
+    backend: null
+    pipeline: null
+    conversion_performed: false
+    deployment_performed: false
+  }
+  limitations: string[]
+}
