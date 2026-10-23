@@ -1,6 +1,7 @@
 """Reconciliation SQL against a disposable PostgreSQL database, never live ACLs."""
 
 import json
+import re
 from datetime import timedelta
 
 import pytest
@@ -68,9 +69,22 @@ def get_inventory(engine):
 @pytest.fixture
 def recovered_work(recovered_database, monkeypatch):
     writer, _ = recovered_database
-    # Production guard insists on aegis_restore/postgres. Our fixture deliberately
-    # uses a random DB and the CI owner; destination rejection is tested below.
-    monkeypatch.setattr(reconcile, "guard_sql", lambda: "NULL;")
+    # Keep the production checks, replacing only the fixed clone DB/user with
+    # this disposable test identity. The unmodified destination is tested below.
+    assert re.fullmatch(r"[a-z0-9_]+", writer.url.database)
+    assert re.fullmatch(r"[a-z0-9_]+", writer.url.username)
+    guard = reconcile.guard_sql().replace(
+        "current_database()<>'aegis_restore'", "current_database()<>'" + writer.url.database + "'"
+    )
+    guard = guard.replace(
+        "current_user<>'postgres' OR session_user<>'postgres'",
+        "current_user<>'"
+        + writer.url.username
+        + "' OR session_user<>'"
+        + writer.url.username
+        + "'",
+    )
+    monkeypatch.setattr(reconcile, "guard_sql", lambda: guard)
     with Session(writer) as db:
         lab = db.scalar(select(Laboratory))
         user = User(username="restored-admin", role="administrator", password_hash="test-hash")
@@ -199,11 +213,18 @@ def test_pending_demo_transitions_are_valid_without_claiming_cleanup(recovered_w
             text("UPDATE campaign_runs SET state=:state WHERE id=:id"),
             {"state": state, "id": ids["run"]},
         )
+        c.execute(
+            text("UPDATE test_executions SET state=:state WHERE id=:id"),
+            {"state": state, "id": ids["execution"]},
+        )
     result = run_sql(writer, reconcile.apply_sql(get_plan(writer)["snapshot_sha256"], RECOVERY_ID))
     assert not result["external_cleanup_performed"]
     with Session(writer) as db:
         steps = list(db.scalars(select(ExecutionStep).where(ExecutionStep.run_id == ids["run"])))
-        added = [s for s in steps if s.message == reconcile.REASON]
+        added = [s for s in steps if s.message == reconcile.REASON and s.execution_id is None]
+        children = [
+            s for s in steps if s.message == reconcile.REASON and s.execution_id == ids["execution"]
+        ]
         expected = []
         if state == State.CREATED:
             expected.append(State.PENDING_APPROVAL)
@@ -211,6 +232,7 @@ def test_pending_demo_transitions_are_valid_without_claiming_cleanup(recovered_w
             expected.append(State.CLEANING_UP)
         expected.append(State.CANCELLED)
         assert sorted(s.state for s in added) == sorted(expected)
+        assert sorted(s.state for s in children) == sorted(expected)
         for target in expected:
             check_transition(state, target)
             state = target
@@ -302,3 +324,52 @@ def test_locks_refuse_competing_writer_without_mutation(recovered_work):
 def test_untrusted_identifiers_rejected_before_sql(fingerprint, identity):
     with pytest.raises(ValueError):
         reconcile.apply_sql(fingerprint, identity)
+
+
+def test_existing_execution_end_and_terminal_history_are_preserved(recovered_work):
+    writer, ids = recovered_work
+    stamp = now() - timedelta(minutes=2)
+    with writer.begin() as c:
+        c.execute(text("UPDATE campaign_runs SET state='COLLECTING'"))
+        c.execute(
+            text("UPDATE test_executions SET state='COLLECTING',executed=true,ended_at=:stamp"),
+            {"stamp": stamp},
+        )
+    run_sql(writer, reconcile.apply_sql(get_plan(writer)["snapshot_sha256"], RECOVERY_ID))
+    with Session(writer) as db:
+        item = db.get(Execution, ids["execution"])
+        assert item.ended_at == stamp and item.executed and item.state == "CANCELLED"
+
+
+def test_terminal_runs_and_executions_unchanged(recovered_work):
+    writer, _ = recovered_work
+    with writer.begin() as c:
+        c.execute(text("UPDATE campaign_runs SET state='COMPLETED'"))
+        c.execute(text("UPDATE test_executions SET state='COMPLETED',executed=true,ended_at=now()"))
+        c.execute(text("UPDATE laboratories SET active_run_id=NULL"))
+    before = get_inventory(writer)
+    run_sql(writer, reconcile.apply_sql(get_plan(writer)["snapshot_sha256"], RECOVERY_ID))
+    after = get_inventory(writer)
+    for table in ("campaign_runs", "test_executions", "approvals"):
+        assert after["tables"][table] == before["tables"][table]
+
+
+def test_structure_drift_refused_by_scope_hash(recovered_work):
+    writer, _ = recovered_work
+    plan = get_plan(writer)
+    with writer.begin() as c:
+        c.execute(text("ALTER TABLE users ADD COLUMN test_drift text"))
+    before = get_inventory(writer)
+    with pytest.raises(Exception, match="plan changed"):
+        run_sql(writer, reconcile.apply_sql(plan["snapshot_sha256"], RECOVERY_ID))
+    assert get_inventory(writer) == before
+
+
+def test_extra_tables_refuse_before_reconciliation(recovered_work):
+    writer, _ = recovered_work
+    with writer.begin() as c:
+        c.execute(text("CREATE TABLE unreviewed_extra (id text)"))
+    before = get_inventory(writer)
+    with pytest.raises(Exception, match="destination/schema refused"):
+        run_sql(writer, reconcile.apply_sql(get_plan(writer)["snapshot_sha256"], RECOVERY_ID))
+    assert get_inventory(writer) == before

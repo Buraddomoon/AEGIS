@@ -159,6 +159,12 @@ def apply_sql(expected_hash, recovery_id):
           WHERE state IN ({literals(old_states)}) RETURNING id)
           INSERT INTO public.execution_steps (id,created_at,run_id,state,message)
           SELECT gen_random_uuid()::text,now(),id,'{target}','{REASON}' FROM changed;""")
+        test_ending = ", ended_at=COALESCE(ended_at,now())" if target == State.CANCELLED else ""
+        transitions.append(f"""WITH changed AS (
+          UPDATE public.test_executions SET state='{target}' {test_ending}
+          WHERE state IN ({literals(old_states)}) RETURNING id,run_id)
+          INSERT INTO public.execution_steps (id,created_at,run_id,execution_id,state,message)
+          SELECT gen_random_uuid()::text,now(),run_id,id,'{target}','{REASON}' FROM changed;""")
     before = projected_rows("SELECT name,row FROM recovery_original")
     after = projected_rows(all_rows_sql())
     return f"""BEGIN;
@@ -190,8 +196,11 @@ def apply_sql(expected_hash, recovery_id):
         UPDATE public.schedules SET state='REVOKED',reason='{REASON}'
           WHERE state IN ('ACTIVE','PAUSED','PENDING_APPROVAL');
         {" ".join(transitions)}
-        UPDATE public.test_executions SET state='CANCELLED',ended_at=now()
-          WHERE state NOT IN ({literals(TERMINAL)});
+        INSERT INTO public.audit_events (id,created_at,actor_id,action,resource_id,details)
+          VALUES (gen_random_uuid()::text,now(),NULL,'{ACTION}','{recovery_id}',
+          jsonb_build_object('format','{FORMAT}','plan_sha256','{expected_hash}',
+            'before_counts',plan->'counts','reconciliation_applied',true,
+            'normal_operation_permitted',false,'external_cleanup_performed',false));
         IF EXISTS (SELECT 1 FROM public.sessions)
           OR EXISTS (SELECT 1 FROM public.users WHERE active)
           OR EXISTS (SELECT 1 FROM public.laboratories WHERE authorized OR active_run_id IS NOT NULL)
@@ -206,11 +215,6 @@ def apply_sql(expected_hash, recovery_id):
           OR EXISTS (SELECT row FROM recovery_original WHERE name='execution_steps'
              EXCEPT ALL SELECT to_jsonb(t) FROM public.execution_steps t)
           THEN RAISE EXCEPTION 'Recovery changed protected data'; END IF;
-        INSERT INTO public.audit_events (id,created_at,actor_id,action,resource_id,details)
-          VALUES (gen_random_uuid()::text,now(),NULL,'{ACTION}','{recovery_id}',
-          jsonb_build_object('format','{FORMAT}','plan_sha256','{expected_hash}',
-            'before_counts',plan->'counts','reconciliation_applied',true,
-            'normal_operation_permitted',false,'external_cleanup_performed',false));
       END $reconcile$;
       SELECT details::text FROM public.audit_events
         WHERE action='{ACTION}' AND resource_id='{recovery_id}';
