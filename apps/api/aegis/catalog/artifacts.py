@@ -1,5 +1,6 @@
 """Private, bounded, host-only candidate preparation. Never downloads on import."""
 
+import asyncio
 import hashlib
 import json
 import os
@@ -31,6 +32,7 @@ from aegis.domain.validation import digest
 
 FORMAT = "aegis-attack-candidate/1"
 FILES = ("bundle.json", "LICENSE.txt", "document.json")
+DOWNLOAD_BUDGET = 75
 
 
 def private(path, create=False):
@@ -86,7 +88,7 @@ def read(path, limit):
     return raw
 
 
-def download(client, url, limit, deadline):
+async def download(client, url, limit, deadline):
     allowed = (
         re.escape(BASE)
         + COMMIT
@@ -98,29 +100,30 @@ def download(client, url, limit, deadline):
         raise ValueError("Catalog download origin/path refused")
     if time.monotonic() > deadline:
         raise ValueError("Catalog download exceeded time budget")
-    with client.stream(
-        "GET",
-        url,
-        headers={"Accept-Encoding": "identity", "User-Agent": "AEGIS-catalog/1"},
-        follow_redirects=False,
-    ) as response:
-        response.raise_for_status()
-        if response.headers.get("content-encoding", "identity").lower() != "identity":
-            raise ValueError("Encoded catalog response refused")
-        declared = response.headers.get("content-length")
-        if declared is not None and (not declared.isdigit() or int(declared) > limit):
-            raise ValueError("Catalog response exceeds limit")
-        chunks = []
-        size = 0
-        for chunk in response.iter_raw():
-            size += len(chunk)
-            if size > limit or time.monotonic() > deadline:
-                raise ValueError("Catalog download exceeded size/time budget")
-            chunks.append(chunk)
-        raw = b"".join(chunks)
-        if declared is not None and len(raw) != int(declared):
-            raise ValueError("Incomplete catalog response")
-        return raw
+    async with asyncio.timeout(max(0, deadline - time.monotonic())):
+        async with client.stream(
+            "GET",
+            url,
+            headers={"Accept-Encoding": "identity", "User-Agent": "AEGIS-catalog/1"},
+            follow_redirects=False,
+        ) as response:
+            response.raise_for_status()
+            if response.headers.get("content-encoding", "identity").lower() != "identity":
+                raise ValueError("Encoded catalog response refused")
+            declared = response.headers.get("content-length")
+            if declared is not None and (not declared.isdigit() or int(declared) > limit):
+                raise ValueError("Catalog response exceeds limit")
+            chunks = []
+            size = 0
+            async for chunk in response.aiter_raw():
+                size += len(chunk)
+                if size > limit or time.monotonic() > deadline:
+                    raise ValueError("Catalog download exceeded size/time budget")
+                chunks.append(chunk)
+            raw = b"".join(chunks)
+            if declared is not None and len(raw) != int(declared):
+                raise ValueError("Incomplete catalog response")
+            return raw
 
 
 def load(root, identity):
@@ -166,19 +169,25 @@ def load(root, identity):
     return document
 
 
-def prepare(root, version, commit, *, client=None):
-    # Validate fixed source parameters before any filesystem or network access.
-    url = source_url(version, commit)
+async def fetch(version, commit, transport=None):
+    deadline = time.monotonic() + DOWNLOAD_BUDGET
+    async with httpx.AsyncClient(
+        timeout=httpx.Timeout(10, connect=5),
+        follow_redirects=False,
+        trust_env=False,
+        transport=transport,
+    ) as client:
+        raw = await download(client, source_url(version, commit), MAX_BUNDLE, deadline)
+        license_raw = await download(client, BASE + commit + "/LICENSE.txt", MAX_LICENSE, deadline)
+    return raw, license_raw
+
+
+def prepare(root, version, commit, *, transport=None):
+    # Fixed URLs and no asynchronous request can outlive the bounded facade.
+    source_url(version, commit)
     private(root.parent, True)
     private(root, True)
-    if client is None:
-        with httpx.Client(
-            timeout=httpx.Timeout(10, connect=5), follow_redirects=False, trust_env=False
-        ) as session:
-            return prepare(root, version, commit, client=session)
-    deadline = time.monotonic() + 75
-    raw = download(client, url, MAX_BUNDLE, deadline)
-    license_raw = download(client, BASE + commit + "/LICENSE.txt", MAX_LICENSE, deadline)
+    raw, license_raw = asyncio.run(fetch(version, commit, transport))
     document = normalize(raw, version, commit, license_raw)
     normalized = encode(document.model_dump(mode="json"))
     if len(normalized) > MAX_NORMALIZED:

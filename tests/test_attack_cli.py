@@ -8,7 +8,7 @@ import pytest
 from aegis.catalog import artifacts
 from aegis.config import settings
 from sqlalchemy.orm import sessionmaker
-from test_attack_artifacts import source_client
+from test_attack_artifacts import source_transport
 from test_attack_document import COMMIT
 from test_attack_publication import catalog_db as _catalog_db
 from test_attack_publication import fingerprint
@@ -24,8 +24,8 @@ SPEC.loader.exec_module(cli)
 def test_cli_requires_hash_actor_and_private_candidate(catalog_db, tmp_path, monkeypatch, capsys):
     engine, actor = catalog_db
     cache = tmp_path / ".local/attack-catalog"
-    with source_client() as client:
-        identity = artifacts.prepare(cache, "20.0", COMMIT, client=client)
+    with source_transport() as client:
+        identity = artifacts.prepare(cache, "20.0", COMMIT, transport=client)
     monkeypatch.setattr(cli, "CACHE", cache)
     monkeypatch.setattr(cli, "session_factory", lambda: sessionmaker(engine))
     before = fingerprint(engine)
