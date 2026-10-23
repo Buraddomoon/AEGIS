@@ -1121,8 +1121,14 @@ do destino fixo antes de I/O.
 - Demo18780 continua ready(database/redis=true), nenhum clone remanescente,
   nenhum container Wazuh,9volumes anteriores preservados. Nenhum novo ensaio
   Linux/Wazuh, alteração de rede/sysctl/serviço alheio ou consulta SIEM.
-- CI final: aguardando confirmação do run39956649898,06017fe. Atualizar somente
-  após resultado efetivo; advisory DiskCache transitivo revisado continua visível.
+- CI final: **SUCCESS**,06017fe, [run39956649898](https://github.com/Buraddomoon/AEGIS/actions/runs/39956649898),
+  validate3m33s: **465 Python passaram/4 skip**,35frontend, lint/tipos/build e
+  revisão de advisories. Os4 skip são projeções opcionais de objetos Docker Demo
+  já existentes (test_wazuh_runtime_inspection.py:410); CI não os cria. Localmente
+  os469casos passaram. Advisory DiskCache transitivo revisado continua visível;
+  não declarar zero vulnerabilidades Python. Docs finais só Markdown não disparam
+  outra CI. Checkpoint anterior ainda registrou aguardando porque a conferência
+  esperava469pass no log; corrigido após ler os4skip, sem reescrever commits.
 
 ### Limites e continuidade
 
@@ -1140,7 +1146,7 @@ nova antes de avaliar reativação. Seguem pendentes cópia criptografada extern
 guarda de imagens/configuração, RPO/RTO, PKI, Sigma backend/pipeline/mapping,
 atualização ATT&CK, Windows/archives, PDF e multi-workspace.
 
-Este marco acrescenta **10 commits granulares**, incluindo este checkpoint,
-totalizando **201**. Main exclusiva, AEGIS privado, push após cada commit. Código
+Este marco acrescenta **11 commits granulares**, incluindo checkpoint e correção
+do registro CI, totalizando **202**. Main exclusiva, AEGIS privado, push após cada commit. Código
 ff366e5, recibo/revisão06017fe, documentação4e0b937; consultar git log/status para
 hash/mensagem finais e sincronização, sem incorporar o próprio hash aqui.
