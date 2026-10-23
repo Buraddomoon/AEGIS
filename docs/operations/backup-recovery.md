@@ -145,7 +145,9 @@ filas/estados, reservas, autorizações, agendamentos e dispatches históricos.
 Não retorna senhas, nomes, tokens, comandos, scopes ou evidências brutas. Confere
 privilégios e revisão Alembic da imagem; incompatibilidade mantém503. Contagens
 zero não liberam operação: `normal_operation_permitted=false` e
-`reconciliation_applied=false` permanecem explícitos.
+`reconciliation_applied=false` permanecem explícitos nesse comando. Auditorias
+de reconciliações anteriores são contadas como histórico; não comprovam uma nova
+aplicação nem autorizam retomada.
 
 Probes exigem recusa de login/sessão histórica, rotas normais, escrita/DDL/TEMP e
 large objects mesmo após SET TRANSACTION READ WRITE, além de autenticação TCP
@@ -166,6 +168,60 @@ Wazuh, workers ou scheduler operacionais. Ver [ADR0011](../architecture/decision
 [Ensaio executado em2026-10-23](../evidence/recovery-2026-10-23/README.md):
 API em quarentena leu o backup de30tabelas/2.884linhas;9 rotas,4 tentativas SQL,
 5 entrypoints e TCP administrativo bloqueados; inventário igual/clones removidos.
+
+## Reconciliação Demo no clone descartável
+
+```bash
+make recovery-app-build
+make reconcile-demo-backup BACKUP_ID=ID_INFORMADO_PELO_BACKUP
+```
+
+Esse comando restaura **outro clone novo**, confere o inventário original e
+aplica um plano fixo somente nesse clone. Não aceita endereço, SQL ou container
+do operador e não modifica o banco em uso, o dump ou seu manifesto. Não existe
+endpoint de reconciliação na API. Não ligar Linux/Wazuh para satisfazer checks.
+
+Antes de enviar SQL, confere nome/label próprios, network=none e ausência de
+mounts/binds/portas. Plano privado contém contagens, bloqueadores e hash SHA256
+de todas as tabelas/estrutura, sem linhas ou credenciais. Recusa tabelas extras,
+revisão incompatível, jobs reais pendentes, dispatch de runner em run pendente,
+testes/ativos mistos, reservas órfãs ou estados/filhos inconsistentes. Um único
+bloqueador impede toda a aplicação; o plano fica preservado para revisão manual.
+
+A aplicação usa administração por socket **somente do DB descartável**, locks
+em ordem fixa/NOWAIT e uma transação. Refaz o hash sob lock, recusando drift.
+Apaga sessões, desativa usuários, revoga laboratórios e incrementa a versão dos
+que estavam autorizados. Revoga grants recorrentes, encerra agendamentos
+retomáveis e cancela runs/filhos pendentes comprovadamente Demo, registrando as
+transições válidas por run e simulação. Preserva ended_at já existente e não
+alega cleanup externo ou modifica classificações defensivas.
+
+Aprovações/scopes antigos ficam intactos para auditoria, vinculados às runs
+agora terminais; não são reutilizados. Resultados, eventos, regras, comprovantes
+e histórico anterior são protegidos por comparação no SQL e inventário posterior.
+Um erro, inclusive no último INSERT de auditoria, faz rollback de todas as
+mudanças. Repetição do mesmo ID/hash retorna o registro anterior sem novo efeito;
+mesmo ID com outro plano é recusado. O CLI cria outro clone em cada invocação.
+
+Antes de remover os clones, inicia somente a API em recovery com role SELECT.
+O boot recebe o par esperado RECOVERY_RECONCILIATION_ID/HASH: review exige
+exatamente esse recibo e fences atuais (sessões, usuários ativos, pais/filhos
+pendentes, reservas, labs, agendamentos e grants). Um registro antigo sozinho
+não muda o veredicto. A API continua sem login, mutações, worker ou Redis e
+normal_operation_permitted=false. Novo drift faz review/readiness retornarem503.
+
+Recibo `demo-reconciliation-verification-*.json` só é gravado após aplicação,
+preservação do histórico, boot/probes, inventário novamente igual após leitura
+e cleanup API antes de DB. Distingue snapshot_rows das linhas após auditoria.
+Intenções/planos/aplicação privados não substituem esse recibo final. Cleanup
+incerto da API retém o DB e impede sucesso, como no ensaio anterior.
+
+Não é retomada normal nem cutover: todas as contas e labs restaurados ficam
+desativados. Novo administrador/credenciais, autorização Demo e aprovação nova
+para um ciclo sintético ainda precisam ser validados em destino separado.
+[ADR0012](../architecture/decisions/0012-demo-recovery-reconciliation.md).
+[Ensaio real e recibo](../evidence/reconciliation-2026-10-23/README.md): inventário
+original2.884linhas,1auditoria nova, vínculo ID/hash confirmado e clones removidos.
 
 ## Recuperação operacional completa permanece manual
 

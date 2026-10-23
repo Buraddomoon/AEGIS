@@ -30,6 +30,16 @@ tentativas em READ WRITE; sessões/filas/reservas restauradas permanecem intacta
 `make verify-recovered-app` é ensaio operacional Demo explícito com imagem local
 e backup confiável, fora dos testes padrão/CI; não inicia laboratórios reais.
 
+Reconciliação: `make test-recovery` inclui banco/papel temporários reais para
+transação, drift de dados/estrutura, locks concorrentes, idempotência, preservação
+de timestamps/histórico e rollback por falha final/trigger. A fixture substitui
+somente DB/usuário fixos pelo destino aleatório de teste; recusa do destino
+original e ensaio Docker verificam as guardas de implantação. Mocks de CLI
+cobrem ownership/rede/mounts/portas, stdin privado, aplicação/boot/cleanup sem
+falso recibo. Histórico não satisfaz binding atual de ID/hash e filhos pendentes
+bloqueiam review. `make reconcile-demo-backup BACKUP_ID=...` é opt-in e utiliza
+somente um clone novo; nunca faz reconciliação no Demo em uso nem inicia workers.
+
 ## Marco de agendamento Demo
 
 Na rodada ampliada: **85 testes Python** e **5 testes frontend** passaram; E2E Firefox concluiu **3 runs / 12 testes sintéticos**, incluindo agendamento automático, com zero erros JavaScript. O smoke Compose inclui run manual e agendada, verificação de grant, relatório e revogação usando API/worker com papel SQL restrito. Consulte PROGRESS para comandos e CI final.

@@ -20,3 +20,6 @@ iniciar workers sem revisar jobs/agendamentos e efeitos externos do snapshot.
 `make recovery-app-build` e `make verify-recovered-app BACKUP_ID=...` ensaiam
 apenas API em quarentena numa imagem separada, sem reiniciar o Demo em uso.
 Modo recovery mantém503 nas operações normais e não libera jobs/sessões do dump.
+`make reconcile-demo-backup BACKUP_ID=...` aplica um plano fixo só num clone novo,
+invalida acessos/autorizações restaurados e verifica novamente a API em recovery.
+Não faz deploy, reativação de conta/lab ou retomada de worker no banco em uso.

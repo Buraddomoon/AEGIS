@@ -80,3 +80,16 @@ Recibo exige API removida antes do banco e inventário inalterado. Se cleanup AP
 for incerto, reter DB com retained_api_cleanup_unconfirmed e nenhum sucesso.
 Revisar intents próprios; nunca limpar globalmente ou iniciar labs. Testes de
 ACL usam banco/papel temporários próprios, jamais revogar PUBLIC na fonte.
+
+Reconciliação Demo (ADR0012): make reconcile-demo-backup restaura somente clone
+novo com nome/label próprios, network=none e nenhum mount/porta. Plano/hash de
+todas as tabelas e estrutura, locks em ordem fixa/NOWAIT, aplicação transacional
+e comparação de colunas/histórico. Recusar dados reais pendentes, dispatchs,
+reservas ambíguas, estados desconhecidos e tabelas extras; nunca deduzir cleanup
+real. Invalidar sessões/contas/labs/grants antigos, cancelar só Demo por transições
+válidas de pais e filhos, preservar timestamps existentes e scopes/aprovações.
+Auditoria append-only, idempotência por ID/hash; nenhuma API de escrita recovery.
+Review atual exige par id/hash esperado e fences incluindo filhos não terminais;
+auditoria histórica sozinha não prova aplicação atual. API segue em quarentena,
+normal_operation_permitted=false; sem worker/Redis ou retomada/cutover. Fonte,
+backup e evidências anteriores intactos. Não repetir Linux/Wazuh para validar.

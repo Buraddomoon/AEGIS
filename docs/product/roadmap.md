@@ -62,4 +62,7 @@ externo, política de RPO/RTO e gestão de retenção por ambiente. [Limites](..
 
 Boot da API recuperada em quarentena implementado: SELECT e revisão agregada,
 sem login normal/worker/scheduler ou retomada de sessões/autorizações. Não
-substitui reconciliação explícita nem um novo ciclo Demo após recuperação.
+substitui um novo ciclo Demo após recuperação. Reconciliação offline implementada
+somente no clone descartável: sessões/contas/autorizações invalidadas, pendências
+sintéticas encerradas, histórico preservado e recibo vinculado à API em recovery.
+Retomada normal com identidades e aprovação novas continua pendente.
