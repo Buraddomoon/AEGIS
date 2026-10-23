@@ -1,0 +1,126 @@
+{
+  "application": {
+    "administrative_tcp_denied": true,
+    "blocked_routes": {
+      "GET /": 503,
+      "GET /api/openapi.json": 503,
+      "GET /api/v1/auth/me": 503,
+      "GET /api/v1/health/ready": 401,
+      "GET /api/v1/recovery/review": 401,
+      "GET /api/v1/schedules": 503,
+      "POST /api/v1/auth/login": 503,
+      "POST /api/v1/campaigns": 503,
+      "POST /api/v1/executions/restored/start": 503
+    },
+    "database_write_probes_denied": 4,
+    "entrypoints_blocked": 5,
+    "review": {
+      "counts": {
+        "active_schedules": 0,
+        "active_users": 0,
+        "authorized_laboratories": 0,
+        "laboratory_reservations": 0,
+        "nonterminal_executions": 0,
+        "nonterminal_real_runs": 0,
+        "nonterminal_runs": 0,
+        "recorded_demo_reconciliations": 1,
+        "resumable_schedules": 0,
+        "runner_dispatches": 0,
+        "runs_by_state": {
+          "COMPLETED": 20
+        },
+        "sessions": 0,
+        "unexpired_sessions": 0,
+        "unrevoked_schedule_grants": 0,
+        "unused_unexpired_approvals": 0
+      },
+      "database_read_only": true,
+      "format": "aegis-recovery-review/1",
+      "mode": "recovery",
+      "normal_operation_permitted": false,
+      "quarantined": true,
+      "reconciliation_applied": true,
+      "reconciliation_identity": "b6e6a73212944c88bfd6b5d3a058167b",
+      "reconciliation_plan_sha256": "aa07a7f5ae2e846506def3789793eea9a6d16fa110bb43fd4510b081839840ab",
+      "required_reviews": [
+        "Invalidate restored sessions before normal authentication",
+        "Reconcile pending runs, reservations and ambiguous external effects",
+        "Review approvals and recurring grants; do not reuse snapshot authorization",
+        "Review laboratories and integration credentials before reconnection"
+      ],
+      "schema_revision": "977fd0c42ae8"
+    }
+  },
+  "application_image_id": "sha256:a2a0ace33b901bb89bb5ee044c12f20452f37a0d80363e09c1e0f679c6a41daf",
+  "application_started": true,
+  "backup_id": "20261022T210359Z-e689b5a47fa44a69b969a726982324de",
+  "clone_removed": true,
+  "demo_cycle": {
+    "closure": {
+      "baseline_rows": 2885,
+      "format": "aegis-recovered-demo-cycle/1",
+      "fresh_account_disabled": true,
+      "fresh_sessions_remaining": 0,
+      "historical_rows_unchanged": true,
+      "pending_runs": 0
+    },
+    "completed_tests_delta": 4,
+    "external_network": false,
+    "format": "aegis-recovered-demo-cycle/1",
+    "fresh_account_id": "d99dfc64-6043-5220-ae13-d28e3ef2c432",
+    "laboratory_id": "1358e2c4-0fdc-55af-92d2-ad56e073c49e",
+    "new_approval_id": "940df2bb-5689-415b-a59a-d149c0d5214d",
+    "new_lab_revoked": true,
+    "normal_demo_cycle_verified": true,
+    "outcomes": {
+      "DETECTED": 1,
+      "INCONCLUSIVE": 1,
+      "NO_TELEMETRY": 1,
+      "OBSERVED_NOT_ALERTED": 1
+    },
+    "report_sha256": "1d784a72c10a8218e1f3c6117f03bf5b2213e0547c8284cee1d9ea6adabda997",
+    "run_id": "2bb3840f-baeb-4148-b791-93674937a9fa",
+    "session_closed": true,
+    "state": "COMPLETED",
+    "synthetic": true,
+    "total_runs_delta": 1,
+    "valid_tests_delta": 3
+  },
+  "dump_sha256": "ee0013a880912a08fd5d2920c24ae927a8d1b71f4e3cd2b0d444a81536e40bcc",
+  "elapsed_seconds": 29.147,
+  "format": "aegis-demo-backup/1",
+  "inventory_format": "aegis-pg-inventory/2",
+  "limitations": [
+    "Fresh synthetic Demo cycle only; no cutover, real lab restart or failover",
+    "No RPO/RTO guarantee",
+    "No roles, secrets, Redis or runner journals backed up"
+  ],
+  "network": "none",
+  "original_inventory_matched": true,
+  "protected_history_unchanged": true,
+  "reconciliation": {
+    "before_counts": {
+      "active_users": 0,
+      "authorized_laboratories": 1,
+      "pending_demo_runs": 0,
+      "pending_executions": 0,
+      "reservations": 0,
+      "resumable_schedules": 0,
+      "retained_unused_approvals": 0,
+      "sessions": 0,
+      "unrevoked_grants": 0
+    },
+    "external_cleanup_performed": false,
+    "format": "aegis-demo-reconciliation/1",
+    "normal_operation_permitted": false,
+    "plan_sha256": "aa07a7f5ae2e846506def3789793eea9a6d16fa110bb43fd4510b081839840ab",
+    "reconciliation_applied": true
+  },
+  "redis_image_id": "sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0",
+  "rows": 3000,
+  "snapshot_rows": 2884,
+  "status": "verified",
+  "structure_comparison": "pg17-literal-array-casts/1",
+  "tables": 30,
+  "verified_at": "2026-10-23T17:37:37.428250+00:00"
+}

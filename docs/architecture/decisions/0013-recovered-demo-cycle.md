@@ -21,7 +21,8 @@ durante create ou stdin, nunca argv/recibo. Redis bind loopback e autenticação
 
 Probe autentica a conta nova, confirma autorização Demo nova pela API, cria
 campanha com os quatro testes sintéticos revisados, solicita/aprova/inicia uma
-única run, espera o worker real e verifica evidências, quatro classificações,+indicadores e HTML/JSON. Depois revoga o lab e encerra a sessão. Desativar a
+única run, espera o worker real e verifica evidências, quatro classificações,
+indicadores e HTML/JSON. Depois revoga o lab e encerra a sessão. Desativar a
 conta e conferir zero pendências antes de concluir. Sem novo agendamento.
 
 Uma baseline privada dentro do DB, inacessível ao papel runtime, registra hashes

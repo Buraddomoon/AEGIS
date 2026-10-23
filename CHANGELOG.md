@@ -1,5 +1,16 @@
 # Changelog
 
+## Continuidade2026-10-23 — primeiro ciclo Demo recuperado
+
+- Ensaio opt-in restaura/reconcilia/confere quarentena antes de API/worker/Redis
+  normais somente no namespace offline do clone, com conta/lab/aprovação novos.
+- Permissões runtime compartilhadas sem alteração e baseline privada de hashes
+  para exigir todas as linhas antigas intactas e estrutura preservada.
+- Uma run real do worker com4testes sintéticos, evidências, indicadores e relatórios
+  HTML/JSON conferidos; fechamento da conta/sessão/lab e cleanup confirmados.
+- Falha/ownership incerto retém dependências sem sucesso. Sem cutover, novos
+  efeitos Linux/Wazuh ou recuperação de segredos/Redis/journals anteriores.
+
 ## Continuidade2026-10-23 — reconciliação offline Demo
 
 - Plano com hash de dados/estrutura, transação única e bloqueio de drift,
