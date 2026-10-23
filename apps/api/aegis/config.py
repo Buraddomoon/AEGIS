@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     wazuh_collection_config: Path | None = None
     operating_mode: Literal["normal", "recovery"] = "normal"
     recovery_access_token: SecretStr | None = Field(default=None, repr=False)
+    recovery_reconciliation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    recovery_reconciliation_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 
 
 @lru_cache

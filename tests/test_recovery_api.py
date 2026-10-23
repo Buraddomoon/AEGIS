@@ -21,9 +21,11 @@ from sqlalchemy.orm import Session
 TOKEN = "ephemeral-recovery-test-token-" + "a" * 32
 
 
-def recovery_app():
+def recovery_app(**overrides):
     return create_app(
-        Settings(_env_file=None, operating_mode="recovery", recovery_access_token=TOKEN)
+        Settings(
+            _env_file=None, operating_mode="recovery", recovery_access_token=TOKEN, **overrides
+        )
     )
 
 
@@ -235,3 +237,95 @@ def test_large_object_function_grant_drift_blocks_readiness(recovered_database):
         headers = {"x-aegis-recovery-token": TOKEN}
         assert client.get("/api/v1/health/ready", headers=headers).status_code == 503
         assert client.get("/api/v1/recovery/review", headers=headers).status_code == 503
+
+
+def test_review_reports_recorded_reconciliation_but_remains_quarantined(recovered_database):
+    writer, _ = recovered_database
+    from aegis.models import AuditEvent
+
+    with Session(writer) as session:
+        session.add(
+            AuditEvent(
+                action="recovery.demo.reconciled",
+                resource_id="a" * 32,
+                details={"format": "aegis-demo-reconciliation/1"},
+            )
+        )
+        session.commit()
+    with TestClient(recovery_app()) as client:
+        response = client.get("/api/v1/recovery/review", headers={"x-aegis-recovery-token": TOKEN})
+        assert response.status_code == 200
+        body = response.json()
+        assert body["reconciliation_applied"] is False
+        assert body["counts"]["recorded_demo_reconciliations"] == 1
+        assert body["quarantined"] is True and body["normal_operation_permitted"] is False
+        assert client.post("/api/v1/auth/login").status_code == 503
+
+
+@pytest.mark.parametrize(
+    "drift", [None, "wrong-id", "wrong-hash", "session", "active-user", "lab-authorized"]
+)
+def test_current_reconciliation_requires_exact_identity_hash_and_fences(recovered_database, drift):
+    from aegis.models import AuditEvent
+
+    writer, _ = recovered_database
+    identity, fingerprint = "a" * 32, "b" * 64
+    with Session(writer) as session:
+        session.add(
+            AuditEvent(
+                action="recovery.demo.reconciled",
+                resource_id=identity,
+                details={
+                    "format": "aegis-demo-reconciliation/1",
+                    "plan_sha256": fingerprint,
+                    "reconciliation_applied": True,
+                    "normal_operation_permitted": False,
+                    "external_cleanup_performed": False,
+                },
+            )
+        )
+        lab = session.scalar(select(Laboratory))
+        lab.authorized = False
+        if drift in {"session", "active-user"}:
+            user = User(
+                username="restored-drift",
+                role="operator",
+                password_hash="test",
+                active=drift == "active-user",
+            )
+            session.add(user)
+            session.flush()
+            if drift == "session":
+                session.add(
+                    LoginSession(
+                        token_hash="c" * 64,
+                        csrf_hash="d" * 64,
+                        user_id=user.id,
+                        expires_at=now() + timedelta(hours=1),
+                    )
+                )
+        if drift == "lab-authorized":
+            lab.authorized = True
+        session.commit()
+    config = {
+        "recovery_reconciliation_id": "f" * 32 if drift == "wrong-id" else identity,
+        "recovery_reconciliation_hash": "f" * 64 if drift == "wrong-hash" else fingerprint,
+    }
+    with TestClient(recovery_app(**config)) as client:
+        response = client.get("/api/v1/recovery/review", headers={"x-aegis-recovery-token": TOKEN})
+        assert response.status_code == (200 if drift is None else 503)
+        if drift is None:
+            body = response.json()
+            assert body["reconciliation_applied"] is True
+            assert body["reconciliation_identity"] == identity
+            assert body["reconciliation_plan_sha256"] == fingerprint
+            assert body["normal_operation_permitted"] is False
+
+
+def test_reconciliation_boot_requires_both_identity_and_hash():
+    for config in (
+        {"recovery_reconciliation_id": "a" * 32},
+        {"recovery_reconciliation_hash": "b" * 64},
+    ):
+        with pytest.raises(RuntimeError, match="paired"):
+            recovery_app(**config)

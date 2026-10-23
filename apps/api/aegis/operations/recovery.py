@@ -72,7 +72,7 @@ def database_guard(connection):
     return revision[0]
 
 
-def review():
+def review(expected_reconciliation=None):
     with db.engine().connect().execution_options(isolation_level="REPEATABLE READ") as connection:
         with connection.begin():
             revision = database_guard(connection)
@@ -94,6 +94,7 @@ def review():
             )
             counts = {
                 "sessions": count("SELECT count(*) FROM sessions"),
+                "active_users": count("SELECT count(*) FROM users WHERE active"),
                 "unexpired_sessions": count(
                     "SELECT count(*) FROM sessions WHERE expires_at > now()"
                 ),
@@ -110,11 +111,53 @@ def review():
                     "SELECT count(*) FROM approvals WHERE used_at IS NULL AND expires_at > now()"
                 ),
                 "active_schedules": count("SELECT count(*) FROM schedules WHERE state = 'ACTIVE'"),
+                "resumable_schedules": count(
+                    "SELECT count(*) FROM schedules WHERE state IN ('ACTIVE','PAUSED','PENDING_APPROVAL')"
+                ),
                 "unrevoked_schedule_grants": count(
                     "SELECT count(*) FROM schedule_authorizations WHERE revoked_at IS NULL"
                 ),
                 "runner_dispatches": count("SELECT count(*) FROM runner_dispatches"),
+                "recorded_demo_reconciliations": count(
+                    "SELECT count(*) FROM audit_events WHERE action='recovery.demo.reconciled'"
+                ),
             }
+            applied = False
+            if expected_reconciliation is not None:
+                identity, fingerprint = expected_reconciliation
+                records = list(
+                    connection.scalars(
+                        text(
+                            "SELECT details FROM audit_events WHERE action='recovery.demo.reconciled' AND resource_id=:identity"
+                        ),
+                        {"identity": identity},
+                    )
+                )
+                expected_details = {
+                    "format": "aegis-demo-reconciliation/1",
+                    "plan_sha256": fingerprint,
+                    "reconciliation_applied": True,
+                    "normal_operation_permitted": False,
+                    "external_cleanup_performed": False,
+                }
+                if (
+                    len(records) != 1
+                    or any(records[0].get(k) != v for k, v in expected_details.items())
+                    or any(
+                        counts[k]
+                        for k in (
+                            "sessions",
+                            "active_users",
+                            "nonterminal_runs",
+                            "laboratory_reservations",
+                            "authorized_laboratories",
+                            "resumable_schedules",
+                            "unrevoked_schedule_grants",
+                        )
+                    )
+                ):
+                    raise RuntimeError("Expected reconciliation is absent or no longer fenced")
+                applied = True
             return {
                 "format": FORMAT,
                 "mode": "recovery",
@@ -122,7 +165,9 @@ def review():
                 "schema_revision": revision,
                 "quarantined": True,
                 "normal_operation_permitted": False,
-                "reconciliation_applied": False,
+                "reconciliation_applied": applied,
+                "reconciliation_identity": expected_reconciliation[0] if applied else None,
+                "reconciliation_plan_sha256": expected_reconciliation[1] if applied else None,
                 "counts": counts,
                 "required_reviews": [
                     "Invalidate restored sessions before normal authentication",
@@ -133,7 +178,7 @@ def review():
             }
 
 
-def recovery_router(token):
+def recovery_router(token, expected_reconciliation=None):
     router = APIRouter(prefix="/api/v1")
 
     def authorize(request):
@@ -149,8 +194,11 @@ def recovery_router(token):
     def ready(request: Request):
         authorize(request)
         try:
-            with db.engine().connect() as connection:
-                database_guard(connection)
+            if expected_reconciliation is not None:
+                review(expected_reconciliation)
+            else:
+                with db.engine().connect() as connection:
+                    database_guard(connection)
             return {"status": "ready", "mode": "recovery", "quarantined": True}
         except Exception:
             raise HTTPException(503, "Banco de recuperação indisponível ou incompatível.") from None
@@ -159,7 +207,7 @@ def recovery_router(token):
     def get_review(request: Request):
         authorize(request)
         try:
-            return review()
+            return review(expected_reconciliation)
         except Exception:
             raise HTTPException(503, "Revisão de recuperação indisponível.") from None
 

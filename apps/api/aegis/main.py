@@ -124,7 +124,14 @@ def create_app(config: Settings | None = None):
             raise RuntimeError(
                 "Recovery requires an independent access token of at least 32 characters"
             )
-        app.include_router(recovery_router(token.get_secret_value()))
+        identity, fingerprint = (
+            config.recovery_reconciliation_id,
+            config.recovery_reconciliation_hash,
+        )
+        if bool(identity) != bool(fingerprint):
+            raise RuntimeError("Recovery reconciliation identity and hash must be paired")
+        expected = (identity, fingerprint) if identity else None
+        app.include_router(recovery_router(token.get_secret_value(), expected))
     else:
         from aegis.api import router
 
