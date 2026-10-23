@@ -47,7 +47,7 @@ aleatórios; nunca alteram aegis_app do ambiente em uso. Redis DB15, casos seria
 limpeza só de chaves próprias. O callback de teste processa a fila pelo worker;
 make verify-recovered-cycle valida separadamente processos Docker reais.
 Mocks de Docker cobrem create antes/depois, start, probe, fechamento, ownership,
-cleanup/retensão de dependências e ausência de segredo em argv/intents.
+cleanup/retenção de dependências e ausência de segredo em argv/intents.
 
 ## Marco de agendamento Demo
 

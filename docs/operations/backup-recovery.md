@@ -166,7 +166,7 @@ fazer login normal, reconciliar dados ou retomar tarefas. Não inicia labs Linux
 Wazuh, workers ou scheduler operacionais. Ver [ADR0011](../architecture/decisions/0011-recovery-quarantine.md).
 
 [Ensaio executado em2026-10-23](../evidence/recovery-2026-10-23/README.md):
-API em quarentena leu o backup de30tabelas/2.884linhas;9 rotas,4 tentativas SQL,
+API em quarentena leu o backup de 30 tabelas/2.884 linhas;9 rotas,4 tentativas SQL,
 5 entrypoints e TCP administrativo bloqueados; inventário igual/clones removidos.
 
 ## Reconciliação Demo no clone descartável

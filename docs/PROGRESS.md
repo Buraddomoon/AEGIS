@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e engenharia Sigma com revisões, análise estática e diagnóstico de preparação; backup/restore, reconciliação offline Demo e boot da API recuperada em quarentena verificados (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
+Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e engenharia Sigma com revisões, análise estática e diagnóstico de preparação; backup/restore, reconciliação, quarentena e primeiro ciclo Demo recuperado verificados (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -1258,4 +1258,118 @@ Linux/Wazuh continua consumida; nenhum novo ensaio decorre da recuperação Demo
 Este marco acrescenta **10 commits granulares**, incluindo este checkpoint,
 totalizando **212**. Main exclusiva, AEGIS privado, push após cada commit. Código
 finalfae9039, recibo/revisão02f94b4 e operação657187f; consultar git log/status para
+hash/mensagem finais e sincronização, sem incorporar o próprio hash aqui.
+
+
+## 2026-10-23 — Primeiro ciclo Demo após recuperação
+
+### Entrega e decisões
+
+[ADR0013](architecture/decisions/0013-recovered-demo-cycle.md) acrescenta
+`make verify-recovered-cycle BACKUP_ID=...`: novo restore e inventário,
+reconciliação, boot/probes em quarentena e, somente depois, API/worker/Redis
+normais limitados ao clone offline. Comandos anteriores permanecem sem workers.
+[Procedimento](operations/backup-recovery.md),
+[recibo real](evidence/recovered-demo-2026-10-23/README.md) e
+[revisão](security/review-recovered-demo-2026-10-23.md).
+
+- RUNTIME_PERMISSIONS extraído sem mudar as 10 instruções/grants anteriores,
+  compartilhado pela implantação normal e bootstrap recuperado. Nova role app
+  sem administração/ownership e com restrições de auditoria/evidências preservadas.
+- Bootstrap transacional com recibo exato/fences vazios, schema/PG17/catálogo Demo
+  revisados. Nova conta administrativa/senha, lab inicialmente revogado e ativo
+  sintético; sem seed que reautorize dados antigos. Baseline privada de hashes
+  de todas as linhas reconciliadas, sem USAGE para runtime.
+- API/worker normais e Redis novo só no namespace network=none do DB, sem portas/
+  mounts persistentes/socket Docker/runner/SIEM. Imagens locais fixadas por ID,
+  sem pull no ensaio; senhas SQL/Redis/conta via env temporário0600 ou stdin,
+  não argv/intents/recibo. Redis loopback/autenticado sem save/AOF.
+- Probe fixa destino interno e recusa configuração externa antes de I/O. Login
+  novo, autorização lab nova, campanha/run nova, recusa sem aprovação e aprovação
+  nova pelo hash. Worker processa os quatro testes Demo; confere eventos/evidências/hashes,
+  classificações, indicadores e HTML/JSON. Nenhum agendamento criado.
+- Lab revogado e sessão encerrada pela API; worker removido antes dos locks de
+  fechamento. Conta nova desativada e verificados 1 run/4 testes/resultados sintéticos,
+  aprovação própria consumida, nenhum dispatch, pendência/autoridade ou sessão.
+  EXCEPT ALL de hashes exige todas as linhas antigas idênticas; estrutura public
+  também comparada. Não reescrever scopes/resultados históricos.
+- Intenções duráveis antes de cada create, ownership exato mesmo em resposta
+  ambígua; cleanup worker→API→Redis→DB. Falha retém dependências/DB como
+  retained_cycle_cleanup_unconfirmed, sem recibo final. Fonte/dump/manifesto,
+  volumes e journals antigos não são alterados. Não há cutover.
+
+Arquivos centrais: operations/runtime_grants.py/recovered_demo.py/
+recovery_cycle_probe.py, cli.py, scripts/demo_backup.py/recovery_cycle_runtime.py,
+Makefile e tests/test_recovered_demo_cycle.py/test_recovery_cycle_runtime.py.
+Sem dependência, migração ou frontend novos. README/AGENTS/CHANGELOG, roadmap e
+procedimentos atualizados para separar quarentena, reconciliação e ciclo novo.
+
+### Validação e achados
+
+Revisão especializada somente leitura não identificou bloqueador concreto de
+SQL, destino, credenciais, baseline/histórico ou cleanup. Não executou testes,
+Docker ou acesso a .local. Durante implementação, a extração inicialmente
+esperava12grants, mas AST conferiu10 e nenhum arquivo foi alterado antes dessa
+asserção; extração corrigida e comparada ao original. Uma fixture inicialmente
+não importou o fixture de DB transitivo e o cliente usou base_url sem /api/v1;
+ambos corrigidos, sem afrouxar autenticação, constraints ou permissões.
+
+- Testes direcionados:14 casos API/worker/PG com role runtime temporário, acesso
+  negado à baseline e DELETE protegido, ciclo real das funções do worker,
+  fechamento, drift de histórico/autoridade e validação sintética;88 casos de
+  lifecycle/CLI anteriores+novos incluindo create-before/after/start/probe/closure/
+  ownership/cleanup e transporte dos segredos. Mocks só para Docker nessas falhas.
+- `make test` final: **578 Python passaram**,154,62s; **35 frontend**,3,42s.
+  Redis DB15 usado serialmente e limpas só chaves próprias. Bancos/papéis de
+  recuperação/ciclo temporários remanescentes:0/0. Não foram lançadas duas suítes
+  compartilhando DB15 em paralelo.
+- `make lint` passou: Ruff/check/format 113 arquivos, mypy domínio 4 arquivos,
+  TypeScript/Prettier. Aviso upstream Starlette TestClient/httpx permanece visível.
+- Build separado passou; frontend da imagem veio do cache sem alteração. Imagem
+  própria sha256:a2a0ace33b901bb89bb5ee044c12f20452f37a0d80363e09c1e0f679c6a41daf;
+  Redis local sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0.
+- Ensaio Docker real verify-recovered-cycle passou, 29,147 s (medição, não RTO):
+  backup 20261022T210359Z-e689b5a47fa44a69b969a726982324de,30 tabelas/2.884 linhas
+  originais; 2.885 após reconciliação; 3.000 ao final, todas as 2.885 anteriores idênticas
+  e estrutura public preservada. Quarentena anterior com 9 rotas/4 escritas SQL/
+  5 entrypoints/TCP administrativo bloqueados, API removida antes da fase normal.
+- Nova run 2bb3840f-baeb-4148-b791-93674937a9fa COMPLETED/synthetic=true, 4 testes e uma
+  classificação de cada DETECTED/OBSERVED_NOT_ALERTED/NO_TELEMETRY/INCONCLUSIVE.
+  Evidências, report SHA256/HTML/JSON e delta 1 run/4 testes/3 válidos conferidos.
+  Lab/conta/sessão novos encerrados; zero pendências. Worker, API, Redis e DB
+  removidos; 3 recibos de cleanup dos filhos/0600 conferidos. Recibo público igual
+  ao privado; dump/manifesto/segredos não publicados.
+- Demo 18780 segue ready database/redis=true, sem rebuild/restart da imagem/API/
+  worker em uso. Nenhum clone ou container Wazuh remanescente; 9 volumes/journals
+  anteriores preservados. Sem nova execução Linux/Wazuh, consulta SIEM, renovação
+  PKI ou alteração de serviços/redes/sysctl do host.
+- 52 links locais da documentação alterada conferidos; scanner staged/diff-check
+  em cada commit. E2E de browser não repetido porque UI não mudou; ensaio atual
+  verifica API/worker/relatórios reais em Docker, sem atribuir novas capturas ou
+  uma execução Firefox que não ocorreu.
+- CI final: **SUCCESS**, head251b163,
+  [run39997058403](https://github.com/Buraddomoon/AEGIS/actions/runs/39997058403),
+  validate3m27s: **574 Python passaram/4 skip**, 35 frontend, lint/tipos/build e
+  revisão de advisories. Os quatro skip são projeções opcionais de objetos Docker
+  Demo já existentes; CI não os cria. Localmente578passaram. Advisory transitivo
+  DiskCache revisado permanece visível, sem alegar zero achados Python. Commits
+  seguintes só Markdown não mudam o código validado nem disparam nova CI.
+
+### Limites e continuidade
+
+Esse resultado demonstra um novo ciclo sintético em clone descartável, com
+credenciais/autorizações novas. Não recupera roles/secrets/Redis antigos, PKI,
+journals ou efeitos externos; não é recuperação entre hosts, failover, cutover,
+RPO/RTO garantido ou ferramenta enterprise-ready. Autorização real Linux/Wazuh
+continua consumida e nenhum novo ensaio decorre dessa entrega.
+
+Backups criptografados/off-host, guarda de imagens/configuração e política de
+retenção por ambiente seguem pendentes. Próxima evolução independente de
+infraestrutura externa: atualização controlada/versionada do catálogo ATT&CK.
+Mantêm-se Sigma backend/pipeline/mapping, PKI, Windows/archives, PDF e
+multi-workspace no roadmap, sem anúncio de disponibilidade.
+
+Este marco acrescenta **8 commits granulares**, incluindo este checkpoint,
+totalizando **220**. Main exclusiva, AEGIS privado e push após cada commit. Código
+final 2d10d92, recibo/revisão 251b163 e operação 0886768; consultar git log/status para
 hash/mensagem finais e sincronização, sem incorporar o próprio hash aqui.

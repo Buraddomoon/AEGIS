@@ -9,7 +9,7 @@ anteriores. Nova preparação exige recibo exato e fences vazios, catálogo Demo
 revisado e schema/PG17 exatos, numa transação com locks em ordem fixa/NOWAIT.
 Conta/lab/ativo/credenciais novos; nenhum grant ou identidade antiga reativado.
 
-RUNTIME_PERMISSIONS extraído sem alterar as10instruções SQL anteriores. Mesmo
+RUNTIME_PERMISSIONS extraído sem alterar as 10 instruções SQL anteriores. Mesmo
 papel restrito da implantação normal: sem administração/ownership ou DELETE/
 reescrita de evidências/auditoria. Baseline de hashes fora de public, sem USAGE
 para runtime; comparação EXCEPT ALL exige todas as linhas antigas idênticas.

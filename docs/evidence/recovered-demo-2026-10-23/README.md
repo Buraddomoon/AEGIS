@@ -1,13 +1,13 @@
 # Primeiro ciclo Demo recuperado — 2026-10-23
 
 [Recibo real](verification.json), emitido após todas as fases e cleanup. Backup
-original de30tabelas/2.884linhas restaurado e conferido; após reconciliação, as
-2.885linhas serviram de baseline privada. Ao final,3.000linhas no schema public,
-com todas as2.885 anteriores idênticas e estrutura public preservada.29,147s é
+original de 30 tabelas/2.884 linhas restaurado e conferido; após reconciliação, as
+2.885linhas serviram de baseline privada. Ao final,3.000 linhas no schema public,
+com todas as 2.885 anteriores idênticas e estrutura public preservada. 29,147 s é
 a medição desse ensaio, não benchmark ou promessa RTO.
 
 A revisão em recovery confirmou o ID/hash da reconciliação e todos os bloqueios
-anteriores (9rotas,4escritas SQL,5entrypoints e TCP administrativo). Essa fase
+anteriores (9 rotas, 4 escritas SQL, 5 entrypoints e TCP administrativo). Essa fase
 permaneceu normal_operation_permitted=false. Sua API foi removida antes do ciclo
 com API normal; os dois estados são fases distintas no recibo.
 
@@ -18,7 +18,7 @@ verificou recusa de início sem aprovação e iniciou uma única run pelo worker
 
 Quatro testes sintéticos, uma classificação de cada: DETECTED,
 OBSERVED_NOT_ALERTED, NO_TELEMETRY e INCONCLUSIVE. Evidências/eventos/hashes e
-relatórios HTML/JSON conferidos; delta de indicadores1run/4testes/3válidos.
+relatórios HTML/JSON conferidos; delta de indicadores 1 run/4 testes/3 válidos.
 SHA256 do relatório no recibo; nenhum resultado representa validação defensiva
 de endpoint Windows/Linux real, tampouco proteção geral da organização.
 
@@ -34,7 +34,7 @@ sem pull no ensaio; senhas novas via env temporário/stdin, não recibo/argv.
 
 Worker removido antes de API, Redis e DB; intenções privadas confirmam os três
 filhos removidos. Nenhum clone remanescente. Demo18780 segue ready sem rebuild/
-restart;9volumes/journals Wazuh anteriores preservados. Sem nova operação Linux/
+restart; 9 volumes/journals Wazuh anteriores preservados. Sem nova operação Linux/
 Wazuh, consulta SIEM, renovação PKI ou alteração de outro serviço/rede do host.
 
 Recibo público igual ao privado. Dump/manifesto/segredos não publicados. Não
