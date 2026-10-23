@@ -177,7 +177,11 @@ def apply_sql(expected_hash, recovery_id):
         SELECT details INTO previous FROM public.audit_events
           WHERE action='{ACTION}' AND resource_id='{recovery_id}';
         IF previous IS NOT NULL THEN
-          IF previous->>'plan_sha256' <> '{expected_hash}' THEN
+          IF previous->>'plan_sha256' IS DISTINCT FROM '{expected_hash}'
+            OR previous->>'format' IS DISTINCT FROM '{FORMAT}'
+            OR previous->'reconciliation_applied' IS DISTINCT FROM 'true'::jsonb
+            OR (SELECT count(*) FROM public.audit_events
+                WHERE action='{ACTION}' AND resource_id='{recovery_id}') <> 1 THEN
             RAISE EXCEPTION 'Recovery identity already used'; END IF;
           RETURN;
         END IF;

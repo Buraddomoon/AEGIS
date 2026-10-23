@@ -390,3 +390,38 @@ def test_current_review_refuses_pending_child_after_reconciliation(recovered_wor
         )
     with pytest.raises(RuntimeError, match="no longer fenced"):
         review(expected)
+
+
+@pytest.mark.parametrize(
+    "change,expected",
+    [("password_hash='tampered'", "protected data"), ("active=true", "postconditions")],
+)
+def test_trigger_cannot_change_protected_fields_or_restore_access(recovered_work, change, expected):
+    writer, _ = recovered_work
+    with writer.begin() as c:
+        c.execute(
+            text(
+                "CREATE FUNCTION corrupt_recovery() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN UPDATE users SET "
+                + change
+                + "; RETURN NEW; END $$"
+            )
+        )
+        c.execute(
+            text(
+                "CREATE TRIGGER corrupt_recovery BEFORE INSERT ON audit_events FOR EACH ROW EXECUTE FUNCTION corrupt_recovery()"
+            )
+        )
+    before = get_inventory(writer)
+    with pytest.raises(Exception, match=expected):
+        run_sql(writer, reconcile.apply_sql(get_plan(writer)["snapshot_sha256"], RECOVERY_ID))
+    assert get_inventory(writer) == before
+
+
+def test_recovery_identity_cannot_be_reused_for_another_plan(recovered_work):
+    writer, _ = recovered_work
+    plan = get_plan(writer)
+    run_sql(writer, reconcile.apply_sql(plan["snapshot_sha256"], RECOVERY_ID))
+    before = get_inventory(writer)
+    with pytest.raises(Exception, match="identity already used"):
+        run_sql(writer, reconcile.apply_sql("f" * 64, RECOVERY_ID))
+    assert get_inventory(writer) == before
