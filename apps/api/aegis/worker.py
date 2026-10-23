@@ -10,7 +10,7 @@ from redis.exceptions import RedisError
 from sqlalchemy import select
 
 from aegis import linux_labs, telemetry
-from aegis.config import settings
+from aegis.config import require_normal_operation, settings
 from aegis.db import session_factory
 from aegis.domain.contracts import ExecutionAdapter, ExecutionContext
 from aegis.domain.states import ACTIVE, State
@@ -42,6 +42,7 @@ class Interrupted(Exception):
 
 
 def claim_next() -> str | None:
+    require_normal_operation()
     with session_factory()() as db:
         run = db.scalar(
             select(CampaignRun)
@@ -167,6 +168,7 @@ def context_for(run: CampaignRun, item: TestExecution, test: dict) -> ExecutionC
 
 
 def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
+    require_normal_operation()
     # Fence duplicate deliveries before entering cleanup's finally block.
     with session_factory()() as db:
         owned = db.scalar(select(CampaignRun).where(CampaignRun.id == run_id).with_for_update())
@@ -401,6 +403,7 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
 
 def recover_abandoned() -> int:
     """Demo recovery and real quarantine; never replay unknown remote effects."""
+    require_normal_operation()
     recovered = 0
     with session_factory()() as db:
         stale = db.scalars(
@@ -485,6 +488,7 @@ def recover_abandoned() -> int:
 
 
 def main() -> None:
+    require_normal_operation()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())

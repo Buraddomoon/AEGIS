@@ -10,6 +10,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from aegis import services
+from aegis.config import require_normal_operation
 from aegis.db import session_factory
 from aegis.domain.states import TERMINAL
 from aegis.domain.validation import digest
@@ -205,6 +206,7 @@ def authorization_valid(db: Session, run: CampaignRun, approval: Approval | None
 
 def dispatch_one(at: datetime | None = None) -> bool:
     """One slot per transaction; competing dispatchers cannot emit the same slot."""
+    require_normal_operation()
     instant = at or now()
     with session_factory()() as db:
         item = db.scalar(
@@ -317,6 +319,7 @@ def dispatch_one(at: datetime | None = None) -> bool:
 
 def scheduler_loop(stop: threading.Event) -> None:
     """Independent lightweight thread; sessions never cross thread boundaries."""
+    require_normal_operation()
     while not stop.is_set():
         try:
             for _ in range(20):

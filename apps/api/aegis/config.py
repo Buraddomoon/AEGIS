@@ -1,7 +1,8 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,8 +24,15 @@ class Settings(BaseSettings):
     wazuh_allowed_ip: str | None = None
     linux_runner_config: Path | None = None
     wazuh_collection_config: Path | None = None
+    operating_mode: Literal["normal", "recovery"] = "normal"
+    recovery_access_token: SecretStr | None = Field(default=None, repr=False)
 
 
 @lru_cache
 def settings() -> Settings:
     return Settings()
+
+
+def require_normal_operation() -> None:
+    if settings().operating_mode != "normal":
+        raise RuntimeError("Operação bloqueada: aplicação em quarentena de recuperação.")

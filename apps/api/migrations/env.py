@@ -1,8 +1,10 @@
 from aegis import models  # noqa: F401
+from aegis.config import require_normal_operation
 from aegis.db import Base, engine
 from alembic import context
 
 target_metadata = Base.metadata
+require_normal_operation()
 
 if context.is_offline_mode():
     from aegis.config import settings

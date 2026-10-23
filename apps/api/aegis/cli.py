@@ -5,6 +5,7 @@ import re
 
 from sqlalchemy import select
 
+from aegis.config import require_normal_operation
 from aegis.db import session_factory
 from aegis.models import User
 from aegis.security import audit, hasher
@@ -12,6 +13,7 @@ from aegis.seed import seed
 
 
 def main():
+    require_normal_operation()
     parser = argparse.ArgumentParser(description="Administração local ÆGIS")
     parser.add_argument("command", choices=["bootstrap", "seed", "grant-runtime"])
     args = parser.parse_args()
@@ -44,6 +46,7 @@ def main():
 
 def grant_runtime():
     """Deployment-only grants; runtime containers never receive owner credentials."""
+    require_normal_operation()
     from psycopg import sql
 
     from aegis.db import engine
