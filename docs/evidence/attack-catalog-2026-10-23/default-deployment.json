@@ -1,0 +1,23 @@
+{
+  "format": "aegis-default-demo-catalog-deployment/1",
+  "scope": "local Demo only",
+  "candidate_id": "798dc8da9a8e2f7996894d11b5ec00211c2532a26da391a50d2c170b2b849844",
+  "plan_sha256": "0d443655e7f457c5b04448fe9760e12c9749387e08a02dc361831d5b6d9d0cf1",
+  "new_lab_or_wazuh_run": false,
+  "counts": {
+    "active": 706,
+    "revoked": 149,
+    "deprecated": 12,
+    "absent": 0
+  },
+  "history_runs": 20,
+  "current_evaluated_techniques": 0,
+  "runtime_authenticated_catalog_read": true,
+  "maintenance_account_disabled": true,
+  "status": "passed",
+  "previous_history_tables_unchanged": 26,
+  "migration": [
+    "a0d9c7e21b45"
+  ],
+  "maintenance_sessions_remaining": 0
+}
