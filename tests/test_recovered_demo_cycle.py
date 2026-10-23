@@ -134,9 +134,19 @@ def test_fresh_cycle_real_api_runtime_worker_reports_and_history(fresh_destinati
             "telemetry_events",
             "validation_results",
             "runner_dispatches",
+            "attack_catalog_releases",
+            "attack_catalog_state",
+            "attack_techniques",
         ):
             assert not c.scalar(
                 text("SELECT has_table_privilege(current_user,:table,'DELETE')"), {"table": table}
+            )
+        for table in ("attack_catalog_releases", "attack_catalog_state", "attack_techniques"):
+            assert not c.scalar(
+                text(
+                    "SELECT has_table_privilege(current_user,:table,'INSERT,UPDATE,DELETE,TRUNCATE')"
+                ),
+                {"table": table},
             )
 
 
