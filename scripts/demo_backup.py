@@ -17,6 +17,7 @@ import time
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
 from aegis.config import settings
 from aegis.operations import reconciliation
@@ -338,9 +339,15 @@ def prepare_reader(name, password):
             "aegis_restore",
             stdin=stream,
         )
+    configure_clone_hba(name, "aegis_recovery")
+
+
+def configure_clone_hba(name, role):
+    if role not in {"aegis_recovery", "aegis_app"}:
+        raise BackupError("Unreviewed clone authentication role")
     hba = (
         "local all postgres trust\nlocal all all reject\n"
-        "host aegis_restore aegis_recovery 127.0.0.1/32 scram-sha-256\n"
+        f"host aegis_restore {role} 127.0.0.1/32 scram-sha-256\n"
         "host all all 0.0.0.0/0 reject\nhost all all ::/0 reject\n"
     )
     with tempfile.TemporaryFile() as stream:
@@ -462,62 +469,64 @@ def boot_application(
     return result
 
 
-def clone_reconciliation(name, token, intents):
-    """A host-only transaction, always on this rehearsal's new offline clone."""
+def assert_recovery_clone(name, token):
     if not re.fullmatch(r"[a-f0-9]{32}", token) or name != "aegis-recovery-" + token:
         raise BackupError("Reconciliation clone identity refused")
 
-    def check_clone():
-        projection = (
-            docker(
-                "inspect",
-                "--format",
-                "{{.HostConfig.NetworkMode}}|{{len .Mounts}}|{{len .HostConfig.Binds}}|"
-                '{{len .HostConfig.PortBindings}}|{{index .Config.Labels "' + LABEL + '"}}',
-                name,
-            )
-            .decode()
-            .strip()
+    projection = (
+        docker(
+            "inspect",
+            "--format",
+            "{{.HostConfig.NetworkMode}}|{{len .Mounts}}|{{len .HostConfig.Binds}}|"
+            '{{len .HostConfig.PortBindings}}|{{index .Config.Labels "' + LABEL + '"}}',
+            name,
         )
-        if projection != "none|0|0|0|" + token:
-            raise BackupError(
-                "Reconciliation requires the owned offline clone without mounts/ports"
-            )
+        .decode()
+        .strip()
+    )
+    if projection != "none|0|0|0|" + token:
+        raise BackupError("Reconciliation requires the owned offline clone without mounts/ports")
 
-    def sql_json(statement):
-        check_clone()
-        with tempfile.TemporaryFile() as stream:
-            stream.write(statement.encode())
-            stream.seek(0)
-            return json.loads(
-                docker(
-                    "exec",
-                    "-i",
-                    name,
-                    "psql",
-                    "-X",
-                    "-qAt",
-                    "-v",
-                    "ON_ERROR_STOP=1",
-                    "-U",
-                    "postgres",
-                    "-d",
-                    "aegis_restore",
-                    stdin=stream,
-                )
-            )
 
-    plan = sql_json(
+def clone_json(name, token, statement):
+    assert_recovery_clone(name, token)
+    with tempfile.TemporaryFile() as stream:
+        stream.write(statement.encode())
+        stream.seek(0)
+        return json.loads(
+            docker(
+                "exec",
+                "-i",
+                name,
+                "psql",
+                "-X",
+                "-qAt",
+                "-v",
+                "ON_ERROR_STOP=1",
+                "-U",
+                "postgres",
+                "-d",
+                "aegis_restore",
+                stdin=stream,
+            )
+        )
+
+
+def clone_reconciliation(name, token, intents):
+    """A host-only transaction in this rehearsal's new offline clone."""
+    plan = clone_json(
+        name,
+        token,
         "BEGIN READ ONLY; SET LOCAL timezone='UTC'; SET LOCAL statement_timeout='60s'; "
         + reconciliation.plan_sql()
-        + "; COMMIT;"
+        + "; COMMIT;",
     )
     if plan.get("format") != reconciliation.FORMAT:
         raise BackupError("Unsupported reconciliation plan")
     write_json(intents / (token + "-reconciliation-plan.json"), plan)
     if any(plan["blockers"].values()):
         raise BackupError("Recovered work requires manual review; reconciliation not applied")
-    result = sql_json(reconciliation.apply_sql(plan["snapshot_sha256"], token))
+    result = clone_json(name, token, reconciliation.apply_sql(plan["snapshot_sha256"], token))
     if (
         result.get("format") != reconciliation.FORMAT
         or result.get("plan_sha256") != plan["snapshot_sha256"]
@@ -544,17 +553,27 @@ def compare_reconciled(original, reconciled):
             raise BackupError("Reconciliation changed protected history")
 
 
-def rehearse(identifier, *, application=False, reconcile_demo=False):
+def rehearse(identifier, *, application=False, reconcile_demo=False, demo_cycle=False):
+    if demo_cycle and not (application and reconcile_demo):
+        raise BackupError("Fresh cycle requires reconciliation and quarantine verification")
     if reconcile_demo and not application:
         raise BackupError("Reconciliation requires quarantined application verification")
     folder, manifest = load_backup(identifier)
     image = application_image() if application else None
+    redis_image = None
+    if demo_cycle:
+        redis_image = (
+            docker("image", "inspect", "redis:8-alpine", "--format", "{{.Id}}").decode().strip()
+        )
+        if not re.fullmatch(r"sha256:[a-f0-9]{64}", redis_image):
+            raise BackupError("Fresh cycle requires a reviewed local Redis image")
     token = uuid.uuid4().hex
     name = "aegis-recovery-" + token
     started = time.monotonic()
     attempted = False
     verified = False
     application_cleanup = {"attempted": False, "confirmed": False}
+    cycle_cleanup = {"attempted": False, "confirmed": False}
     intents = ROOT / ".local" / "recovery-intents"
     private_directory(intents)
     write_json(
@@ -657,10 +676,45 @@ def rehearse(identifier, *, application=False, reconcile_demo=False):
                 lambda sql: psql(name, sql, database="aegis_restore", user="postgres")
             )
             compare(restored, after)
+        if demo_cycle:
+            from recovery_cycle_runtime import run_cycle
+
+            def hba(role):
+                assert_recovery_clone(name, token)
+                configure_clone_hba(name, role)
+
+            driver = SimpleNamespace(
+                docker=docker,
+                clone_json=clone_json,
+                write_json=write_json,
+                remove_clone=remove_clone,
+                configure_hba=hba,
+            )
+            cycle_result = run_cycle(
+                driver,
+                name,
+                token,
+                image,
+                redis_image,
+                intents,
+                reconciliation_result["plan_sha256"],
+                cycle_cleanup,
+            )
+            final = inventory(
+                lambda sql: psql(name, sql, database="aegis_restore", user="postgres")
+            )
+            if (
+                restored["structure"] != final["structure"]
+                or restored["tables"].keys() != final["tables"].keys()
+            ):
+                raise BackupError("Fresh cycle changed protected public schema")
+            restored = final
         verified = True
     finally:
         if attempted:
-            if application_cleanup["attempted"] and not application_cleanup["confirmed"]:
+            if cycle_cleanup["attempted"] and not cycle_cleanup["confirmed"]:
+                cleanup = "retained_cycle_cleanup_unconfirmed"
+            elif application_cleanup["attempted"] and not application_cleanup["confirmed"]:
                 cleanup = "retained_api_cleanup_unconfirmed"
             else:
                 cleanup = remove_clone(name, token)
@@ -710,6 +764,12 @@ def rehearse(identifier, *, application=False, reconcile_demo=False):
             "Offline Demo reconciliation and quarantined API only; no normal restart or failover"
         )
         prefix = "demo-reconciliation-verification-"
+    if demo_cycle:
+        receipt.update(demo_cycle=cycle_result, redis_image_id=redis_image)
+        receipt["limitations"][0] = (
+            "Fresh synthetic Demo cycle only; no cutover, real lab restart or failover"
+        )
+        prefix = "demo-cycle-verification-"
     write_json(folder / (prefix + token + ".json"), receipt)
     return receipt
 
@@ -743,6 +803,8 @@ def main():
     application.add_argument("backup_id")
     reconcile = subparsers.add_parser("reconcile-demo")
     reconcile.add_argument("backup_id")
+    cycle = subparsers.add_parser("verify-recovered-cycle")
+    cycle.add_argument("backup_id")
     subparsers.add_parser("retention-plan")
     args = parser.parse_args()
     try:
@@ -760,6 +822,10 @@ def main():
             output = rehearse(args.backup_id, application=True)
         elif args.action == "reconcile-demo":
             output = rehearse(args.backup_id, application=True, reconcile_demo=True)
+        elif args.action == "verify-recovered-cycle":
+            output = rehearse(
+                args.backup_id, application=True, reconcile_demo=True, demo_cycle=True
+            )
         else:
             output = plan()
         print(json.dumps(output, ensure_ascii=False, indent=2))
