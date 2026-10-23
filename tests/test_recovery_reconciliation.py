@@ -373,3 +373,20 @@ def test_extra_tables_refuse_before_reconciliation(recovered_work):
     with pytest.raises(Exception, match="destination/schema refused"):
         run_sql(writer, reconcile.apply_sql(get_plan(writer)["snapshot_sha256"], RECOVERY_ID))
     assert get_inventory(writer) == before
+
+
+def test_current_review_refuses_pending_child_after_reconciliation(recovered_work):
+    from aegis.operations.recovery import review
+
+    writer, ids = recovered_work
+    plan = get_plan(writer)
+    run_sql(writer, reconcile.apply_sql(plan["snapshot_sha256"], RECOVERY_ID))
+    expected = (RECOVERY_ID, plan["snapshot_sha256"])
+    assert review(expected)["reconciliation_applied"] is True
+    with writer.begin() as c:
+        c.execute(
+            text("UPDATE test_executions SET state='RUNNING' WHERE id=:id"),
+            {"id": ids["execution"]},
+        )
+    with pytest.raises(RuntimeError, match="no longer fenced"):
+        review(expected)

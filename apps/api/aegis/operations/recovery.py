@@ -100,6 +100,10 @@ def review(expected_reconciliation=None):
                 ),
                 "runs_by_state": states,
                 "nonterminal_runs": nonterminal,
+                "nonterminal_executions": connection.scalar(
+                    text("SELECT count(*) FROM test_executions WHERE state <> ALL(:terminal)"),
+                    {"terminal": list(TERMINAL)},
+                ),
                 "nonterminal_real_runs": real_pending,
                 "laboratory_reservations": count(
                     "SELECT count(*) FROM laboratories WHERE active_run_id IS NOT NULL"
@@ -149,6 +153,7 @@ def review(expected_reconciliation=None):
                             "sessions",
                             "active_users",
                             "nonterminal_runs",
+                            "nonterminal_executions",
                             "laboratory_reservations",
                             "authorized_laboratories",
                             "resumable_schedules",
