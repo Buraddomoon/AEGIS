@@ -73,7 +73,7 @@ verify-backup:
 backup-retention-plan:
 	$(VENV)/python scripts/demo_backup.py retention-plan
 test-recovery:
-	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py tests/test_recovery_guards.py tests/test_recovery_api.py -q
+	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py tests/test_recovery_guards.py tests/test_recovery_api.py tests/test_recovery_probe.py -q
 
 .PHONY: recovery-app-build verify-recovered-app
 recovery-app-build:

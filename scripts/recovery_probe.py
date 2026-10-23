@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -11,6 +12,19 @@ import urllib.request
 import psycopg
 
 BASE = "http://127.0.0.1:8080"
+
+
+def require_rehearsal_environment():
+    # Refuse direct use against a host/operator DATABASE_URL before any I/O.
+    if (
+        os.environ.get("OPERATING_MODE") != "recovery"
+        or not re.fullmatch(
+            r"postgresql\+psycopg://aegis_recovery:[a-f0-9]{64}@127\.0\.0\.1:5432/aegis_restore",
+            os.environ.get("DATABASE_URL", ""),
+        )
+        or not re.fullmatch(r"[a-f0-9]{64}", os.environ.get("RECOVERY_ACCESS_TOKEN", ""))
+    ):
+        raise RuntimeError("Probe restricted to the offline recovery rehearsal environment")
 
 
 def request(path, *, method="GET", authenticated=True):
@@ -27,6 +41,7 @@ def request(path, *, method="GET", authenticated=True):
 
 
 def main():
+    require_rehearsal_environment()
     for _ in range(60):
         try:
             status, _ = request("/api/v1/health/ready")
