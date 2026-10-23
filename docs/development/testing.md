@@ -4,6 +4,13 @@
 
 PostgreSQL real é usado com um schema aleatório por sessão. A fixture aplica Alembic e trunca apenas tabelas desse schema entre testes, removendo o schema criado ao finalizar. Redis utiliza DB 15 nos testes de API, com chaves somente do namespace ÆGIS. Não usar Redis DB 14/15 para dados importantes no ambiente de desenvolvimento.
 
+Não executar simultaneamente duas suítes de integração compartilhando DB15.
+Fixtures de recuperação usam bancos aleatórios próprios e desabilitam somente
+autovacuum de suas tabelas descartáveis, antes do seed, para não disputar locks
+NOWAIT com manutenção de fundo. Nenhuma configuração do banco ativo muda;
+produção conserva NOWAIT e autovacuum. Testes de conflitos explícitos continuam
+usando conexões/escritores concorrentes reais.
+
 Suíte cobre identidade/CSRF/RBAC, ausência de segredos nas respostas, limite de payload/login, aprovação e alteração de escopo, estado, concorrência de claim/entrega, cancelamento, timeout, cleanup, recuperação, classificação/correlação, persistência, duplicação, relatório HTML seguro, versão Sigma, YAML inseguro, pinning TLS, paginação Wazuh e upgrade de banco populado. Agendamentos cobrem grant original, limite persistente, expiração, busy, atraso, rollback, dispatcher concorrente, pausa/retomada, revogação ativa com cleanup e alterações de autorização/escopo.
 
 ## E2E real
@@ -19,6 +26,32 @@ Fixtures Wazuh usam `httpx.MockTransport`, sem rede, e representam testes de con
 Na primeira rodada ampliada: 52 testes backend passaram; 3 testes frontend passaram; E2E Firefox concluiu 2 runs / 8 testes sintéticos com zero erros JavaScript. Docker build e Compose completo foram executados, health ready retornou database/redis true, runtime confirmou `aegis_app` sem superuser e sem UPDATE em auditoria. Consulte `docs/PROGRESS.md` para a validação final mais recente e limitações.
 
 Existe aviso de depreciação do upstream Starlette para o transporte httpx de TestClient; os testes executam com sucesso, sem ocultar o aviso. Migração para httpx2 poderá ser avaliada separadamente.
+
+## Catálogo ATT&CK controlado
+
+`pytest tests/test_attack_document.py tests/test_attack_artifacts.py
+tests/test_attack_publication.py tests/test_attack_cli.py tests/test_attack_api.py
+-q` cobre perfil/membros/flags/grafo/identidades, JSON ambíguo, limites, transporte
+HTTP simulado incluindo headers lentos/cancelamento, arquivos privados/links,
+renormalização/integridade, publicação PostgreSQL transacional, stale plans,
+ator/downgrade/licença/drift/concorrência/rollback e adoção legada conhecida.
+Fixtures reduzidas e baseline19.2 são sintéticas, sem pretensão de serem releases
+oficiais. API/worker preservam relatório, separam releases e recusam scopes antigos
+antes de efeitos. Permissões SQL reais cobertas pelo ciclo runtime recuperado.
+
+UI testa paginação vinculada e recusa mistura/duplicação/incompletude,
+filtros de ciclo de vida, histórico pesquisável e recarga após troca da release.
+E2E Firefox consulta proveniência e abre/pesquisa snapshot real da API antes de
+campanha/worker/relatórios, sem mocks; captura `attack-catalog.png` é do snapshot
+inicial distribuído. A publicação oficial completa foi verificada separadamente
+com a CLI/candidato real e dois ciclos sintéticos, sem acessar Linux/Wazuh.
+[Recibos e limites](../evidence/attack-catalog-2026-10-23/README.md).
+
+Marcação mais recente:654Python/43frontend, lint/build e E2E passaram;71casos
+de recuperação foram repetidos após tornar a fixture determinística. Consulte
+PROGRESS para o resultado remoto e checks finais; não somar casos repetidos como
+novos testes. O E2E usa Redis14; o ensaio oficial isolado usou13, com limpeza de
+chaves próprias. Nenhuma dessas bases deve guardar dados importantes.
 
 Recuperação em quarentena: `make test-recovery` inclui rotas isoladas, token
 independente, bloqueio dos entrypoints, drift de permissões/revisão e erros de

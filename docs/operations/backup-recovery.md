@@ -20,6 +20,18 @@ desenvolvimento. Se o Demo ainda não a expõe, `make infra` adiciona esse acess
 local ao db/redis do projeto; não publicar essa configuração externamente.
 Não efetuar migrações/DDL durante o backup. Nenhum serviço Wazuh é necessário.
 
+O schema atual é `a0d9c7e21b45`, com32tabelas após versionamento do ATT&CK.
+Dump de schema antigo pode ser verificado como dados pelo manifesto original;
+boot/reconciliação/ciclo da aplicação exigem código/imagem com a mesma revisão.
+Não reconstruir a tag atual e esperar que um backup977fd0c42ae8 seja aceito:
+preserve imagem por ID, configuração e commit compatíveis. Não remova guardas
+de revisão nem migre silenciosamente um clone para contornar essa recusa.
+No marco do catálogo, as imagens antigas foram preservadas localmente como
+`aegis-catalog-previous:demo-977fd0c42ae8` e
+`aegis-catalog-previous:recovery-977fd0c42ae8`; tags não são backup off-host.
+O backup anterior e um novo backup32tabelas foram restaurados/verificados como
+dados; isso não é outro ensaio completo de ciclo recuperado na revisão nova.
+
 Criar diretórios privados; em instalações antigas, restringir `.local` existente:
 
 ```bash
@@ -55,7 +67,7 @@ A verificação:
 5. Compara todas as linhas, contagens, revisão Alembic, colunas, constraints,
    tipos/typmods/collations de colunas, índices/flags, triggers habilitadas e
    funções inventariadas. Recalcula hashes
-   internos de eventos, versões Sigma e scopes de campanhas/agendamentos. Arquivos e diretórios são
+   internos de eventos, versões Sigma, documentos do catálogo ATT&CK e scopes de campanhas/agendamentos. Arquivos e diretórios são
    sincronizados com fsync antes de anunciar publicação.
 6. Confere ownership antes de remover o container. Só grava recibo
    `verification-<uuid>.json` após comparação **e cleanup** aprovados.
