@@ -39,7 +39,7 @@ restaurado em clone offline:30tabelas/2.884linhas iguais, clone removido,
 5,264s medidos, sem promessa de RTO. Imagens antigas por ID preservadas em tags
 locais próprias, incluindo imagem recovery do marco anterior.
 
-Imagem nova `sha256:f5dd7a0f9d1aff676fbdabef1c6314b16a28cadca3261d26b2e20fa7d3ee462b`.
+Imagem da publicação `sha256:f5dd7a0f9d1aff676fbdabef1c6314b16a28cadca3261d26b2e20fa7d3ee462b`.
 Somente API/worker do Demo foram parados e recriados, mantendo db/redis próprios.
 Migração/seed/grants aplicados, schema a0d9c7e21b45 com32tabelas; health ready
 database/redis=true. Antes da publicação,27tabelas não afetadas pela migração
@@ -55,6 +55,11 @@ excluindo as mudanças esperadas em usuário/auditoria/schema/catálogo.
 Cobertura da release atual é0; legado continua no histórico com versão de escopo
 desconhecida. Nenhuma nova campanha foi executada no Demo em uso neste marco.
 
+Ajuste final de erro adicionou resposta409 explícita para catálogo não
+inicializado, conferido em30casos de API/recuperação. Imagem final do Demo/recovery
+`sha256:a160bed6dc12c3bd8c69df3ed6c86d7e4c061ee1e280d30524af06bb665471a4`;
+readiness e identidade da release conferidos novamente, sem nova campanha.
+
 Backup posterior `20261023T185803Z-e24dc58921054fef8aa4fdab4b4a2caf` também foi
 restaurado/verificado em clone sem rede:32tabelas/3.055linhas,5,132s medidos,
 clone removido. Dump/manifesto privados e backups anteriores preservados.
@@ -64,7 +69,7 @@ continuam disponíveis pelos IDs/tags preservados, sem enfraquecer revisão.
 
 ## Testes e limites
 
-- `make test`:654Python e43frontend passaram, com PostgreSQL/Redis reais.
+- `make test` final:655Python e43frontend passaram, com PostgreSQL/Redis reais.
 - `make lint` e build passaram; aviso upstream TestClient/httpx permanece.
 - `make e2e`: Firefox, API/worker separados,4runs/16testes sintéticos, zero erros
   JavaScript,11capturas reais incluindo proveniência e pesquisa histórica.

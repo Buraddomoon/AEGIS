@@ -47,7 +47,7 @@ inicial distribuído. A publicação oficial completa foi verificada separadamen
 com a CLI/candidato real e dois ciclos sintéticos, sem acessar Linux/Wazuh.
 [Recibos e limites](../evidence/attack-catalog-2026-10-23/README.md).
 
-Marcação mais recente:654Python/43frontend, lint/build e E2E passaram;71casos
+Marcação final:655Python/43frontend e lint passaram; build e E2E passaram,71casos
 de recuperação foram repetidos após tornar a fixture determinística. Consulte
 PROGRESS para o resultado remoto e checks finais; não somar casos repetidos como
 novos testes. O E2E usa Redis14; o ensaio oficial isolado usou13, com limpeza de

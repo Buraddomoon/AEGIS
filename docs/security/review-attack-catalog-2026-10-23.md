@@ -20,6 +20,11 @@ antes de prepare/dispatch, sem novo bloqueador concreto. Essa inspeção não
 executou testes, Docker, rede ou arquivos privados; resultados executados são
 registrados separadamente no [marco](../evidence/attack-catalog-2026-10-23/README.md).
 
+Revisão final somente leitura de3dc11a3 também não encontrou bloqueadores
+concretos na UI e no tratamento de erro: páginas/detalhes fixam release,
+snapshots históricos são distintos, conteúdo externo não vira HTML executável
+e CatalogError retorna409 genérico sem dados internos.
+
 Controles verificados: destinos HTTPS fixos/commit completo, trust_env=false,
 TLS validado, sem redirect/compressão, limites antes/durante o download e parse,
 permissões/ownership/links no cache, nomes exclusivos e rehash/renormalização.

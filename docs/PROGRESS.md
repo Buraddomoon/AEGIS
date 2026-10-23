@@ -1373,3 +1373,154 @@ Este marco acrescenta **8 commits granulares**, incluindo este checkpoint,
 totalizando **220**. Main exclusiva, AEGIS privado e push após cada commit. Código
 final 2d10d92, recibo/revisão 251b163 e operação 0886768; consultar git log/status para
 hash/mensagem finais e sincronização, sem incorporar o próprio hash aqui.
+
+## 2026-10-23 — catálogo ATT&CK controlado e versionado
+
+Escopo seguinte autorizado por “pode prosseguir”: remover a pendência de atualização
+de catálogo de um banco populado, preservando evidências e decisões anteriores.
+Nenhum novo ensaio Linux/Wazuh, consulta SIEM, instalação pesada, alvo externo ou
+autorização ofensiva foi consumido. Política main/privado/commits granulares e push
+direto mantida. ADR0014 define preparar→revisar→publicar, sem sincronização automática.
+
+### Implementação
+
+- Migration a0d9c7e21b45, após977fd0c42ae8:32tabelas, releases imutáveis com
+  documento/hash canônico e origem/commit/hashes, singleton vigente e projeção
+  AttackTechnique com flags oficiais/ausência/source_modified. IDs referenciados
+  e metadados ausentes preservados; seed só adota legado conhecido e não
+  sobrescreve release inicializada. Não inventa commit para snapshot antigo.
+- CLI host-only prepare/plan/apply. HTTPS oficial numerado fixado por commit40hex,
+  TLS validado, sem proxies/redirects/compressão, limites e prazo absoluto75s
+  cobrindo headers/corpo. Cache0700/0600 exclusivo, rehash/renormalização no load.
+  Normalização cobre perfil Enterprise, não validação STIX completa ou assinatura.
+- Plano READ ONLY vincula destino/schema, base/projeção/candidato e impactos nos
+  testes. Aplicação por hash exato e administrador ativo, locks NOWAIT e transação
+  única incluindo auditoria. Bloqueia licença não revisada, downgrade, reescrita
+  de versão oficial, identidades conflitantes, drift, ator/plano inválidos,
+  concorrência e runs/reservas/agendamentos retomáveis. Repetição sem novos efeitos.
+- API/worker não escrevem em catálogo nem precisam de UPDATE para locks de leitura.
+  Scopes novos registram release e técnicas; retiradas/ausentes são recusadas.
+  Worker rejeita contexto desconhecido/alterado antes de preparar/emitir efeitos,
+  preservando cleanup. Nenhuma reescrita de allowlist, regras, scopes, aprovações,
+  resultados, evidências ou relatórios JSON históricos.
+- Cobertura atual exige mesma release/mode; histórico, tendência e percentual
+  continuam históricos com denominadores explícitos. Contexto antigo desconhecido
+  permanece desconhecido. Comparação explica mudança de catálogo sem causalidade.
+- API autenticada somente leitura para proveniência, releases e snapshots.
+  Matriz/tabela têm filtros de ciclo de vida, origem/hashes, histórico pesquisável
+  e recarga; paginação/detalhe recusam troca de release. Sem botão decorativo
+  de publicação. Catálogo não inicializado retorna status explícito/conflito409.
+
+Arquivos centrais: aegis/catalog/{document,artifacts,store,api}.py,
+scripts/update_attack.py, models/migration/seed/runtime_grants, services/worker/
+queries/reporting/backup, AttackCatalog.tsx/Catalog.tsx e testes test_attack_*.
+README/AGENTS/CHANGELOG/modelagem/API/roadmap/operação/testes atualizados.
+
+### Fonte real e implantação
+
+Fonte oficial consultada: Enterprise20.0 permanece atual; commit
+c2494b29dd268c46a5d0ea0990553e4327cd2253,55.271.014bytes,
+SHA25681113ba98afa2928f3dcff62022539f7ce30c315c32e14422f11ff95ce534352,
+igual à origem do snapshot anterior. Licença idêntica à revisada. CLI prepare
+real produziu candidato798dc8da9a8e2f7996894d11b5ec00211c2532a26da391a50d2c170b2b849844,
+867referências:706ativas/149revogadas/12descontinuadas. Não é nova versão20→21
+nem dado sintético; somente as execuções de validação são sintéticas.
+
+Ensaio em schema PostgreSQL17 próprio: dois ciclos reais das funções do worker,
+oito testes sintéticos, CLI plan/apply, relatório anterior idêntico pelo hash,
+seed sem sobrescrita, reaplicação already_applied e duas releases preservadas.
+Cobertura atual0 após publicação e3 após novo ciclo aprovado; histórico seis
+válidos/dois detectados,33,3% nesse escopo. Comparação não equivalente; schema
+removido e chaves próprias Redis13 limpas. Esse ensaio usa TestClient/funções;
+processos separados são comprovados pelo E2E, sem atribuição falsa de transporte.
+
+Demo em uso: antes977fd0c42ae8,20runs/zero pendências/reservas/planos retomáveis.
+Backup20261023T185409Z-1ee667a8a3b6449299cfe4dfa8cbda2b criado e restaurado
+em clone offline,30tabelas/2.884linhas idênticas/clone removido,5,264s medidos.
+Imagens antigas preservadas em aegis-catalog-previous:demo-977fd0c42ae8 e
+recovery-977fd0c42ae8. Somente API/worker próprios parados/recriados, sem parar
+db/redis ou alterar serviços/rede/sysctl do host. Migration/seed/grants passaram.
+
+Plano local revisado:161inclusões retiradas e apenas source_modified nas706ativas,
+sem testes afetados ou bloqueadores. Publicado pela CLI com conta administrativa
+temporária própria; API18780 autenticada confirmou nova release e leitura pelo
+papel SQL restrito. Conta desativada, sessão encerrada, zero sessão temporária.
+Vinte runs preservadas,26tabelas históricas idênticas ao backup, excluindo
+mudanças esperadas de usuário/auditoria/schema/catálogo. Cobertura atual0;
+histórico legado continua disponível sem versão de scope inventada. Nenhuma
+campanha adicional foi executada no Demo em uso. Health database/redis=true.
+
+Backup posterior20261023T185803Z-e24dc58921054fef8aa4fdab4b4a2caf verificado:
+32tabelas/3.055linhas, clone sem rede removido,5,132s medidos. Dumps/manifestos,
+backups antigos e nove volumes/journals Wazuh preservados; nenhum clone ou
+container Wazuh remanescente. Isso não repete boot/reconciliação/ciclo completo
+da imagem nova nem enfraquece exigência de schema compatível para backups antigos.
+Imagem final Demo/recovery:
+sha256:a160bed6dc12c3bd8c69df3ed6c86d7e4c061ee1e280d30524af06bb665471a4.
+[Recibos curados e limites](evidence/attack-catalog-2026-10-23/README.md).
+
+### Verificações e achados
+
+Revisão especializada somente leitura encontrou dois achados médios: prazo HTTP
+não abrangia headers e lock não incluía TestDefinition referenciada no plano.
+Ambos corrigidos/testados; revisão final de3dc11a3 não identificou bloqueadores
+na UI/escopos/erros. Não executou testes/Docker/rede nem acessou arquivos privados.
+[Revisão](security/review-attack-catalog-2026-10-23.md).
+
+Erros de implementação/ensaio tratados sem afrouxar controles: inferência de
+tipos na paginação TypeScript, mock de resposta sem metadados e dialog sem
+polyfill em jsdom; harness local recusou Redis com credencial por validação
+textual e login sem X-Aegis-Request, corrigidos sem imprimir segredo. Uma CI
+anterior recebeu conflito NOWAIT antes da exceção de integridade esperada,
+compatível com manutenção de fundo. Fixture agora desabilita autovacuum somente
+das tabelas de seus bancos descartáveis, antes do seed;71casos passaram e locks
+de produção/conflitos explícitos continuam. Ajuste final de catálogo ausente
+coberto por30casos de API/recuperação. Nenhum sucesso atribuído às rodadas falhas.
+
+Primeira rodada completa:654Python/43frontend passaram. E2E Firefox passou:
+API/worker separados,4runs/16testes sintéticos, consulta de proveniência e pesquisa
+de snapshot histórico,11capturas reais/zero erros JavaScript/sem overflow móvel.
+Snapshots das capturas são os distribuídos iniciais, não uma publicação oficial
+fingida. Lint Ruff/format124arquivos, mypy domínio, TypeScript/Prettier e build
+passaram. Aviso upstream TestClient/httpx e advisory transitivo DiskCache revisado
+permanecem visíveis, sem alegação de zero vulnerabilidades.
+
+Rodada final de3dc11a3: `make lint` passou; `make test` **655Python passaram**
+em220,84s e **43frontend passaram** em3,27s. Total incremental77casos Python e8
+frontend sobre o marco anterior, sem contar repetições como casos novos.
+89links locais da documentação conferidos. Não houve duas suítes compartilhando
+Redis15 ao mesmo tempo. E2E14/ensaio13 usaram destinos independentes; segredos/
+artefatos privados não foram adicionados ao Git. Scanner staged/diff-check por
+commit.
+
+CI final **SUCCESS**, código3dc11a3,
+[run40008263252](https://github.com/Buraddomoon/AEGIS/actions/runs/40008263252),
+validate5m07s: **651Python passaram/4skip**,43frontend, lint/tipos/build e revisão
+de advisories. Os quatro skip são projeções opcionais de objetos Docker Demo já
+existentes; CI não os cria. Localmente655passaram. DiskCache5.6.3/PYSEC-2026-2447
+permanece finding transitivo explicitamente revisado, sem alegação de zero
+vulnerabilidades Python; npm reportou zero. Commit seguinte só Markdown não
+altera o código validado nem dispara outra CI.
+
+### Continuidade
+
+Atualização administrativa local entregue; permanecem fora do escopo sincronização
+automática, revisão web de publicação, outras matrizes e rollback de release.
+Não é cobertura de segurança empresarial ou validação de toda versão futura de
+STIX. Não houve nova autorização real Linux/Wazuh. Backups exigem guarda própria
+de imagem/configuração e schema compatíveis; criptografia/off-host/RPO/RTO e
+retenção por ambiente continuam pendentes. Sigma ainda precisa de backend/pipeline/
+mapping oficialmente compatíveis; Windows/archives, PDF e multi-workspace seguem
+no roadmap.
+
+Próxima evolução independente de infraestrutura externa: filtros de cobertura
+por período/release e relatórios comparativos com escopo/denominadores fixados.
+Não remover o histórico de versão desconhecida nem inferir causalidade de mudança
+de catálogo. Consultar git log/status para hash, mensagem, total e sincronização
+finais do checkpoint, sem incorporar seu próprio hash neste arquivo.
+
+Este marco acrescenta **17commits granulares**, incluindo este checkpoint,
+totalizando **237**. AEGIS privado, main exclusiva, push após cada commit;
+código final3dc11a3, recibos7e47e24 e documentação9cfad98. Sem branches/PRs,
+force push ou reescrita de histórico. Árvore limpa/sincronização devem ser
+conferidas após o commit final, sem supor sucesso antes do push.
