@@ -1,5 +1,15 @@
 # Changelog
 
+## Continuidade2026-10-23 — reconciliação offline Demo
+
+- Plano com hash de dados/estrutura, transação única e bloqueio de drift,
+  concorrência, tabelas extras ou efeitos reais pendentes no clone descartável.
+- Invalidação de sessões/contas/labs/grants restaurados e cancelamento somente
+  sintético por transições válidas, com timestamps/histórico preservados.
+- Recibo idempotente e review com ID/hash exatos e fences de pais/filhos.
+- Ensaio real verificou30tabelas/2.884linhas originais,1auditoria nova,
+  API em quarentena e clones removidos. Sem retomada/cutover ou novo ensaio real.
+
 ## Continuidade2026-10-23 — boot recuperado em quarentena
 
 - Modo recovery no boot: somente health e revisão agregada com token novo,
