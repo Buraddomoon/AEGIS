@@ -1,68 +1,127 @@
-"""Explicit developer-only ATT&CK refresh. Never runs during startup."""
+"""Prepare, review and explicitly publish an official ATT&CK candidate locally."""
 
 import argparse
 import hashlib
 import json
+import os
 import re
-import urllib.request
+import uuid
 from pathlib import Path
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--version", required=True)
-args = parser.parse_args()
-if not re.fullmatch(r"\d+\.\d+", args.version):
-    parser.error("Version must be N.N")
-base = "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/"
-url = base + f"enterprise-attack/enterprise-attack-{args.version}.json"
-with urllib.request.urlopen(url, timeout=60) as response:
-    raw = response.read(80_000_000)
-bundle = json.loads(raw)
-objects = bundle["objects"]
-parents = {
-    o["source_ref"]: o["target_ref"]
-    for o in objects
-    if o["type"] == "relationship" and o.get("relationship_type") == "subtechnique-of"
-}
-ids = {
-    o["id"]: ref["external_id"]
-    for o in objects
-    if o["type"] == "attack-pattern"
-    for ref in o.get("external_references", [])
-    if ref.get("source_name") == "mitre-attack"
-}
-techniques = []
-for item in objects:
-    if item["type"] != "attack-pattern" or item.get("revoked") or item.get("x_mitre_deprecated"):
-        continue
-    reference = next(r for r in item["external_references"] if r["source_name"] == "mitre-attack")
-    techniques.append(
-        {
-            "id": reference["external_id"],
-            "stix_id": item["id"],
-            "name": item["name"],
-            "description": item.get("description", ""),
-            "tactics": [
-                p["phase_name"]
-                for p in item.get("kill_chain_phases", [])
-                if p["kill_chain_name"] == "mitre-attack"
-            ],
-            "platforms": item.get("x_mitre_platforms", []),
-            "parent_id": ids.get(parents.get(item["id"])),
-            "reference": reference["url"],
-            "dataset_version": args.version,
-        }
-    )
-data = {
-    "version": args.version,
-    "source_url": url,
-    "source_sha256": hashlib.sha256(raw).hexdigest(),
-    "techniques": sorted(techniques, key=lambda t: t["id"]),
-}
-output = Path("fixtures/attack/enterprise.json")
-output.parent.mkdir(parents=True, exist_ok=True)
-output.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
-with urllib.request.urlopen(base + "LICENSE.txt", timeout=30) as response:
-    (output.parent / "LICENSE.txt").write_bytes(response.read())
-print(
-    f"Cached {len(techniques)} official techniques, v{args.version}, source sha256={data['source_sha256']}"
-)
+import httpx
+from aegis.catalog import artifacts, store
+from aegis.catalog.document import HEX64
+from aegis.config import require_normal_operation, settings
+from aegis.db import session_factory
+from aegis.operations.recovery import required_revision
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+
+ROOT = Path(__file__).resolve().parents[1]
+CACHE = ROOT / ".local/attack-catalog"
+
+
+def fingerprint(value):
+    if not re.fullmatch(HEX64, value):
+        raise argparse.ArgumentTypeError("Use um SHA256 completo em minúsculas.")
+    return value
+
+
+def actor(value):
+    try:
+        if str(uuid.UUID(value)) != value:
+            raise ValueError()
+    except ValueError:
+        raise argparse.ArgumentTypeError("Use o UUID canônico do administrador ativo.") from None
+    return value
+
+
+def schema_guard(db):
+    revisions = list(db.scalars(text("SELECT version_num FROM alembic_version")))
+    if revisions != [required_revision()]:
+        raise store.CatalogError(
+            "Schema incompatível; revise/aplique as migrações antes de publicar."
+        )
+
+
+def main(argv=None):
+    require_normal_operation()
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="action", required=True)
+    preparation = sub.add_parser("prepare")
+    preparation.add_argument("--version", required=True)
+    preparation.add_argument("--commit", required=True)
+    review = sub.add_parser("plan")
+    review.add_argument("candidate_id", type=fingerprint)
+    publish = sub.add_parser("apply")
+    publish.add_argument("candidate_id", type=fingerprint)
+    publish.add_argument("--confirm-plan", required=True, type=fingerprint)
+    publish.add_argument("--actor", required=True, type=actor)
+    args = parser.parse_args(argv)
+    os.chdir(ROOT)
+    try:
+        reviewed_license = hashlib.sha256(
+            (settings().fixtures_path / "attack/LICENSE.txt").read_bytes()
+        ).hexdigest()
+        if args.action == "prepare":
+            identity = artifacts.prepare(CACHE, args.version, args.commit)
+            document = artifacts.load(CACHE, identity)
+            result = {
+                "status": "prepared_not_applied",
+                "candidate_id": identity,
+                "version": document.version,
+                "source_commit": document.source_commit,
+                "source_sha256": document.source_sha256,
+                "license_matches_reviewed": document.license_sha256 == reviewed_license,
+                "techniques": len(document.techniques),
+                "active": sum(not t.revoked and not t.deprecated for t in document.techniques),
+            }
+        else:
+            document = artifacts.load(CACHE, args.candidate_id)
+            with session_factory()() as db, db.begin():
+                if args.action == "plan":
+                    db.execute(text("SET TRANSACTION READ ONLY"))
+                schema_guard(db)
+                if args.action == "plan":
+                    planned = store.plan(db, document, reviewed_license)
+                else:
+                    result = store.apply(
+                        db, document, args.confirm_plan, args.actor, reviewed_license
+                    )
+            if args.action == "plan":
+                path = artifacts.save_plan(CACHE, planned)
+                result = {
+                    key: planned[key]
+                    for key in (
+                        "format",
+                        "action",
+                        "candidate_id",
+                        "candidate_version",
+                        "source_commit",
+                        "source_sha256",
+                        "plan_sha256",
+                        "counts",
+                        "blockers",
+                    )
+                }
+                result["review_file"] = str(path)
+                result["tests_requiring_review"] = planned["tests_requiring_review"]
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    except store.CatalogError as error:
+        raise SystemExit(str(error)) from None
+    except (
+        ValueError,
+        KeyError,
+        TypeError,
+        OSError,
+        RecursionError,
+        SQLAlchemyError,
+        httpx.HTTPError,
+    ):
+        raise SystemExit(
+            "Operação ATT&CK recusada ou indisponível; nenhum sucesso declarado. Revise candidato/schema/permissões; dados sensíveis não foram exibidos."
+        ) from None
+
+
+if __name__ == "__main__":
+    main()

@@ -317,6 +317,8 @@ def normalize(raw, version, commit, license_raw):
 
 
 def bundled_document(raw, license_raw):
+    if not isinstance(license_raw, bytes) or not 0 < len(license_raw) <= MAX_LICENSE:
+        raise ValueError("Invalid bundled license file")
     legacy = parse_json(raw, MAX_NORMALIZED)
     if not isinstance(legacy, dict) or set(legacy) != {
         "version",
