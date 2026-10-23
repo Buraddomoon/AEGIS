@@ -134,7 +134,17 @@ def create_app(config: Settings | None = None):
         app.include_router(recovery_router(token.get_secret_value(), expected))
     else:
         from aegis.api import router
+        from aegis.catalog.store import CatalogError
 
+        async def catalog_error(request: Request, exc: CatalogError):
+            return await http_error(
+                request,
+                HTTPException(
+                    409, "Catálogo ATT&CK indisponível ou divergente; revisão necessária."
+                ),
+            )
+
+        app.add_exception_handler(CatalogError, catalog_error)
         app.include_router(router)
         if config.web_dist.is_dir():
             app.mount("/", StaticFiles(directory=config.web_dist, html=True), name="web")

@@ -25,12 +25,23 @@ from aegis.models import (
 from aegis.security import hasher, redis_client, token_hash
 from conftest import create_queued
 from fastapi.testclient import TestClient
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 from test_attack_publication import catalog_db as _catalog_db
 from test_attack_publication import publish
 
 catalog_db = _catalog_db
+
+
+def test_uninitialized_catalog_is_explicit_in_status_and_conflicts(catalog_client):
+    client, engine, _ = catalog_client
+    with engine.begin() as db:
+        db.execute(text("DELETE FROM attack_catalog_state"))
+    assert client.get("/api/v1/catalog/attack").json()["status"] == "uninitialized"
+    for path in ("/techniques", "/techniques/T1059.001", "/coverage"):
+        response = client.get("/api/v1" + path)
+        assert response.status_code == 409
+        assert response.json()["error"]["request_id"]
 
 
 @pytest.fixture
