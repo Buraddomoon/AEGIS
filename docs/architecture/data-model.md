@@ -18,6 +18,8 @@ erDiagram
   Campaign ||--o{ CampaignTest : seleciona
   TestDefinition ||--o{ CampaignTest : referencia
   AttackTechnique ||--o{ TestDefinition : classifica
+  AttackCatalogRelease ||--o| AttackCatalogState : vigente
+  User o|--o{ AttackCatalogRelease : atribui
   Campaign ||--o{ CampaignRun : repete
   CampaignRun ||--o| Approval : autoriza
   CampaignRun ||--o{ TestExecution : executa
@@ -39,7 +41,7 @@ erDiagram
   CampaignRun o|--o| ScheduleOccurrence : identifica
 ```
 
-Papéis são enumeração com CHECK no usuário, sem tabela artificial de permissões. Relação campanha/teste e evidência/resultado é relacional. Táticas/plataformas usam arrays PostgreSQL de strings. JSONB está restrito ao snapshot de escopo, payload original e detalhes de auditoria.
+Papéis são enumeração com CHECK no usuário, sem tabela artificial de permissões. Relação campanha/teste e evidência/resultado é relacional. Táticas/plataformas usam arrays PostgreSQL de strings. JSONB guarda snapshots tipados de protocolos/escopos, payload original, detalhes de auditoria e o documento externo imutável do catálogo; não substitui relacionamentos.
 
 Unicidade: usuário; token de sessão (hash); ID externo de ativo; STIX ID; chave de idempotência por solicitante; aprovação por run; teste por run; marcador; evento por execução/origem/ID; resultado por execução; versão por regra. `active_run_id` é uma reserva controlada por transação e bloqueio da linha do laboratório, sem exclusão automática de registros históricos.
 
@@ -54,3 +56,13 @@ Linux: binding com runner único, revisão e hash da configuração pública; ve
 Migração 4b72c7bb8548: WazuhBinding relaciona laboratório/ativo ao agent.id externo único, regra, schema, revisão e hash de configuração. TelemetryCollection é resumo imutável por execução, separado dos documentos originais; contém tentativas/período, disponibilidade/completude/janela e razão pública. Runtime não recebe UPDATE/DELETE em resumos. Payloads de eventos mantêm identificadores originais; policy snapshots guardam mapping usado historicamente, mesmo após remover o vínculo atual.
 
 Migrações ec3020ae8711/977fd0c42ae8: RuleTestLink fixa versão/hash Sigma (via FK composta), versão do teste, justificativa e responsável. Índice parcial garante um vínculo ativo por par regra/teste. Somente primeira retirada é permitida por trigger; versões/autores/justificativas e retiradas anteriores não recebem UPDATE nem DELETE. Scopes novos guardam snapshots ordenados dos vínculos relevantes; ausência do campo em histórico antigo é contexto desconhecido. Associação não participa dos veredictos de detecção.
+
+Migração a0d9c7e21b45: AttackCatalogRelease preserva documento/hash canônico,
+origem/commit/hashes da fonte/licença e atribuição. Trigger recusa UPDATE/DELETE;
+runtime só tem SELECT. AttackCatalogState é singleton com CHECK id=1 e FK para
+release vigente. AttackTechnique continua projeção relacional com flags
+revoked/deprecated/present_in_current e source_modified preservado da fonte.
+Ausentes conservam a versão/metadados anteriores e referências; não são apagadas.
+O seed inicializa proveniência conhecida sem reescrever scopes históricos.
+Novos scopes incluem release e snapshots das técnicas, mantendo aprovações
+vinculadas ao hash. Backup recalcula também a identidade de documentos do catálogo.

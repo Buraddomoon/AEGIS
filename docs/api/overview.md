@@ -10,6 +10,7 @@ Sessão por cookie HttpOnly. Login JSON exige `X-Aegis-Request: browser`; origem
 | users | GET lista, POST cadastro (admin) |
 | labs/assets | GET lista, PATCH lab authorization, POST linux/register e preflight, GET verifications, POST recover (admin para mutações) |
 | techniques | GET pesquisa/filtros/paginação; GET detalhe/history/simulações |
+| catalog/attack | GET estado/proveniência; GET releases paginadas; GET releases/{id}/techniques snapshot pesquisável |
 | tests | GET allowlist Demo e marcador Linux revisado |
 | campaigns | GET/POST; POST `/{id}/runs` com idempotency_key |
 | executions | GET lista/detalhe, POST approve/start/cancel/reject |
@@ -24,6 +25,15 @@ Sessão por cookie HttpOnly. Login JSON exige `X-Aegis-Request: browser`; origem
 Listagens grandes usam `offset` e `limit` (1–1000), com `items/total`. Catálogos pequenos labs/tests são listas limitadas pela allowlist/configuração. Execuções filtram state/campaign_id/mode; coverage e techniques aceitam mode=demo|linux, padrão demo; técnicas filtram q/tactic/platform/coverage. Ordenação é determinística por recurso (IDs/nomes ou criação recente), sem SQL de ordenação livre recebido do usuário.
 
 Erros `{error: {code, message, request_id}}`; erros de input incluem somente campo/tipo, sem valores sensíveis. Status: 401 sem sessão, 403 sem papel/CSRF/origem, 404 inexistente, 409 conflito de estado/escopo, 413 payload grande, 422 input inválido, 429 rate limit, 502 conector falhou, 503 dependência indisponível. X-Request-ID auxilia diagnóstico.
+
+ATT&CK: `lifecycle=active|revoked|deprecated|absent|all` (padrão active) e
+`catalog_release_id=<SHA256>` opcional vinculam técnicas à release esperada;
+409 recusa paginação/detalhe após troca de catálogo. Respostas incluem referência
+de catálogo e ciclo de vida; cobertura atual requer mesma release/mode.
+`catalog/attack/releases` aceita limit1–100/offset; snapshots limit1–1000/offset/q.
+Rotas do catálogo só leem, autenticadas para todos os papéis. Publicação é CLI
+host-only, com credencial de implantação e plano confirmado; não existe POST web.
+Histórico de técnica informa versão registrada ou contexto desconhecido.
 
 Polling controlado da UI acompanha estado e evidências, sem WebSocket fictício. Schedules operam somente Demo, conforme [política](../operations/scheduling.md). Campanhas Linux usam os mesmos endpoints de execução; approve exige confirm_real_execution=true e aprovador diferente do solicitante. Detalhes incluem runner_dispatch/runner_receipt/runner_cleanup separados de eventos defensivos. Implantação Sigma permanece indisponível. Integrações ainda não configuradas retornam estado explícito e teste de conexão retorna 409; não inventam sucesso.
 
