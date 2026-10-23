@@ -26,6 +26,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Backup consistente do Demo e restauração verificável em PostgreSQL temporário sem rede; inventário de dados/estrutura, hashes internos e plano de retenção sem exclusão. [Procedimento e limites](docs/operations/backup-recovery.md).
 - Ensaio de boot da API recuperada em quarentena somente leitura: sessões históricas e execução automática bloqueadas, revisão agregada e comparação dos dados após leitura. Não reativa a operação normal.
 - Reconciliação offline do clone Demo: invalida acessos/autorizações restaurados e encerra pendências sintéticas com auditoria, sem retomar jobs ou modificar o ambiente em uso.
+- Ensaio de novo ciclo Demo no destino recuperado, com conta/lab/aprovação novos, API/worker/Redis isolados e preservação verificável do histórico. Sem cutover.
 - [Ensaio Wazuh registrado](docs/evidence/wazuh-2026-10-22/README.md): uma campanha, um marcador de 43 bytes, um alerta da regra 100200, cleanup conferido. Containers/redes encerrados; volumes preservados. Não integra o Demo nem os testes padrão; nova execução requer novo escopo autorizado.
 
 ## Início rápido

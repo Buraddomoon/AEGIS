@@ -23,3 +23,6 @@ Modo recovery mantém503 nas operações normais e não libera jobs/sessões do 
 `make reconcile-demo-backup BACKUP_ID=...` aplica um plano fixo só num clone novo,
 invalida acessos/autorizações restaurados e verifica novamente a API em recovery.
 Não faz deploy, reativação de conta/lab ou retomada de worker no banco em uso.
+`make verify-recovered-cycle BACKUP_ID=...` verifica o ciclo seguinte com conta,
+lab e aprovação novos e API/worker/Redis somente no clone offline. Não publica
+portas, muda o Demo ativo ou autoriza operações reais Linux/Wazuh.

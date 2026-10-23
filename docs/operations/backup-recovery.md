@@ -223,6 +223,57 @@ para um ciclo sintético ainda precisam ser validados em destino separado.
 [Ensaio real e recibo](../evidence/reconciliation-2026-10-23/README.md): inventário
 original2.884linhas,1auditoria nova, vínculo ID/hash confirmado e clones removidos.
 
+## Primeiro ciclo Demo no destino recuperado
+
+```bash
+make recovery-app-build
+make verify-recovered-cycle BACKUP_ID=ID_INFORMADO_PELO_BACKUP
+```
+
+Extensão opt-in: os comandos anteriores continuam sem iniciar Redis/worker.
+Esse ensaio faz restore, comparação, reconciliação e probes da API em recovery;
+remove aquela API e somente então prepara um ciclo novo no mesmo DB descartável.
+Não reinicia o Demo em uso nem restaura diretamente sobre um destino existente.
+
+Exige imagens locais da aplicação e redis:8-alpine, fixadas por ID antes dos
+efeitos, sem pull no ensaio. Provisiona aegis_app com os mesmos privilégios
+runtime revisados da implantação normal, sem administração/ownership ou acesso
+ao schema privado de integridade. HBA permite somente esse papel por SCRAM no
+loopback; TCP administrativo segue rejeitado. Credenciais SQL/Redis e senha da
+conta são novas/aleatórias, em env temporário0600 ou stdin, nunca argv/recibo.
+
+Conta administrativa, laboratório Demo revogado e ativo sintético são novos.
+O catálogo precisa coincidir com os quatro testes Demo revisados. Hashes das
+linhas reconciliadas ficam em schema privado no DB tmpfs, inacessível ao runtime.
+API e worker normais e Redis novo compartilham somente o namespace network=none
+do DB, sem portas, mounts persistentes, socket Docker ou configuração runner/SIEM.
+Redis bind127.0.0.1, autenticado, sem save/AOF. Não recupera o Redis antigo.
+
+A probe local autentica a conta nova e autoriza explicitamente só o lab novo;
+cria campanha/run, verifica recusa de início sem aprovação, aprova o hash novo e
+inicia uma única run. O worker real processa os quatro testes sintéticos. Confere
+eventos/evidências/hashes, DETECTED/OBSERVED_NOT_ALERTED/NO_TELEMETRY/INCONCLUSIVE,
+indicadores com delta1run/4testes/3válidos e relatórios HTML/JSON identificados como
+sintéticos. Nenhum resultado comprova proteção Windows, Linux real ou ATT&CK real.
+
+Depois revoga o lab novo, encerra a sessão e remove o worker antes da verificação
+final. Desativa a conta nova; exige aprovação própria consumida, quatro resultados
+sintéticos, zero pendências/autorizações/sessões e todas as linhas anteriores
+idênticas. Alteração do histórico ou estrutura bloqueia recibo. Não cria agendamento.
+
+Intenções duráveis para cada create, inclusive falhas ambíguas. Cleanup em ordem
+worker→API→Redis→DB, com nomes/labels exatos. Falha em um filho retém dependências,
+registra retained_cycle_cleanup_unconfirmed no DB e não emite sucesso; revisar
+as intenções antes de remover manualmente somente esses recursos próprios.
+SIGKILL/daemon indisponível continua exigindo revisão manual, sem prune global.
+
+Recibo final demo-cycle-verification-*.json só aparece após todas as fases e
+cleanup. Distingue a revisão em quarentena do ciclo normal limitado ao clone.
+Não é cutover, failover, recuperação de efeitos externos ou RPO/RTO garantido.
+[ADR0013](../architecture/decisions/0013-recovered-demo-cycle.md).
+[Ensaio real](../evidence/recovered-demo-2026-10-23/README.md):1run/4testes
+sintéticos,2.885linhas anteriores intactas, relatórios e cleanup confirmados.
+
 ## Recuperação operacional completa permanece manual
 
 Dumps contêm hashes de senha, sessões, scopes e evidências. Guardar criptografados,

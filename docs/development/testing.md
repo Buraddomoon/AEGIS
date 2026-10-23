@@ -40,6 +40,15 @@ falso recibo. Histórico não satisfaz binding atual de ID/hash e filhos pendent
 bloqueiam review. `make reconcile-demo-backup BACKUP_ID=...` é opt-in e utiliza
 somente um clone novo; nunca faz reconciliação no Demo em uso nem inicia workers.
 
+Ciclo recuperado: make test-recovery inclui API/worker sobre PostgreSQL real com
+role runtime temporário próprio, sem acesso à baseline privada ou DELETE em
+histórico imutável. Fixtures trocam somente nomes de implantação por DB/role
+aleatórios; nunca alteram aegis_app do ambiente em uso. Redis DB15, casos seriais,
+limpeza só de chaves próprias. O callback de teste processa a fila pelo worker;
+make verify-recovered-cycle valida separadamente processos Docker reais.
+Mocks de Docker cobrem create antes/depois, start, probe, fechamento, ownership,
+cleanup/retensão de dependências e ausência de segredo em argv/intents.
+
 ## Marco de agendamento Demo
 
 Na rodada ampliada: **85 testes Python** e **5 testes frontend** passaram; E2E Firefox concluiu **3 runs / 12 testes sintéticos**, incluindo agendamento automático, com zero erros JavaScript. O smoke Compose inclui run manual e agendada, verificação de grant, relatório e revogação usando API/worker com papel SQL restrito. Consulte PROGRESS para comandos e CI final.

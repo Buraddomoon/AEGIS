@@ -93,3 +93,13 @@ Review atual exige par id/hash esperado e fences incluindo filhos não terminais
 auditoria histórica sozinha não prova aplicação atual. API segue em quarentena,
 normal_operation_permitted=false; sem worker/Redis ou retomada/cutover. Fonte,
 backup e evidências anteriores intactos. Não repetir Linux/Wazuh para validar.
+
+Ciclo recuperado Demo (ADR0013): somente make verify-recovered-cycle pode iniciar
+API/worker normais e Redis novo após restore/reconciliação/quarentena conferidos.
+Todos compartilham network=none do DB descartável, sem portas/mounts/runner/SIEM;
+imagens locais por ID e segredos via env0600/stdin, nunca argv/recibo. Conta/lab/
+ativo/campanha/aprovação novos, catálogo Demo fixo; não reativar identidades ou
+jobs restaurados. Provar linhas antigas intactas por baseline privada sem acesso
+runtime, quatro resultados sintéticos, métricas/relatórios e fechamento da conta,
+lab/sessão. Cleanup worker→API→Redis→DB; falha retém dependências sem sucesso.
+Não reinterpretar o recibo como cutover ou permissão de novo ensaio Linux/Wazuh.

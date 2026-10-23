@@ -65,4 +65,6 @@ sem login normal/worker/scheduler ou retomada de sessões/autorizações. Não
 substitui um novo ciclo Demo após recuperação. Reconciliação offline implementada
 somente no clone descartável: sessões/contas/autorizações invalidadas, pendências
 sintéticas encerradas, histórico preservado e recibo vinculado à API em recovery.
-Retomada normal com identidades e aprovação novas continua pendente.
+Ensaio de ciclo Demo novo com identidades/aprovação novas implementado em destino
+descartável, incluindo worker, evidências e relatórios. Recuperação entre hosts,
+guarda criptografada e cutover operacional continuam pendentes.
