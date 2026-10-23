@@ -54,12 +54,19 @@ class HTMLReportExporter:
             else "LABORATÓRIO REAL · COMPROVANTES DO EXECUTOR"
         )
         limitation = " ".join(report["limitations"])
+        catalog = run["scope"].get("attack_catalog")
+        catalog_text = (
+            f"Enterprise v{catalog['version']} · release {catalog['release_id']}"
+            if catalog
+            else "Versão ATT&CK não registrada no escopo histórico."
+        )
         raw = escape(json.dumps(report, ensure_ascii=False, indent=2, default=str))
         return f"""<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>ÆGIS — relatório</title>
 <style>body{{font:15px system-ui;max-width:1100px;margin:48px auto;padding:20px;color:#132235}}h1{{color:#176658}}td,th{{padding:14px;text-align:left;border-bottom:1px solid #ccd6dd}}pre{{white-space:pre-wrap;overflow-wrap:anywhere}}.notice{{padding:20px;background:#eef7f3}}</style>
 <h1>ÆGIS · Validação de detecção</h1><div class="notice"><strong>{escape(notice)}</strong><p>{escape(limitation)}</p></div>
 <h2>{escape(run["campaign_name"])}</h2><p>{escape(run["objective"])}</p>
 <p>Execução: {escape(run["id"])} · Estado: {escape(run["state"])}</p><p>Data UTC: {escape(run["created_at"])} · Ambiente v{escape(run["scope"]["environment_version"])}</p>
+<p>Catálogo ATT&CK: {escape(catalog_text)}</p>
 <h2>Resumo executivo</h2><p>Foram avaliadas {len(run["executions"])} simulações neste escopo. As classificações abaixo distinguem detecção, observação sem alerta e insuficiência de evidências. Os resultados não demonstram proteção de uma organização.</p>
 <h2>Resultados técnicos</h2><table><tr><th>Simulação</th><th>Resultado</th><th>Justificativa</th></tr>{rows}</table>
 <h2>Recomendações</h2><ul>{"".join("<li>" + escape(r) + "</li>" for r in report["recommendations"])}</ul>

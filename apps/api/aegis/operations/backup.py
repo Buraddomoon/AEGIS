@@ -108,6 +108,7 @@ def fingerprint(rows: Iterable[str], table: str | None = None) -> dict[str, Any]
         "rule_versions": ("content", "sha256"),
         "campaign_runs": ("scope", "scope_hash"),
         "schedules": ("scope", "scope_hash"),
+        "attack_catalog_releases": ("document", "id"),
     }
     for encoded in rows:
         row = json.loads(encoded)

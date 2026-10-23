@@ -11,6 +11,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from aegis import linux_labs, queries, rule_links, scheduling, schemas, services, telemetry
+from aegis.catalog import store as catalog
+from aegis.catalog.api import router as catalog_router
 from aegis.config import settings
 from aegis.db import get_db
 from aegis.domain.validation import digest
@@ -51,6 +53,7 @@ from aegis.security import (
 )
 
 router = APIRouter(prefix="/api/v1")
+router.include_router(catalog_router)
 DB = Annotated[Session, Depends(get_db)]
 Viewer = Annotated[User, Depends(current_user)]
 Operator = Annotated[User, Depends(operator)]
@@ -300,10 +303,28 @@ def techniques(
     platform: str | None = None,
     coverage: str | None = None,
     mode: Literal["demo", "linux"] = "demo",
+    lifecycle: Literal["active", "revoked", "deprecated", "absent", "all"] = "active",
+    catalog_release_id: str | None = Query(None, pattern=r"^[a-f0-9]{64}$"),
     offset: Offset = 0,
     limit: Limit = 50,
 ) -> dict:
+    try:
+        current = catalog.reference(db)
+    except catalog.CatalogError as error:
+        raise HTTPException(409, str(error)) from None
+    if catalog_release_id is not None and catalog_release_id != current["release_id"]:
+        raise HTTPException(409, "Catálogo mudou durante a consulta; atualize os resultados.")
     query = select(AttackTechnique).order_by(AttackTechnique.id)
+    if lifecycle == "absent":
+        query = query.where(~AttackTechnique.present_in_current)
+    elif lifecycle != "all":
+        query = query.where(AttackTechnique.present_in_current)
+        if lifecycle == "active":
+            query = query.where(~AttackTechnique.revoked, ~AttackTechnique.deprecated)
+        elif lifecycle == "revoked":
+            query = query.where(AttackTechnique.revoked)
+        else:
+            query = query.where(~AttackTechnique.revoked, AttackTechnique.deprecated)
     if q:
         query = query.where(
             AttackTechnique.name.ilike(f"%{q}%") | AttackTechnique.id.ilike(f"%{q}%")
@@ -314,6 +335,11 @@ def techniques(
         query = query.where(AttackTechnique.platforms.any(platform))
     outcomes = queries.technique_outcomes(db, mode)
     if coverage:
+        query = query.where(
+            AttackTechnique.present_in_current,
+            ~AttackTechnique.revoked,
+            ~AttackTechnique.deprecated,
+        )
         ids = [key for key, value in outcomes.items() if value == coverage]
         query = query.where(
             AttackTechnique.id.not_in(outcomes)
@@ -323,13 +349,32 @@ def techniques(
     result = queries.page(db, query, offset, limit)
     for item in result["items"]:
         item["coverage"] = outcomes.get(item["id"], "NOT_TESTED")
+        item["catalog_status"] = (
+            "absent"
+            if not item["present_in_current"]
+            else "revoked"
+            if item["revoked"]
+            else "deprecated"
+            if item["deprecated"]
+            else "active"
+        )
+        item["coverage_applicable"] = item["catalog_status"] == "active"
+    result["catalog"] = current
+    result["catalog_release_id"] = current["release_id"]
     return result
 
 
 @router.get("/techniques/{technique_id}", tags=["ATT&CK"])
 def technique_detail(
-    technique_id: str, user: Viewer, db: DB, mode: Literal["demo", "linux"] = "demo"
+    technique_id: str,
+    user: Viewer,
+    db: DB,
+    mode: Literal["demo", "linux"] = "demo",
+    catalog_release_id: str | None = Query(None, pattern=r"^[a-f0-9]{64}$"),
 ) -> dict:
+    current = catalog.reference(db)
+    if catalog_release_id is not None and catalog_release_id != current["release_id"]:
+        raise HTTPException(409, "Catálogo mudou; recarregue a consulta da técnica.")
     technique = services.get_or_404(db, AttackTechnique, technique_id)
     tests = db.scalars(
         select(TestDefinition).where(
@@ -347,11 +392,32 @@ def technique_detail(
                     "outcome": result.outcome,
                     "created_at": result.created_at,
                     "synthetic": run.synthetic,
+                    "catalog_release_id": run.scope.get("attack_catalog", {}).get("release_id"),
+                    "catalog_version": run.scope.get("attack_catalog", {}).get("version"),
+                    "catalog_scope_recorded": "attack_catalog" in run.scope,
+                    "technique_snapshot": next(
+                        (
+                            t
+                            for t in run.scope.get("attack_techniques", [])
+                            if t["id"] == technique_id
+                        ),
+                        None,
+                    ),
                 }
             )
     return {
         **queries.record(technique),
-        "tests": [queries.record(t) for t in tests],
+        "catalog_status": catalog.lifecycle(technique),
+        "current_catalog": current,
+        "coverage": queries.technique_outcomes(db, mode).get(technique_id, "NOT_TESTED"),
+        "tests": [
+            {
+                **queries.record(t),
+                "catalog_mapping_status": catalog.lifecycle(technique),
+                "available_for_new_scope": t.approved and catalog.lifecycle(technique) == "active",
+            }
+            for t in tests
+        ],
         "coverage_history": history[-30:],
         "mode": mode,
         "telemetry_sources": ["aegis-demo"] if tests else [],
@@ -363,9 +429,20 @@ def technique_detail(
 
 @router.get("/tests", tags=["Tests"])
 def tests(user: Viewer, db: DB) -> dict:
+    catalog.shared(db)
     return {
         "items": [
-            queries.record(t)
+            {
+                **queries.record(t),
+                "catalog_mapping_status": catalog.lifecycle(db.get(AttackTechnique, t.technique_id))
+                if t.technique_id
+                else "unmapped",
+                "available_for_new_scope": t.approved
+                and (
+                    not t.technique_id
+                    or catalog.lifecycle(db.get(AttackTechnique, t.technique_id)) == "active"
+                ),
+            }
             for t in db.scalars(select(TestDefinition).order_by(TestDefinition.id))
         ]
     }

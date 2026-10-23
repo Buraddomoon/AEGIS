@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from aegis import linux_labs, rule_links, telemetry
+from aegis.catalog import store as catalog
 from aegis.domain.states import TERMINAL, State, check_transition
 from aegis.domain.validation import LOGIC_VERSION, digest
 from aegis.models import (
@@ -50,6 +51,10 @@ def move(
 
 
 def snapshot_scope(db: Session, campaign: Campaign) -> dict:
+    try:
+        catalog_reference = catalog.reference(db)
+    except catalog.CatalogError as error:
+        raise HTTPException(409, str(error)) from None
     lab = get_or_404(db, Laboratory, campaign.laboratory_id)
     if not lab.authorized or lab.kind not in ("demo", "linux"):
         raise HTTPException(409, "Laboratório não autorizado ou modo de execução indisponível.")
@@ -64,6 +69,12 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
     synthetic = lab.kind == "demo"
     if any(t.execution_kind != ("demo" if synthetic else "linux_marker") for t in tests):
         raise HTTPException(409, "Teste incompatível com o modo do laboratório.")
+    try:
+        techniques = catalog.scope_techniques(
+            db, catalog_reference, [t.technique_id for t in tests if t.technique_id]
+        )
+    except catalog.CatalogError as error:
+        raise HTTPException(409, str(error)) from None
     if not synthetic and (
         len(tests) != 1
         or tests[0].id != linux_labs.TEST_DEFINITION_ID
@@ -85,6 +96,8 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
         "mode": lab.kind,
         "synthetic": synthetic,
         "logic_version": LOGIC_VERSION,
+        "attack_catalog": catalog_reference,
+        "attack_techniques": techniques,
         "clock_skew_seconds": 5,
         "ingestion_window_seconds": 120,
         "test_definitions": [

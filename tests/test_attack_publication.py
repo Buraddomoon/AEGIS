@@ -306,3 +306,13 @@ def test_review_is_bound_to_the_configured_database_scope(catalog_db):
                 store.apply(db, candidate(), reviewed["plan_sha256"], actor, LICENSE_HASH)
     finally:
         alias.dispose()
+
+
+def test_test_definition_writer_blocks_publication_under_nowait(catalog_db):
+    engine, actor = catalog_db
+    before = fingerprint(engine)
+    with engine.connect() as writer, writer.begin():
+        writer.execute(text("UPDATE test_definitions SET version=version WHERE id='demo-shell'"))
+        with pytest.raises(DBAPIError, match="could not obtain lock"):
+            publish(engine, actor)
+    assert fingerprint(engine) == before

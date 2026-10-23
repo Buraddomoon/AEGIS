@@ -10,6 +10,7 @@ from redis.exceptions import RedisError
 from sqlalchemy import select
 
 from aegis import linux_labs, telemetry
+from aegis.catalog import store as catalog
 from aegis.config import require_normal_operation, settings
 from aegis.db import session_factory
 from aegis.domain.contracts import ExecutionAdapter, ExecutionContext
@@ -62,6 +63,7 @@ def claim_next() -> str | None:
             or run.scope.get("logic_version") != LOGIC_VERSION
             or approval.scope_hash != run.scope_hash
             or digest(run.scope) != run.scope_hash
+            or not catalog.scope_valid(db, run.scope)
             or not lab
             or not lab.authorized
             or lab.kind not in ("demo", "linux")
@@ -113,6 +115,11 @@ def guard(run_id: str) -> None:
             raise Interrupted(
                 State.CANCELLED,
                 "Versão da lógica aprovada difere do worker; nova aprovação necessária.",
+            )
+        if not catalog.scope_valid(db, run.scope):
+            raise Interrupted(
+                State.CANCELLED,
+                "Catálogo ATT&CK alterado ou ausente no escopo aprovado; nova revisão necessária.",
             )
         if run.cancel_requested:
             raise Interrupted(State.CANCELLED, "Cancelamento solicitado; iniciando cleanup.")
@@ -193,6 +200,7 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
             ).all()
             for item in items:
                 contexts[item.id] = context_for(run, item, tests[item.test_id])
+        guard(run_id)
         if not run.synthetic:
             if run.scope["runner"] != linux_labs.descriptor():
                 raise ValueError("Configuração Linux mudou antes da preparação.")

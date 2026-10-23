@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Session
 
+from aegis.catalog import store as catalog
 from aegis.domain.validation import Outcome
 from aegis.models import (
     Approval,
@@ -136,16 +137,33 @@ def completed_results(db: Session, mode: str | None = None):
 
 
 def coverage(db: Session, mode: str = "demo") -> dict:
+    current = catalog.reference(db)
     rows = completed_results(db, mode)
     counts = Counter(row[0].outcome for row in rows)
     valid = sum(
         counts[k] for k in [Outcome.DETECTED, Outcome.OBSERVED_NOT_ALERTED, Outcome.NO_TELEMETRY]
     )
-    tested = {
+    historical_tested = {
         t["technique_id"]
         for _, execution, run in rows
         for t in run.scope["test_definitions"]
         if t["id"] == execution.test_id and t["technique_id"]
+    }
+    active_ids = set(
+        db.scalars(
+            select(AttackTechnique.id).where(
+                AttackTechnique.present_in_current,
+                ~AttackTechnique.revoked,
+                ~AttackTechnique.deprecated,
+            )
+        )
+    )
+    tested = {
+        t["technique_id"]
+        for _, execution, run in rows
+        if run.scope.get("attack_catalog", {}).get("release_id") == current["release_id"]
+        for t in run.scope["test_definitions"]
+        if t["id"] == execution.test_id and t["technique_id"] in active_ids
     }
     trend = {}
     for result, _execution, run in rows:
@@ -158,9 +176,12 @@ def coverage(db: Session, mode: str = "demo") -> dict:
         "synthetic": mode == "demo",
         "mode": mode,
         "scope": ("Demo Lab" if mode == "demo" else "Laboratórios Linux reais")
-        + " • execuções concluídas • todas as datas",
-        "catalogued_techniques": db.scalar(select(func.count()).select_from(AttackTechnique)),
+        + " • execuções concluídas • todas as datas e releases",
+        "catalogued_techniques": len(active_ids),
         "evaluated_techniques": len(tested),
+        "historical_evaluated_techniques": len(historical_tested),
+        "attack_catalog": current,
+        "technique_coverage_scope": "Somente técnicas ativas avaliadas na mesma release atual; histórico legado não é reclassificado.",
         "total_runs": db.scalar(
             select(func.count())
             .select_from(CampaignRun)
@@ -170,15 +191,18 @@ def coverage(db: Session, mode: str = "demo") -> dict:
         "valid_tests": valid,
         "outcomes": dict(counts),
         "detected_percentage": round(counts[Outcome.DETECTED] / valid * 100, 1) if valid else None,
-        "denominator": "DETECTED + OBSERVED_NOT_ALERTED + NO_TELEMETRY, somente testes com execução concluída; INCONCLUSIVE e EXECUTION_FAILED excluídos",
+        "denominator": "DETECTED + OBSERVED_NOT_ALERTED + NO_TELEMETRY, testes concluídos no modo selecionado em todas as releases; INCONCLUSIVE e EXECUTION_FAILED excluídos",
         "limitation": "Percentual somente deste modo e escopo de testes; não representa proteção da organização. Comprovantes de execução não são detecções.",
         "trend": list(trend.values())[-30:],
     }
 
 
 def technique_outcomes(db: Session, mode: str = "demo") -> dict[str, str]:
+    current = catalog.reference(db)
     result = {}
     for verdict, execution, run in completed_results(db, mode):
+        if run.scope.get("attack_catalog", {}).get("release_id") != current["release_id"]:
+            continue
         test = next(t for t in run.scope["test_definitions"] if t["id"] == execution.test_id)
         if test["technique_id"]:
             result[test["technique_id"]] = verdict.outcome
@@ -205,6 +229,8 @@ def scope_changes(before: dict, after: dict) -> dict:
         "logic_version",
         "clock_skew_seconds",
         "ingestion_window_seconds",
+        "attack_catalog",
+        "attack_techniques",
     )
     return {
         "rule_versions": differences(
@@ -219,6 +245,7 @@ def scope_changes(before: dict, after: dict) -> dict:
             {k: after.get(k) for k in environment_keys},
         ),
         "link_context_recorded": recorded,
+        "catalog_context_recorded": "attack_catalog" in before and "attack_catalog" in after,
         "rule_test_links": differences(
             {f"{x['rule_id']}:{x['test_id']}": x for x in before["rule_test_links"]},
             {f"{x['rule_id']}:{x['test_id']}": x for x in after["rule_test_links"]},

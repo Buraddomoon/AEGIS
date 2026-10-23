@@ -143,8 +143,44 @@ def lifecycle(t):
     return "active"
 
 
+def scope_techniques(db, reference, identifiers):
+    release = checked(db.get(AttackCatalogRelease, reference["release_id"]))
+    available = {t.id: t for t in release.techniques}
+    captured = []
+    for identifier in sorted(set(identifiers)):
+        technique = db.get(AttackTechnique, identifier)
+        if technique is None or lifecycle(technique) != "active":
+            raise CatalogError("Técnica retirada ou ausente do catálogo atual; revise a campanha.")
+        snapshot = {key: getattr(technique, key) for key in FIELDS}
+        if identifier not in available or snapshot != available[identifier].model_dump():
+            raise CatalogError(
+                "Metadados ATT&CK divergentes da release registrada; revisão necessária."
+            )
+        captured.append({key: value for key, value in snapshot.items() if key != "description"})
+    return captured
+
+
+def scope_valid(db, scope):
+    # History remains readable; unknown context never authorizes a new effect.
+    if not isinstance(scope.get("attack_catalog"), dict) or "attack_techniques" not in scope:
+        return False
+    try:
+        current = reference(db)
+        if scope["attack_catalog"] != current:
+            return False
+        expected = scope_techniques(
+            db, current, [t["technique_id"] for t in scope["test_definitions"] if t["technique_id"]]
+        )
+        return scope["attack_techniques"] == expected
+    except (CatalogError, KeyError, TypeError, ValueError):
+        return False
+
+
 def checked(record):
-    document = Document.model_validate(record.document)
+    try:
+        document = Document.model_validate(record.document)
+    except ValueError:
+        raise CatalogError("Documento histórico ATT&CK inválido.") from None
     if document.identity != record.id or any(
         getattr(record, k) != getattr(document, v)
         for k, v in (
@@ -327,7 +363,7 @@ def apply(db, document, confirmed_hash, actor_id, license_sha256):
     # scope reader/scheduler/worker using another ordering.
     db.execute(
         text(
-            "LOCK TABLE campaign_runs, schedules, laboratories, attack_techniques, attack_catalog_state, attack_catalog_releases IN SHARE ROW EXCLUSIVE MODE NOWAIT"
+            "LOCK TABLE campaign_runs, schedules, laboratories, test_definitions, attack_techniques, attack_catalog_state, attack_catalog_releases IN SHARE ROW EXCLUSIVE MODE NOWAIT"
         )
     )
     if (
