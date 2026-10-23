@@ -44,9 +44,17 @@ Entregue também: preparação offline por versão/perfil/hash, campos candidato
 schema de marcador e diagnóstico de requisitos de backends revisados. Compatibilidade
 bloqueada por pySigma<2 nos backends versus core2.0.1. Perfil não é pipeline executável.
 
+Entregue também: atualização transacional ATT&CK por candidato oficial fixado,
+plano/hash/revisão, releases imutáveis, estados de retirada/ausência, contexto por
+escopo e cobertura atual separada do histórico. Publicação do bundle20.0 completo
+validada em schema descartável e no Demo local, sem nova simulação Linux/Wazuh.
+[Operação](../integrations/mitre-attack.md).
+
 Pendente: semântica completa e correspondência à telemetria, backend/pipeline Sigma oficialmente compatíveis,
-implantação validada de regras, análise de cobertura entre ambientes distintos e
-atualização transacional do ATT&CK com depreciações preservadas.
+implantação validada de regras e análise de cobertura entre ambientes distintos.
+ATT&CK: experiência administrativa de revisão web, outras matrizes e evolução
+para versões futuras após pesquisa/revisão. A fonte20.0 não virou uma versão nova
+para demonstrar o fluxo.
 
 ## 0.5 — Automação e operação
 

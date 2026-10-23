@@ -40,3 +40,12 @@ Incremento de engenharia de detecção: testes PostgreSQL/API cobrem vínculos/v
 Incremento Sigma estático: GET autenticado de versão/hash, checks AEGIS sobre parser/modelo pySigma e consulta de versões atuais/históricas na UI validados por testes e Firefox. Compatibilidade/conversão não configuradas; zero achados não comprova semântica/eficácia. Análise não altera escopos ou veredictos. Compose/smoke confirmaram a leitura pelo papel SQL runtime; contagens finais em PROGRESS.
 
 Preparação Sigma: diagnóstico de campos/requisitos e UI histórica validados; mapeamento candidato não habilita conversão. Requisitos conflitantes e ausência de backend/pipeline/mapping físico continuam bloqueios reais. E2E demonstra exemplo mapeado com can_convert=false e preservação do relatório, sem iniciar SIEM. Conversão/implantação não aceitas; detalhes e contagens finais em PROGRESS.
+
+Catálogo ATT&CK controlado: prepare real do bundle20.0 por commit, plan/apply da
+CLI em PostgreSQL, persistência de867referências, repetição idempotente,
+proveniência e histórico imutáveis. Dois ciclos sintéticos confirmaram relatório
+anterior idêntico e cobertura atual somente após nova aprovação/execução. API,
+worker e papel runtime restrito validados; Firefox inspecionou snapshot histórico
+e produziu captura real. Demo local migrado/publicado,20runs anteriores
+preservadas. Não equivale a nova versão oficial, cobertura defensiva real,
+sincronização automática ou novo ensaio Linux/Wazuh.

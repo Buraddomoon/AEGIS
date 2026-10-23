@@ -13,7 +13,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 ## O que funciona
 
 - Login local com Argon2id, sessões opacas, CSRF, RBAC e limite distribuído de tentativas.
-- Catálogo oficial Enterprise ATT&CK 20.0: 706 técnicas/subtécnicas ativas, pesquisa, filtros, tabela, matriz e histórico de avaliações.
+- Catálogo oficial Enterprise ATT&CK20.0:706 técnicas/subtécnicas ativas; pesquisa, matriz, estados de retirada, proveniência e snapshots históricos. Publicação transacional revisada por CLI com commit/hashes, preservando escopos/evidências.
 - Quatro simulações em allowlist demonstrativa, com requisitos, comportamento e cleanup definidos. Arquivo marcador genérico não recebe técnica ATT&CK artificial.
 - Campanhas de escopo imutável, solicitações idempotentes, aprovação administrativa de uso único, expiração, confirmação de início e limite de duração.
 - Worker independente, fila transacional PostgreSQL, claim exclusivo, cancelamento cooperativo, cleanup e recuperação de execuções abandonadas.
@@ -68,6 +68,14 @@ Uma campanha com os quatro testes produz, por desenho do adaptador Demo:
 Isso representa **1 detectado / 3 testes válidos = 33,3% neste escopo sintético**; o inconclusivo é excluído. Não representa 33,3% de proteção de uma organização. Repetir sem alterar o escopo reproduz os mesmos cenários; não simula uma melhoria defensiva inexistente.
 
 ![Execução real do aplicativo com resultados demonstrativos](docs/images/execution.png)
+
+Em **Matriz ATT&CK**, consulte origem, integridade e histórico do catálogo.
+O snapshot inicial distribuído contém somente técnicas ativas; uma publicação
+revisada do bundle completo também registra149revogadas e12descontinuadas.
+Cobertura da release atual é separada dos resultados históricos; atualizar
+metadados não comprova detecção. [Publicação e limites](docs/integrations/mitre-attack.md).
+
+![Consulta real de proveniência e histórico do snapshot inicial no Demo E2E](docs/images/attack-catalog.png)
 
 Para automatizar: abra **Agendamentos**, crie um plano para a campanha, defina início/fim, intervalo e limite de horários, revise e autorize como administrador. O worker executa automaticamente dentro desses limites. Atrasos acima de 30 segundos e laboratório ocupado geram descartes auditados, consumindo o orçamento sem backlog. Pausar exige nova aprovação para retomar; revogar encerra o plano. [Política e operação](docs/operations/scheduling.md).
 
@@ -174,6 +182,7 @@ CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de e
 - Sigma validado sintaticamente não equivale a detecção implantada. Associação com testes registra planejamento revisado; análise estática parcial está disponível; semântica completa, conversão compatível e implantação no SIEM continuam pendentes.
 - Agendamento habilitado somente para Demo: até 16 planos ativos, 100 horários por plano, mínimo 60 segundos de intervalo e validade máxima de 90 dias. Sem cron livre, Lab real, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
 - Há um aviso transitivo conhecido em DiskCache, exigido pelo pySigma. O caminho de parsing usado não importa/utiliza o cache vulnerável; a revisão e sua verificação estão em [advisories](docs/security/dependency-advisories.json). Não alegamos ausência de vulnerabilidades.
+- Atualização ATT&CK é administrativa local, sem sincronização automática ou rollback de release; normalizador valida somente o perfil Enterprise utilizado. Legado sem versão no scope permanece desconhecido, e backup exige imagem/schema compatíveis.
 - Instalação padrão é HTTP em loopback. Exposição externa exige TLS, cookie Secure, revisão operacional e gestão própria de segredos. Não anunciar como enterprise-ready.
 
 [Roadmap](docs/product/roadmap.md) · [Critérios de aceite](docs/product/acceptance-criteria.md) · [Progresso e retomada](docs/PROGRESS.md) · [API/OpenAPI](docs/api/overview.md) · [Segurança](SECURITY.md)

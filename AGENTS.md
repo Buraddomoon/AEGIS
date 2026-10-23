@@ -103,3 +103,24 @@ jobs restaurados. Provar linhas antigas intactas por baseline privada sem acesso
 runtime, quatro resultados sintéticos, métricas/relatórios e fechamento da conta,
 lab/sessão. Cleanup worker→API→Redis→DB; falha retém dependências sem sucesso.
 Não reinterpretar o recibo como cutover ou permissão de novo ensaio Linux/Wazuh.
+
+Catálogo ATT&CK (ADR0014): scripts/update_attack.py separa prepare/plan/apply.
+Fonte Enterprise numerada fixada por commit40hex, TLS/sem proxies/redirects,
+limites e asyncio.timeout absoluto incluindo headers/corpo. Cache privado
+0700/0600, artefatos exclusivos e renormalização no load; não atualizar fixture
+ou baixar no startup. Plan READ ONLY fixa destino/schema, base/projeção/candidato,
+testes e impactos; apply host-only exige hash revisado e administrador ativo,
+locks NOWAIT/transação e zero runs/reservas/agendamentos retomáveis. Runtime
+só SELECT no catálogo; não conceder UPDATE para obter locks de leitura.
+Releases imutáveis, projeção preserva IDs/metadados ausentes e distingue
+revoked/deprecated oficiais; absent não é revogação inferida. Não reescrever
+allowlist, scopes/aprovações/relatórios/evidências antigos. Worker recusa contexto
+ausente/desatualizado antes de efeitos; cleanup continua obrigatório. Cobertura
+atual só mesma release/mode; indicadores históricos mantêm denominador explícito.
+Histórico legado permanece desconhecido. UI/API somente leitura, paginação fixa
+release e recusa mistura. Normalizador é perfil parcial, não validador STIX geral;
+hash não é assinatura. Licença diferente/downgrade/reescrita/conflito/drift bloqueiam.
+Testes: test_attack_document/artifacts/publication/cli/api e attack-catalog.test.tsx.
+Fixtures reduzidas/19.2 são sintéticas, nunca fonte oficial de publicação.
+Schema atual a0d9c7e21b45 tem32tabelas; backups977fd0c42ae8 precisam código/imagem
+antigos compatíveis. Preservar imagens/dumps; não enfraquecer guardas de recovery.

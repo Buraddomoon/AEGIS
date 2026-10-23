@@ -1,5 +1,18 @@
 # Changelog
 
+## Continuidade2026-10-23 — catálogo ATT&CK controlado
+
+- Preparação por commit oficial, cache privado, validação limitada do perfil
+  Enterprise, plano de revisão READ ONLY e publicação atômica por hash/ator.
+- Releases imutáveis, projeção com retirada/ausência explícitas, IDs/histórico
+  preservados e escrita de catálogo negada ao papel runtime.
+- Escopos novos registram contexto; worker recusa contexto desconhecido/alterado
+  antes de efeitos. Cobertura atual e histórico separados, sem reclassificação.
+- Proveniência, filtros e snapshots na UI/API, com proteção contra mistura de
+  páginas; E2E Firefox e publicação real do bundle20.0 no Demo validados.
+- Migração a0d9c7e21b45; backups anteriores exigem imagem/código compatíveis.
+  Nenhuma nova simulação Linux/Wazuh ou conversão Sigma decorre desta entrega.
+
 ## Continuidade2026-10-23 — primeiro ciclo Demo recuperado
 
 - Ensaio opt-in restaura/reconcilia/confere quarentena antes de API/worker/Redis
