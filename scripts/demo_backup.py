@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import stat
 import subprocess
 import tempfile
@@ -26,6 +27,7 @@ from sqlalchemy.exc import SQLAlchemyError
 ROOT = Path(__file__).resolve().parents[1]
 BACKUPS = ROOT / ".local" / "backups"
 LABEL = "io.aegis.recovery"
+APPLICATION_IMAGE = "aegis-recovery-local:0.2"
 
 
 class BackupError(RuntimeError):
@@ -285,8 +287,154 @@ def remove_clone(name, token):
     return "removed"
 
 
-def rehearse(identifier):
+def application_image():
+    image = docker("image", "inspect", APPLICATION_IMAGE, "--format", "{{.Id}}").decode().strip()
+    if not re.fullmatch(r"sha256:[a-f0-9]{64}", image):
+        raise BackupError("Recovery application image must already exist locally")
+    return image
+
+
+def prepare_reader(name, password):
+    # All changes below are restricted to the newly restored disposable clone.
+    # SQL containing an ephemeral secret goes over stdin, never process arguments.
+    sql = f"""
+    CREATE ROLE aegis_recovery LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE
+      NOREPLICATION NOBYPASSRLS PASSWORD '{password}';
+    ALTER ROLE aegis_recovery SET default_transaction_read_only=on;
+    REVOKE ALL ON DATABASE aegis_restore FROM PUBLIC;
+    GRANT CONNECT ON DATABASE aegis_restore TO aegis_recovery;
+    REVOKE ALL ON SCHEMA public FROM PUBLIC;
+    GRANT USAGE ON SCHEMA public TO aegis_recovery;
+    GRANT SELECT ON ALL TABLES IN SCHEMA public TO aegis_recovery;
+    REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC;
+    """
+    # password is generated internally as hex; no user-supplied SQL interpolation.
+    if not re.fullmatch(r"[a-f0-9]{64}", password):
+        raise BackupError("Invalid ephemeral password")
+    with tempfile.TemporaryFile() as stream:
+        stream.write(sql.encode())
+        stream.seek(0)
+        docker(
+            "exec",
+            "-i",
+            name,
+            "psql",
+            "-X",
+            "-q",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-U",
+            "postgres",
+            "-d",
+            "aegis_restore",
+            stdin=stream,
+        )
+    hba = (
+        "local all postgres trust\nlocal all all reject\n"
+        "host aegis_restore aegis_recovery 127.0.0.1/32 scram-sha-256\n"
+        "host all all 0.0.0.0/0 reject\nhost all all ::/0 reject\n"
+    )
+    with tempfile.TemporaryFile() as stream:
+        stream.write(hba.encode())
+        stream.seek(0)
+        docker(
+            "exec",
+            "-i",
+            name,
+            "sh",
+            "-c",
+            "cat > /var/lib/postgresql/data/pg_hba.conf",
+            stdin=stream,
+        )
+    if list(psql(name, "SELECT pg_reload_conf()", database="aegis_restore", user="postgres")) != [
+        "t"
+    ]:
+        raise BackupError("Isolated database authentication reload failed")
+
+
+def boot_application(database_name, token, image, intents):
+    name = "aegis-recovery-api-" + token
+    password = secrets.token_hex(32)
+    access_token = secrets.token_hex(32)
+    prepare_reader(database_name, password)
+    write_json(
+        intents / (token + "-api.json"),
+        {
+            "clone_name": name,
+            "ownership_token": token,
+            "image_id": image,
+            "database_clone": database_name,
+            "intent_at": datetime.now(UTC).isoformat(),
+        },
+    )
+    try:
+        # Private env file survives only the create call; it is never an image layer.
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as env:
+            env.write("OPERATING_MODE=recovery\n")
+            env.write(
+                "DATABASE_URL=postgresql+psycopg://aegis_recovery:"
+                + password
+                + "@127.0.0.1:5432/aegis_restore\n"
+            )
+            env.write("RECOVERY_ACCESS_TOKEN=" + access_token + "\n")
+            env.flush()
+            docker(
+                "create",
+                "--pull=never",
+                "--name",
+                name,
+                "--label",
+                LABEL + "=" + token,
+                "--network=container:" + database_name,
+                "--read-only",
+                "--cap-drop=ALL",
+                "--security-opt=no-new-privileges:true",
+                "--user=10001:10001",
+                "--memory=384m",
+                "--cpus=1",
+                "--pids-limit=64",
+                "--tmpfs",
+                "/tmp:rw,noexec,nosuid,size=64m",
+                "--env-file",
+                env.name,
+                image,
+                "uvicorn",
+                "aegis.main:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8080",
+                "--no-proxy-headers",
+                "--no-access-log",
+            )
+        docker("start", name)
+        with (ROOT / "scripts/recovery_probe.py").open("rb") as probe:
+            result = json.loads(docker("exec", "-i", name, "python", "-", stdin=probe, timeout=120))
+        if (
+            result.get("review", {}).get("format") != "aegis-recovery-review/1"
+            or result["review"].get("normal_operation_permitted") is not False
+            or result["review"].get("reconciliation_applied") is not False
+            or result.get("entrypoints_blocked") != 5
+            or result.get("database_write_probes_denied") != 3
+            or result.get("administrative_tcp_denied") is not True
+        ):
+            raise BackupError("Recovery application assertions failed")
+    finally:
+        cleanup = remove_clone(name, token)
+        write_json(
+            intents / (token + "-api-cleanup.json"),
+            {
+                "clone_name": name,
+                "state": cleanup,
+                "at": datetime.now(UTC).isoformat(),
+            },
+        )
+    return result
+
+
+def rehearse(identifier, *, application=False):
     folder, manifest = load_backup(identifier)
+    image = application_image() if application else None
     token = uuid.uuid4().hex
     name = "aegis-recovery-" + token
     started = time.monotonic()
@@ -368,6 +516,13 @@ def rehearse(identifier):
             )
         restored = inventory(lambda sql: psql(name, sql, database="aegis_restore", user="postgres"))
         compare(manifest["inventory"], restored)
+        if application:
+            application_result = boot_application(name, token, image, intents)
+            # ACLs changed in the clone, but no restored rows/structure may change.
+            after = inventory(
+                lambda sql: psql(name, sql, database="aegis_restore", user="postgres")
+            )
+            compare(restored, after)
         verified = True
     finally:
         if attempted:
@@ -392,7 +547,7 @@ def rehearse(identifier):
         "elapsed_seconds": round(time.monotonic() - started, 3),
         "clone_removed": True,
         "network": "none",
-        "application_started": False,
+        "application_started": application,
         "tables": len(restored["tables"]),
         "rows": sum(item["rows"] for item in restored["tables"].values()),
         "limitations": [
@@ -401,7 +556,13 @@ def rehearse(identifier):
             "No roles, secrets, Redis or runner journals backed up",
         ],
     }
-    write_json(folder / ("verification-" + token + ".json"), receipt)
+    if application:
+        receipt.update(application_image_id=image, application=application_result)
+        receipt["limitations"][0] = (
+            "Quarantined API only; no normal operation, reconciliation or failover"
+        )
+    prefix = "application-verification-" if application else "verification-"
+    write_json(folder / (prefix + token + ".json"), receipt)
     return receipt
 
 
@@ -430,6 +591,8 @@ def main():
     subparsers.add_parser("create")
     verify = subparsers.add_parser("verify")
     verify.add_argument("backup_id")
+    application = subparsers.add_parser("verify-application")
+    application.add_argument("backup_id")
     subparsers.add_parser("retention-plan")
     args = parser.parse_args()
     try:
@@ -443,6 +606,8 @@ def main():
             }
         elif args.action == "verify":
             output = rehearse(args.backup_id)
+        elif args.action == "verify-application":
+            output = rehearse(args.backup_id, application=True)
         else:
             output = plan()
         print(json.dumps(output, ensure_ascii=False, indent=2))
