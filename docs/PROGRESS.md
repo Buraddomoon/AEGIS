@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e engenharia Sigma com revisões, análise estática e diagnóstico de preparação; backup/restore Demo verificado (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
+Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e engenharia Sigma com revisões, análise estática e diagnóstico de preparação; backup/restore Demo e boot da API recuperada em quarentena verificados (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -1042,3 +1042,105 @@ Este marco acrescenta **11 commits granulares**, incluindo este checkpoint,
 totalizando **191**. Main exclusiva, AEGIS privado e push após cada commit; último
 código b55d22a, recibo público fba4494 e documentação9f6ed3d. Consultar git log/status
 para hash/mensagem finais e sincronização; não incorporar seu próprio hash aqui.
+
+
+## 2026-10-23 — API recuperada em quarentena
+
+### Entrega e decisões
+
+[ADR0011](architecture/decisions/0011-recovery-quarantine.md) acrescenta ensaio de
+boot restrito ao backup verificado no ADR0010. `make recovery-app-build` constrói
+imagem própria separada; `make verify-recovered-app BACKUP_ID=...` restaura em
+clone temporário e inicia somente API em recovery, sem modificar o Demo em uso.
+[Procedimento](operations/backup-recovery.md), [revisão](security/review-recovery-2026-10-23.md)
+e [recibo real](evidence/recovery-2026-10-23/README.md).
+
+- Seleção de rotas no boot: somente health e review agregada; token efêmero
+  independente, sem sessão histórica/login, frontend, docs ou mutações. Não há
+  endpoint para sair de recovery. Nenhuma nova integração ou dependência.
+- Worker, claim/processamento/recuperação, scheduler, CLI seed/grants/bootstrap
+  e migrações recusam antes de conexão/thread. Fluxo normal preservado e testado.
+- Role SELECT provisionado apenas no clone, sem ownership/membership, poderes
+  administrativos, DB/schema CREATE/TEMP, grants DML/coluna ou EXECUTE em funções
+  public/large objects. Readiness exige ACLs, transação read-only e revisão Alembic
+  da imagem. SQL timeouts e falhas genéricas sem dados/segredos.
+- Trust TCP do initdb substituído por SCRAM do role efêmero/IP/banco fixos e
+  reject restante; socket administrativo não é montado na API. Probe confirma
+  que nem um override READ WRITE dá permissão para DML/DDL/TEMP/large objects.
+- API uid10001/read-only/cap-drop ALL/no-new-privileges,384MiB/1CPU/64PIDs/tmpfs64MiB,
+  no namespace do PostgreSQL network=none, sem portas/mounts/Redis/runner/SIEM.
+  Imagens locais por ID, sem pull no ensaio. Dockerconfig vazio/env saneado.
+- Intenções duráveis próprias, segredos em env temporário0600 somente durante
+  create, não argv/intent/recibo. Cleanup API antes de DB; falha/incerteza retém
+  DB como retained_api_cleanup_unconfirmed e não gera sucesso. Retenção de backup
+  continua sem exclusão. SIGKILL/daemon indisponível ainda exige revisão manual.
+- Review aegis-recovery-review/1 conta sessões/filas/reservas/grants/agendamentos/
+  dispatches; não aplica reconciliação e mantém normal_operation_permitted=false.
+  Histórico e dados restaurados são comparados novamente depois da leitura.
+
+Arquivos centrais: apps/api/aegis/operations/recovery.py, main.py/config.py/db.py,
+worker.py/scheduling.py/cli.py, migrations/env.py, scripts/demo_backup.py e
+recovery_probe.py, tests/test_recovery_api.py/test_recovery_guards.py/
+test_recovery_probe.py e expansão de test_backup_cli.py. Nenhuma migration nova
+ou mudança de frontend; o default Demo não foi reconstruído/reiniciado.
+
+### Achados corrigidos e validação
+
+Uma primeira execução de review nos testes expôs a interface SQLAlchemy2.1:
+dict(CursorResult) não é subscriptable. Ajustado para consumir linhas com all(),
+sem depender do tuples() depreciado. Sem falso sucesso da API.
+
+Revisão especializada somente leitura encontrou EXECUTE residual em pg_catalog
+large objects e ordem de cleanup DB após erro API. Ambos corrigidos e reinspecionados,
+sem novo bloqueador identificado. Não houve testes/Docker pelo revisor. Nova
+regressão verifica grant drift e tentativa lo_create/42501; outra impede remoção
+DB antes de cleanup API confirmado. Probe também recusa ambiente/URL/token fora
+do destino fixo antes de I/O.
+
+- `make test` após correções: **461 Python passaram**,111,10s; **35 frontend**,
+  3,04s. Os8 testes novos de escopo da probe passaram separadamente; **469 casos
+  Python únicos validados localmente**. Suítes com Redis DB15 rodadas serialmente.
+- `make test-recovery` final: **91 passaram**,16,32s. ACLs reais em banco/papel
+  aleatórios próprios, removidos após o teste; nenhuma revogação PUBLIC na fonte.
+  Sessões válidas/expiradas, fila, reserva e aprovação pendentes permanecem intactas.
+- `make lint` final passou: Ruff/check/format105arquivos, mypy domínio4arquivos,
+  TypeScript/Prettier. Sem ocultar aviso upstream TestClient/httpx.
+- Build da imagem separada passou. `make verify-recovered-app` real final:
+  backup20261022T210359Z-e689b5a47fa44a69b969a726982324de,
+  **30tabelas/2.884linhas**, inventário igual antes/depois, **API e DB removidos**;
+  9 rotas/4 tentativas SQL/5 entrypoints e TCP administrativo bloqueados.
+  Recibo16,321s é só medição desse ensaio, não RTO/benchmark. Imagem
+  sha256:dd16c33d779c6f698803e3143701dffd8d43c196b7d76d308dd81fcba5057160.
+- `make e2e` passou: build e Firefox, **4 runs/16 testes sintéticos**,10capturas,
+  zero erros JavaScript, fluxo completo com agendamento e Sigma. Capturas novas
+  preservadas privadamente em .local/e2e/recovery-milestone-screenshots; imagens
+  públicas anteriores não foram alteradas desnecessariamente.
+- Recibo público comparado ao original privado, permissões0700/0600 verificadas;
+  49 links locais da documentação alterada conferidos antes dos commits.
+  Scanner staged/diff-check em cada commit. Nenhum dump/manifesto/secret publicado.
+- Demo18780 continua ready(database/redis=true), nenhum clone remanescente,
+  nenhum container Wazuh,9volumes anteriores preservados. Nenhum novo ensaio
+  Linux/Wazuh, alteração de rede/sysctl/serviço alheio ou consulta SIEM.
+- CI final: aguardando confirmação do run39956649898,06017fe. Atualizar somente
+  após resultado efetivo; advisory DiskCache transitivo revisado continua visível.
+
+### Limites e continuidade
+
+O backup utilizado tem20runsCOMPLETED, nenhuma sessão/fila/agendamento ativo e
+1Demoautorizado. Esse conteúdo não representa todos os snapshots possíveis;
+fixtures cobrem pendências sem ativá-las. Boot em quarentena não é recuperação
+normal, failover, reconciliação aplicada, retomada de jobs ou RPO/RTO garantido.
+Roles/ACLs originais, secrets/PKI, Redis e journals externos não são recuperados.
+Imagem/configuração e dump precisam ser confiáveis, hash não é assinatura e
+permissão privada não é criptografia. Nenhuma autorização real foi renovada.
+
+Próxima etapa: reconciliação explícita em destino Demo isolado (sessões, grants,
+filas/reservas e agendamentos), somente então novo ciclo sintético com aprovação
+nova antes de avaliar reativação. Seguem pendentes cópia criptografada externa,
+guarda de imagens/configuração, RPO/RTO, PKI, Sigma backend/pipeline/mapping,
+atualização ATT&CK, Windows/archives, PDF e multi-workspace.
+
+Este marco acrescenta **10 commits granulares**, incluindo este checkpoint,
+totalizando **201**. Main exclusiva, AEGIS privado, push após cada commit. Código
+ff366e5, recibo/revisão06017fe, documentação4e0b937; consultar git log/status para
+hash/mensagem finais e sincronização, sem incorporar o próprio hash aqui.
