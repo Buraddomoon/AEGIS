@@ -1,6 +1,6 @@
 # Registro de progresso — ÆGIS
 
-Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e engenharia Sigma com revisões, análise estática e diagnóstico de preparação; backup/restore Demo e boot da API recuperada em quarentena verificados (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
+Estado atual: **Demo/Linux 0.2.0, pipeline Wazuh real validado em um único ensaio encerrado e engenharia Sigma com revisões, análise estática e diagnóstico de preparação; backup/restore, reconciliação offline Demo e boot da API recuperada em quarentena verificados (marcos ao final)**. Demo saudável em localhost:18780. Ensaio COMPLETED/DETECTED/CLEANED, synthetic=false; laboratório revogado, contas desativadas e stack encerrado com volumes preservados. Autorização de uso único consumida. Registros anteriores abaixo são históricos.
 
 ## 2026-10-20 — Fundação e primeiro ciclo Demo
 
@@ -1149,4 +1149,113 @@ atualização ATT&CK, Windows/archives, PDF e multi-workspace.
 Este marco acrescenta **11 commits granulares**, incluindo checkpoint e correção
 do registro CI, totalizando **202**. Main exclusiva, AEGIS privado, push após cada commit. Código
 ff366e5, recibo/revisão06017fe, documentação4e0b937; consultar git log/status para
+hash/mensagem finais e sincronização, sem incorporar o próprio hash aqui.
+
+
+## 2026-10-23 — Reconciliação offline do clone Demo
+
+### Entrega e decisões
+
+[ADR0012](architecture/decisions/0012-demo-recovery-reconciliation.md) acrescenta
+`make reconcile-demo-backup BACKUP_ID=...`: novo clone offline, inventário original
+verificado, plano fixo/hash, aplicação transacional e API novamente em recovery.
+[Ferramenta e limites](operations/backup-recovery.md),
+[recibo real](evidence/reconciliation-2026-10-23/README.md) e
+[revisão](security/review-reconciliation-2026-10-23.md).
+
+- Host-only, sem endpoint de mutação ou destino/SQL arbitrário. Nome exato,
+  label, network=none e ausência de mounts/binds/portas conferidos antes do SQL.
+  PostgreSQL17/schema exatos, tabelas extras recusadas, hash de dados/estrutura,
+  locks em ordem fixa/NOWAIT e nova comparação sob lock antes de aplicar.
+- Apaga sessões, desativa usuários, revoga labs/grants e agendamentos retomáveis;
+  cancela apenas runs/filhos comprovadamente Demo por transições válidas e steps
+  próprios. Preserva ended_at existente, scopes/aprovações, evidências/resultados,
+  regras e histórico anterior. Não alega execução/cleanup/validação defensiva nova.
+- Pendências reais, dispatch em run pendente, misturas de ativos/testes, reservas
+  órfãs e estados/filhos inconsistentes bloqueiam toda a transação. Falha final
+  ou trigger que altera campos protegidos/reativa conta também faz rollback.
+- Auditoria append-only e idempotência por ID/hash. Plano privado e registro de
+  aplicação não substituem recibo final. Fonte/dump/manifesto intactos e nenhum
+  worker, Redis, runner ou Wazuh iniciado pela recuperação.
+- API SELECT/SCRAM continua em recovery; ID/hash esperados no boot precisam casar
+  com registro único e fences atuais de sessões/contas/pais/filhos/labs/grants/
+  agendamentos. Auditoria histórica sozinha é só contagem e não comprova aplicação
+  atual. Sempre normal_operation_permitted=false, sem endpoint de reativação.
+- Comparação protegida depois da aplicação, inventário igual antes/depois da
+  leitura da API, probes existentes e cleanup API→DB antes de sucesso. Cleanup
+  incerto mantém DB, sem recibo. Repetir o CLI cria outro clone; nunca retoma
+  automaticamente um clone anterior ou muda o ambiente em uso.
+
+Arquivos centrais: apps/api/aegis/operations/reconciliation.py e recovery.py,
+config.py/main.py, scripts/demo_backup.py, Makefile, tests/test_recovery_reconciliation.py,
+test_recovery_api.py e test_backup_cli.py. Sem dependências, migrations ou UI novas.
+README/AGENTS/CHANGELOG e documentação operacional atualizados.
+
+### Achados corrigidos e validação
+
+Revisão especializada somente leitura encontrou: flag indevida por auditoria
+histórica; salto de estado dos filhos sem steps; sobrescrita de ended_at factual;
+tabelas extras fora do plano; e ausência de fence para filho pendente depois da
+reconciliação. Corrigidos com binding exato, transições por simulação, COALESCE,
+schema exato e revisão de pais/filhos. Regressões exercitadas em PostgreSQL real;
+revisor não executou testes/containers. Reinspeção confirmou os quatro primeiros;
+último fence foi corrigido e passou no teste de drift do filho.
+
+Durante desenvolvimento, um helper de teste inicialmente tratou JSON text do
+psycopg como dict e uma fixture removeu teste ainda referenciado por step; corrigidos
+parsing/FKs da fixture, sem afrouxar constraints. Outra fixture de CLI tinha
+estrutura diferente do manifesto e foi corrigida; testes não foram considerados
+aprovados enquanto falhavam.
+
+- `make test` final: **538 Python passaram**,160,78s; **35 frontend**,2,99s.
+  Inclui **34 novos casos de reconciliação SQL**; nenhuma suite Redis DB15 em
+  paralelo. Bancos/papéis aleatórios próprios removidos:0/0 remanescentes.
+- `make lint` passou: Ruff/check/format107arquivos, mypy domínio4arquivos,
+  TypeScript/Prettier. Aviso upstream Starlette TestClient/httpx permanece visível.
+- Build da imagem separada passou; frontend da imagem veio do cache sem mudança.
+  Imagem local fixada no ensaio por
+  sha256:d2c3915dfb69859f95804af27a06efd786b8926b9da88acb1975649dd89c71ca.
+- Ensaio real `make reconcile-demo-backup`: backup
+  20261022T210359Z-e689b5a47fa44a69b969a726982324de,30tabelas/2.884linhas originais;
+  2.885linhas após1auditoria, estrutura/histórico protegidos preservados,
+  autorização do Demo restaurado revogada e environment_version incrementada.
+  API confirmou ID83563951337c44ab81329019421e355d/hash do plano e fences vazios,
+  mantendo quarentena.9rotas/4tentativas SQL/5entrypoints/TCP administrativo
+  bloqueados; API e DB removidos.20,578s é só medição, não RTO/benchmark.
+- Snapshot utilizado tem20runsCOMPLETED,nenhuma conta ativa/sessão/fila/grant,
+  1Demoantes autorizado. Casos não vazios são cobertos pelos testes, não inventados
+  no recibo desse backup. Dump/manifesto/intents privados preservados; recibo
+  público igual ao privado, diretórios0700/arquivos0600 conferidos.
+- Demo18780 segue ready database/redis=true, imagem/API/worker em uso não foram
+  reconstruídos/reiniciados. Nenhum clone ou container Wazuh remanescente;9volumes
+  do ensaio real anterior preservados. Nenhuma nova simulação Linux/Wazuh,
+  consulta SIEM, renovação de PKI ou alteração de serviços/rede/sysctl do host.
+- 50links locais alterados conferidos; scanner staged/diff-check em cada commit.
+  E2E de navegador não repetido: UI/fluxo normal não mudaram; suíte completa cobre
+  regressões normais da API e testes frontend. Último E2E Firefox validado permanece
+  o do marco anterior, sem atribuí-lo a uma nova execução.
+- CI final: **SUCCESS**,02f94b4,
+  [run39965210762](https://github.com/Buraddomoon/AEGIS/actions/runs/39965210762),
+  validate3m06s: **534 Python passaram/4 skip**,35frontend, lint/tipos/build e
+  revisão de advisories. Os4skip são projeções opcionais de objetos Docker Demo
+  já existentes; CI não os cria. Localmente538passaram. Advisory transitivo
+  DiskCache revisado permanece visível; não declarar zero achados Python. Commits
+  seguintes só Markdown não alteram o código validado nem disparam nova CI.
+
+### Limites e continuidade
+
+Não houve boot normal, criação de nova conta operacional, novo ciclo sintético,
+cutover, failover ou recuperação de efeitos reais. Próximo passo: destino Demo
+separado com credenciais/conta novas, autorização Demo nova e aprovação nova para
+um ciclo completo; worker só depois dos fences/reconciliação. Não reaproveitar
+usuários, grants, jobs ou autorização real do snapshot.
+
+Mantêm-se pendências de cópia criptografada externa, guarda de imagens/configuração,
+RPO/RTO, roles/secrets/Redis/PKI/journals externos, Sigma backend/pipeline/mapping,
+atualização ATT&CK, Windows/archives, PDF e multi-workspace. Autorização real
+Linux/Wazuh continua consumida; nenhum novo ensaio decorre da recuperação Demo.
+
+Este marco acrescenta **10 commits granulares**, incluindo este checkpoint,
+totalizando **212**. Main exclusiva, AEGIS privado, push após cada commit. Código
+finalfae9039, recibo/revisão02f94b4 e operação657187f; consultar git log/status para
 hash/mensagem finais e sincronização, sem incorporar o próprio hash aqui.
