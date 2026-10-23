@@ -1,0 +1,67 @@
+{
+  "application": {
+    "administrative_tcp_denied": true,
+    "blocked_routes": {
+      "GET /": 503,
+      "GET /api/openapi.json": 503,
+      "GET /api/v1/auth/me": 503,
+      "GET /api/v1/health/ready": 401,
+      "GET /api/v1/recovery/review": 401,
+      "GET /api/v1/schedules": 503,
+      "POST /api/v1/auth/login": 503,
+      "POST /api/v1/campaigns": 503,
+      "POST /api/v1/executions/restored/start": 503
+    },
+    "database_write_probes_denied": 4,
+    "entrypoints_blocked": 5,
+    "review": {
+      "counts": {
+        "active_schedules": 0,
+        "authorized_laboratories": 1,
+        "laboratory_reservations": 0,
+        "nonterminal_real_runs": 0,
+        "nonterminal_runs": 0,
+        "runner_dispatches": 0,
+        "runs_by_state": {
+          "COMPLETED": 20
+        },
+        "sessions": 0,
+        "unexpired_sessions": 0,
+        "unrevoked_schedule_grants": 0,
+        "unused_unexpired_approvals": 0
+      },
+      "database_read_only": true,
+      "format": "aegis-recovery-review/1",
+      "mode": "recovery",
+      "normal_operation_permitted": false,
+      "quarantined": true,
+      "reconciliation_applied": false,
+      "required_reviews": [
+        "Invalidate restored sessions before normal authentication",
+        "Reconcile pending runs, reservations and ambiguous external effects",
+        "Review approvals and recurring grants; do not reuse snapshot authorization",
+        "Review laboratories and integration credentials before reconnection"
+      ],
+      "schema_revision": "977fd0c42ae8"
+    }
+  },
+  "application_image_id": "sha256:dd16c33d779c6f698803e3143701dffd8d43c196b7d76d308dd81fcba5057160",
+  "application_started": true,
+  "backup_id": "20261022T210359Z-e689b5a47fa44a69b969a726982324de",
+  "clone_removed": true,
+  "dump_sha256": "ee0013a880912a08fd5d2920c24ae927a8d1b71f4e3cd2b0d444a81536e40bcc",
+  "elapsed_seconds": 16.321,
+  "format": "aegis-demo-backup/1",
+  "inventory_format": "aegis-pg-inventory/2",
+  "limitations": [
+    "Quarantined API only; no normal operation, reconciliation or failover",
+    "No RPO/RTO guarantee",
+    "No roles, secrets, Redis or runner journals backed up"
+  ],
+  "network": "none",
+  "rows": 2884,
+  "status": "verified",
+  "structure_comparison": "pg17-literal-array-casts/1",
+  "tables": 30,
+  "verified_at": "2026-10-23T12:50:50.594826+00:00"
+}
