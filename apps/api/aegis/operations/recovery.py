@@ -1,0 +1,142 @@
+"""Read-only quarantine review. Never reconciles or resumes restored work."""
+
+import secrets
+
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from fastapi import APIRouter, HTTPException, Request
+from sqlalchemy import text
+
+from aegis import db
+from aegis.domain.states import TERMINAL
+
+FORMAT = "aegis-recovery-review/1"
+
+
+def required_revision():
+    return ScriptDirectory.from_config(Config("alembic.ini")).get_current_head()
+
+
+def database_guard(connection):
+    # Session read-only can be turned off by SQL. Check actual privileges too.
+    safe = connection.scalar(
+        text("""
+        SELECT current_setting('transaction_read_only') = 'on'
+          AND current_user = session_user
+          AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication
+                   OR r.rolbypassrls)
+          AND NOT EXISTS (SELECT 1 FROM pg_auth_members WHERE member = r.oid)
+          AND NOT has_database_privilege(current_database(), 'CREATE,TEMP')
+          AND NOT has_schema_privilege(current_schema(), 'CREATE')
+          AND NOT EXISTS (
+            SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = current_schema() AND c.relkind = 'r' AND (
+              c.relowner = r.oid OR NOT has_table_privilege(c.oid, 'SELECT')
+              OR has_table_privilege(c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN')
+              OR has_any_column_privilege(c.oid, 'INSERT,UPDATE,REFERENCES')))
+          AND NOT EXISTS (
+            SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+            WHERE n.nspname = current_schema() AND has_function_privilege(p.oid, 'EXECUTE'))
+        FROM pg_roles r WHERE r.rolname = current_user
+    """)
+    )
+    if safe is not True:
+        raise RuntimeError("Recovery database is not restricted")
+    revision = list(connection.scalars(text("SELECT version_num FROM alembic_version")))
+    if revision != [required_revision()]:
+        raise RuntimeError("Recovery schema does not match this application")
+    return revision[0]
+
+
+def review():
+    with db.engine().connect().execution_options(isolation_level="REPEATABLE READ") as connection:
+        with connection.begin():
+            revision = database_guard(connection)
+
+            def count(sql):
+                return connection.scalar(text(sql))
+
+            states = dict(
+                connection.execute(
+                    text("SELECT state, count(*) FROM campaign_runs GROUP BY state ORDER BY state")
+                ).all()
+            )
+            nonterminal = sum(v for k, v in states.items() if k not in TERMINAL)
+            real_pending = connection.scalar(
+                text(
+                    "SELECT count(*) FROM campaign_runs WHERE NOT synthetic AND state <> ALL(:terminal)"
+                ),
+                {"terminal": list(TERMINAL)},
+            )
+            counts = {
+                "sessions": count("SELECT count(*) FROM sessions"),
+                "unexpired_sessions": count(
+                    "SELECT count(*) FROM sessions WHERE expires_at > now()"
+                ),
+                "runs_by_state": states,
+                "nonterminal_runs": nonterminal,
+                "nonterminal_real_runs": real_pending,
+                "laboratory_reservations": count(
+                    "SELECT count(*) FROM laboratories WHERE active_run_id IS NOT NULL"
+                ),
+                "authorized_laboratories": count(
+                    "SELECT count(*) FROM laboratories WHERE authorized"
+                ),
+                "unused_unexpired_approvals": count(
+                    "SELECT count(*) FROM approvals WHERE used_at IS NULL AND expires_at > now()"
+                ),
+                "active_schedules": count("SELECT count(*) FROM schedules WHERE state = 'ACTIVE'"),
+                "unrevoked_schedule_grants": count(
+                    "SELECT count(*) FROM schedule_authorizations WHERE revoked_at IS NULL"
+                ),
+                "runner_dispatches": count("SELECT count(*) FROM runner_dispatches"),
+            }
+            return {
+                "format": FORMAT,
+                "mode": "recovery",
+                "database_read_only": True,
+                "schema_revision": revision,
+                "quarantined": True,
+                "normal_operation_permitted": False,
+                "reconciliation_applied": False,
+                "counts": counts,
+                "required_reviews": [
+                    "Invalidate restored sessions before normal authentication",
+                    "Reconcile pending runs, reservations and ambiguous external effects",
+                    "Review approvals and recurring grants; do not reuse snapshot authorization",
+                    "Review laboratories and integration credentials before reconnection",
+                ],
+            }
+
+
+def recovery_router(token):
+    router = APIRouter(prefix="/api/v1")
+
+    def authorize(request):
+        supplied = request.headers.get("x-aegis-recovery-token", "")
+        if not secrets.compare_digest(supplied.encode(), token.encode()):
+            raise HTTPException(401, "Credencial de recuperação inválida.")
+
+    @router.get("/health/live")
+    def live():
+        return {"status": "live", "mode": "recovery"}
+
+    @router.get("/health/ready")
+    def ready(request: Request):
+        authorize(request)
+        try:
+            with db.engine().connect() as connection:
+                database_guard(connection)
+            return {"status": "ready", "mode": "recovery", "quarantined": True}
+        except Exception:
+            raise HTTPException(503, "Banco de recuperação indisponível ou incompatível.") from None
+
+    @router.get("/recovery/review")
+    def get_review(request: Request):
+        authorize(request)
+        try:
+            return review()
+        except Exception:
+            raise HTTPException(503, "Revisão de recuperação indisponível.") from None
+
+    return router

@@ -7,21 +7,9 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
-from aegis.api import router
-from aegis.config import settings
-
-app = FastAPI(
-    title="ÆGIS — Purple Team Validation",
-    version="0.2.0",
-    description="Demo sintético persistente e Linux opt-in com marcador revisado, aprovação segregada e recibos distintos de evidência defensiva.",
-    docs_url="/api/docs",
-    openapi_url="/api/openapi.json",
-    redoc_url=None,
-)
-app.include_router(router)
+from aegis.config import Settings, settings
 
 
-@app.exception_handler(HTTPException)
 async def http_error(request: Request, exc: HTTPException):
     return JSONResponse(
         {
@@ -36,7 +24,6 @@ async def http_error(request: Request, exc: HTTPException):
     )
 
 
-@app.exception_handler(RequestValidationError)
 async def validation_error(request: Request, exc: RequestValidationError):
     # Never echo input: it may contain a password or connector secret.
     return JSONResponse(
@@ -54,9 +41,18 @@ async def validation_error(request: Request, exc: RequestValidationError):
     )
 
 
-@app.middleware("http")
 async def protections(request: Request, call_next):
     request.state.request_id = str(uuid.uuid4())
+    if request.app.state.operating_mode == "recovery" and (
+        request.method != "GET"
+        or request.url.path
+        not in {"/api/v1/health/live", "/api/v1/health/ready", "/api/v1/recovery/review"}
+    ):
+        return JSONResponse(
+            {"error": {"code": 503, "message": "Aplicação em quarentena de recuperação."}},
+            status_code=503,
+            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+        )
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
         origin = request.headers.get("origin")
         if origin and origin != settings().public_origin:
@@ -106,5 +102,39 @@ async def protections(request: Request, call_next):
     return response
 
 
-if settings().web_dist.is_dir():
-    app.mount("/", StaticFiles(directory=settings().web_dist, html=True), name="web")
+def create_app(config: Settings | None = None):
+    config = config or settings()
+    recovery = config.operating_mode == "recovery"
+    app = FastAPI(
+        title="ÆGIS — Purple Team Validation",
+        version="0.2.0",
+        description="Aplicação em quarentena de recuperação."
+        if recovery
+        else "Validação apoiada em evidências; Demo sintético e Linux opt-in.",
+        docs_url=None if recovery else "/api/docs",
+        openapi_url=None if recovery else "/api/openapi.json",
+        redoc_url=None,
+    )
+    app.state.operating_mode = config.operating_mode
+    if recovery:
+        from aegis.operations.recovery import recovery_router
+
+        token = config.recovery_access_token
+        if token is None or len(token.get_secret_value()) < 32:
+            raise RuntimeError(
+                "Recovery requires an independent access token of at least 32 characters"
+            )
+        app.include_router(recovery_router(token.get_secret_value()))
+    else:
+        from aegis.api import router
+
+        app.include_router(router)
+        if config.web_dist.is_dir():
+            app.mount("/", StaticFiles(directory=config.web_dist, html=True), name="web")
+    app.add_exception_handler(HTTPException, http_error)
+    app.add_exception_handler(RequestValidationError, validation_error)
+    app.middleware("http")(protections)
+    return app
+
+
+app = create_app()

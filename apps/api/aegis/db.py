@@ -21,7 +21,12 @@ class Base(DeclarativeBase):
 
 @lru_cache
 def engine():
-    return create_engine(settings().database_url, pool_pre_ping=True, pool_size=5)
+    options = {}
+    if settings().operating_mode == "recovery":
+        options["connect_args"] = {
+            "options": "-c default_transaction_read_only=on -c statement_timeout=15000"
+        }
+    return create_engine(settings().database_url, pool_pre_ping=True, pool_size=5, **options)
 
 
 def session_factory() -> sessionmaker[Session]:
