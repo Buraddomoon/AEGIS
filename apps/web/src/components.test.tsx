@@ -20,6 +20,8 @@ const techniques = [
     reference: 'https://attack.mitre.org/techniques/T1059/004/',
     dataset_version: '20.0',
     coverage: 'NOT_TESTED',
+    catalog_status: 'active',
+    coverage_applicable: true,
   },
 ]
 function renderCatalog() {
@@ -43,7 +45,12 @@ describe('Coverage and catalog states', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => ({ items: techniques, total: 1 }),
+        json: async () => ({
+          items: techniques,
+          total: 1,
+          catalog: { release_id: 'a'.repeat(64), version: '20.0' },
+          catalog_release_id: 'a'.repeat(64),
+        }),
       }),
     )
     renderCatalog()

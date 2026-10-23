@@ -1,5 +1,15 @@
 import { useState } from 'react'
-import { ExternalLink, FlaskConical, Grid2X2, List, Search, ShieldCheck } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  ExternalLink,
+  FlaskConical,
+  Grid2X2,
+  List,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+} from 'lucide-react'
+import { AttackCatalogStatus, lifecycleLabels, loadTechniques } from './AttackCatalog'
 import { Badge, date, Empty, Failure, Go, Loading, Modal, PageHeading, Panel, useData } from './lib'
 import type { Page, RuleTestLink, Technique, Test } from './types'
 
@@ -21,7 +31,12 @@ const tactics: Record<string, string> = {
 }
 export function Catalog() {
   const [mode, setMode] = useState('demo'),
-    data = useData<Page<Technique>>(`/techniques?limit=1000&mode=${mode}`),
+    [lifecycle, setLifecycle] = useState('active'),
+    data = useQuery({
+      queryKey: ['/techniques', mode, lifecycle],
+      queryFn: () => loadTechniques(mode, lifecycle),
+      retry: 1,
+    }),
     [query, setQuery] = useState(''),
     [tactic, setTactic] = useState(''),
     [platform, setPlatform] = useState(''),
@@ -29,6 +44,12 @@ export function Catalog() {
     [view, setView] = useState('matrix'),
     [selected, setSelected] = useState<string | null>(null),
     [page, setPage] = useState(0)
+  const client = useQueryClient()
+  const refresh = () => {
+    setSelected(null)
+    void data.refetch()
+    void client.invalidateQueries({ queryKey: ['/catalog/attack'] })
+  }
   if (data.isLoading) return <Loading />
   if (data.error) return <Failure error={data.error} />
   const all = data.data!.items,
@@ -37,7 +58,7 @@ export function Catalog() {
         `${t.id} ${t.name}`.toLowerCase().includes(query.toLowerCase()) &&
         (!tactic || t.tactics.includes(tactic)) &&
         (!platform || t.platforms.includes(platform)) &&
-        (!coverage || t.coverage === coverage),
+        (!coverage || (t.catalog_status === 'active' && t.coverage === coverage)),
     )
   const platforms = [...new Set(all.flatMap((t) => t.platforms))].sort(),
     availableTactics = [...new Set(all.flatMap((t) => t.tactics))]
@@ -50,8 +71,15 @@ export function Catalog() {
       <PageHeading
         eyebrow="BASE DE CONHECIMENTO"
         title="Matriz ATT&CK"
-        description={`${data.data!.total} técnicas e subtécnicas oficiais · Enterprise v${all[0]?.dataset_version ?? '—'} · cobertura avaliada separadamente`}
+        description={`${data.data!.total} referências no estado selecionado · Enterprise v${data.data!.catalog.version} · cobertura da release atual separada do histórico`}
+        action={
+          <button className="button" onClick={refresh} disabled={data.isFetching}>
+            <RefreshCw size={16} />
+            Recarregar catálogo
+          </button>
+        }
       />
+      <AttackCatalogStatus expectedRelease={data.data!.catalog_release_id} onRefresh={refresh} />
       <div className="toolbar">
         <select
           aria-label="Modo da cobertura ATT&CK"
@@ -59,10 +87,27 @@ export function Catalog() {
           onChange={(e) => {
             setMode(e.target.value)
             setPage(0)
+            setSelected(null)
           }}
         >
           <option value="demo">Cobertura Demo · sintética</option>
           <option value="linux">Cobertura Linux real</option>
+        </select>
+        <select
+          aria-label="Filtrar por estado no catálogo"
+          value={lifecycle}
+          onChange={(e) => {
+            setLifecycle(e.target.value)
+            setCoverage('')
+            setPage(0)
+            setSelected(null)
+          }}
+        >
+          <option value="active">Ativas na versão atual</option>
+          <option value="revoked">Revogadas</option>
+          <option value="deprecated">Descontinuadas</option>
+          <option value="absent">Fora da versão atual</option>
+          <option value="all">Todos os estados</option>
         </select>
         <div className="search">
           <Search size={17} />
@@ -106,6 +151,7 @@ export function Catalog() {
         </select>
         <select
           aria-label="Filtrar por cobertura"
+          disabled={!['active', 'all'].includes(lifecycle)}
           value={coverage}
           onChange={(e) => {
             setCoverage(e.target.value)
@@ -194,6 +240,9 @@ export function Catalog() {
                         {tech.parent_id ? '↳ ' : ''}
                         {tech.name}
                       </span>
+                      {tech.catalog_status !== 'active' && (
+                        <small>{lifecycleLabels[tech.catalog_status]}</small>
+                      )}
                     </button>
                   ))}
               </div>
@@ -209,6 +258,7 @@ export function Catalog() {
                   <th>Técnica</th>
                   <th>Táticas</th>
                   <th>Cobertura</th>
+                  <th>Estado no catálogo</th>
                 </tr>
               </thead>
               <tbody>
@@ -224,8 +274,13 @@ export function Catalog() {
                       {t.tactics.map((t) => tactics[t] ?? t).join(', ')}
                     </td>
                     <td>
-                      <Badge value={t.coverage} />
+                      {t.coverage_applicable ? (
+                        <Badge value={t.coverage} />
+                      ) : (
+                        <span className="muted-text">Não aplicável à release atual</span>
+                      )}
                     </td>
+                    <td>{lifecycleLabels[t.catalog_status]}</td>
                   </tr>
                 ))}
               </tbody>
@@ -248,10 +303,19 @@ export function Catalog() {
           </div>
         </Panel>
       )}
-      {selected && <TechniqueDetails id={selected} mode={mode} onClose={() => setSelected(null)} />}
+      {selected && (
+        <TechniqueDetails
+          id={selected}
+          mode={mode}
+          releaseId={data.data!.catalog_release_id}
+          onClose={() => setSelected(null)}
+        />
+      )}
       <p className="scope-note">
         Fonte oficial MITRE ATT&CK. Uma técnica catalogada só recebe cobertura após uma avaliação
-        concluída no modo selecionado. O marcador Linux não recebe associação ATT&CK artificial.
+        concluída na mesma release e modo selecionados. Técnicas retiradas não entram em novos
+        escopos; evidências anteriores permanecem no histórico. O marcador Linux não recebe
+        associação ATT&CK artificial.
       </p>
     </>
   )
@@ -260,20 +324,29 @@ export function Catalog() {
 function TechniqueDetails({
   id,
   mode,
+  releaseId,
   onClose,
 }: {
   id: string
   mode: string
+  releaseId: string
   onClose: () => void
 }) {
   const data = useData<
     Technique & {
       tests: Test[]
-      coverage_history: { run_id: string; outcome: string; created_at: string }[]
+      coverage_history: {
+        run_id: string
+        outcome: string
+        created_at: string
+        catalog_version: string | null
+        catalog_release_id: string | null
+        catalog_scope_recorded: boolean
+      }[]
       limitation: string
       planned_rule_links: RuleTestLink[]
     }
-  >(`/techniques/${id}?mode=${mode}`)
+  >(`/techniques/${id}?mode=${mode}&catalog_release_id=${releaseId}`)
   return (
     <Modal title={id} onClose={onClose}>
       {data.isLoading ? (
@@ -287,17 +360,30 @@ function TechniqueDetails({
             <p className="muted-text">
               {data.data.platforms.join(' · ')} · Dataset v{data.data.dataset_version}
             </p>
+            <p className="muted-text">Estado: {lifecycleLabels[data.data.catalog_status]}</p>
+            {data.data.catalog_status !== 'active' && (
+              <div className="notice warning">
+                Esta referência não é elegível para novas solicitações. O histórico permanece
+                disponível.
+              </div>
+            )}
             <p className="technique-description">{data.data.description}</p>
             <a className="text-link" href={data.data.reference} target="_blank" rel="noreferrer">
               Referência oficial MITRE <ExternalLink size={15} />
             </a>
-            <h3>Simulações disponíveis</h3>
+            <h3>
+              {data.data.catalog_status === 'active'
+                ? 'Simulações disponíveis'
+                : 'Simulações associadas · revisão necessária'}
+            </h3>
             {data.data.tests.length ? (
               data.data.tests.map((t) => (
                 <div className="detail-row" key={t.id}>
                   <FlaskConical size={17} />
                   <span>{t.name}</span>
-                  <span className="subtle-tag">Sintético</span>
+                  <span className="subtle-tag">
+                    {t.available_for_new_scope === false ? 'Referência indisponível' : 'Sintético'}
+                  </span>
                 </div>
               ))
             ) : (
@@ -326,7 +412,14 @@ function TechniqueDetails({
             {data.data.coverage_history.length ? (
               data.data.coverage_history.map((h, i) => (
                 <div className="detail-row" key={i}>
-                  <span>{date(h.created_at)}</span>
+                  <span>
+                    {date(h.created_at)}
+                    <small className="catalog-history-meta">
+                      {h.catalog_scope_recorded
+                        ? `Enterprise v${h.catalog_version} · release ${h.catalog_release_id?.slice(0, 12)}`
+                        : 'Versão do catálogo não registrada'}
+                    </small>
+                  </span>
                   <Badge value={h.outcome} />
                   <Go to={`executions/${h.run_id}`}>Evidências</Go>
                 </div>
@@ -355,7 +448,7 @@ export function TestLibrary() {
       <PageHeading
         eyebrow="SIMULAÇÕES CONTROLADAS"
         title="Biblioteca de testes"
-        description="Allowlist de simulações demonstrativas. Nenhum comando é executado em máquinas externas."
+        description="Simulações da allowlist. A execução depende do laboratório autorizado e da validade da referência ATT&CK."
       />
       <div className="toolbar">
         <div className="search">
@@ -385,6 +478,11 @@ export function TestLibrary() {
             <div className="test-tags">
               <span className="technique-tag">{t.technique_id ?? 'Sem associação ATT&CK'}</span>
               <span className="subtle-tag">{t.platform}</span>
+              {t.catalog_mapping_status &&
+                t.catalog_mapping_status !== 'active' &&
+                t.catalog_mapping_status !== 'unmapped' && (
+                  <span className="subtle-tag">{lifecycleLabels[t.catalog_mapping_status]}</span>
+                )}
             </div>
             <dl>
               <dt>Pré-requisitos</dt>
@@ -404,11 +502,13 @@ export function TestLibrary() {
             </dl>
             <div className="test-footer">
               <ShieldCheck size={16} />{' '}
-              {t.approved
-                ? t.execution_kind === 'demo'
-                  ? 'Na allowlist demonstrativa'
-                  : 'Allowlist revisada · exige autorização separada'
-                : 'Não aprovado'}
+              {t.available_for_new_scope === false && t.approved
+                ? 'Revisar referência ATT&CK antes de nova execução'
+                : t.approved
+                  ? t.execution_kind === 'demo'
+                    ? 'Na allowlist demonstrativa'
+                    : 'Allowlist revisada · exige autorização separada'
+                  : 'Não aprovado'}
             </div>
           </Panel>
         ))}

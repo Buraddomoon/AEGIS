@@ -393,10 +393,10 @@ function Overview({ user }: { user: User }) {
       </div>
       <div className="stats-grid">
         <Metric
-          label="Técnicas avaliadas"
+          label="Técnicas avaliadas nesta release"
           value={c.evaluated_techniques}
           icon={<Grid2X2 size={18} />}
-          detail={`de ${c.catalogued_techniques} técnicas no catálogo oficial`}
+          detail={`de ${c.catalogued_techniques} técnicas ativas no catálogo atual`}
         />
         <Metric
           label="Execuções solicitadas"

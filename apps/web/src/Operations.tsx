@@ -195,6 +195,7 @@ function CampaignForm({ onClose }: { onClose: () => void }) {
             .filter(
               (t) =>
                 t.approved &&
+                t.available_for_new_scope !== false &&
                 t.execution_kind ===
                   (labs.data?.items.find((l) => l.id === lab)?.kind === 'linux'
                     ? 'linux_marker'
@@ -783,12 +784,15 @@ export function CoveragePage() {
           <p>Snapshot oficial ATT&CK</p>
         </div>
         <div className="metric">
-          <span>Técnicas avaliadas</span>
+          <span>Técnicas avaliadas nesta release</span>
           <strong>{c.evaluated_techniques}</strong>
-          <p>Em execuções concluídas</p>
+          <p>
+            {c.historical_evaluated_techniques ?? c.evaluated_techniques} no histórico de todas as
+            releases
+          </p>
         </div>
         <div className="metric metric-accent">
-          <span>Detectados / testes válidos</span>
+          <span>Detectados / testes válidos · histórico</span>
           <strong>
             {c.outcomes.DETECTED ?? 0} / {c.valid_tests}
           </strong>

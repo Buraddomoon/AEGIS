@@ -71,7 +71,21 @@ try {
   await button('Entrar no workspace')
   await text('Visão geral')
   await navigate('attack')
-  await text('706 técnicas')
+  await text('706 referências no estado selecionado')
+  await text('Snapshot inicial distribuído')
+  await button('Histórico do catálogo')
+  await button('Inspecionar snapshot', 'dialog button')
+  await page.waitForSelector('input[aria-label="Pesquisar no snapshot histórico"]')
+  await page.locator('input[aria-label="Pesquisar no snapshot histórico"]').fill('T1059.004')
+  await page.waitForFunction(() =>
+    document.querySelector('dialog tbody')?.textContent.includes('Unix Shell'),
+  )
+  assert.match(
+    await page.$eval('dialog', (el) => el.textContent),
+    /não comprova execução ou detecção/,
+  )
+  await page.click('dialog button[aria-label="Fechar"]')
+  await screenshot('attack-catalog')
   await page.locator('input[aria-label="Pesquisar técnica"]').fill('T1059.004')
   await text('1 técnicas no filtro atual')
   await page.click('button[aria-label="Visualização em tabela"]')
@@ -143,7 +157,11 @@ try {
     }
     const fields = [...document.querySelectorAll('dialog input')]
     const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
-    for (const [el, value] of [[fields[0], format(Date.now() + 15000)], [fields[1], format(Date.now() + 300000)], [fields[3], '1']]) {
+    for (const [el, value] of [
+      [fields[0], format(Date.now() + 15000)],
+      [fields[1], format(Date.now() + 300000)],
+      [fields[3], '1'],
+    ]) {
       set.call(el, value)
       el.dispatchEvent(new Event('input', { bubbles: true }))
       el.dispatchEvent(new Event('change', { bubbles: true }))
@@ -162,12 +180,21 @@ try {
   await text('Execução e cleanup demonstrativos concluídos.')
   await text('Execução automática autorizada.')
   const scheduledId = await page.evaluate(() => location.hash.split('/')[1])
-  const scheduledReport = await page.evaluate(async id => (await fetch('/api/v1/reports/' + id)).json(), scheduledId)
+  const scheduledReport = await page.evaluate(
+    async (id) => (await fetch('/api/v1/reports/' + id)).json(),
+    scheduledId,
+  )
   assert.equal(scheduledReport.synthetic, true)
   assert.equal(scheduledReport.run.state, 'COMPLETED')
-  assert.equal(scheduledReport.run.approval.schedule_authorization_id, scheduledReport.run.schedule_occurrence.authorization_id)
+  assert.equal(
+    scheduledReport.run.approval.schedule_authorization_id,
+    scheduledReport.run.schedule_occurrence.authorization_id,
+  )
   assert.ok(scheduledReport.run.schedule_id)
-  assert.equal(scheduledReport.run.schedule_plan.plan_hash, scheduledReport.run.schedule_authorization.plan_hash)
+  assert.equal(
+    scheduledReport.run.schedule_plan.plan_hash,
+    scheduledReport.run.schedule_authorization.plan_hash,
+  )
   const sigma = `title: AEGIS demo planning review
 id: 8b065c14-928c-4f6c-898c-aef9e9729028
 status: experimental
@@ -186,21 +213,30 @@ level: informational
   async function importSigma(content) {
     await button('Importar regra Sigma')
     await page.type('dialog textarea', content)
-    const saved = page.waitForResponse(r => r.url().endsWith('/api/v1/rules') && r.request().method() === 'POST')
+    const saved = page.waitForResponse(
+      (r) => r.url().endsWith('/api/v1/rules') && r.request().method() === 'POST',
+    )
     await button('Validar e salvar', 'dialog button')
     assert.equal((await saved).status(), 201, 'Sigma import must succeed')
     await page.waitForFunction(() => !document.querySelector('dialog[open]'))
   }
   async function reviewLink() {
     await page.select('dialog form select', 'demo-shell')
-    await page.type('dialog form textarea', 'Planejamento Demo: avaliar a fonte de criação de processos e o comportamento benigno de shell. Não comprova implantação nem detecção.')
+    await page.type(
+      'dialog form textarea',
+      'Planejamento Demo: avaliar a fonte de criação de processos e o comportamento benigno de shell. Não comprova implantação nem detecção.',
+    )
     await page.waitForFunction(() => {
       const checkbox = document.querySelector('dialog form input[type="checkbox"]')
       return checkbox && !checkbox.disabled
     })
-    await page.$eval('dialog form input[type="checkbox"]', el => el.scrollIntoView({block: 'center'}))
+    await page.$eval('dialog form input[type="checkbox"]', (el) =>
+      el.scrollIntoView({ block: 'center' }),
+    )
     await page.locator('dialog form input[type="checkbox"]').click()
-    await page.waitForFunction(() => document.querySelector('dialog form input[type="checkbox"]')?.checked)
+    await page.waitForFunction(
+      () => document.querySelector('dialog form input[type="checkbox"]')?.checked,
+    )
     await button('Registrar revisão', 'dialog button')
     await page.waitForFunction(() => document.querySelector('dialog form textarea')?.value === '')
   }
@@ -214,12 +250,14 @@ level: informational
   await button('Análise estática')
   await text('Nenhum achado nos checks executados')
   await text('Backend e pipeline não configurados')
-  const firstAnalysisVersion = await page.$eval('dialog select', el => el.value)
+  const firstAnalysisVersion = await page.$eval('dialog select', (el) => el.value)
   await page.click('dialog button[aria-label="Fechar"]')
   await button('Testes e revisões')
   await reviewLink()
   await text('Revisado para planejamento')
-  await page.$eval('dialog[open]', el => { el.scrollTop = 0 })
+  await page.$eval('dialog[open]', (el) => {
+    el.scrollTop = 0
+  })
   await screenshot('rule-test-links')
   await page.click('dialog button[aria-label="Fechar"]')
   await navigate('campaigns')
@@ -227,19 +265,28 @@ level: informational
   await page.waitForFunction(() => location.hash.includes('executions/'))
   const reviewedId = await page.evaluate(() => location.hash.split('/')[1])
   await approveAndRun()
-  const reviewedReport = await page.evaluate(async id => (await fetch('/api/v1/reports/' + id)).json(), reviewedId)
+  const reviewedReport = await page.evaluate(
+    async (id) => (await fetch('/api/v1/reports/' + id)).json(),
+    reviewedId,
+  )
   assert.equal(reviewedReport.run.scope.rule_test_links.length, 1)
   assert.equal(reviewedReport.run.scope.rule_test_links[0].rule_version, 1)
   await navigate('rules')
-  await importSigma(sigma.replace('level: informational', 'level: low').replace('  condition: selection', '  unused:\n    Image: /bin/sh\n  condition: selection'))
+  await importSigma(
+    sigma
+      .replace('level: informational', 'level: low')
+      .replace('  condition: selection', '  unused:\n    Image: /bin/sh\n  condition: selection'),
+  )
   await button('Análise estática')
   await text('A seleção declarada não é referenciada pela condição.')
   await text('unused_selection')
-  await page.$eval('dialog[open]', el => { el.scrollTop = 0 })
+  await page.$eval('dialog[open]', (el) => {
+    el.scrollTop = 0
+  })
   await screenshot('sigma-analysis')
   await page.select('dialog select', firstAnalysisVersion)
   await text('Nenhum achado nos checks executados')
-  assert.equal(await page.$eval('dialog select', el => el.value), firstAnalysisVersion)
+  assert.equal(await page.$eval('dialog select', (el) => el.value), firstAnalysisVersion)
   await page.click('dialog button[aria-label="Fechar"]')
   await button('Testes e revisões')
   await text('Revisão necessária')
@@ -250,8 +297,15 @@ level: informational
   await page.click('dialog .toolbar input[type="checkbox"]')
   await text('Retirado')
   await page.click('dialog button[aria-label="Fechar"]')
-  const historicalReport = await page.evaluate(async id => (await fetch('/api/v1/reports/' + id)).json(), reviewedId)
-  assert.deepEqual(historicalReport, reviewedReport, 'Rule reviews must not rewrite historical reports')
+  const historicalReport = await page.evaluate(
+    async (id) => (await fetch('/api/v1/reports/' + id)).json(),
+    reviewedId,
+  )
+  assert.deepEqual(
+    historicalReport,
+    reviewedReport,
+    'Rule reviews must not rewrite historical reports',
+  )
   await navigate('coverage')
   await page.select('.comparison-form select', firstId)
   const diffSelects = await page.$$('.comparison-form select')
@@ -269,11 +323,20 @@ level: informational
   await text('Conversão bloqueada')
   await text('data.aegis.observation')
   await text('index_mapping_unverified')
-  await page.$eval('dialog[open]', el => { el.scrollTop = 0 })
+  await page.$eval('dialog[open]', (el) => {
+    el.scrollTop = 0
+  })
   await screenshot('sigma-readiness')
   await page.click('dialog button[aria-label="Fechar"]')
-  const afterPreparation = await page.evaluate(async id => (await fetch('/api/v1/reports/' + id)).json(), reviewedId)
-  assert.deepEqual(afterPreparation, reviewedReport, 'Preparation must not rewrite historical reports')
+  const afterPreparation = await page.evaluate(
+    async (id) => (await fetch('/api/v1/reports/' + id)).json(),
+    reviewedId,
+  )
+  assert.deepEqual(
+    afterPreparation,
+    reviewedReport,
+    'Preparation must not rewrite historical reports',
+  )
   for (const [route, heading] of [
     ['tests', 'Biblioteca de testes'],
     ['reports', 'Relatórios'],

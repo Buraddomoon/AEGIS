@@ -20,6 +20,12 @@ export function ScopeChanges({ changes }: { changes: Comparison['scope_changes']
           desconhecido; não equivale a ausência de vínculos.
         </div>
       )}
+      {changes.catalog_context_recorded === false && (
+        <div className="notice warning">
+          Uma das execuções não registrou a versão do catálogo ATT&CK. Esse contexto histórico é
+          desconhecido e não será preenchido retroativamente.
+        </div>
+      )}
       {groups.map(
         ([label, rows]) =>
           rows && (

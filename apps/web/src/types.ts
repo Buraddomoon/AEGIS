@@ -38,6 +38,33 @@ export interface Test {
   platform: string
   risk: string
   version: number
+  catalog_mapping_status?: 'active' | 'revoked' | 'deprecated' | 'absent' | 'unmapped'
+  available_for_new_scope?: boolean
+}
+export type CatalogLifecycle = 'active' | 'revoked' | 'deprecated' | 'absent'
+export interface CatalogReference {
+  release_id: string
+  version: string
+  provenance: 'bundled' | 'official_commit'
+  source_sha256: string
+  source_commit: string | null
+}
+export interface CatalogRelease {
+  id: string
+  dataset_version: string
+  provenance: 'bundled' | 'official_commit'
+  source_url: string
+  source_commit: string | null
+  source_sha256: string
+  license_sha256: string
+  created_at: string
+  applied_by: string | null
+}
+export interface CatalogStatus {
+  status: 'ready' | 'uninitialized'
+  current: CatalogRelease | null
+  counts: Record<CatalogLifecycle, number> | null
+  limitation: string
 }
 export interface Technique {
   id: string
@@ -49,6 +76,11 @@ export interface Technique {
   reference: string
   dataset_version: string
   coverage: string
+  catalog_status: CatalogLifecycle
+  coverage_applicable: boolean
+  revoked: boolean
+  deprecated: boolean
+  present_in_current: boolean
 }
 export interface Campaign {
   id: string
@@ -59,6 +91,8 @@ export interface Campaign {
   test_ids: string[]
 }
 export interface Scope {
+  attack_catalog?: CatalogReference
+  attack_techniques?: Record<string, unknown>[]
   telemetry?: {
     provider: string
     policy?: { agent_id: string; expected_rule: string; ingestion_wait_seconds: number }
@@ -202,6 +236,8 @@ export interface Coverage {
   synthetic: boolean
   catalogued_techniques: number
   evaluated_techniques: number
+  historical_evaluated_techniques?: number
+  attack_catalog?: CatalogReference
   total_runs: number
   completed_tests: number
   valid_tests: number
@@ -275,6 +311,7 @@ export interface Comparison {
   before_scope: Scope
   after_scope: Scope
   scope_changes: {
+    catalog_context_recorded?: boolean
     rule_versions: ScopeChange[]
     test_definitions: ScopeChange[]
     environment: ScopeChange[]

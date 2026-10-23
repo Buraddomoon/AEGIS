@@ -158,7 +158,14 @@ it('registration has no arbitrary target or command fields and displays API fail
 })
 
 it('requests ATT&CK coverage from the API using the selected mode', async () => {
-  const fetcher = vi.fn().mockResolvedValue(respond({ items: [], total: 0 }))
+  const fetcher = vi.fn().mockResolvedValue(
+    respond({
+      items: [],
+      total: 0,
+      catalog: { release_id: 'a'.repeat(64), version: '20.0' },
+      catalog_release_id: 'a'.repeat(64),
+    }),
+  )
   vi.stubGlobal('fetch', fetcher)
   mount(<Catalog />)
   await userEvent.selectOptions(await screen.findByLabelText('Modo da cobertura ATT&CK'), 'linux')
