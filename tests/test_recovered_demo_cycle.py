@@ -222,3 +222,19 @@ def test_cycle_probe_refuses_other_destination_or_external_configuration(monkeyp
 def test_invalid_identity_and_credentials_refuse_before_sql(token, password_hash, role_password):
     with pytest.raises(ValueError):
         recovered.prepare_sql(token, "a" * 64, password_hash, role_password)
+
+
+def test_final_closure_rejects_incomplete_or_real_validation(fresh_destination):
+    d = fresh_destination
+    result = complete_cycle(d)
+    with d["writer"].begin() as c:
+        c.execute(
+            text(
+                "UPDATE validation_results SET synthetic=false WHERE execution_id IN (SELECT id FROM test_executions WHERE run_id=:run_id)"
+            ),
+            {"run_id": result["run_id"]},
+        )
+    before = get_inventory(d["writer"])
+    with pytest.raises(Exception, match="close safely"):
+        run_sql(d["writer"], d["adapt"](recovered.close_sql(d["token"], result["run_id"])))
+    assert get_inventory(d["writer"]) == before

@@ -5,6 +5,7 @@ import uuid
 
 from psycopg import sql
 
+from aegis.domain.validation import LOGIC_VERSION
 from aegis.operations import reconciliation
 from aegis.operations.runtime_grants import RUNTIME_PERMISSIONS
 from aegis.seed import DEMO_TESTS
@@ -123,6 +124,14 @@ def close_sql(token, run_id):
           AND state='COMPLETED' AND laboratory_id={lab} AND requested_by={user} AND schedule_id IS NULL)
           OR (SELECT count(*) FROM public.campaign_runs) <> 1+(SELECT count(*) FROM {GUARD_SCHEMA}.original_rows WHERE name='campaign_runs')
           OR (SELECT count(*) FROM public.test_executions WHERE run_id='{run_id}' AND state='COMPLETED' AND executed AND synthetic)<>4
+          OR (SELECT array_agg(test_id::text ORDER BY test_id::text COLLATE "C") FROM public.test_executions WHERE run_id='{run_id}') IS DISTINCT FROM ARRAY[{reconciliation.literals(TEST_IDS)}]
+          OR (SELECT array_agg(v.outcome::text ORDER BY v.outcome::text COLLATE "C") FROM public.validation_results v
+              JOIN public.test_executions e ON e.id=v.execution_id WHERE e.run_id='{run_id}' AND v.synthetic
+              AND v.logic_version={literal(LOGIC_VERSION)}) IS DISTINCT FROM ARRAY[{reconciliation.literals(item["demo_outcome"] for item in DEMO_TESTS)}]
+          OR NOT EXISTS (SELECT 1 FROM public.approvals a JOIN public.campaign_runs r ON r.id=a.run_id
+              WHERE r.id='{run_id}' AND a.approved_by={user} AND a.used_at IS NOT NULL
+              AND a.schedule_authorization_id IS NULL AND a.scope_hash=r.scope_hash)
+          OR EXISTS (SELECT 1 FROM public.runner_dispatches d JOIN public.test_executions e ON e.id=d.execution_id WHERE e.run_id='{run_id}')
           OR EXISTS (SELECT 1 FROM public.laboratories WHERE authorized OR active_run_id IS NOT NULL)
           OR EXISTS (SELECT 1 FROM public.sessions)
           OR EXISTS (SELECT 1 FROM public.users WHERE active AND id<>{user})
