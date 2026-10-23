@@ -143,7 +143,7 @@ try {
   assert.equal(coverage.detected_percentage, 33.3)
   await screenshot('overview')
   await navigate('attack')
-  await text('706 técnicas')
+  await text('706 referências no estado selecionado')
   await screenshot('attack')
   await navigate('schedules')
   await text('Agendamentos')
@@ -362,11 +362,11 @@ level: informational
   console.log(
     JSON.stringify({
       result: 'PASS',
-      flow: 'login → catalog → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report → Sigma static analysis → review → version change → historical analysis → retirement → historical scope comparison → blocked backend diagnostics → candidate marker field mapping',
+      flow: 'login → catalog provenance → immutable catalog history → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report → Sigma static analysis → review → version change → historical analysis → retirement → historical scope comparison → blocked backend diagnostics → candidate marker field mapping',
       runs: 4,
       tests: 16,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 10,
+      screenshots: 11,
       browserErrors: errors.length,
     }),
   )
