@@ -237,7 +237,7 @@ def test_application_clone_cleanup_and_secret_handling(archive, monkeypatch, fai
             "database_read_only": True,
         },
         "entrypoints_blocked": 5,
-        "database_write_probes_denied": 3,
+        "database_write_probes_denied": 4,
         "administrative_tcp_denied": True,
     }
 
@@ -365,3 +365,25 @@ def test_recovered_application_receipt_requires_boot_and_unchanged_data(
         assert receipt["application_image_id"] == "sha256:" + "e" * 64
         assert len(list(folder.glob("application-verification-*.json"))) == 1
         assert inventory_calls == 2
+
+
+def test_database_retained_when_application_cleanup_is_not_confirmed(archive, monkeypatch):
+    folder, manifest = archive
+    monkeypatch.setattr(backup_cli, "application_image", lambda: "sha256:" + "e" * 64)
+    monkeypatch.setattr(backup_cli, "inventory", lambda *a: manifest["inventory"])
+    monkeypatch.setattr(
+        backup_cli, "remove_clone", lambda *a: pytest.fail("Database removed before API")
+    )
+    monkeypatch.setattr(backup_cli, "docker", lambda *a, **kw: b"postgres\n" if "cat" in a else b"")
+
+    def unconfirmed(database, token, image, intents, state):
+        state["attempted"] = True
+        raise backup_cli.BackupError("API cleanup failed or was interrupted")
+
+    monkeypatch.setattr(backup_cli, "boot_application", unconfirmed)
+    with pytest.raises(backup_cli.BackupError, match="cleanup"):
+        backup_cli.rehearse(ID, application=True)
+    assert not list(folder.glob("*verification-*.json"))
+    results = list((backup_cli.ROOT / ".local/recovery-intents").glob("*-cleanup.json"))
+    assert len(results) == 1
+    assert json.loads(results[0].read_text())["state"] == "retained_api_cleanup_unconfirmed"

@@ -97,6 +97,7 @@ def recovered_database(monkeypatch):
             c.execute(text(f'GRANT USAGE ON SCHEMA public TO "{identifier}"'))
             c.execute(text(f'GRANT SELECT ON ALL TABLES IN SCHEMA public TO "{identifier}"'))
             c.execute(text("REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC"))
+            recovery.restrict_large_objects(c)
         # A real restricted identity without storing a test password.
         reader = create_engine(
             owner_url, connect_args={"options": "-c default_transaction_read_only=on"}
@@ -198,6 +199,7 @@ def test_boot_review_and_database_privileges_are_real(recovered_database):
             "DELETE FROM sessions",
             "CREATE TABLE forbidden (id int)",
             "CREATE TEMP TABLE forbidden (id int)",
+            "SELECT pg_catalog.lo_create(0)",
         ):
             with pytest.raises(DBAPIError):
                 c.execute(text(sql))
@@ -223,3 +225,13 @@ def test_incompatible_schema_and_privilege_drift_fail_closed(recovered_database)
         c.execute(text(f'GRANT UPDATE (expires_at) ON sessions TO "{role}"'))
     with TestClient(recovery_app()) as client:
         assert client.get("/api/v1/health/ready", headers=headers).status_code == 503
+
+
+def test_large_object_function_grant_drift_blocks_readiness(recovered_database):
+    writer, _ = recovered_database
+    with writer.begin() as c:
+        c.execute(text("GRANT EXECUTE ON FUNCTION pg_catalog.lo_create(oid) TO PUBLIC"))
+    with TestClient(recovery_app()) as client:
+        headers = {"x-aegis-recovery-token": TOKEN}
+        assert client.get("/api/v1/health/ready", headers=headers).status_code == 503
+        assert client.get("/api/v1/recovery/review", headers=headers).status_code == 503

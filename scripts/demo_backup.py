@@ -20,6 +20,7 @@ from pathlib import Path
 
 from aegis.config import settings
 from aegis.operations.backup import FORMAT, INVENTORY_FORMAT, compare, inventory, retention_plan
+from aegis.operations.recovery import LARGE_OBJECT_FUNCTIONS
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import SQLAlchemyError
@@ -307,6 +308,13 @@ def prepare_reader(name, password):
     GRANT USAGE ON SCHEMA public TO aegis_recovery;
     GRANT SELECT ON ALL TABLES IN SCHEMA public TO aegis_recovery;
     REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC;
+    DO $block$
+    DECLARE signature text;
+    BEGIN
+      FOR signature IN {LARGE_OBJECT_FUNCTIONS} LOOP
+        EXECUTE 'REVOKE EXECUTE ON FUNCTION ' || signature || ' FROM PUBLIC';
+      END LOOP;
+    END $block$;
     """
     # password is generated internally as hex; no user-supplied SQL interpolation.
     if not re.fullmatch(r"[a-f0-9]{64}", password):
@@ -352,7 +360,8 @@ def prepare_reader(name, password):
         raise BackupError("Isolated database authentication reload failed")
 
 
-def boot_application(database_name, token, image, intents):
+def boot_application(database_name, token, image, intents, cleanup_state=None):
+    cleanup_state = cleanup_state if cleanup_state is not None else {}
     name = "aegis-recovery-api-" + token
     password = secrets.token_hex(32)
     access_token = secrets.token_hex(32)
@@ -367,6 +376,7 @@ def boot_application(database_name, token, image, intents):
             "intent_at": datetime.now(UTC).isoformat(),
         },
     )
+    cleanup_state["attempted"] = True
     try:
         # Private env file survives only the create call; it is never an image layer.
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as env:
@@ -415,12 +425,15 @@ def boot_application(database_name, token, image, intents):
             or result["review"].get("normal_operation_permitted") is not False
             or result["review"].get("reconciliation_applied") is not False
             or result.get("entrypoints_blocked") != 5
-            or result.get("database_write_probes_denied") != 3
+            or result.get("database_write_probes_denied") != 4
             or result.get("administrative_tcp_denied") is not True
+            or result["review"].get("database_read_only") is not True
+            or result["review"].get("quarantined") is not True
         ):
             raise BackupError("Recovery application assertions failed")
     finally:
         cleanup = remove_clone(name, token)
+        cleanup_state["confirmed"] = True
         write_json(
             intents / (token + "-api-cleanup.json"),
             {
@@ -440,6 +453,7 @@ def rehearse(identifier, *, application=False):
     started = time.monotonic()
     attempted = False
     verified = False
+    application_cleanup = {"attempted": False, "confirmed": False}
     intents = ROOT / ".local" / "recovery-intents"
     private_directory(intents)
     write_json(
@@ -517,7 +531,7 @@ def rehearse(identifier, *, application=False):
         restored = inventory(lambda sql: psql(name, sql, database="aegis_restore", user="postgres"))
         compare(manifest["inventory"], restored)
         if application:
-            application_result = boot_application(name, token, image, intents)
+            application_result = boot_application(name, token, image, intents, application_cleanup)
             # ACLs changed in the clone, but no restored rows/structure may change.
             after = inventory(
                 lambda sql: psql(name, sql, database="aegis_restore", user="postgres")
@@ -526,7 +540,10 @@ def rehearse(identifier, *, application=False):
         verified = True
     finally:
         if attempted:
-            cleanup = remove_clone(name, token)
+            if application_cleanup["attempted"] and not application_cleanup["confirmed"]:
+                cleanup = "retained_api_cleanup_unconfirmed"
+            else:
+                cleanup = remove_clone(name, token)
             write_json(
                 intents / (token + "-cleanup.json"),
                 {

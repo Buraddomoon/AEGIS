@@ -65,6 +65,7 @@ def main():
             "DELETE FROM sessions WHERE false",
             "CREATE TABLE recovery_forbidden (id int)",
             "CREATE TEMP TABLE recovery_forbidden (id int)",
+            "SELECT pg_catalog.lo_create(0)",
         ):
             connection.execute("SET TRANSACTION READ WRITE")
             try:
