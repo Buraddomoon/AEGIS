@@ -2,17 +2,19 @@
 
 import json
 import uuid
+from datetime import timedelta
 
 import pytest
 from aegis import db
 from aegis.config import Settings, settings
 from aegis.main import create_app
+from aegis.models import Approval, Campaign, CampaignRun, Laboratory, LoginSession, User, now
 from aegis.operations import recovery
 from aegis.seed import seed
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import create_engine, event, select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
@@ -124,6 +126,51 @@ def recovered_database(monkeypatch):
 
 def test_boot_review_and_database_privileges_are_real(recovered_database):
     writer, reader = recovered_database
+    with Session(writer) as session:
+        lab = session.scalar(select(Laboratory))
+        user = User(username="restored-operator", role="operator", password_hash="opaque-test-hash")
+        session.add(user)
+        session.flush()
+        campaign = Campaign(
+            name="Restored pending fixture",
+            objective="Quarantine test",
+            laboratory_id=lab.id,
+            created_by=user.id,
+        )
+        session.add(campaign)
+        session.flush()
+        run = CampaignRun(
+            campaign_id=campaign.id,
+            laboratory_id=lab.id,
+            requested_by=user.id,
+            idempotency_key="restored-fixture",
+            state="QUEUED",
+            scope={},
+            scope_hash="a" * 64,
+        )
+        session.add(run)
+        session.flush()
+        run_id = run.id
+        lab.active_run_id = run_id
+        session.add(
+            Approval(
+                run_id=run_id,
+                approved_by=user.id,
+                scope_hash=run.scope_hash,
+                expires_at=now() + timedelta(hours=1),
+                max_duration_seconds=60,
+            )
+        )
+        for token, delta in (("a", 1), ("b", -1)):
+            session.add(
+                LoginSession(
+                    token_hash=token * 64,
+                    user_id=user.id,
+                    csrf_hash="c" * 64,
+                    expires_at=now() + timedelta(hours=delta),
+                )
+            )
+        session.commit()
     with TestClient(recovery_app()) as client:
         headers = {"x-aegis-recovery-token": TOKEN}
         assert client.get("/api/v1/health/ready", headers=headers).status_code == 200
@@ -133,8 +180,18 @@ def test_boot_review_and_database_privileges_are_real(recovered_database):
         assert body["quarantined"] and not body["reconciliation_applied"]
         assert body["database_read_only"] and not body["normal_operation_permitted"]
         assert body["counts"]["authorized_laboratories"] == 1
-        assert body["counts"]["sessions"] == 0
+        assert body["counts"]["sessions"] == 2
+        assert body["counts"]["unexpired_sessions"] == 1
+        assert body["counts"]["nonterminal_runs"] == 1
+        assert body["counts"]["nonterminal_real_runs"] == 0
+        assert body["counts"]["runs_by_state"] == {"QUEUED": 1}
+        assert body["counts"]["laboratory_reservations"] == 1
+        assert body["counts"]["unused_unexpired_approvals"] == 1
         assert "password" not in json.dumps(body) and TOKEN not in result.text
+    with Session(writer) as session:
+        assert session.get(CampaignRun, run_id).state == "QUEUED"
+        assert session.scalar(select(Laboratory)).active_run_id == run_id
+        assert session.scalar(select(Approval)).used_at is None
     with reader.connect() as c:
         c.execute(text("SET TRANSACTION READ WRITE"))
         for sql in (
