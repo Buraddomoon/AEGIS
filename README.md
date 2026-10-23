@@ -24,6 +24,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; campanha integrada autorizada validou API/worker/SQL runtime, recibos, cleanup e UI, sem SIEM.
 - Coleta Wazuh opt-in no worker: binding administrativo de agente/regra, política/hash aprovados, polling com prazo integral, paginação, resumo imutável e UI/relatórios. Validação real do pipeline incluiu TLS, agente, regra, ACLs, evento original, evidência e relatório.
 - Backup consistente do Demo e restauração verificável em PostgreSQL temporário sem rede; inventário de dados/estrutura, hashes internos e plano de retenção sem exclusão. [Procedimento e limites](docs/operations/backup-recovery.md).
+- Ensaio de boot da API recuperada em quarentena somente leitura: sessões históricas e execução automática bloqueadas, revisão agregada e comparação dos dados após leitura. Não reativa a operação normal.
 - [Ensaio Wazuh registrado](docs/evidence/wazuh-2026-10-22/README.md): uma campanha, um marcador de 43 bytes, um alerta da regra 100200, cleanup conferido. Containers/redes encerrados; volumes preservados. Não integra o Demo nem os testes padrão; nova execução requer novo escopo autorizado.
 
 ## Início rápido

@@ -108,7 +108,66 @@ Não há limpeza automática de backups, eventos, auditoria ou evidências. Back
 antigos exigem revisão de retenção legal e necessidade de recuperação antes de
 exclusão manual específica. Backups não verificados não substituem cópias boas.
 
-## Recuperação operacional permanece manual
+## Boot da API recuperada em quarentena
+
+```bash
+make recovery-app-build
+make verify-recovered-app BACKUP_ID=ID_INFORMADO_PELO_BACKUP
+```
+
+O build cria somente a tag local `aegis-recovery-local:0.2`; não reinicia ou
+substitui a imagem do Demo em uso. O ensaio fixa o ID imutável dessa imagem,
+requer o mesmo backup confiável/privado e não aceita destino, comando ou endereço
+de rede arbitrário. Não é uma interface de upload/restauração web.
+
+Após restaurar e verificar o inventário, a ferramenta cria no clone um usuário
+somente SELECT, sem ownership, memberships, DDL/DML/TEMP ou EXECUTE de funções
+da aplicação e de large objects. Acesso TCP exige senha efêmera SCRAM para esse
+usuário; conexões administrativas TCP são recusadas. Somente o operador, via
+docker exec no banco descartável, conserva administração por socket local.
+Esses grants e revogações nunca são aplicados ao banco em uso.
+
+A API compartilha exclusivamente o namespace de rede do clone network=none,
+ouvindo 127.0.0.1 **dentro** dele. Não publica portas nem recebe mounts do host,
+socket Docker, configuração/credenciais SIEM, runner ou Redis. API com usuário
+10001, filesystem read-only, cap-drop ALL,384MiB/1CPU/64PIDs e tmpfs64MiB;
+PostgreSQL mantém os limites do ensaio de dados. A soma dos limites é1,125GiB,
+sem incluir overhead do Docker/host; não é medição de consumo.
+
+`OPERATING_MODE=recovery` é decidido no boot, sem endpoint de reativação. Apenas
+GET health/live, health/ready e recovery/review existem. Readiness/review exigem
+token novo independente das sessões do backup; token e senha só duram no
+container descartável e no arquivo env temporário0600 durante create. Nenhum
+segredo é incluído em intenção/recibo ou argumentos do processo Docker.
+
+A revisão agregada `aegis-recovery-review/1` mostra contagens de sessões,
+filas/estados, reservas, autorizações, agendamentos e dispatches históricos.
+Não retorna senhas, nomes, tokens, comandos, scopes ou evidências brutas. Confere
+privilégios e revisão Alembic da imagem; incompatibilidade mantém503. Contagens
+zero não liberam operação: `normal_operation_permitted=false` e
+`reconciliation_applied=false` permanecem explícitos.
+
+Probes exigem recusa de login/sessão histórica, rotas normais, escrita/DDL/TEMP e
+large objects mesmo após SET TRANSACTION READ WRITE, além de autenticação TCP
+administrativa. Worker, scheduler, seed/grants e migrações abortam em recovery.
+O inventário deve continuar igual após a API. Intenções de ambos são duráveis;
+cleanup remove API antes do banco, conferindo ownership mesmo após create
+ambíguo. Só depois de tudo aprovado grava `application-verification-*.json`.
+Se cleanup da API não for confirmado, o banco fica preservado e a intenção
+registra `retained_api_cleanup_unconfirmed`; revisar os dois nomes/labels,
+encerrar/remover primeiro a API e depois seu banco, sem comandos globais.
+Falhas não publicam sucesso e exigem a mesma revisão de clones/intents descrita
+acima. Recibos anteriores permanecem preservados.
+
+Esse ensaio valida **boot restrito e leitura**, sem abrir o dashboard operacional,
+fazer login normal, reconciliar dados ou retomar tarefas. Não inicia labs Linux/
+Wazuh, workers ou scheduler operacionais. Ver [ADR0011](../architecture/decisions/0011-recovery-quarantine.md).
+
+[Ensaio executado em2026-10-23](../evidence/recovery-2026-10-23/README.md):
+API em quarentena leu o backup de30tabelas/2.884linhas;9 rotas,4 tentativas SQL,
+5 entrypoints e TCP administrativo bloqueados; inventário igual/clones removidos.
+
+## Recuperação operacional completa permanece manual
 
 Dumps contêm hashes de senha, sessões, scopes e evidências. Guardar criptografados,
 fora do host e com acesso restrito;0600 não é criptografia. Hashes detectam mudança
@@ -126,9 +185,11 @@ confiável, revisar roles/privilégios runtime e migrações necessárias. Antes
 iniciar qualquer worker, invalidar sessões/credenciais conforme o incidente e
 reconciliar jobs, aprovações, reservas e agendamentos do snapshot. Não reativar
 trabalhos automaticamente nem repetir efeitos externos ambíguos. Fazer um ciclo
-Demo controlado no novo destino antes de um cutover autorizado. O ensaio atual
-verifica fidelidade, não reinício da aplicação, failover ou recuperação de efeitos
-reais. RPO/RTO e política de retenção destrutiva não estão estabelecidos.
+Demo controlado no novo destino antes de um cutover autorizado. `verify-backup`
+verifica fidelidade; `verify-recovered-app` acrescenta somente o boot em quarentena.
+Nenhum dos dois demonstra failover, reativação normal ou recuperação de efeitos
+reais. RPO/RTO e
+política de retenção destrutiva não estão estabelecidos.
 
 Fontes: [pg_dump17](https://www.postgresql.org/docs/17/app-pgdump.html),
 [pg_restore17](https://www.postgresql.org/docs/17/app-pgrestore.html),

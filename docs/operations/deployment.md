@@ -17,3 +17,6 @@ Backup e ensaio de recuperação: [procedimento operacional](backup-recovery.md)
 A ferramenta host-only precisa do acesso administrativo loopback de desenvolvimento;
 ela nunca é exposta à API e não publica portas no clone. Não usar um dump para
 iniciar workers sem revisar jobs/agendamentos e efeitos externos do snapshot.
+`make recovery-app-build` e `make verify-recovered-app BACKUP_ID=...` ensaiam
+apenas API em quarentena numa imagem separada, sem reiniciar o Demo em uso.
+Modo recovery mantém503 nas operações normais e não libera jobs/sessões do dump.

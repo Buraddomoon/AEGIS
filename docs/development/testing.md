@@ -20,6 +20,16 @@ Na primeira rodada ampliada: 52 testes backend passaram; 3 testes frontend passa
 
 Existe aviso de depreciação do upstream Starlette para o transporte httpx de TestClient; os testes executam com sucesso, sem ocultar o aviso. Migração para httpx2 poderá ser avaliada separadamente.
 
+Recuperação em quarentena: `make test-recovery` inclui rotas isoladas, token
+independente, bloqueio dos entrypoints, drift de permissões/revisão e erros de
+create/boot/cleanup. Testes de API criam banco e papel PostgreSQL aleatórios,
+aplicam migrations/seed nesse banco e removem somente esses recursos ao terminar.
+Exigem conta administrativa de desenvolvimento (como a da CI); não alterar grants
+PUBLIC no banco ativo para passar testes. Verificam permissões reais incluindo
+tentativas em READ WRITE; sessões/filas/reservas restauradas permanecem intactas.
+`make verify-recovered-app` é ensaio operacional Demo explícito com imagem local
+e backup confiável, fora dos testes padrão/CI; não inicia laboratórios reais.
+
 ## Marco de agendamento Demo
 
 Na rodada ampliada: **85 testes Python** e **5 testes frontend** passaram; E2E Firefox concluiu **3 runs / 12 testes sintéticos**, incluindo agendamento automático, com zero erros JavaScript. O smoke Compose inclui run manual e agendada, verificação de grant, relatório e revogação usando API/worker com papel SQL restrito. Consulte PROGRESS para comandos e CI final.

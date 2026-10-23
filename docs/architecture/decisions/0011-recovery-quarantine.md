@@ -16,7 +16,7 @@ sessões, grants, filas e reservas são **dados a reconciliar**, não autorizaç
 para retomada. O relatório nunca declara que a reconciliação foi realizada.
 
 No clone, provisionar um papel novo somente SELECT, sem ownership/membership,
-DDL/DML, TEMP ou funções da aplicação; ativar transações read-only e conferir
+DDL/DML, TEMP ou funções da aplicação/large objects; ativar transações read-only e conferir
 privilégios/revisão Alembic antes de declarar readiness. Read-only é defesa
 adicional, não substituto dos privilégios, pois SET TRANSACTION pode alterá-lo.
 Falhas retornam diagnóstico genérico sem SQL/credenciais/dados pessoais.
@@ -41,3 +41,4 @@ Fontes oficiais consultadas:
 - [PostgreSQL17: privilégios](https://www.postgresql.org/docs/17/sql-grant.html).
 - [Docker: rede de containers](https://docs.docker.com/engine/containers/run/#network-settings).
 - [FastAPI: teste do boot/lifespan](https://fastapi.tiangolo.com/advanced/testing-events/).
+- [PostgreSQL17: funções de large objects](https://www.postgresql.org/docs/17/lo-funcs.html).

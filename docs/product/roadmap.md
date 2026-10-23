@@ -57,5 +57,9 @@ Futuro: Caldera, outros SIEM/EDR, Windows em VM própria, CI/CD e assistência p
 
 Marco recuperação Demo: backup/restore e comparação de dados/estrutura em clone
 sem rede foram executados; plano de retenção é somente leitura. Seguem pendentes
-restauração operacional de aplicação/roles/secrets, armazenamento criptografado
+reativação operacional/roles/secrets, armazenamento criptografado
 externo, política de RPO/RTO e gestão de retenção por ambiente. [Limites](../operations/backup-recovery.md).
+
+Boot da API recuperada em quarentena implementado: SELECT e revisão agregada,
+sem login normal/worker/scheduler ou retomada de sessões/autorizações. Não
+substitui reconciliação explícita nem um novo ciclo Demo após recuperação.

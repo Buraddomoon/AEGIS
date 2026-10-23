@@ -1,5 +1,17 @@
 # Changelog
 
+## Continuidade2026-10-23 — boot recuperado em quarentena
+
+- Modo recovery no boot: somente health e revisão agregada com token novo,
+  sem login/sessões históricas, rotas operacionais, frontend ou docs interativas.
+- Worker/scheduler/CLI/migrations bloqueados antes de conectar. Privilégios
+  PostgreSQL conferidos, incluindo colunas e funções de large objects.
+- Ensaio host-only restaura backup em clone offline, provisiona SELECT/SCRAM,
+  inicia API isolada, confere bloqueios e inventário inalterado e remove clones.
+- Cleanup da API incerto mantém banco para inspeção, sem recibo de sucesso.
+- Sem reconciliação/reativação automática, cutover, promessa RPO/RTO ou novo
+  efeito/consulta em laboratório Linux/Wazuh.
+
 ## Continuidade2026-10-22 — backup e recuperação verificável do Demo
 
 - Dump PostgreSQL por snapshot compartilhado com inventário de30tabelas, hashes

@@ -66,3 +66,17 @@ saneado, intenção durável antes de create, reconciliação por nome exato/lab
 mesmo após erro ambíguo e fsync dos diretórios. Preservar typmod de arrays,
 collation/flags e rejeição de RLS/tipos/procedures não suportados. Não declarar
 recuperação de recursos que o inventário não verifica.
+
+Quarentena de recuperação (ADR0011): OPERATING_MODE=recovery fixa no boot apenas
+health e review agregada com token independente; não montar rotas normais,
+login, docs ou frontend. Worker/scheduler/CLI/migrations devem abortar antes de
+conectar. Make verify-recovered-app restaura só em clone offline e API com o
+mesmo namespace network=none, sem portas/mounts/Redis/runner/SIEM. Role SELECT
+sem ownership/membership/DDL/DML/TEMP/EXECUTE public ou large objects pg_catalog;
+read-only sozinho não basta. Substituir trust TCP por SCRAM do papel efêmero e
+rejeitar TCP administrativo antes do boot. Não alterar grants do banco ativo.
+Revisão não modifica sessões/jobs/autorizações; não é permissão de retomada.
+Recibo exige API removida antes do banco e inventário inalterado. Se cleanup API
+for incerto, reter DB com retained_api_cleanup_unconfirmed e nenhum sucesso.
+Revisar intents próprios; nunca limpar globalmente ou iniciar labs. Testes de
+ACL usam banco/papel temporários próprios, jamais revogar PUBLIC na fonte.
