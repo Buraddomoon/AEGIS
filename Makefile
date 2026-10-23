@@ -73,7 +73,7 @@ verify-backup:
 backup-retention-plan:
 	$(VENV)/python scripts/demo_backup.py retention-plan
 test-recovery:
-	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py tests/test_recovery_guards.py tests/test_recovery_api.py tests/test_recovery_probe.py -q
+	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py tests/test_recovery_guards.py tests/test_recovery_api.py tests/test_recovery_probe.py tests/test_recovery_reconciliation.py -q
 
 .PHONY: recovery-app-build verify-recovered-app
 recovery-app-build:
@@ -81,6 +81,10 @@ recovery-app-build:
 verify-recovered-app:
 	@test -n "$(BACKUP_ID)" || (echo 'Use make verify-recovered-app BACKUP_ID=<id>'; exit 2)
 	$(VENV)/python scripts/demo_backup.py verify-application "$(BACKUP_ID)"
+.PHONY: reconcile-demo-backup
+reconcile-demo-backup:
+	@test -n "$(BACKUP_ID)" || (echo 'Use make reconcile-demo-backup BACKUP_ID=<id>'; exit 2)
+	$(VENV)/python scripts/demo_backup.py reconcile-demo "$(BACKUP_ID)"
 
 # Linux lab is opt-in; never started by make up or make test.
 LAB = docker compose --env-file .local/linux-lab/ids.env -f labs/linux/compose.yml

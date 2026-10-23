@@ -19,6 +19,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from aegis.config import settings
+from aegis.operations import reconciliation
 from aegis.operations.backup import FORMAT, INVENTORY_FORMAT, compare, inventory, retention_plan
 from aegis.operations.recovery import LARGE_OBJECT_FUNCTIONS
 from sqlalchemy import create_engine, text
@@ -360,7 +361,14 @@ def prepare_reader(name, password):
         raise BackupError("Isolated database authentication reload failed")
 
 
-def boot_application(database_name, token, image, intents, cleanup_state=None):
+def boot_application(
+    database_name, token, image, intents, cleanup_state=None, *, reconciliation_hash=None
+):
+    if reconciliation_hash is not None and (
+        not re.fullmatch(r"[a-f0-9]{64}", reconciliation_hash)
+        or not re.fullmatch(r"[a-f0-9]{32}", token)
+    ):
+        raise BackupError("Invalid reconciliation identity/hash")
     cleanup_state = cleanup_state if cleanup_state is not None else {}
     name = "aegis-recovery-api-" + token
     password = secrets.token_hex(32)
@@ -387,6 +395,9 @@ def boot_application(database_name, token, image, intents, cleanup_state=None):
                 + "@127.0.0.1:5432/aegis_restore\n"
             )
             env.write("RECOVERY_ACCESS_TOKEN=" + access_token + "\n")
+            if reconciliation_hash is not None:
+                env.write("RECOVERY_RECONCILIATION_ID=" + token + "\n")
+                env.write("RECOVERY_RECONCILIATION_HASH=" + reconciliation_hash + "\n")
             env.flush()
             docker(
                 "create",
@@ -423,7 +434,8 @@ def boot_application(database_name, token, image, intents, cleanup_state=None):
         if (
             result.get("review", {}).get("format") != "aegis-recovery-review/1"
             or result["review"].get("normal_operation_permitted") is not False
-            or result["review"].get("reconciliation_applied") is not False
+            or result["review"].get("reconciliation_applied")
+            is not (reconciliation_hash is not None)
             or result.get("entrypoints_blocked") != 5
             or result.get("database_write_probes_denied") != 4
             or result.get("administrative_tcp_denied") is not True
@@ -431,6 +443,11 @@ def boot_application(database_name, token, image, intents, cleanup_state=None):
             or result["review"].get("quarantined") is not True
         ):
             raise BackupError("Recovery application assertions failed")
+        if reconciliation_hash is not None and (
+            result["review"].get("reconciliation_identity") != token
+            or result["review"].get("reconciliation_plan_sha256") != reconciliation_hash
+        ):
+            raise BackupError("Recovery application reconciliation binding failed")
     finally:
         cleanup = remove_clone(name, token)
         cleanup_state["confirmed"] = True
@@ -445,7 +462,91 @@ def boot_application(database_name, token, image, intents, cleanup_state=None):
     return result
 
 
-def rehearse(identifier, *, application=False):
+def clone_reconciliation(name, token, intents):
+    """A host-only transaction, always on this rehearsal's new offline clone."""
+    if not re.fullmatch(r"[a-f0-9]{32}", token) or name != "aegis-recovery-" + token:
+        raise BackupError("Reconciliation clone identity refused")
+
+    def check_clone():
+        projection = (
+            docker(
+                "inspect",
+                "--format",
+                "{{.HostConfig.NetworkMode}}|{{len .Mounts}}|{{len .HostConfig.Binds}}|"
+                '{{len .HostConfig.PortBindings}}|{{index .Config.Labels "' + LABEL + '"}}',
+                name,
+            )
+            .decode()
+            .strip()
+        )
+        if projection != "none|0|0|0|" + token:
+            raise BackupError(
+                "Reconciliation requires the owned offline clone without mounts/ports"
+            )
+
+    def sql_json(statement):
+        check_clone()
+        with tempfile.TemporaryFile() as stream:
+            stream.write(statement.encode())
+            stream.seek(0)
+            return json.loads(
+                docker(
+                    "exec",
+                    "-i",
+                    name,
+                    "psql",
+                    "-X",
+                    "-qAt",
+                    "-v",
+                    "ON_ERROR_STOP=1",
+                    "-U",
+                    "postgres",
+                    "-d",
+                    "aegis_restore",
+                    stdin=stream,
+                )
+            )
+
+    plan = sql_json(
+        "BEGIN READ ONLY; SET LOCAL timezone='UTC'; SET LOCAL statement_timeout='60s'; "
+        + reconciliation.plan_sql()
+        + "; COMMIT;"
+    )
+    if plan.get("format") != reconciliation.FORMAT:
+        raise BackupError("Unsupported reconciliation plan")
+    write_json(intents / (token + "-reconciliation-plan.json"), plan)
+    if any(plan["blockers"].values()):
+        raise BackupError("Recovered work requires manual review; reconciliation not applied")
+    result = sql_json(reconciliation.apply_sql(plan["snapshot_sha256"], token))
+    if (
+        result.get("format") != reconciliation.FORMAT
+        or result.get("plan_sha256") != plan["snapshot_sha256"]
+        or result.get("reconciliation_applied") is not True
+        or result.get("normal_operation_permitted") is not False
+        or result.get("external_cleanup_performed") is not False
+    ):
+        raise BackupError("Reconciliation assertions failed")
+    write_json(intents / (token + "-reconciliation-applied.json"), result)
+    return result
+
+
+def compare_reconciled(original, reconciled):
+    """Only explicit operational tables may change; SQL also checks columns."""
+    if (
+        original["migration"] != reconciled["migration"]
+        or original["structure"] != reconciled["structure"]
+        or original["tables"].keys() != reconciled["tables"].keys()
+    ):
+        raise BackupError("Reconciliation changed protected schema")
+    allowed = set(reconciliation.MUTABLE) | {"sessions", "audit_events", "execution_steps"}
+    for table in original["tables"].keys() - allowed:
+        if original["tables"][table] != reconciled["tables"][table]:
+            raise BackupError("Reconciliation changed protected history")
+
+
+def rehearse(identifier, *, application=False, reconcile_demo=False):
+    if reconcile_demo and not application:
+        raise BackupError("Reconciliation requires quarantined application verification")
     folder, manifest = load_backup(identifier)
     image = application_image() if application else None
     token = uuid.uuid4().hex
@@ -530,8 +631,27 @@ def rehearse(identifier, *, application=False):
             )
         restored = inventory(lambda sql: psql(name, sql, database="aegis_restore", user="postgres"))
         compare(manifest["inventory"], restored)
+        if reconcile_demo:
+            reconciliation_result = clone_reconciliation(name, token, intents)
+            reconciled = inventory(
+                lambda sql: psql(name, sql, database="aegis_restore", user="postgres")
+            )
+            compare_reconciled(restored, reconciled)
+            restored = reconciled
         if application:
-            application_result = boot_application(name, token, image, intents, application_cleanup)
+            if reconcile_demo:
+                application_result = boot_application(
+                    name,
+                    token,
+                    image,
+                    intents,
+                    application_cleanup,
+                    reconciliation_hash=reconciliation_result["plan_sha256"],
+                )
+            else:
+                application_result = boot_application(
+                    name, token, image, intents, application_cleanup
+                )
             # ACLs changed in the clone, but no restored rows/structure may change.
             after = inventory(
                 lambda sql: psql(name, sql, database="aegis_restore", user="postgres")
@@ -579,6 +699,17 @@ def rehearse(identifier, *, application=False):
             "Quarantined API only; no normal operation, reconciliation or failover"
         )
     prefix = "application-verification-" if application else "verification-"
+    if reconcile_demo:
+        receipt.update(
+            reconciliation=reconciliation_result,
+            original_inventory_matched=True,
+            protected_history_unchanged=True,
+            snapshot_rows=sum(item["rows"] for item in manifest["inventory"]["tables"].values()),
+        )
+        receipt["limitations"][0] = (
+            "Offline Demo reconciliation and quarantined API only; no normal restart or failover"
+        )
+        prefix = "demo-reconciliation-verification-"
     write_json(folder / (prefix + token + ".json"), receipt)
     return receipt
 
@@ -610,6 +741,8 @@ def main():
     verify.add_argument("backup_id")
     application = subparsers.add_parser("verify-application")
     application.add_argument("backup_id")
+    reconcile = subparsers.add_parser("reconcile-demo")
+    reconcile.add_argument("backup_id")
     subparsers.add_parser("retention-plan")
     args = parser.parse_args()
     try:
@@ -625,6 +758,8 @@ def main():
             output = rehearse(args.backup_id)
         elif args.action == "verify-application":
             output = rehearse(args.backup_id, application=True)
+        elif args.action == "reconcile-demo":
+            output = rehearse(args.backup_id, application=True, reconcile_demo=True)
         else:
             output = plan()
         print(json.dumps(output, ensure_ascii=False, indent=2))
