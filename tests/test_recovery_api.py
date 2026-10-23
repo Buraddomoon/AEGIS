@@ -90,6 +90,13 @@ def recovered_database(monkeypatch):
         writer = create_engine(owner_url)
         monkeypatch.setattr(db, "engine", lambda: writer)
         command.upgrade(Config("alembic.ini"), "head")
+        # These short-lived fixture databases are dropped after each case.
+        # Keep PostgreSQL's background ANALYZE/VACUUM from racing the deliberate
+        # NOWAIT integrity checks. Production locks and autovacuum are unchanged;
+        # explicit peer-writer conflicts remain covered by concurrency tests.
+        with writer.begin() as c:
+            for table in db.Base.metadata.sorted_tables:
+                c.execute(text(f'ALTER TABLE public."{table.name}" SET (autovacuum_enabled=false)'))
         with Session(writer) as session:
             seed(session)
         with writer.begin() as c:
