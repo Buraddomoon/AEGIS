@@ -85,6 +85,39 @@ class AttackTechnique(Base):
     reference: Mapped[str] = mapped_column(Text)
     dataset_version: Mapped[str] = mapped_column(String(40))
     stix_id: Mapped[str] = mapped_column(String(80), unique=True)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    deprecated: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    present_in_current: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true")
+    )
+    source_modified: Mapped[str | None] = mapped_column(String(40))
+
+
+class AttackCatalogRelease(Base):
+    __tablename__ = "attack_catalog_releases"
+    __table_args__ = (
+        CheckConstraint("provenance in ('bundled','official_commit')", name="catalog_provenance"),
+        UniqueConstraint("dataset_version", "source_sha256", "license_sha256", "provenance"),
+    )
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    dataset_version: Mapped[str] = mapped_column(String(40))
+    provenance: Mapped[str] = mapped_column(String(24))
+    source_url: Mapped[str] = mapped_column(Text)
+    source_commit: Mapped[str | None] = mapped_column(String(40))
+    source_sha256: Mapped[str] = mapped_column(String(64))
+    license_sha256: Mapped[str] = mapped_column(String(64))
+    # Versioned external document. Domain entities remain relational.
+    document: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    applied_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+
+
+class AttackCatalogState(Base):
+    __tablename__ = "attack_catalog_state"
+    __table_args__ = (CheckConstraint("id = 1", name="catalog_singleton"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1, autoincrement=False)
+    release_id: Mapped[str] = mapped_column(ForeignKey("attack_catalog_releases.id"))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
 class TestDefinition(Base):
