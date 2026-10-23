@@ -1,8 +1,7 @@
-import json
-
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from aegis.catalog.store import initialize, reference
 from aegis.config import settings
 from aegis.models import Asset, AttackTechnique, Laboratory, TestDefinition, uid
 
@@ -43,12 +42,11 @@ DEMO_TESTS = [
 
 
 def seed(db: Session) -> dict:
-    document = json.loads((settings().fixtures_path / "attack/enterprise.json").read_text())
-    existing = set(db.scalars(select(AttackTechnique.id)))
-    for item in document["techniques"]:
-        if item["id"] not in existing:
-            db.add(AttackTechnique(**item))
-    db.flush()
+    directory = settings().fixtures_path / "attack"
+    initialize(
+        db, (directory / "enterprise.json").read_bytes(), (directory / "LICENSE.txt").read_bytes()
+    )
+    catalog = reference(db)
     lab = db.scalar(select(Laboratory).where(Laboratory.kind == "demo"))
     if not lab:
         lab = Laboratory(
@@ -101,10 +99,20 @@ def seed(db: Session) -> dict:
                 demo_outcome="",
             )
         )
+    active_count = db.scalar(
+        select(func.count())
+        .select_from(AttackTechnique)
+        .where(
+            AttackTechnique.present_in_current,
+            ~AttackTechnique.revoked,
+            ~AttackTechnique.deprecated,
+        )
+    )
     db.commit()
     return {
         "laboratory_id": lab.id,
-        "dataset_version": document["version"],
-        "techniques": len(document["techniques"]),
+        "dataset_version": catalog["version"],
+        "catalog_release_id": catalog["release_id"],
+        "techniques": active_count,
         "tests": len(DEMO_TESTS),
     }

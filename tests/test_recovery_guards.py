@@ -4,6 +4,7 @@ import threading
 
 import pytest
 from aegis import cli, scheduling, worker
+from aegis.catalog import store as catalog_store
 from aegis.config import Settings, settings
 from alembic import command
 from alembic.config import Config
@@ -21,6 +22,7 @@ from pydantic import ValidationError
         lambda: scheduling.scheduler_loop(threading.Event()),
         cli.main,
         cli.grant_runtime,
+        lambda: catalog_store.apply(None, None, "unused", "unused", "unused"),
         lambda: command.upgrade(Config("alembic.ini"), "head"),
     ],
 )
