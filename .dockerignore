@@ -12,3 +12,7 @@ docs
 .pytest_cache
 .mypy_cache
 .ruff_cache
+**/*.agekey
+**/*.age
+**/*.dump
+**/*.dump.partial

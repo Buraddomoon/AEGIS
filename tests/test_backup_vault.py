@@ -307,3 +307,22 @@ def test_unverified_resealing_cannot_reorder_the_verified_retention_minimum(seal
     }
     assert {identifier: after[identifier] for identifier in before} == before
     assert after[unverified["id"]] == "keep"
+
+
+def test_api_and_worker_do_not_import_optional_crypto():
+    import subprocess
+    import sys
+
+    program = """
+import sys
+def guard(event, args):
+    if event == 'import' and args[0].split('.')[0] == 'pyrage':
+        raise RuntimeError('Optional backup crypto imported by application runtime')
+sys.addaudithook(guard)
+import aegis.main
+import aegis.worker
+assert 'pyrage' not in sys.modules
+assert 'aegis.operations.vault' not in sys.modules
+"""
+    result = subprocess.run([sys.executable, "-c", program], capture_output=True, timeout=20)
+    assert result.returncode == 0, result.stderr.decode()
