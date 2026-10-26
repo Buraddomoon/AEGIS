@@ -76,3 +76,10 @@ README/galeria distinguem Demo, histórico Linux e ensaio Wazuh encerrado. CI le
 separada para documentação não instala dependências nem bancos. Não é um novo
 boot completo, E2E, ensaio de laboratório ou release publicada.
 [Procedimento e limites](../operations/release.md).
+
+Prévia Sigma: pipeline oficial de field rename aplicado em memória no subconjunto
+revisado; API de versão/hash somente leitura e UI com antes/depois, unsupported,
+loading/erro e recusa de contexto divergente. Não aceita pipeline/YAML/vars/plugins
+externos e não altera regra histórica, relatório ou classificação. Can_convert,
+query_generated, siem_queried, deployment_performed e mapping físico continuam false.
+Backend compatível e pipeline completo para consultas não estão aceitos.

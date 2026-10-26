@@ -76,7 +76,7 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 | ATT&CK | Fonte oficial Enterprise 20.0, 706 técnicas/subtécnicas ativas no snapshot inicial; matriz, busca, proveniência e publicação controlada | Catalogado não significa testado; publicação completa inclui retiradas |
 | Evidências | Eventos originais, correlação por identidade/marcador/tempo/regra, hashes e histórico | Ausência de alerta não comprova ausência de telemetria |
 | Cobertura | Modo/período/release/legado, comparação e HTML/JSON com denominadores | Contexto incompleto bloqueia equivalência; delta não comprova causalidade |
-| Sigma | Parsing pySigma, versões, vínculos revisados, análise estática e diagnóstico de preparação | Conversão/implantação bloqueadas sem backend/pipeline compatíveis |
+| Sigma | Parsing pySigma, versões, vínculos revisados, análise estática, preparação e prévia restrita de campos | Conversão/implantação bloqueadas sem backend/pipeline compatíveis |
 | Agendamentos | Grants delimitados, limite de ocorrências, pausa/revogação e auditoria | Somente Demo; mínimo 60 s, até 100 horários e 90 dias por plano |
 | Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing e recibos/cleanup | Um marcador de 43 bytes; sem técnica ATT&CK atribuída artificialmente |
 | Wazuh | Indexer somente leitura, TLS, binding agente/regra, paginação e coleta correlacionada | Um ensaio Linux/Wazuh 4.14.9; sem Windows/archives/outras regras |

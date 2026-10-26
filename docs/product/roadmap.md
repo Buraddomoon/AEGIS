@@ -99,3 +99,9 @@ Custódia externa permanece adiada por escolha do usuário; sem novo ensaio real
 Próximo incremento funcional sugerido: reavaliar backend/pipeline Sigma em ambiente
 de testes com constraints oficiais compatíveis, mantendo conversão bloqueada até
 validar o contrato. Não envolve implantação de regras ou operação Linux/Wazuh.
+
+Incremento de engenharia Sigma: prévia restrita de renomeação com ProcessingPipeline
+oficial do core2.0.1, API/UI por versão e antes/depois em memória. Essa etapa
+independente não reduz o parser nem instala backends incompatíveis; a consulta
+atual confirmou que OpenSearch2.0.3/Elasticsearch2.1.1 ainda exigem core<2. Conversão
+real de consultas, mapping físico do índice e implantação permanecem pendentes.

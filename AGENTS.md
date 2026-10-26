@@ -168,3 +168,15 @@ não influencia idade/ordem dos bons. Recibos locais são registros, não assina
 Testes test_backup_vault e test_backup_cli; make test-recovery. SIGKILL pode deixar
 staging e unlink não apaga seguramente. Chave/cópia locais não protegem contra
 perda do host; destino/custódia externos precisam de decisão própria do usuário.
+
+Prévia Sigma (ADR0017): somente rename em ProcessingPipeline/FieldMappingTransformation
+oficiais core2.0.1, por versão/hash e perfil candidato inalterado. Não carregar YAML de
+pipeline, vars, templates, plugins, fontes externas ou finalizers. Subconjunto plano
+de strings literais, sem modificadores/fieldref/keywords/nesting; recusar antes do
+parser/pipeline. Preservar valores/condição sob rename e falhar fechado em drift.
+Não editar RuleVersion/histórico/escopos/veredictos ou habilitar can_convert por essa
+prévia. Backend core<2 ainda incompatível; não reduzir parser ou ignorar constraints.
+UI rejeita contexto/flags divergentes e sucesso cacheado depois de erro. Testes
+test_sigma_mapping/test_sigma_mapping_api, sigma-mapping.test.tsx e E2E Demo.
+Revisar imports upstream: registrar classes externas não autoriza instanciá-las;
+guard em processo novo impede cache/backend/rede/processo/gravação e loaders.

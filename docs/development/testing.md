@@ -211,3 +211,17 @@ Não valida âncoras/links externos, procedência de pixels ou ausência de segr
 não substitui `make test`, `make audit` ou ensaio de instalação. CI source-review
 aplica esse check a documentação/metadados sem instalar o stack. Resultados da
 suíte e CI desta consolidação em [PROGRESS](../PROGRESS.md).
+
+## Prévia Sigma — 2026-10-26
+
+`test_sigma_mapping.py`: pipeline oficial real, igualdade de valores/condições,
+listas/AND/OR/NOT, hash completo, subconjunto recusado antes do parser/pipeline,
+limites, drift e falha de invariância. Processo novo com audit hook recusa imports
+cache/backend, rede, subprocesso e gravações; loaders de pipeline são proibidos.
+`test_sigma_mapping_api.py`: PostgreSQL/API, histórico imutável, RBAC, rate limit,
+Redis indisponível, perfil/SHA/version drift e erro sem echo. Nenhum SIEM consultado.
+
+`sigma-mapping.test.tsx`: ação explícita, antes/depois, unsupported, contexto/flags
+incompatíveis, refetch com erro e resposta atrasada. E2E Firefox acrescenta a prévia
+ao ciclo Demo, confere os dois objetos de detection e relatório antigo idêntico.
+Contagens finais, CI e evidência em PROGRESS; não confundir teste com conversão SIEM.

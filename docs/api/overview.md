@@ -56,3 +56,12 @@ padrão Demo; `/{run_id}` individual mantém contrato anterior.
 [Semântica, exemplos e integridade](../operations/coverage-reports.md).
 
 Preparação Sigma: GET `/sigma/conversion-profiles` (60/min/usuário) e GET `/rules/{id}/versions/{version_id}/conversion-readiness?profile_id=...` (30/min) permitem viewer autenticado. Retornam perfil/hash, campos candidatos, metadados revisados versus pacotes instalados e bloqueios; can_convert/conversion_performed/deployment_performed=false. Não recebem destinos, pipelines ou consultas. [Contrato completo](../integrations/sigma.md#preparação-de-conversão-e-campos-candidatos).
+
+Prévia Sigma: GET `/rules/{id}/versions/{version_id}/mapping-preview`, com
+profile_id exato, sessão viewer/operator/admin,30/min e integridade SHA da versão.
+Transformação fixa oficial de nomes, sem pipeline fornecido pelo cliente. Retorna
+before/after normalizados somente no subconjunto revisado; unsupported tem ambos
+null e blockers. Documento inteiro tem SHA; IDs/versões/hashes fixam o contexto.
+Todos os flags de conversão/query/consulta/implantação/mapping físico são false.
+404perfil/versão,409integridade,422budget/legado,429limite,503core/guard/Redis.
+[Política e limites](../integrations/sigma.md#prévia-de-transformação-de-campos).

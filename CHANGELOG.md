@@ -1,5 +1,13 @@
 # Changelog
 
+## Continuidade 2026-10-26 — prévia Sigma de campos
+
+- Pipeline oficial pySigma2.0.1 com um rename fixo, antes/depois em memória e
+  política restrita a strings literais do perfil de marcador.
+- API/UI por versão/hash, recusa de contexto obsoleto, limites e histórico intacto.
+- Sem novo backend/dependência/migração ou consulta/implantação SIEM. Incompatibilidade
+  dos backends oficiais com core2 permanece confirmada por metadados publicados.
+
 ## Continuidade 2026-10-26 — consolidação de entrega
 
 - Gerador de configuração recusa arquivos inseguros, links/FIFO, segredos vazios

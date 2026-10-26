@@ -1,6 +1,6 @@
 # ADR 0017 — Prévia restrita de transformação Sigma
 
-Data: 2026-10-26. Status: implementação e validação em andamento.
+Data: 2026-10-26. Status: implementado; validado por testes de contrato/API/UI e Firefox Demo.
 
 A consulta atual aos metadados PyPI confirmou pySigma2.0.1, OpenSearch2.0.3 e
 Elasticsearch2.1.1; ambos os backends ainda exigem pySigma<2. O bloqueio do
