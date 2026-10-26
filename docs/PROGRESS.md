@@ -1765,3 +1765,83 @@ totalizando **264**. Repositório privado confirmado, main exclusiva, push após
 cada commit, sem PR/branch/force push ou histórico reescrito. Código final59c02f9,
 recibo/revisão fea228d. Consultar git log/status para hash/mensagem finais e
 confirmar árvore limpa/sincronização depois do commit de checkpoint.
+
+## 2026-10-26 — consolidação de entrega concluída
+
+Continuidade autorizada por “prossiga”, após o usuário adiar custódia externa e
+concluir a proteção local. Repositório privado/main conferido em 28a5443, árvore
+limpa no início. Este marco mantém o código 0.2.0 e não cria tag/GitHub Release.
+
+### Entregas verificáveis
+
+- Corrigida a configuração inicial: o gerador não recusava arquivos existentes
+  inseguros e preservava segredos vazios/exemplos. Agora abre por FD sem seguir
+  links/bloquear em FIFO, verifica owner/tipo/nlink/modo0600/64KiB e lock, recusa
+  entrada incompleta/duplicada sem echo de valores. Configuração válida preservada;
+  histórico sem APP_DB_PASSWORD recebe somente esse segredo, com newline correto.
+- Scanner staged ganhou --all para todo o índice Git e nomes NUL-delimitados;
+  não lê conteúdo ignorado/não rastreado e nunca imprime valores de possíveis segredos.
+- `make release-check`: versões Python/React/lock, dependências declaradas na raiz
+  do lock npm, destinos relativos inline Markdown e cabeçalhos/dimensões PNG.
+  Usa índice Git e informa divergência de HEAD/worktree; não valida links externos/
+  âncoras/procedência de pixels nem comprova ausência de segredos ou instalação.
+- Workflow documental sem dependências/bancos, permissões read, timeout 2 min e
+  cancelamento de redundantes. CI principal completa permanece ativa para código.
+- README reorganizado ao redor do fluxo reproduzível e tabela de capacidades/limites;
+  galeria documenta 12 capturas Demo e uma histórica Linux, sem fabricar imagem Wazuh.
+  Corrigidos textos operacionais antigos que ainda descreviam o SIEM como bloqueado
+  e o adapter como exclusivamente Demo. Revisões históricas/evidências preservadas.
+
+Não há nova abstração runtime/dependência/migração: ferramentas host-only seguem
+as fronteiras já definidas. API/worker/runner e contratos de detecção inalterados.
+[Procedimento de entrega](operations/release.md),
+[evidência e limites desta rodada](evidence/source-delivery-2026-10-26/README.md) e
+[revisão local de segurança](security/review-delivery-2026-10-26.md).
+
+### Verificações realmente executadas
+
+| Check | Resultado |
+|---|---|
+| Novos grupos pytest | 15 init_env + 6 repository_checks + 9 release_check passaram; 30 casos incluídos na suíte final |
+| `make test` |**744 Python passaram** em 256,64 s e **53 React passaram** em 3,52 s |
+| `make lint` | Ruff/check/format, mypy domínio, TypeScript e Prettier aprovados |
+| `make build` | SPA aprovada, sem aviso de chunk>500kB |
+| `make audit` | npm: zero; Python: um advisory DiskCache/PYSEC-2026-2447 revisado e visível |
+| `pip check` | Sem requisitos quebrados |
+| Configuração nova temporária | 0600/idempotente; Compose renderizado com cinco serviços, API 127.0.0.1:18780, DB/Redis não publicados, papéis SQL distintos e nenhum runner/coletor habilitado; nenhum serviço iniciado |
+| Índice Git final | 312 arquivos, 77 Markdown, 204 links locais e 13 cabeçalhos PNG aprovados; padrões de credenciais/paths sem ocorrências |
+| Ambiente em uso | API live/ready: 200; schema a0d9c7e21b45, 32 tabelas incluindo Alembic, 21 runs existentes, zero pendências/reservas/agendamentos retomáveis |
+
+CI principal do código 88e8c10: **SUCCESS**,
+[run40392713839](https://github.com/Buraddomoon/AEGIS/actions/runs/40392713839),
+740 passed / 4 skipped opcionais Docker, 53 React, lint/tipos/build/auditoria.
+Localmente os quatro testes opcionais passaram. CI documental 5ef9ad3: **SUCCESS**,
+[run40394072412](https://github.com/Buraddomoon/AEGIS/actions/runs/40394072412).
+Commits posteriores só documentam evidência/progresso. Aviso upstream
+Starlette/TestClient/httpx preservado; não alegar zero vulnerabilidades.
+
+Não repetido E2E: UI/fluxo inalterados; último Firefox real continua sendo o marco
+de cobertura de 2026-10-26. Overview/coverage existentes foram inspecionados, sem
+modificar PNGs. Não reconstruída/reimplantada imagem runtime: segue
+sha256:ef97abfdf122df5bd513f7a6e2a44c7ec84a3b89757e1698d04da0f0f8871a02.
+Site http://localhost:18780 saudável, sem reiniciar API/worker ou mudar credenciais
+humanas. Zero schemas pytest/E2E restantes; autovacuum public intacto. Linux/Wazuh
+com zero containers; volumes/journals e backups/chaves anteriores preservados.
+
+### Continuidade
+
+Custódia externa continua adiada pelo usuário; não enviar cópia/chave, comprar
+serviço ou interpretar conclusão local como proteção contra perda do host.
+Recuperação entre hosts/configuração/secrets/imagens/cutover/RPO/RTO, retenção de
+laboratórios, rotação PKI/binding, Windows e PDF continuam pendentes.
+
+Próximo incremento funcional sugerido: pesquisar novamente constraints oficiais
+Sigma/backend/pipeline e validar uma opção compatível num ambiente de testes,
+sem conversão anunciada antes da prova e sem implantação/ensaio Linux/Wazuh.
+As autorizações anteriores de laboratório continuam consumidas. O MVP e seus
+incrementos comprovados não equivalem ao cumprimento de todo o master prompt.
+
+Este marco acrescenta **8 commits granulares**, incluindo este checkpoint,
+totalizando **272**. Somente main, repositório AEGIS privado, push após cada commit;
+sem PR/branch/force push ou reescrita. Código 88e8c10, evidência 5ef9ad3. Conferir
+hash/mensagem finais, árvore limpa e sincronização após o push deste documento.
