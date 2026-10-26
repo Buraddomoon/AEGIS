@@ -15,7 +15,7 @@ def openssl(*args: str):
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         timeout=10,
-        env={"PATH": "/usr/bin:/bin", "LC_ALL": "C", "OPENSSL_CONF": "/dev/null"},
+        env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"},
     )
 
 

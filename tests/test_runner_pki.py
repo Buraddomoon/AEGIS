@@ -443,3 +443,50 @@ print(verified['status'])
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "offline_candidate_verified_not_activated"
+
+
+def test_new_parent_entries_are_durable_before_key_generation(source, tmp_path, monkeypatch):
+    initial = pki.inspect(source)
+    flushed = []
+    sync = pki.sync
+
+    def observe(path):
+        sync(path)
+        flushed.append(path)
+
+    monkeypatch.setattr(pki, "sync", observe)
+    output = tmp_path / "first" / "second"
+    generate = pki.initialize
+
+    def checked(target, **kwargs):
+        assert tmp_path in flushed and output.parent in flushed and output in flushed
+        assert stat.S_IMODE(output.parent.stat().st_mode) == 0o700
+        return generate(target, **kwargs)
+
+    monkeypatch.setattr(pki, "initialize", checked)
+    result = pki.prepare(source, initial["inventory_sha256"], output)
+    assert (
+        pki.verify(source, Path(result["candidate_path"]), result["manifest_sha256"])["status"]
+        == "offline_candidate_verified_not_activated"
+    )
+
+
+def test_parent_sync_failure_cannot_generate_keys_or_claim_success(source, tmp_path, monkeypatch):
+    initial = pki.inspect(source)
+    sync = pki.sync
+
+    def fail(path):
+        if path == tmp_path:
+            raise OSError("injected parent durability failure")
+        sync(path)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("No key generation before durable root")
+
+    monkeypatch.setattr(pki, "sync", fail)
+    monkeypatch.setattr(pki, "initialize", forbidden)
+    output = tmp_path / "candidate-root"
+    with pytest.raises(OSError):
+        pki.prepare(source, initial["inventory_sha256"], output)
+    assert output.is_dir() and not list(output.iterdir())
+    assert pki.inspect(source)["inventory_sha256"] == initial["inventory_sha256"]

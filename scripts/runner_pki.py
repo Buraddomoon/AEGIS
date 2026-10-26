@@ -40,7 +40,7 @@ FILES = (
         "ids.env",
     }
 )
-ENV = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "OPENSSL_CONF": "/dev/null"}
+ENV = {"PATH": "/usr/bin:/bin", "LC_ALL": "C"}
 
 
 class PKIError(ValueError):
@@ -61,7 +61,15 @@ def absolute(path: Path) -> Path:
 def private_directory(path: Path, *, create: bool = False) -> Path:
     path = absolute(path)
     if create:
-        path.mkdir(mode=0o700, parents=True, exist_ok=True)
+        missing = []
+        parent = path
+        while not parent.exists():
+            missing.append(parent)
+            parent = parent.parent
+        for directory in reversed(missing):
+            directory.mkdir(mode=0o700)
+            sync(directory)
+            sync(directory.parent)
     info = path.stat()
     if (
         not stat.S_ISDIR(info.st_mode)

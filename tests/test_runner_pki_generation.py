@@ -49,5 +49,5 @@ def test_openssl_generator_does_not_inherit_custom_configuration(monkeypatch):
     args, kwargs = calls[0]
     assert args == ["/usr/bin/openssl", "version"]
     assert kwargs["timeout"] == 10
-    assert kwargs["env"] == {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "OPENSSL_CONF": "/dev/null"}
+    assert kwargs["env"] == {"PATH": "/usr/bin:/bin", "LC_ALL": "C"}
     assert kwargs["stdout"] == kwargs["stderr"] == subprocess.DEVNULL
