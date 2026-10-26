@@ -77,6 +77,17 @@ def private_directory(path: Path, *, create: bool = False) -> Path:
         or stat.S_IMODE(info.st_mode) != 0o700
     ):
         raise PKIError("private_directory_required")
+    if create:
+        # A prior interrupted attempt may have created an entry without a
+        # durable parent. Flush the existing private chain on retries too.
+        directory = path
+        while True:
+            sync(directory)
+            sync(directory.parent)
+            parent_info = directory.parent.stat()
+            if parent_info.st_uid != os.getuid() or stat.S_IMODE(parent_info.st_mode) != 0o700:
+                break
+            directory = directory.parent
     return path
 
 

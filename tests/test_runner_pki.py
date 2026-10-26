@@ -490,3 +490,43 @@ def test_parent_sync_failure_cannot_generate_keys_or_claim_success(source, tmp_p
         pki.prepare(source, initial["inventory_sha256"], output)
     assert output.is_dir() and not list(output.iterdir())
     assert pki.inspect(source)["inventory_sha256"] == initial["inventory_sha256"]
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_retry_after_parent_sync_failure_flushes_private_ancestors(
+    source, tmp_path, monkeypatch, nested
+):
+    initial = pki.inspect(source)
+    output = tmp_path / "first" / ("second" if nested else "root")
+    sync = pki.sync
+    failed = False
+
+    def fail_once(path):
+        nonlocal failed
+        if path == tmp_path and not failed:
+            failed = True
+            raise OSError("injected first parent failure")
+        sync(path)
+
+    monkeypatch.setattr(pki, "sync", fail_once)
+    with pytest.raises(OSError):
+        pki.prepare(source, initial["inventory_sha256"], output)
+    flushed = []
+
+    def observe(path):
+        sync(path)
+        flushed.append(path)
+
+    monkeypatch.setattr(pki, "sync", observe)
+    generate = pki.initialize
+
+    def checked(target, **kwargs):
+        assert tmp_path in flushed and output in flushed
+        return generate(target, **kwargs)
+
+    monkeypatch.setattr(pki, "initialize", checked)
+    result = pki.prepare(source, initial["inventory_sha256"], output)
+    assert (
+        pki.verify(source, Path(result["candidate_path"]), result["manifest_sha256"])["status"]
+        == "offline_candidate_verified_not_activated"
+    )
