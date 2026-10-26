@@ -145,7 +145,7 @@ it('discards a delayed result for the previously selected version', async () => 
   })
   const other = { ...saved, id: 'v2', version: 2, sha256: 'e'.repeat(64) }
   const { rerender, View } = mount(async (path) =>
-    path.includes('/v1/') ? pending : response(other),
+    path.includes('/versions/v1/') ? pending : response(other),
   )
   await userEvent.click(screen.getByRole('button', { name: 'Gerar prévia de campos' }))
   rerender(<View version={other} />)
