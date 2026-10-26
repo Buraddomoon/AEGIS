@@ -1,5 +1,15 @@
 # Changelog
 
+## Continuidade2026-10-26 — cobertura por recorte e relatórios comparativos
+
+- Filtros por ambiente, período de solicitação e release/legado, preservando
+  contexto desconhecido e denominadores explícitos em snapshot de leitura.
+- Exportações agregadas/comparativas HTML/JSON com membros, evidências, hashes,
+  limitações e delta apenas quando o par sustenta comparabilidade.
+- Verificação de manifesto, filhos/resultados completos e integridade do scope;
+  UI bloqueia comparações/exportações obsoletas ou após falha de atualização.
+- Sem migração/dependência nova, mudança de veredicto histórico ou ensaio real.
+
 ## Continuidade2026-10-23 — catálogo ATT&CK controlado
 
 - Preparação por commit oficial, cache privado, validação limitada do perfil

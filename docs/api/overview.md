@@ -15,7 +15,7 @@ Sessão por cookie HttpOnly. Login JSON exige `X-Aegis-Request: browser`; origem
 | campaigns | GET/POST; POST `/{id}/runs` com idempotency_key |
 | executions | GET lista/detalhe, POST approve/start/cancel/reject |
 | schedules | GET/POST lista/criação; GET detalhe e occurrences; POST approve (admin), pause (operador), revoke (admin), com confirmação explícita |
-| coverage | GET indicadores; GET compare?before=UUID&after=UUID |
+| coverage | GET indicadores/runs; GET report; GET compare e compare/report, com formato HTML/JSON |
 | rules | GET/POST import YAML; GET `/{id}/versions` e `/{id}/versions/{version_id}/analysis` |
 | reports | GET lista de concluídas; GET `/{run_id}?format=json|html` |
 | connectors | GET estado; POST `/wazuh/test` somente configuração do ambiente |
@@ -42,5 +42,17 @@ Coleta Wazuh: GET `/labs/{id}/wazuh-binding` mostra status/política pública, s
 Associações revisadas: GET `/rule-test-links` (rule_id/test_id/include_retired/limit/offset), POST `/rules/{id}/test-links` e DELETE `/rules/{id}/test-links/{link_id}` (retirada sem exclusão). Operador/admin escreve com CSRF; viewer consulta. Body fixa versão/hash/test_version/justificativa e replaces_id. Comparação retorna `scope_changes` de snapshots; vínculos desconhecidos no legado retornam null com link_context_recorded=false. [Contrato e limites](../operations/rule-test-reviews.md).
 
 Análise Sigma: GET da versão salva confere SHA e retorna analyzer_version/pysigma_version, checks/skipped_checks, facts/findings e compatibility=not_configured. Somente leitura, sessão de qualquer papel, 60/min por usuário. 409 por integridade divergente, 422 por conteúdo não analisável/limites. Não altera veredictos nem implanta regras. [Contrato e limites](../integrations/sigma.md#análise-estática-de-versões).
+
+Cobertura/relatórios: `mode=demo|linux`, `catalog_release=all|current|legacy|SHA256`,
+`requested_from`/`requested_before` RFC3339 com offset, intervalo semiaberto pela
+data da solicitação. Seleção/ID/hash/denominadores explícitos e snapshot coerente
+READ ONLY. Legacy tem catálogo desconhecido/null. `/coverage/runs` pagina até100
+opções por página; total do recorte acima5000 é recusado, sem truncar métricas.
+`/coverage/report` aceita `expected_scope_sha256` para proteger o recorte e
+`format=json|html`; `/coverage/compare/report` recebe before/after e format,
+com relatos/evidências por lado. Exportações30/min/usuário, auditoria por hash;
+não executam testes nem mudam veredictos. `/reports` compartilha os filtros,
+padrão Demo; `/{run_id}` individual mantém contrato anterior.
+[Semântica, exemplos e integridade](../operations/coverage-reports.md).
 
 Preparação Sigma: GET `/sigma/conversion-profiles` (60/min/usuário) e GET `/rules/{id}/versions/{version_id}/conversion-readiness?profile_id=...` (30/min) permitem viewer autenticado. Retornam perfil/hash, campos candidatos, metadados revisados versus pacotes instalados e bloqueios; can_convert/conversion_performed/deployment_performed=false. Não recebem destinos, pipelines ou consultas. [Contrato completo](../integrations/sigma.md#preparação-de-conversão-e-campos-candidatos).

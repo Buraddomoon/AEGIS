@@ -5,7 +5,7 @@
 PostgreSQL real é usado com um schema aleatório por sessão. A fixture aplica Alembic e trunca apenas tabelas desse schema entre testes, removendo o schema criado ao finalizar. Redis utiliza DB 15 nos testes de API, com chaves somente do namespace ÆGIS. Não usar Redis DB 14/15 para dados importantes no ambiente de desenvolvimento.
 
 Não executar simultaneamente duas suítes de integração compartilhando DB15.
-Fixtures de recuperação usam bancos aleatórios próprios e desabilitam somente
+Fixtures usam schemas/bancos aleatórios próprios e desabilitam somente
 autovacuum de suas tabelas descartáveis, antes do seed, para não disputar locks
 NOWAIT com manutenção de fundo. Nenhuma configuração do banco ativo muda;
 produção conserva NOWAIT e autovacuum. Testes de conflitos explícitos continuam

@@ -124,3 +124,21 @@ Testes: test_attack_document/artifacts/publication/cli/api e attack-catalog.test
 Fixtures reduzidas/19.2 são sintéticas, nunca fonte oficial de publicação.
 Schema atual a0d9c7e21b45 tem32tabelas; backups977fd0c42ae8 precisam código/imagem
 antigos compatíveis. Preservar imagens/dumps; não enfraquecer guardas de recovery.
+
+Cobertura/relatórios (ADR0015): Selection em analytics.py valida modo/release e
+período RFC3339 com offset, [requested_from,requested_before) por created_at da
+solicitação. Legacy desconhecido retorna catálogo/avaliação null, sem backfill.
+Sessão analítica própria REPEATABLE READ READ ONLY, SQL15s, limite5000runs; não
+alterar isolamento da sessão de auth nem truncar métricas. Manter pais/filhos
+COMPLETED no denominador e contar estados das runs separadamente. Comparação
+exige manifesto igual aos test_id presentes, filhos/resultados completos, hashes
+de scope íntegros e contexto conhecido; parcial/desconhecido não comprova
+equivalência e não sustenta delta. Arredondar delta só após calcular frações.
+Exportações HTML escapadas/JSON autocontidas, hash de todo documento sem seu
+próprio campo,30/min/usuário; logs só tipo/formato/hash. UI fixa recorte/IDs,
+recusa paginação mista/incompleta e bloqueia/oculta comparação cacheada após erro,
+dirty ou divergência. Snapshot_at é metadado volátil, não mudança de métrica.
+Tests: test_analytics_selection/queries/api, test_analysis_export e UI
+coverage-filters/comparison.test.tsx; E2E Demo separado de qualquer lab real.
+Autovacuum só das tabelas dos schemas/bancos pytest descartáveis é desabilitado
+antes do seed para determinismo de NOWAIT; nunca fazer isso no banco ativo.

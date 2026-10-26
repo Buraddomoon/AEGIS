@@ -49,3 +49,10 @@ worker e papel runtime restrito validados; Firefox inspecionou snapshot históri
 e produziu captura real. Demo local migrado/publicado,20runs anteriores
 preservadas. Não equivale a nova versão oficial, cobertura defensiva real,
 sincronização automática ou novo ensaio Linux/Wazuh.
+
+Recorte analítico: período semiaberto com fuso, release exata/atual/legado,
+snapshot consistente e limites sem truncamento; exportações agregadas e
+comparativas com membros/evidências/hashes. Equivalência exige árvore/manifesto
+e resultados completos/contexto conhecido. UI bloqueia ações após erro e
+mudança de filtros; Firefox exportou ambos os tipos, aplicou legado e período
+vazio sem novos efeitos reais. Contagens finais e CI no PROGRESS.

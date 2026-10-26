@@ -20,6 +20,7 @@ Equipes defensivas precisam verificar se seus controles observam e detectam comp
 - Agendamentos Demo com aprovação explícita, validade, duração, limite de horários, pausa/revogação e histórico de autorizações.
 - Eventos originais, hashes SHA-256, justificativas de correlação, evidências inspecionáveis e auditoria.
 - Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
+- Cobertura por período/release/legado e relatórios agregados/comparativos HTML/JSON, com snapshot de leitura, membros/hashes e bloqueio de equivalência quando faltam resultados ou contexto.
 - Inventário Sigma com parsing pySigma, YAML limitado e versões imutáveis; associação revisada com testes, histórico e sinalização de revisão necessária. Análise estática por versão e diagnóstico de preparação/mapeamento com bloqueios explícitos. Nenhuma implantação automática de regras.
 - Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; campanha integrada autorizada validou API/worker/SQL runtime, recibos, cleanup e UI, sem SIEM.
 - Coleta Wazuh opt-in no worker: binding administrativo de agente/regra, política/hash aprovados, polling com prazo integral, paginação, resumo imutável e UI/relatórios. Validação real do pipeline incluiu TLS, agente, regra, ACLs, evento original, evidência e relatório.
@@ -76,6 +77,13 @@ Cobertura da release atual é separada dos resultados históricos; atualizar
 metadados não comprova detecção. [Publicação e limites](docs/integrations/mitre-attack.md).
 
 ![Consulta real de proveniência e histórico do snapshot inicial no Demo E2E](docs/images/attack-catalog.png)
+
+Em **Cobertura de detecção**, aplique período/ambiente/release antes de exportar
+o recorte ou comparar duas runs da mesma campanha. Legado permanece desconhecido;
+nenhuma mudança de taxa comprova melhoria defensiva por si só.
+[Filtros, denominadores e exportação](docs/operations/coverage-reports.md).
+
+![Filtros e exportações reais no fluxo E2E Demo](docs/images/coverage.png)
 
 Para automatizar: abra **Agendamentos**, crie um plano para a campanha, defina início/fim, intervalo e limite de horários, revise e autorize como administrador. O worker executa automaticamente dentro desses limites. Atrasos acima de 30 segundos e laboratório ocupado geram descartes auditados, consumindo o orçamento sem backlog. Pausar exige nova aprovação para retomar; revogar encerra o plano. [Política e operação](docs/operations/scheduling.md).
 
