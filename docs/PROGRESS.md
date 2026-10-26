@@ -1647,3 +1647,121 @@ opcional host-only, chave separada, artefatos privados e verificação pela mesm
 restauração offline existente. Retenção só plano; sem upload, exclusões, mudanças
 no Demo ativo ou novo ensaio Linux/Wazuh. Implementação e testes ainda pendentes;
 não declarar cópias cifradas/recuperação validadas antes de executar os checks.
+
+### Concluído — cópia cifrada local e recuperação verificada
+
+ADR0016 implementado. Chave de backup separada, age v1/X25519 em streaming com
+pyrage 1.4.0 fixado por hash; extra backup/dev host-only, fora do lock/imagem da
+aplicação e sem import na API/worker. Framing fixo sem tar/path importado,
+manifesto até 4 MiB/conteúdo até 1 GiB, diretórios 0700/arquivos 0600 e publicação
+exclusiva após fsync. Nenhuma migração, frontend ou mudança da engine ofensiva.
+
+CLI acrescenta keygen, seal, verify-sealed e vault-plan; Makefile oferece
+backup-tools, backup-keygen, seal-backup, verify-sealed-backup e backup-vault-plan.
+verify-sealed exige hash esperado independente e identidade por ID, autentica
+stream inteiro e verifica SHA/count dos bytes consumidos antes de materializar
+manifesto/dump. Reutiliza a mesma validação/inventário/restore offline existente,
+sem acessar banco/dump fonte ou permitir destino/SQL/container arbitrário.
+Sucesso durável somente após remover clone e staging privado.
+
+Inventário cifrado somente leitura: integridade, recibos vinculados ao mesmo
+ciphertext e presença de chave local válida. Mínimo de sete snapshots distintos
+verificados/com chave e trinta dias; cópias não verificadas/incompletas ou sem
+chave preservadas. Re-selagem não verificada não altera a ordem/idade dos bons.
+Não existe exclusão ou transferência. Recibos são registros locais editáveis,
+não assinatura, prova de posse independente ou nova restauração.
+
+Arquivos principais: apps/api/aegis/operations/vault.py, scripts/demo_backup.py,
+test_backup_vault.py/test_backup_cli.py, requirements-backup.lock, Makefile e
+scanner staged. Documentação operacional em
+[encrypted-backups](operations/encrypted-backups.md); README, AGENTS, changelog,
+licenças, segurança, testes, aceite e roadmap atualizados. Git/build ignoram
+.agekey/.age e scanner recusa identidades age; nenhum artefato privado entrou no Git.
+
+### Revisão, correções e checks
+
+Revisão especializada somente leitura encontrou dois achados, corrigidos e
+conferidos novamente por inspeção: hash prévio no mesmo FD não evitava troca
+in-place por outro ciphertext válido; e a data de re-selagem não verificada podia
+influenciar a retenção de snapshot com outra cópia boa. CipherReader e seleção
+apenas de datas verificadas/com chave resolvem esses casos; regressões reproduzem
+ambos. Nenhum outro bloqueador concreto relatado. O revisor não executou testes,
+Docker, rede ou acesso a .local/.env. [Revisão](security/review-encrypted-backups-2026-10-26.md).
+
+Um teste novo de retenção falhou corretamente ao mostrar que dez cópias não
+verificadas podiam deslocar o único backup bom; implementação corrigida para
+contar apenas snapshots elegíveis. Falha não anunciada como sucesso. Depois,
+regressão adicional cobriu re-selagem do mesmo ID entre mais de sete backups bons.
+
+- 21 casos vault usam age real: roundtrip, segredo não exibido, chave/hash
+  errados, corrupção/header/final/truncamento/extra, limites, symlink/hardlink/
+  FIFO/permissões, exclusividade, corrida de leitura e retenção read-only.
+- Cinco casos novos de CLI verificam staging autenticado, nenhum fallback,
+  recusa de backup alterado e ausência de falso recibo após erro de restore/
+  cleanup. Guardas Docker anteriores mantidas; mocks não comprovam runtime.
+- Primeira suíte completa passou com 712 Python/53 frontend. Rodada final após
+  os dois casos adicionais: **714 Python passaram em 243,53 s e 53 frontend
+  passaram em 3,29 s** (`PYTEST_ADDOPTS=--maxfail=1 make test`). Incremento de 26
+  casos Python sobre o marco anterior; não somar repetições como casos novos.
+- `make lint` passou: Ruff/format 132 arquivos, mypy domínio, TypeScript/Prettier.
+  `make build` passou. Auditoria runtime+extra passou com o advisory transitivo
+  DiskCache/PYSEC-2026-2447 explicitamente revisado, sem alegação de zero findings;
+  extra pyrage não apresentou advisory Python conhecido nessa consulta.
+- CI **SUCCESS**, código 59c02f9,
+  [run40361995268](https://github.com/Buraddomoon/AEGIS/actions/runs/40361995268),
+  16:45:35–16:51:29 UTC, 5 min 54 s: **710 Python passaram/4 skip opcionais**,
+  53 frontend, lint/tipos/build e auditoria. Skip são projeções somente leitura
+  de objetos Docker Demo ausentes na CI; localmente os 714 passaram.
+  Commits seguintes somente Markdown não alteram código nem repetem a CI.
+- 164 links locais conferidos; 303 arquivos tracked revisados por caminhos e
+  padrões de credenciais, zero ocorrência. Scanner staged/diff-check por commit.
+  Aviso upstream TestClient/httpx permanece. Nenhuma suíte Redis15 em paralelo.
+  E2E navegador não repetido: nenhuma mudança de UI/API/worker; evidências do
+  marco anterior permanecem, sem capturas inventadas.
+
+### Prova local e preservação
+
+Novo backup privado: 20261026T164137Z-9c0d7d0bebc54d8cb25a5898d96acafc,
+dump SHA256 30e1e84387b0b1da4ce2becc756ed3b1d3ed6bd2345bcea195bf05a951500af5.
+Cópia age de 1.318.864 bytes, SHA256
+fe8a7491de6d5d2aefb746f5663ec529f59f5d6f06b1d98b34b5bf04c3259f52.
+Verificação real: **32 tabelas/3.169 linhas**, estrutura/hashes iguais,
+PostgreSQL17 por image ID local, network=none/tmpfs/sem portas/volumes/API/worker.
+Restore/inventário/cleanup em 4,682 s, clone removido; não é medição de RTO.
+
+Harness privado proibiu loader do dump original e consulta da fonte durante a
+recuperação cifrada. Inventário completo do banco em uso, incluindo usuários e
+hashes de senha, idêntico antes/depois; nenhuma credencial humana usada/resetada.
+Zero staging após saída; recibo durável só depois desse cleanup. Chave privada
+nova nunca exibida/argv/Git; continua separada em diretório privado no host.
+[Recibo curado e limites](evidence/encrypted-backups-2026-10-26/README.md).
+
+API/worker não reiniciados; imagem Demo/recovery permanece
+sha256:ef97abfdf122df5bd513f7a6e2a44c7ec84a3b89757e1698d04da0f0f8871a02.
+Schema a0d9c7e21b45/32 tabelas, 21 runs preservadas, zero pendências/reservas/
+agendamentos retomáveis. Administrador humano ativo e senha inalterada; site18780
+saudável. Zero clones de recuperação, schemas pytest/E2E e bancos temporários
+remanescentes; autovacuum do public intacto. Backups antigos, imagens e nove
+volumes/journals Wazuh preservados. Nenhuma nova simulação Linux/Wazuh ou SIEM.
+
+### Continuidade e versionamento
+
+O usuário escolheu **“Vou decidir depois; concluir a proteção local”** para o
+destino externo. Entrega local concluída; não fazer upload, compra de serviço ou
+exportação de chave sem definição própria. Chave/ciphertext no mesmo computador
+não protegem contra perda/comprometimento do host. Originais permanecem em claro;
+scratch privado pode deixar resíduo após SIGKILL e unlink não é secure erase.
+
+Guarda independente, recuperação entre hosts, roles/secrets/configuração/imagens,
+retenção operacional por ambiente, cutover e RPO/RTO continuam pendentes. Não
+reescrever ou apagar backups/journals antigos. Rotação PKI Linux/Wazuh precisa
+escopo/revisão próprios; autorizações anteriores continuam consumidas. Sigma
+backend/pipeline/mapping compatíveis, Windows, PDF e multi-workspace permanecem
+roadmap. Próximo bloco local: revisão final de release/portfólio, consolidando
+instalação, critérios realmente aceitos e limitações, sem iniciar novo lab real.
+
+Este marco acrescenta **13 commits granulares**, incluindo este checkpoint,
+totalizando **264**. Repositório privado confirmado, main exclusiva, push após
+cada commit, sem PR/branch/force push ou histórico reescrito. Código final59c02f9,
+recibo/revisão fea228d. Consultar git log/status para hash/mensagem finais e
+confirmar árvore limpa/sincronização depois do commit de checkpoint.
