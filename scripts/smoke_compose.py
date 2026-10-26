@@ -4,9 +4,11 @@ import secrets
 import time
 import uuid
 from datetime import timedelta
+from pathlib import Path
 
 import httpx
 from aegis.db import session_factory
+from aegis.domain.validation import digest
 from aegis.models import User, now
 from aegis.security import audit, hasher
 from sqlalchemy import text
@@ -96,7 +98,53 @@ detection:
         assert not client.get("/sigma/conversion-profiles").json()["items"][0][
             "index_mapping_verified"
         ]
-        lab = client.get("/labs").json()["items"][0]
+        candidate = (
+            Path(__file__).resolve().parents[1] / "fixtures/sigma/aegis-marker-candidate.yml"
+        ).read_text()
+        candidate = candidate.replace("e984b7c4-6655-40d7-970b-bc5eb4a27935", str(uuid.uuid4()))
+        candidate = candidate.replace(
+            "AEGIS marker mapping candidate", "Smoke Compose - prévia de campos não implantada"
+        )
+        mapped_rule = client.post("/rules", json={"content": candidate})
+        mapped_rule.raise_for_status()
+        mapped_id = mapped_rule.json()["id"]
+        saved_versions = client.get(f"/rules/{mapped_id}/versions").json()
+        saved = saved_versions["items"][0]
+        mapped = client.get(f"/rules/{mapped_id}/versions/{saved['id']}/mapping-preview")
+        mapped.raise_for_status()
+        mapped = mapped.json()
+        assert mapped["status"] == "previewed" and mapped["sha256"] == saved["sha256"]
+        assert mapped["after_detection"] == {
+            "selection": {
+                "data.aegis.schema": "aegis-json/1",
+                "data.aegis.observation": "marker_file_read",
+            },
+            "condition": "selection",
+        }
+        assert mapped["document_sha256"] == digest(
+            {key: value for key, value in mapped.items() if key != "document_sha256"}
+        )
+        assert not any(
+            mapped[key]
+            for key in (
+                "can_convert",
+                "query_generated",
+                "siem_queried",
+                "deployment_performed",
+                "index_mapping_verified",
+            )
+        )
+        assert client.get(f"/rules/{mapped_id}/versions").json() == saved_versions
+        lab = next(
+            (
+                item
+                for item in client.get("/labs").json()["items"]
+                if item["kind"] == "demo" and item["authorized"] and item["synthetic"]
+            ),
+            None,
+        )
+        if lab is None:
+            raise RuntimeError("An authorized synthetic Demo laboratory is required")
         campaign = client.post(
             "/campaigns",
             json={
@@ -187,7 +235,7 @@ detection:
         assert client.get(f"/schedules/{schedule['id']}").json()["state"] == "REVOKED"
         client.post("/auth/logout").raise_for_status()
         print(
-            "PASS: Compose API + restricted SQL role + worker + manual and scheduled runs + exact grant + revoke + 8 synthetic outcomes + JSON reports + read-only Sigma analysis and conversion preparation blockers."
+            "PASS: Compose API + restricted SQL role + worker + manual and scheduled runs + exact grant + revoke + 8 synthetic outcomes + JSON reports + read-only Sigma analysis, mapping preview and conversion preparation blockers."
         )
 finally:
     with session_factory()() as db:

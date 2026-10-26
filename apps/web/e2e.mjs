@@ -403,7 +403,18 @@ level: informational
     selection: { 'data.aegis.schema': 'aegis-json/1', 'data.aegis.observation': 'marker_file_read' },
     condition: 'selection',
   })
+  await page.$eval('dialog[open] section', (section) => section.scrollIntoView({ block: 'start' }))
   await screenshot('sigma-mapping')
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
+  assert.equal(
+    await page.evaluate(() => {
+      const dialog = document.querySelector('dialog[open]')
+      return document.documentElement.scrollWidth <= innerWidth + 1 && dialog.getBoundingClientRect().width <= innerWidth
+    }),
+    true,
+    'Mapping preview dialog must fit a mobile viewport',
+  )
+  await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
   await page.click('dialog button[aria-label="Fechar"]')
   const afterPreparation = await page.evaluate(
     async (id) => (await fetch('/api/v1/reports/' + id)).json(),
