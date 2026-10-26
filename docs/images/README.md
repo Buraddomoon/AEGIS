@@ -5,10 +5,12 @@ arquivos originais versionados. Dados Demo vêm da API/worker/PostgreSQL reais n
 schema E2E descartável; eventos/alertas desse adaptador são **sintéticos**. Nenhuma
 imagem de Demo prova uma detecção externa.
 
-As 12 capturas Demo foram geradas por `scripts/e2e.py` e `apps/web/e2e.mjs` no fluxo
+As 13 capturas Demo foram geradas por `scripts/e2e.py` e `apps/web/e2e.mjs` no fluxo
 Firefox de 2026-10-26: 4 runs / 16 testes sintéticos, zero erros JavaScript e viewport de 390 px
-sem overflow. [Evidência e limites](../evidence/coverage-reports-2026-10-26/README.md).
-Não houve uma nova rodada de navegador durante a consolidação da documentação.
+sem overflow, incluindo o modal de transformação. A rodada atual acrescentou a
+prévia oficial de rename e preservou o relatório histórico. São14arquivos com a
+captura Linux anterior; nenhuma nova execução real de laboratório.
+[Política e limites da prévia](../integrations/sigma.md#prévia-de-transformação-de-campos).
 
 | Captura | Conteúdo e origem |
 |---|---|
@@ -22,6 +24,7 @@ Não houve uma nova rodada de navegador durante a consolidação da documentaç�
 | [Comparação](scope-comparison.png) | Diferenças de versões e vínculos registrados nos scopes |
 | [Análise Sigma](sigma-analysis.png) | Achado estático parcial em regra demonstrativa |
 | [Preparação Sigma](sigma-readiness.png) | Campos candidatos com conversão explicitamente bloqueada |
+| [Prévia de campos](sigma-mapping.png) | Transformação oficial real em memória, antes/depois normalizados; nenhuma consulta SIEM gerada |
 | [Wazuh desconectado](wazuh-preparation.png) | Demo padrão sem conector; não representa o banco do ensaio Wazuh |
 | [Mobile](mobile.png) | Interface Demo em viewport móvel; screenshot pode excluir a barra de rolagem |
 | [Linux encerrado](linux-execution.png) | Captura histórica de 2026-10-21: campanha real autorizada, INCONCLUSIVE sem SIEM, recibo separado de detecção |
@@ -34,6 +37,8 @@ registrados e não ganhou uma screenshot fictícia ou um novo efeito para ilustr
 ![Dashboard Demo real](overview.png)
 
 ![Filtros de cobertura reais](coverage.png)
+
+![Prévia real de rename de campos, com conversão SIEM bloqueada](sigma-mapping.png)
 
 ![Histórico da campanha Linux encerrada](linux-execution.png)
 
