@@ -1524,3 +1524,118 @@ totalizando **237**. AEGIS privado, main exclusiva, push após cada commit;
 código final3dc11a3, recibos7e47e24 e documentação9cfad98. Sem branches/PRs,
 force push ou reescrita de histórico. Árvore limpa/sincronização devem ser
 conferidas após o commit final, sem supor sucesso antes do push.
+
+## 2026-10-26 — cobertura por período/release e relatórios comparativos
+
+Próxima etapa autorizada por “continua pra proxima etapa”. Entrega ADR0015:
+somente leitura analítica/exportação, sem migração/dependência nova ou mudança
+da engine/allowlist/aprovações. Schema a0d9c7e21b45/32tabelas preservado. Nenhum
+ensaio Linux/Wazuh, nova autorização real, alvo externo ou coleta SIEM.
+
+### Funcionalidades e contratos
+
+- analytics.Selection: modo, all/current/legacy/release exata e período RFC3339
+  com fuso, normalizado UTC, [from,before) pela data da solicitação. Limites
+  abertos aceitos, intervalo vazio/invertido/sem fuso e release inválida recusados.
+- Sessão própria REPEATABLE READ READ ONLY, SQL15s e limite5000runs sem truncar
+  métricas. Referência atual resolvida no snapshot; histórica usa documento
+  imutável. Legado tem catálogo/avaliação null, preservando IDs/resultados sem
+  inventar versão. Contagens de estados/execuções separadas do denominador válido.
+- Total/estados incluem todo recorte; taxa usa somente pais/filhos COMPLETED,
+  DETECTED+OBSERVED_NOT_ALERTED+NO_TELEMETRY. Sem válidos: null, sem falso0%.
+  Join reutiliza run já carregada, sem retransmitir scope inteiro por resultado.
+- Rotas autenticadas /coverage, /coverage/runs, /coverage/report,
+  /coverage/compare e /coverage/compare/report; /reports compartilha seleção,
+  padrão Demo. Exportação30/min/usuário e auditoria por tipo/formato/hash.
+  Comparação exige mesma campanha/IDs distintos, manifesto correspondente,
+  filhos/resultados completos, scope íntegro/igual e contexto conhecido. Delta
+  só quando comparável e ambos denominadores válidos, arredondando as frações.
+- HTML/JSON agregados e comparativos autocontidos: membros/hashes, evidências,
+  diferenças técnicas, resumo/denominadores/limitações e hash do documento
+  entregue. HTML escapado, sem scripts/recursos externos; hash não é assinatura.
+  Formato/integridade dos relatórios individuais preservados. Sem tabela fictícia.
+- UI com aplicação explícita de filtros, conversão do horário local, seletores
+  paginados completos, bloqueio de exportação por hash de escopo e comparação
+  restrita à campanha. Erro/dirty/mismatch não habilita ações sobre cache antigo.
+  Alteração de resultado não comprova causalidade, risco ou proteção empresarial.
+
+Arquivos principais: analytics.py/analytics_api.py, queries.py/reporting.py/api.py,
+CoverageFilters.tsx/CoveragePage.tsx, Operations.tsx/lib.tsx/types.ts, test_analytics_*
+e test_analysis_export, UI coverage-filters/comparison e e2e.mjs. Documentação em
+[coverage-reports](operations/coverage-reports.md), ADR0015, README/AGENTS/CHANGELOG,
+API/roadmap/aceite/testes. Sem alteração de lockfiles ou controles de execução real.
+
+### Revisão, erros e validação executada
+
+Revisão especializada somente leitura encontrou três bordas: filhos falhos ou
+sem resultado podiam sustentar comparação; filho individual ausente do manifesto
+não era detectado; erro de refetch podia conservar ações sobre comparação antiga.
+Corrigidos e conferidos novamente por inspeção, sem bloqueador restante. Regressões
+de banco/UI passaram, sem alterar dados do ambiente real. Revisão não executou
+testes, Docker/rede ou arquivos privados. [Detalhes](security/review-coverage-reports-2026-10-26.md).
+
+Rodadas anteriores não foram consideradas sucesso. Fixture inicial omitiu
+alerts_available e foi corrigida mantendo NOT NULL. Dois testes de invariância
+precisavam excluir somente snapshot_at volátil, continuando a comparar todos os
+fatos/métricas e a integridade de relatórios. Uma rodada posterior recebeu
+NOWAIT em campaign_runs antes do bloqueador esperado, compatível com manutenção
+das tabelas do schema de teste. Fixture agora desabilita autovacuum somente das
+tabelas explicitamente qualificadas do seu schema descartável, antes do seed;
+configuração/locks de produção e escritores concorrentes explícitos intactos.
+E2E corrigiu espera pelas opções do seletor e o texto atualizado de não equivalência.
+
+- Testes direcionados de seleção/fronteiras/offset, release histórica/legado,
+  snapshot concorrente, escrita SQL negada, cap sem truncamento, export/hash/
+  escape/misto/denominador vazio, RBAC e negativos de árvore/manifesto passaram.
+- Rodada final: `make lint` aprovado, Ruff/format130arquivos, mypy domínio4,
+  TypeScript/Prettier. `PYTEST_ADDOPTS=--maxfail=1 make test`: **688Python passaram**
+  em299,10s e **53frontend passaram** em3,96s. A opção só interromperia em falha;
+  todos os casos executaram. Incremento33Python/10frontend, sem somar repetições.
+- Build passou; `make e2e` Firefox real aprovado: API/worker separados/schema
+  descartável,4runs/16testes sintéticos,12capturas/zero erros JavaScript e390px sem
+  overflow. Exportou recorte/par, validou membros/evidências/denominadores e
+  aplicou legado/período vazio, além do fluxo anterior de agendamento/Sigma.
+  Não houve duas suítes compartilhando Redis15 ao mesmo tempo; E2E usa14.
+- CI **SUCCESS**, código1e62a3f,
+  [run40351257873](https://github.com/Buraddomoon/AEGIS/actions/runs/40351257873),
+  validate5m52s: **684Python passaram/4skip**,53frontend, lint/tipos/build/auditoria.
+  Skip são projeções opcionais de objetos Docker Demo preexistentes, não criados
+  na CI; localmente688passaram. Aviso upstream TestClient/httpx e DiskCache5.6.3/
+  PYSEC-2026-2447 revisado permanecem, sem alegação de zero vulnerabilidades Python.
+  Commits posteriores somente Markdown não alteram código nem disparam CI.
+
+### Implantação e dados preservados
+
+Antes de atualizar o Demo18780:21runs, zero pendências/reservas/agendamentos
+retomáveis, administrador humano ativo. Backup privado
+20261026T153138Z-da45ceb4b6d748e0b66a5c0a0d8514a1 restaurado/verificado:
+32tabelas/3.160linhas, clone offline removido,6,792s medidos, sem promessa de RTO.
+Imagem anterior a160bed6... preservada em aegis-coverage-previous:demo-20261026.
+Somente API/worker próprios recriados; db/redis e volumes mantidos. Migration/seed/
+grants passaram sem mudar revisão/schema. Imagem Demo/recovery:
+sha256:ef97abfdf122df5bd513f7a6e2a44c7ec84a3b89757e1698d04da0f0f8871a02.
+
+Smoke real autenticado com viewer temporário: exports HTML/JSON recalculados por
+hash, erro409 para referência incorreta e403 na auditoria administrativa; papel
+SQL runtime operacional.21runs/84resultados mantidos:20legadas,1release atual,
+63válidos/21detectados,33,3% exclusivamente sintético. Legado preserva versão
+desconhecida e comparação antiga não sustenta delta.30tabelas históricas iguais
+ao manifesto anterior, exceto mudanças esperadas em users/audit_events; registro
+completo do admin humano, incluindo hash da senha, idêntico antes/depois. Logout,
+desativação do viewer e zero sessões temporárias conferidos. Não foi criada nova
+campanha/run no Demo em uso, nem usado/resetado o login humano no smoke.
+Health database/redis=true. [Recibo curado](evidence/coverage-reports-2026-10-26/README.md).
+
+### Pendências e continuidade
+
+Este marco não entrega PDF, geração agendada de relatórios, snapshots analíticos
+exportáveis persistidos, outros workspaces ou escala acima do limite. Nenhum
+novo controle ofensivo/defensivo foi implantado. Sigma backend/pipeline/mapping,
+Windows/archives e rotação PKI seguem pendentes; não inferir cobertura empresarial.
+Próximo bloco: backups criptografados, retenção e recuperação, mantendo destino
+externo/configuração/custos sujeitos às informações e autorização próprias.
+
+Este marco acrescenta **14commits granulares**, incluindo o checkpoint,
+totalizando **251**. Privado/main exclusiva e push por commit, sem branches/PRs,
+force push ou histórico reescrito. Consultar git log/status para hash/mensagem
+final, árvore limpa e sincronização efetivamente concluída após o push.

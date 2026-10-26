@@ -92,6 +92,18 @@ Na rodada ampliada: **85 testes Python** e **5 testes frontend** passaram; E2E F
 
 `make lab-smoke` é um ensaio **real opt-in**, exige autorização e container previamente iniciado; não integra `make test` nem CI. O ensaio de 2026-10-21 foi autorizado explicitamente e seu resultado está em PROGRESS. Nenhum Wazuh externo foi acessado.
 
+## Recortes e relatórios — marco2026-10-26
+
+`test_analytics_selection/queries/api` e `test_analysis_export` cobrem período/
+fuso/legado/release, snapshot coerente com conclusão concorrente, SQL read-only,
+cap sem truncamento, hash/export/escape/misto/RBAC e comparabilidade incompleta.
+UI `coverage-filters.test.tsx` testa paginação/races, filtros pendentes, export
+preso ao hash e refetch com erro após comparação. E2E valida exports reais e
+período/legado, com12capturas. Final688Python/53frontend, lint/build/CI aprovados;
+[evidência e limites](../evidence/coverage-reports-2026-10-26/README.md).
+Snapshot_at é metadado de consulta: invariâncias comparam todos os outros campos,
+sem enfraquecer verificações de métricas, escopos, relatórios ou auditoria.
+
 ## Campanhas Linux integradas
 
 `tests/test_linux_campaigns.py` exercita API/worker/PostgreSQL reais com runner de fixture em diretório pytest e transporte HTTP local de teste; mTLS real é coberto separadamente no transporte e no ensaio Docker. Abrange aprovação segregada, confirmação real, binding/usuários/allowlist revogados, preflight vencido, agendamento recusado, recibos, indicadores/relatórios por modo, crash/quarentena, geração e respostas perdidas em prepare/start/cleanup e rollback após cleanup remoto. Recuperações concorrentes devem produzir um sucesso e um conflito.
