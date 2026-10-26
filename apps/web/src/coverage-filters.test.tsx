@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -25,15 +25,15 @@ const metrics = {
   selection: { evaluation_catalog: { version: '20.0' } },
 }
 function mount(notify = vi.fn()) {
-  return render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const rendered = render(
+    <QueryClientProvider client={client}>
       <NoticeContext.Provider value={notify}>
         <CoveragePage />
       </NoticeContext.Provider>
     </QueryClientProvider>,
   )
+  return { ...rendered, client }
 }
 function transport() {
   return vi.fn(async (url: string) => {
@@ -65,6 +65,71 @@ afterEach(() => {
 })
 
 describe('explicit coverage selection', () => {
+  it('hides cached comparison and blocks actions after a metrics refetch fails', async () => {
+    let fail = false
+    const basic = transport()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/coverage/runs'))
+          return ok({
+            items: [
+              { id: 'first', campaign_id: 'same', created_at: '2026-10-26T12:00:00Z' },
+              { id: 'later', campaign_id: 'same', created_at: '2026-10-26T13:00:00Z' },
+            ],
+            total: 2,
+            scope_sha256: hash,
+          })
+        if (url.includes('/coverage/compare?'))
+          return ok({
+            before_id: 'first',
+            after_id: 'later',
+            comparable: true,
+            tests: [],
+            before_scope: {},
+            after_scope: {},
+            scope_changes: {
+              rule_versions: [],
+              test_definitions: [],
+              environment: [],
+              rule_test_links: [],
+              link_context_recorded: true,
+              catalog_context_recorded: true,
+            },
+          })
+        if (fail && url.includes('/coverage?'))
+          return {
+            ok: false,
+            status: 503,
+            json: async () => ({ error: { message: 'Indicadores indisponíveis' } }),
+          }
+        return basic(url)
+      }),
+    )
+    const { client } = mount()
+    const before = await screen.findByLabelText('Execução anterior')
+    await screen.findByRole('option', { name: /first ·/ })
+    await waitFor(() => expect(before).toBeEnabled())
+    await userEvent.selectOptions(before, 'first')
+    await userEvent.selectOptions(screen.getByLabelText('Execução atual'), 'later')
+    await userEvent.click(screen.getByRole('button', { name: 'Comparar execuções' }))
+    await screen.findByText('Configurações equivalentes; comparação do mesmo escopo.')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Exportar comparação JSON' })).toBeEnabled(),
+    )
+    fail = true
+    await act(async () => {
+      await client.invalidateQueries({ queryKey: ['/coverage?mode=demo&catalog_release=all'] })
+    })
+    await screen.findByText('Indicadores indisponíveis')
+    expect(screen.getByRole('button', { name: 'Comparar execuções' })).toBeDisabled()
+    expect(
+      screen.queryByRole('button', { name: 'Exportar comparação JSON' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Configurações equivalentes; comparação do mesmo escopo.'),
+    ).not.toBeInTheDocument()
+  })
   it('keeps the last applied scope visible and blocks export until filters are applied', async () => {
     const fetch = transport()
     vi.stubGlobal('fetch', fetch)

@@ -37,8 +37,14 @@ export function CoveragePage() {
   const c = data.data,
     mismatch = !!(c?.scope_sha256 && runs.data && runs.data.scope_sha256 !== c.scope_sha256),
     locked =
-      busy || filters.dirty || data.isFetching || runs.isFetching || !!runs.error || mismatch,
-    exportLocked = busy || filters.dirty || data.isFetching || !c?.scope_sha256
+      busy ||
+      !!data.error ||
+      filters.dirty ||
+      data.isFetching ||
+      runs.isFetching ||
+      !!runs.error ||
+      mismatch,
+    exportLocked = busy || !!data.error || filters.dirty || data.isFetching || !c?.scope_sha256
   return (
     <>
       <PageHeading
@@ -102,51 +108,53 @@ export function CoveragePage() {
               title="Escopo e exportação"
               subtitle="O relatório captura um snapshot na exportação; novos dados do mesmo recorte podem ser incluídos."
             >
-              <p>
-                {c.total_runs} execuções no recorte · {c.completed_tests} testes concluídos ·{' '}
-                {c.unversioned_runs ?? 0} execuções sem versão registrada.
-              </p>
-              <p className="muted-text">
-                Snapshot consultado: {c.snapshot_at ? date(c.snapshot_at) : 'não informado'} ·
-                início inclusivo/fim exclusivo.
-              </p>
-              <div className="inline-actions">
-                {(['html', 'json'] as const).map((format) => (
-                  <button
-                    key={format}
-                    className="button"
-                    disabled={exportLocked}
-                    onClick={() =>
-                      void run(
-                        () =>
-                          downloadFile(
-                            `/coverage/report?${filters.query}&expected_scope_sha256=${c.scope_sha256}&format=${format}`,
-                            `aegis-coverage-${c.scope_sha256?.slice(0, 12)}.${format}`,
-                          ),
-                        'Recorte exportado.',
-                      )
-                    }
-                  >
-                    <Download size={15} />
-                    Exportar recorte {format.toUpperCase()}
-                  </button>
-                ))}
+              <div className="analysis-export-body">
+                <p>
+                  {c.total_runs} execuções no recorte · {c.completed_tests} testes concluídos ·{' '}
+                  {c.unversioned_runs ?? 0} execuções sem versão registrada.
+                </p>
+                <p className="muted-text">
+                  Snapshot consultado: {c.snapshot_at ? date(c.snapshot_at) : 'não informado'} ·
+                  início inclusivo/fim exclusivo.
+                </p>
+                <div className="inline-actions">
+                  {(['html', 'json'] as const).map((format) => (
+                    <button
+                      key={format}
+                      className="button"
+                      disabled={exportLocked}
+                      onClick={() =>
+                        void run(
+                          () =>
+                            downloadFile(
+                              `/coverage/report?${filters.query}&expected_scope_sha256=${c.scope_sha256}&format=${format}`,
+                              `aegis-coverage-${c.scope_sha256?.slice(0, 12)}.${format}`,
+                            ),
+                          'Recorte exportado.',
+                        )
+                      }
+                    >
+                      <Download size={15} />
+                      Exportar recorte {format.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                <details className="scope-details">
+                  <summary>Inspecionar recorte, estados e denominadores</summary>
+                  <pre>
+                    {JSON.stringify(
+                      {
+                        selection: c.selection,
+                        scope_sha256: c.scope_sha256,
+                        run_states: c.run_states,
+                        denominator: c.denominator,
+                      },
+                      null,
+                      2,
+                    )}
+                  </pre>
+                </details>
               </div>
-              <details className="scope-details">
-                <summary>Inspecionar recorte, estados e denominadores</summary>
-                <pre>
-                  {JSON.stringify(
-                    {
-                      selection: c.selection,
-                      scope_sha256: c.scope_sha256,
-                      run_states: c.run_states,
-                      denominator: c.denominator,
-                    },
-                    null,
-                    2,
-                  )}
-                </pre>
-              </details>
             </Panel>
           </>
         )
@@ -231,7 +239,7 @@ export function CoveragePage() {
             Comparar execuções
           </button>
         </form>
-        {comparison && (
+        {comparison && !data.error && !runs.error && !mismatch && !filters.dirty && (
           <>
             <div className={`notice ${comparison.comparable ? '' : 'warning'}`}>
               {comparison.comparable

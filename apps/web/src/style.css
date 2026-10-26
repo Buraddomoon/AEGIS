@@ -2176,3 +2176,9 @@ td > small {
     flex-basis: 100%;
   }
 }
+.analysis-filter-caption {
+  margin-bottom: 24px;
+}
+.analysis-export-body {
+  padding: 0 22px 22px;
+}

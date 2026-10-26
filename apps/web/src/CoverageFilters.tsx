@@ -206,7 +206,7 @@ export function CoverageFilters({
           </button>
         </fieldset>
       </form>
-      <p className="muted-text">
+      <p className="muted-text analysis-filter-caption">
         Data da solicitação · início inclusivo/fim exclusivo · fuso do navegador:{' '}
         {Intl.DateTimeFormat().resolvedOptions().timeZone}. Exportação registra UTC.
       </p>
