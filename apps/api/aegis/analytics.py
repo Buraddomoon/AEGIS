@@ -7,7 +7,7 @@ from typing import Literal
 
 from fastapi import HTTPException
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from aegis.catalog import store as catalog
@@ -73,6 +73,11 @@ def release_reference(record):
     }
 
 
+def catalog_identity(scope):
+    context = scope.get("attack_catalog")
+    return context.get("release_id") if isinstance(context, dict) else None
+
+
 def resolve(db: Session, selection: Selection):
     current = catalog.reference(db)
     chosen = selection.catalog_release
@@ -100,7 +105,7 @@ def run_query(scope):
     identity = CampaignRun.scope["attack_catalog"]["release_id"].as_string()
     query = select(CampaignRun).where(CampaignRun.synthetic.is_(scope["mode"] == "demo"))
     if scope["catalog_release"] == "legacy":
-        query = query.where(identity.is_(None))
+        query = query.where(identity.is_(None) | (identity == ""))
     elif scope["resolved_catalog_release_id"]:
         query = query.where(identity == scope["resolved_catalog_release_id"])
     if scope["requested_from"]:
@@ -119,3 +124,11 @@ def bounded_runs(db, scope):
     if len(rows) > MAX_RUNS:
         raise HTTPException(422, f"Recorte excede {MAX_RUNS} execuções; reduza o período/release.")
     return rows
+
+
+def run_count(db, query):
+    limited = query.with_only_columns(CampaignRun.id).order_by(None).limit(MAX_RUNS + 1)
+    count = db.scalar(select(func.count()).select_from(limited.subquery()))
+    if count > MAX_RUNS:
+        raise HTTPException(422, f"Recorte excede {MAX_RUNS} execuções; reduza o período/release.")
+    return count

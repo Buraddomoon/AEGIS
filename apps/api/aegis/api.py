@@ -10,7 +10,18 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from aegis import linux_labs, queries, rule_links, scheduling, schemas, services, telemetry
+from aegis import (
+    analytics,
+    linux_labs,
+    queries,
+    rule_links,
+    scheduling,
+    schemas,
+    services,
+    telemetry,
+)
+from aegis.analytics_api import Scope as AnalyticsScope
+from aegis.analytics_api import router as analytics_router
 from aegis.catalog import store as catalog
 from aegis.catalog.api import router as catalog_router
 from aegis.config import settings
@@ -54,6 +65,7 @@ from aegis.security import (
 
 router = APIRouter(prefix="/api/v1")
 router.include_router(catalog_router)
+router.include_router(analytics_router)
 DB = Annotated[Session, Depends(get_db)]
 Viewer = Annotated[User, Depends(current_user)]
 Operator = Annotated[User, Depends(operator)]
@@ -556,11 +568,6 @@ def reject(run_id: str, user: Admin, db: DB):
     return services.cancel_run(db, run_id, user, reject=True)
 
 
-@router.get("/coverage", tags=["Coverage"])
-def coverage(user: Viewer, db: DB, mode: Literal["demo", "linux"] = "demo") -> dict:
-    return queries.coverage(db, mode)
-
-
 @router.get("/schedules", tags=["Scheduling"])
 def schedules(user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
     return queries.page(db, select(Schedule).order_by(Schedule.created_at.desc()), offset, limit)
@@ -616,11 +623,6 @@ def pause_schedule(schedule_id: str, data: schemas.Confirm, user: Operator, db: 
 @router.post("/schedules/{schedule_id}/revoke", tags=["Scheduling"])
 def revoke_schedule(schedule_id: str, data: schemas.Confirm, user: Admin, db: DB) -> dict:
     return queries.record(scheduling.stop_schedule(db, schedule_id, user, revoke=True))
-
-
-@router.get("/coverage/compare", tags=["Coverage"])
-def compare(before: str, after: str, user: Viewer, db: DB) -> dict:
-    return queries.compare(db, before, after)
 
 
 @router.get("/rule-test-links", tags=["Sigma"])
@@ -787,15 +789,17 @@ def import_rule(data: schemas.SigmaImport, user: Operator, db: DB) -> dict:
 
 
 @router.get("/reports", tags=["Reports"])
-def reports(user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
-    return queries.page(
-        db,
-        select(CampaignRun)
-        .where(CampaignRun.state == "COMPLETED")
-        .order_by(CampaignRun.created_at.desc()),
-        offset,
-        limit,
-    )
+def reports(
+    user: Viewer, db: DB, scope: AnalyticsScope, offset: Offset = 0, limit: Limit = 50
+) -> dict:
+    with analytics.read_snapshot(db) as snapshot:
+        resolved, scope_hash, _, _ = analytics.resolve(snapshot, scope)
+        query = analytics.run_query(resolved)
+        analytics.run_count(snapshot, query)
+        result = queries.page(
+            snapshot, query.where(CampaignRun.state == "COMPLETED"), offset, limit
+        )
+        return {**result, "scope_sha256": scope_hash, "selection": resolved}
 
 
 @router.get("/reports/{run_id}", tags=["Reports"])

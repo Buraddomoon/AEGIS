@@ -158,7 +158,7 @@ def coverage(db: Session, mode: str = "demo", selection=None, include_members=Fa
         t["technique_id"]
         for _, execution, run in rows
         if evaluated_catalog
-        and run.scope.get("attack_catalog", {}).get("release_id") == evaluated_catalog["release_id"]
+        and analytics.catalog_identity(run.scope) == evaluated_catalog["release_id"]
         for t in run.scope["test_definitions"]
         if t["id"] == execution.test_id and t["technique_id"] in active_ids
     }
@@ -187,9 +187,7 @@ def coverage(db: Session, mode: str = "demo", selection=None, include_members=Fa
         "technique_coverage_scope": "Técnicas ativas do catálogo de referência, avaliadas nessa mesma release dentro do recorte. Legado não recebe contexto retroativo.",
         "total_runs": len(runs),
         "run_states": dict(Counter(r.state for r in runs)),
-        "unversioned_runs": sum(
-            not r.scope.get("attack_catalog", {}).get("release_id") for r in runs
-        ),
+        "unversioned_runs": sum(not analytics.catalog_identity(r.scope) for r in runs),
         "completed_tests": len(rows),
         "valid_tests": valid,
         "outcomes": dict(counts),
@@ -217,7 +215,7 @@ def coverage(db: Session, mode: str = "demo", selection=None, include_members=Fa
                 "state": r.state,
                 "created_at": r.created_at,
                 "scope_sha256": r.scope_hash,
-                "catalog_release_id": r.scope.get("attack_catalog", {}).get("release_id"),
+                "catalog_release_id": analytics.catalog_identity(r.scope),
                 "results": results.get(r.id, []),
             }
             for r in runs
@@ -229,7 +227,7 @@ def technique_outcomes(db: Session, mode: str = "demo") -> dict[str, str]:
     current = catalog.reference(db)
     result = {}
     for verdict, execution, run in completed_results(db, mode):
-        if run.scope.get("attack_catalog", {}).get("release_id") != current["release_id"]:
+        if analytics.catalog_identity(run.scope) != current["release_id"]:
             continue
         test = next(t for t in run.scope["test_definitions"] if t["id"] == execution.test_id)
         if test["technique_id"]:
@@ -273,7 +271,11 @@ def scope_changes(before: dict, after: dict) -> dict:
             {k: after.get(k) for k in environment_keys},
         ),
         "link_context_recorded": recorded,
-        "catalog_context_recorded": "attack_catalog" in before and "attack_catalog" in after,
+        "catalog_context_recorded": all(
+            analytics.catalog_identity(s)
+            and isinstance(s.get("attack_catalog", {}).get("version"), str)
+            for s in (before, after)
+        ),
         "rule_test_links": differences(
             {f"{x['rule_id']}:{x['test_id']}": x for x in before["rule_test_links"]},
             {f"{x['rule_id']}:{x['test_id']}": x for x in after["rule_test_links"]},
@@ -317,6 +319,8 @@ def compare(db: Session, before_id: str, after_id: str) -> dict:
         reasons.append("unknown_catalog_context")
     if not changes["link_context_recorded"]:
         reasons.append("unknown_rule_link_context")
+    if any(digest(r["scope"]) != r["scope_hash"] for r in (before, after)):
+        reasons.append("scope_integrity_mismatch")
     comparable = not reasons
     return {
         "before_id": before_id,
