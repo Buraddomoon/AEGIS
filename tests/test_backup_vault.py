@@ -247,3 +247,30 @@ def test_retention_counts_distinct_verified_snapshots_and_unverified_copies_do_n
         root / "vault", root / "keys", at=datetime(2026, 10, 26, tzinfo=UTC)
     )
     assert all(r["action"] == "keep" for r in plan["copies"])
+
+
+def test_in_place_ciphertext_replacement_after_precheck_cannot_reuse_expected_hash(
+    sealed, monkeypatch
+):
+    root, source, key, identity, envelope = sealed
+    dump = source / "database.dump"
+    dump.write_bytes(dump.read_bytes().replace(b"synthetic", b"different"))
+    manifest = json.loads((source / "manifest.json").read_bytes())
+    manifest["dump_sha256"] = hashlib.sha256(dump.read_bytes()).hexdigest()
+    (source / "manifest.json").write_text(json.dumps(manifest))
+    replacement = vault.seal(source, ID, root / "other", key["recipient"])
+    replacement_bytes = (root / "other" / replacement["id"] / "bundle.age").read_bytes()
+    original_decrypt = vault.crypto().decrypt_io
+
+    def race(reader, writer, identities):
+        # Same path/inode and a valid different ciphertext for the same recipient.
+        (root / "vault" / envelope["id"] / "bundle.age").write_bytes(replacement_bytes)
+        return original_decrypt(reader, writer, identities)
+
+    monkeypatch.setattr(vault.crypto(), "decrypt_io", race)
+    with pytest.raises(vault.VaultError, match="changed during decryption"):
+        with vault.decrypted(
+            root / "vault", envelope["id"], envelope["ciphertext_sha256"], identity, root / "work"
+        ):
+            pytest.fail("Replaced valid ciphertext exposed under the wrong expected hash")
+    assert not list((root / "work").iterdir())

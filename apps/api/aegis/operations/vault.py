@@ -149,6 +149,25 @@ class ContentReader:
         return value
 
 
+class CipherReader:
+    """Bind the expected hash to bytes actually consumed, including in-place races."""
+
+    def __init__(self, stream):
+        self.stream = stream
+        self.digest = hashlib.sha256()
+        self.count = 0
+
+    def read(self, size):
+        if size < 0 or size > CHUNK * 16:
+            raise VaultError("Unbounded ciphertext read refused")
+        value = self.stream.read(size)
+        self.count += len(value)
+        if self.count > MAX_CIPHERTEXT:
+            raise VaultError("Ciphertext exceeds reviewed size bound")
+        self.digest.update(value)
+        return value
+
+
 class BoundedWriter:
     def __init__(self, stream):
         self.stream = stream
@@ -285,13 +304,19 @@ def decrypted(vault, identifier, expected_hash, identity, work):
             # Unlinked private scratch. No caller can consume partially authenticated data.
             with tempfile.TemporaryFile(dir=staging) as scratch:
                 limited = BoundedWriter(scratch)
+                consumed = CipherReader(encrypted)
                 try:
-                    crypto().decrypt_io(encrypted, limited, [identity])
+                    crypto().decrypt_io(consumed, limited, [identity])
                 except (crypto().DecryptError, OSError):
                     raise VaultError(
                         "Decryption/authentication failed; no content released"
                     ) from None
                 limited.flush()
+                if (
+                    consumed.digest.hexdigest() != expected_hash
+                    or consumed.count != envelope["ciphertext_bytes"]
+                ):
+                    raise VaultError("Ciphertext changed during decryption; no content released")
                 scratch.seek(0)
                 unpack(scratch, staging, envelope["backup_id"])
             yield staging, envelope
