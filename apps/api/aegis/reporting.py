@@ -105,21 +105,34 @@ def build_comparison_report(comparison: dict, before: dict, after: dict) -> dict
             (e.get("result") or {}).get("outcome", "NOT_TESTED")
             for e in report["run"]["executions"]
         )
-        valid = sum(outcomes[k] for k in ("DETECTED", "OBSERVED_NOT_ALERTED", "NO_TELEMETRY"))
-        # Partial/failed runs never become valid comparative denominators.
-        eligible = report["run"]["state"] == "COMPLETED"
+        completed = (
+            Counter(
+                (e.get("result") or {}).get("outcome", "NOT_TESTED")
+                for e in report["run"]["executions"]
+                if e["state"] == "COMPLETED"
+            )
+            if report["run"]["state"] == "COMPLETED"
+            else Counter()
+        )
+        valid = sum(completed[k] for k in ("DETECTED", "OBSERVED_NOT_ALERTED", "NO_TELEMETRY"))
         return {
             "outcomes": dict(outcomes),
-            "valid_tests": valid if eligible else 0,
-            "detected_percentage": round(outcomes["DETECTED"] / valid * 100, 1)
-            if eligible and valid
-            else None,
+            "valid_tests": valid,
+            "detected_tests": completed["DETECTED"],
+            "detected_percentage": round(completed["DETECTED"] / valid * 100, 1) if valid else None,
         }
 
     old, new = summary(before), summary(after)
     delta = None
     if comparison["comparable"] and all(s["detected_percentage"] is not None for s in (old, new)):
-        delta = round(new["detected_percentage"] - old["detected_percentage"], 1)
+        delta = round(
+            100
+            * (
+                new["detected_tests"] / new["valid_tests"]
+                - old["detected_tests"] / old["valid_tests"]
+            ),
+            1,
+        )
     return seal_analysis(
         {
             "product": "ÆGIS",

@@ -207,3 +207,70 @@ def test_exports_require_authentication_and_viewer_is_read_only(client):
     assert result.status_code == 200
     assert client.get("/api/v1/coverage/report").status_code == 200
     assert client.post("/api/v1/campaigns", json={}).status_code in (403, 422)
+
+
+def test_completed_parent_with_failed_child_cannot_claim_valid_comparison(admin):
+    first, second = repeated(admin)
+    admin.post(
+        f"/api/v1/executions/{second['id']}/approve",
+        json={"confirm_scope_hash": second["scope_hash"]},
+    )
+    admin.post(f"/api/v1/executions/{second['id']}/start", json={"confirm": True})
+    assert claim_next() == second["id"]
+    process_run(second["id"])
+    # Explicit corruption fixture; never rewrite real historical evidence.
+    from sqlalchemy import select
+
+    with session_factory()() as db:
+        child = db.scalar(select(Execution).where(Execution.run_id == first["id"]))
+        child.state = "FAILED"
+        db.commit()
+    params = {"before": first["id"], "after": second["id"]}
+    result = admin.get("/api/v1/coverage/compare/report", params=params).json()
+    assert not result["comparison"]["comparable"]
+    assert "incomplete_test_executions" in result["comparison"]["comparability_reasons"]
+    assert result["summary"]["before"]["outcomes"] == {"DETECTED": 1}
+    assert result["summary"]["before"]["valid_tests"] == 0
+    assert result["summary"]["before"]["detected_tests"] == 0
+    assert result["summary"]["detected_rate_delta_percentage_points"] is None
+
+
+def test_completed_child_without_validation_result_is_not_comparable(admin):
+    first = create_queued(admin, ["demo-shell"])
+    assert claim_next() == first["id"]
+    process_run(first["id"])
+    with session_factory()() as db:
+        source = db.get(CampaignRun, first["id"])
+        fixture = CampaignRun(
+            campaign_id=source.campaign_id,
+            laboratory_id=source.laboratory_id,
+            requested_by=source.requested_by,
+            idempotency_key=uuid.uuid4().hex,
+            state="COMPLETED",
+            scope=source.scope,
+            scope_hash=source.scope_hash,
+            synthetic=True,
+            ended_at=now(),
+        )
+        db.add(fixture)
+        db.flush()
+        db.add(
+            Execution(
+                run_id=fixture.id,
+                test_id="demo-shell",
+                asset_id=source.scope["asset_id"],
+                marker="missing-result-fixture-" + uuid.uuid4().hex,
+                state="COMPLETED",
+                executed=True,
+                synthetic=True,
+            )
+        )
+        fixture_id = fixture.id
+        db.commit()
+    report = admin.get(
+        "/api/v1/coverage/compare/report", params={"before": first["id"], "after": fixture_id}
+    ).json()
+    assert not report["comparison"]["comparable"]
+    assert "missing_validation_results" in report["comparison"]["comparability_reasons"]
+    assert report["summary"]["after"]["valid_tests"] == 0
+    assert report["summary"]["detected_rate_delta_percentage_points"] is None

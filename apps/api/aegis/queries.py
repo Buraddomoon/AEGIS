@@ -315,6 +315,12 @@ def compare(db: Session, before_id: str, after_id: str) -> dict:
         reasons.append("scope_changed")
     if before["state"] != "COMPLETED" or after["state"] != "COMPLETED":
         reasons.append("incomplete_runs")
+    if any(not r["executions"] for r in (before, after)):
+        reasons.append("missing_test_executions")
+    if any(e["state"] != "COMPLETED" for r in (before, after) for e in r["executions"]):
+        reasons.append("incomplete_test_executions")
+    if any(not e["result"] for r in (before, after) for e in r["executions"]):
+        reasons.append("missing_validation_results")
     if not changes["catalog_context_recorded"]:
         reasons.append("unknown_catalog_context")
     if not changes["link_context_recorded"]:
