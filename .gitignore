@@ -21,3 +21,5 @@ playwright-report/
 .local-*.json
 *.dump
 *.dump.partial
+*.age
+*.agekey

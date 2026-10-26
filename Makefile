@@ -73,7 +73,7 @@ verify-backup:
 backup-retention-plan:
 	$(VENV)/python scripts/demo_backup.py retention-plan
 test-recovery:
-	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py tests/test_recovery_guards.py tests/test_recovery_api.py tests/test_recovery_probe.py tests/test_recovery_reconciliation.py tests/test_recovered_demo_cycle.py tests/test_recovery_cycle_runtime.py -q
+	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py tests/test_backup_vault.py tests/test_recovery_guards.py tests/test_recovery_api.py tests/test_recovery_probe.py tests/test_recovery_reconciliation.py tests/test_recovered_demo_cycle.py tests/test_recovery_cycle_runtime.py -q
 
 .PHONY: recovery-app-build verify-recovered-app
 recovery-app-build:
@@ -161,3 +161,18 @@ wazuh-lab-status:
 	$(VENV)/python scripts/wazuh_lab.py status
 wazuh-lab-down:
 	$(VENV)/python scripts/wazuh_lab.py down --confirm-local-wazuh
+
+# Encryption is host-only. Private identities are never accepted on the command line.
+.PHONY: backup-tools backup-keygen seal-backup verify-sealed-backup backup-vault-plan
+backup-tools:
+	$(VENV)/pip install --require-hashes --no-deps --only-binary=:all: -r requirements-backup.lock
+backup-keygen:
+	$(VENV)/python scripts/demo_backup.py keygen
+seal-backup:
+	@test -n "$(BACKUP_ID)" -a -n "$(RECIPIENT)" || (echo 'Set BACKUP_ID and public RECIPIENT'; exit 2)
+	$(VENV)/python scripts/demo_backup.py seal "$(BACKUP_ID)" --recipient "$(RECIPIENT)"
+verify-sealed-backup:
+	@test -n "$(SEALED_ID)" -a -n "$(CIPHERTEXT_SHA256)" -a -n "$(KEY_ID)" || (echo 'Set SEALED_ID, CIPHERTEXT_SHA256 and KEY_ID'; exit 2)
+	$(VENV)/python scripts/demo_backup.py verify-sealed "$(SEALED_ID)" --expected-sha256 "$(CIPHERTEXT_SHA256)" --key-id "$(KEY_ID)"
+backup-vault-plan:
+	$(VENV)/python scripts/demo_backup.py vault-plan

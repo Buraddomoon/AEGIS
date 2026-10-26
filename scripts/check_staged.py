@@ -14,7 +14,9 @@ for path in paths:
             part in {"node_modules", ".venv", "__pycache__", ".local", "dist"}
             for part in path.split("/")
         )
-        or path.endswith((".log", ".pyc", ".tsbuildinfo", ".dump", ".dump.partial"))
+        or path.endswith(
+            (".log", ".pyc", ".tsbuildinfo", ".dump", ".dump.partial", ".age", ".agekey")
+        )
         or (path.split("/")[-1].startswith(".env") and path != ".env.example")
     ):
         bad.append(path + ": sensitive/generated path")
@@ -24,6 +26,7 @@ for path in paths:
         rb"gh[pousr]_[A-Za-z0-9]{20,}",
         rb"github_pat_[A-Za-z0-9_]{30,}",
         rb"AKIA[A-Z0-9]{16}",
+        rb"AGE-SECRET-KEY-1[A-Z0-9]{50,}",
         rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
     ]
     if any(re.search(pattern, content) for pattern in patterns):
