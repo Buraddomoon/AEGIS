@@ -1,14 +1,15 @@
 from collections import Counter
 
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import func, select
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import Session
 
+from aegis import analytics
 from aegis.catalog import store as catalog
-from aegis.domain.validation import Outcome
+from aegis.domain.validation import Outcome, digest
 from aegis.models import (
     Approval,
-    AttackTechnique,
     Campaign,
     CampaignRun,
     CampaignTest,
@@ -123,78 +124,105 @@ def execution_detail(db: Session, run_id: str) -> dict:
     }
 
 
-def completed_results(db: Session, mode: str | None = None):
+def completed_results(db: Session, mode: str | None = None, run_ids=None):
     query = (
         select(ValidationResult, TestExecution, CampaignRun)
         .join(TestExecution, ValidationResult.execution_id == TestExecution.id)
         .join(CampaignRun, CampaignRun.id == TestExecution.run_id)
         .where(CampaignRun.state == "COMPLETED", TestExecution.state == "COMPLETED")
-        .order_by(CampaignRun.created_at)
+        .order_by(CampaignRun.created_at, CampaignRun.id, TestExecution.id)
     )
     if mode is not None:
         query = query.where(CampaignRun.synthetic.is_(mode == "demo"))
+    if run_ids is not None:
+        query = query.where(CampaignRun.id.in_(run_ids))
     return db.execute(query).all()
 
 
-def coverage(db: Session, mode: str = "demo") -> dict:
-    current = catalog.reference(db)
-    rows = completed_results(db, mode)
+def coverage(db: Session, mode: str = "demo", selection=None, include_members=False) -> dict:
+    selection = selection or analytics.Selection(mode=mode)
+    scope, scope_hash, current, active_ids = analytics.resolve(db, selection)
+    runs = analytics.bounded_runs(db, scope)
+    rows = completed_results(db, selection.mode, [r.id for r in runs])
     counts = Counter(row[0].outcome for row in rows)
-    valid = sum(
-        counts[k] for k in [Outcome.DETECTED, Outcome.OBSERVED_NOT_ALERTED, Outcome.NO_TELEMETRY]
-    )
+    valid_outcomes = {Outcome.DETECTED, Outcome.OBSERVED_NOT_ALERTED, Outcome.NO_TELEMETRY}
+    valid = sum(counts[k] for k in valid_outcomes)
     historical_tested = {
         t["technique_id"]
         for _, execution, run in rows
         for t in run.scope["test_definitions"]
         if t["id"] == execution.test_id and t["technique_id"]
     }
-    active_ids = set(
-        db.scalars(
-            select(AttackTechnique.id).where(
-                AttackTechnique.present_in_current,
-                ~AttackTechnique.revoked,
-                ~AttackTechnique.deprecated,
-            )
-        )
-    )
+    evaluated_catalog = scope["evaluation_catalog"]
     tested = {
         t["technique_id"]
         for _, execution, run in rows
-        if run.scope.get("attack_catalog", {}).get("release_id") == current["release_id"]
+        if evaluated_catalog
+        and run.scope.get("attack_catalog", {}).get("release_id") == evaluated_catalog["release_id"]
         for t in run.scope["test_definitions"]
         if t["id"] == execution.test_id and t["technique_id"] in active_ids
     }
     trend = {}
     for result, _execution, run in rows:
         bucket = trend.setdefault(
-            run.id, {"run_id": run.id, "date": run.created_at, "detected": 0, "evaluated": 0}
+            run.id,
+            {"run_id": run.id, "date": run.created_at, "detected": 0, "evaluated": 0, "valid": 0},
         )
         bucket["detected"] += int(result.outcome == Outcome.DETECTED)
         bucket["evaluated"] += 1
-    return {
-        "synthetic": mode == "demo",
-        "mode": mode,
-        "scope": ("Demo Lab" if mode == "demo" else "Laboratórios Linux reais")
-        + " • execuções concluídas • todas as datas e releases",
-        "catalogued_techniques": len(active_ids),
-        "evaluated_techniques": len(tested),
+        bucket["valid"] += int(result.outcome in valid_outcomes)
+    data = {
+        "synthetic": selection.mode == "demo",
+        "mode": selection.mode,
+        "scope": ("Demo Lab" if selection.mode == "demo" else "Laboratórios Linux reais")
+        + " • período pela data da solicitação • releases: "
+        + selection.catalog_release,
+        "selection": scope,
+        "scope_sha256": scope_hash,
+        "snapshot_at": db.scalar(select(func.transaction_timestamp())),
+        "catalogued_techniques": len(active_ids) if active_ids is not None else None,
+        "evaluated_techniques": len(tested) if active_ids is not None else None,
         "historical_evaluated_techniques": len(historical_tested),
         "attack_catalog": current,
-        "technique_coverage_scope": "Somente técnicas ativas avaliadas na mesma release atual; histórico legado não é reclassificado.",
-        "total_runs": db.scalar(
-            select(func.count())
-            .select_from(CampaignRun)
-            .where(CampaignRun.synthetic.is_(mode == "demo"))
+        "technique_coverage_scope": "Técnicas ativas do catálogo de referência, avaliadas nessa mesma release dentro do recorte. Legado não recebe contexto retroativo.",
+        "total_runs": len(runs),
+        "run_states": dict(Counter(r.state for r in runs)),
+        "unversioned_runs": sum(
+            not r.scope.get("attack_catalog", {}).get("release_id") for r in runs
         ),
         "completed_tests": len(rows),
         "valid_tests": valid,
         "outcomes": dict(counts),
         "detected_percentage": round(counts[Outcome.DETECTED] / valid * 100, 1) if valid else None,
-        "denominator": "DETECTED + OBSERVED_NOT_ALERTED + NO_TELEMETRY, testes concluídos no modo selecionado em todas as releases; INCONCLUSIVE e EXECUTION_FAILED excluídos",
-        "limitation": "Percentual somente deste modo e escopo de testes; não representa proteção da organização. Comprovantes de execução não são detecções.",
+        "denominator": "DETECTED + OBSERVED_NOT_ALERTED + NO_TELEMETRY; somente runs e filhos COMPLETED dentro deste modo/período/release. INCONCLUSIVE e EXECUTION_FAILED excluídos; estados das runs informados separadamente",
+        "limitation": "Percentual somente deste recorte de testes; não representa proteção da organização. Comprovantes de execução não são detecções.",
         "trend": list(trend.values())[-30:],
     }
+    if include_members:
+        results = {}
+        for result, execution, run in rows:
+            results.setdefault(run.id, []).append(
+                {
+                    "execution_id": execution.id,
+                    "test_id": execution.test_id,
+                    "result_id": result.id,
+                    "outcome": result.outcome,
+                    "result_sha256": digest(jsonable_encoder(record(result))),
+                }
+            )
+        data["members"] = [
+            {
+                "run_id": r.id,
+                "campaign_id": r.campaign_id,
+                "state": r.state,
+                "created_at": r.created_at,
+                "scope_sha256": r.scope_hash,
+                "catalog_release_id": r.scope.get("attack_catalog", {}).get("release_id"),
+                "results": results.get(r.id, []),
+            }
+            for r in runs
+        ]
+    return data
 
 
 def technique_outcomes(db: Session, mode: str = "demo") -> dict[str, str]:
@@ -256,6 +284,10 @@ def scope_changes(before: dict, after: dict) -> dict:
 
 
 def compare(db: Session, before_id: str, after_id: str) -> dict:
+    if before_id == after_id:
+        from fastapi import HTTPException
+
+        raise HTTPException(409, "Selecione duas execuções diferentes.")
     before, after = execution_detail(db, before_id), execution_detail(db, after_id)
     if before["campaign_id"] != after["campaign_id"]:
         from fastapi import HTTPException
@@ -275,9 +307,17 @@ def compare(db: Session, before_id: str, after_id: str) -> dict:
                 "changed": (old or {}).get("outcome") != (new or {}).get("outcome"),
             }
         )
-    comparable = (
-        before["scope"] == after["scope"] and before["state"] == after["state"] == "COMPLETED"
-    )
+    changes = scope_changes(before["scope"], after["scope"])
+    reasons = []
+    if before["scope"] != after["scope"]:
+        reasons.append("scope_changed")
+    if before["state"] != "COMPLETED" or after["state"] != "COMPLETED":
+        reasons.append("incomplete_runs")
+    if not changes["catalog_context_recorded"]:
+        reasons.append("unknown_catalog_context")
+    if not changes["link_context_recorded"]:
+        reasons.append("unknown_rule_link_context")
+    comparable = not reasons
     return {
         "before_id": before_id,
         "after_id": after_id,
@@ -287,7 +327,8 @@ def compare(db: Session, before_id: str, after_id: str) -> dict:
         "same_scope": before["scope_hash"] == after["scope_hash"],
         "before_scope": before["scope"],
         "after_scope": after["scope"],
-        "scope_changes": scope_changes(before["scope"], after["scope"]),
+        "scope_changes": changes,
+        "comparability_reasons": reasons,
         "tests": rows,
         "limitation": "Mudanças de ambiente, versões de regras ou testes exigem revisão da comparabilidade. Recibos do executor não comprovam detecção defensiva.",
     }
