@@ -29,6 +29,14 @@ def pg_engine():
     settings().demo_step_seconds = 0
     try:
         command.upgrade(Config("alembic.ini"), "head")
+        # Only this disposable schema: background maintenance must not race
+        # intentional NOWAIT assertions after many truncate/seed cycles.
+        # Production autovacuum/locks and explicit peer-writer tests stay intact.
+        with test_engine.begin() as connection:
+            for table in database.Base.metadata.tables:
+                connection.execute(
+                    text(f'ALTER TABLE "{schema}"."{table}" SET (autovacuum_enabled=false)')
+                )
         yield test_engine
     finally:
         database.engine = previous
