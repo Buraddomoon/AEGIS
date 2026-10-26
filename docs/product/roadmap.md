@@ -71,8 +71,8 @@ Futuro: Caldera, outros SIEM/EDR, Windows em VM própria, CI/CD e assistência p
 
 Marco recuperação Demo: backup/restore e comparação de dados/estrutura em clone
 sem rede foram executados; plano de retenção é somente leitura. Seguem pendentes
-reativação operacional/roles/secrets, armazenamento criptografado
-externo, política de RPO/RTO e gestão de retenção por ambiente. [Limites](../operations/backup-recovery.md).
+reativação operacional/roles/secrets, custódia criptografada
+externa, política de RPO/RTO e gestão de retenção por ambiente. [Limites](../operations/backup-recovery.md).
 
 Boot da API recuperada em quarentena implementado: SELECT e revisão agregada,
 sem login normal/worker/scheduler ou retomada de sessões/autorizações. Não
@@ -81,4 +81,11 @@ somente no clone descartável: sessões/contas/autorizações invalidadas, pend�
 sintéticas encerradas, histórico preservado e recibo vinculado à API em recovery.
 Ensaio de ciclo Demo novo com identidades/aprovação novas implementado em destino
 descartável, incluindo worker, evidências e relatórios. Recuperação entre hosts,
-guarda criptografada e cutover operacional continuam pendentes.
+custódia independente e cutover operacional continuam pendentes.
+
+Backups cifrados locais entregues: age/X25519 opcional host-only, chave separada,
+decriptação autenticada/hash consumido e mesma engine de restore offline. Cópia
+real32tabelas/3.169linhas verificada com origem/usuários preservados. Retenção é
+inventário/plano, sem exclusão. Chave/cópia no mesmo computador não protegem de
+perda do host; destino externo, custódia, configuração/secrets/imagens e RPO/RTO
+continuam pendentes. [Operação](../operations/encrypted-backups.md).

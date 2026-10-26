@@ -177,3 +177,20 @@ Não executar dois processos pytest/E2E com essa mesma configuração em paralel
 Schemas PostgreSQL são exclusivos por processo, mas isso não isola Redis. Uma
 rodada deste marco confirmou essa interferência no teste de rate limit; executar
 a suíte completa sozinha, sem reduzir limites ou alterar o controle da aplicação.
+
+## Backups cifrados — marco2026-10-26
+
+`test_backup_vault.py` usa pyrage real (21casos), sem Docker: streaming, bytes
+originais, corrupção/final/truncamento/extra, chave/hash errados, corrida in-place,
+limites, ownership/links/FIFO, publicação exclusiva e retenção read-only com
+snapshots distintos/verificados. Subprocesso impede import opcional na API/worker.
+Cinco casos novos de CLI provam que verify-sealed não usa dump/banco fonte, remove
+staging em falha e só publica recibo após restore/cleanup. Mocks não provam Docker.
+
+make setup instala a dependência dev fixada por hash; operadores podem usar
+make backup-tools para o extra isolado. requirements.lock da aplicação não muda;
+a auditoria abrange requirements-backup.lock, sem ocultar advisory existente.
+`make test-recovery` inclui os casos. Não executar duas suítes Redis15 em paralelo.
+[Restore real local registrado](../evidence/encrypted-backups-2026-10-26/README.md):
+32tabelas/3.169linhas a partir da cópia cifrada, origem intacta e cleanup aprovado.
+Sem E2E navegador novo ou Linux/Wazuh; essa entrega só acrescenta ferramentas host.

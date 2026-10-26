@@ -56,3 +56,11 @@ comparativas com membros/evidências/hashes. Equivalência exige árvore/manifes
 e resultados completos/contexto conhecido. UI bloqueia ações após erro e
 mudança de filtros; Firefox exportou ambos os tipos, aplicou legado e período
 vazio sem novos efeitos reais. Contagens finais e CI no PROGRESS.
+
+Backup cifrado host-only: age/X25519, chave separada, publicação privada e limites;
+stream completo autenticado e hash consumido antes de restore. Cópia real restaurada
+em clone offline:32tabelas/3.169linhas, fonte/usuários iguais e clone/staging removidos.
+Retenção somente leitura usa snapshots distintos e verificados/chave disponível;
+sem exclusão/upload. Originais permanecem em claro, chave/cópia ainda locais.
+Guarda independente, recuperação entre hosts e RPO/RTO não são critérios aceitos.
+[Procedimento](../operations/encrypted-backups.md).
