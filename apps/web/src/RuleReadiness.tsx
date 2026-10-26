@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Empty, Failure, Loading, Modal, useData } from './lib'
+import { MappingPreview } from './MappingPreview'
 import type {
   ConversionProfile,
   ConversionProfiles,
@@ -145,6 +146,7 @@ function ReadinessResult({
       {data.field_references.length > 0 && (
         <p>Referências fieldref sem tratamento: {data.field_references.join(', ')}</p>
       )}
+      <MappingPreview ruleId={ruleId} saved={saved} profile={profile} />
       <details>
         <summary>Metadados e proveniência</summary>
         <p>

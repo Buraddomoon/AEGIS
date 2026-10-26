@@ -388,6 +388,22 @@ level: informational
     el.scrollTop = 0
   })
   await screenshot('sigma-readiness')
+  await button('Gerar prévia de campos')
+  await text('Prévia de campos gerada')
+  await text('Conversão SIEM continua bloqueada')
+  const mapping = await page.$$eval('dialog[open] pre', (nodes) =>
+    nodes.map((node) => JSON.parse(node.textContent)),
+  )
+  assert.equal(mapping.length, 2)
+  assert.deepEqual(mapping[0], {
+    selection: { AegisSchema: 'aegis-json/1', AegisObservation: 'marker_file_read' },
+    condition: 'selection',
+  })
+  assert.deepEqual(mapping[1], {
+    selection: { 'data.aegis.schema': 'aegis-json/1', 'data.aegis.observation': 'marker_file_read' },
+    condition: 'selection',
+  })
+  await screenshot('sigma-mapping')
   await page.click('dialog button[aria-label="Fechar"]')
   const afterPreparation = await page.evaluate(
     async (id) => (await fetch('/api/v1/reports/' + id)).json(),
@@ -427,7 +443,7 @@ level: informational
       runs: 4,
       tests: 16,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 12,
+      screenshots: 13,
       browserErrors: errors.length,
     }),
   )

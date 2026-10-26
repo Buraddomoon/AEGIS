@@ -425,3 +425,30 @@ export interface ConversionReadiness {
   blockers: { code: string; message: string }[]
   limitations: string[]
 }
+
+export interface SigmaMappingPreview {
+  rule_id: string
+  rule_version_id: string
+  rule_version: number
+  sha256: string
+  preview_version: 'sigma-mapping-preview/1'
+  profile: ConversionProfile
+  pipeline: {
+    version: string
+    profile_id: string
+    profile_sha256: string
+    pysigma_version: string
+    sha256: string
+  }
+  status: 'previewed' | 'unsupported'
+  blockers: { code: string; message: string }[]
+  before_detection: Record<string, unknown> | null
+  after_detection: Record<string, unknown> | null
+  document_sha256: string
+  can_convert: false
+  query_generated: false
+  siem_queried: false
+  deployment_performed: false
+  index_mapping_verified: false
+  limitations: string[]
+}
