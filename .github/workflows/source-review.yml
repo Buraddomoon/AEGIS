@@ -1,0 +1,26 @@
+name: Review AEGIS source delivery
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - 'docs/images/**'
+      - 'pyproject.toml'
+      - 'apps/web/package*.json'
+      - 'scripts/check_release.py'
+      - 'scripts/check_staged.py'
+      - '.github/workflows/source-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: aegis-source-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Check indexed metadata, local links, captures and credential patterns
+        run: python3 scripts/check_release.py
