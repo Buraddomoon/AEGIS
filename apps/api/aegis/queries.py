@@ -3,7 +3,7 @@ from collections import Counter
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import func, select
 from sqlalchemy.inspection import inspect
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from aegis import analytics
 from aegis.catalog import store as catalog
@@ -135,7 +135,8 @@ def completed_results(db: Session, mode: str | None = None, run_ids=None):
     if mode is not None:
         query = query.where(CampaignRun.synthetic.is_(mode == "demo"))
     if run_ids is not None:
-        query = query.where(CampaignRun.id.in_(run_ids))
+        # Coverage has already loaded each run once in this snapshot.
+        query = query.where(CampaignRun.id.in_(run_ids)).options(load_only(CampaignRun.id))
     return db.execute(query).all()
 
 
@@ -317,6 +318,11 @@ def compare(db: Session, before_id: str, after_id: str) -> dict:
         reasons.append("incomplete_runs")
     if any(not r["executions"] for r in (before, after)):
         reasons.append("missing_test_executions")
+    if any(
+        {t["id"] for t in r["scope"]["test_definitions"]} != {e["test_id"] for e in r["executions"]}
+        for r in (before, after)
+    ):
+        reasons.append("execution_manifest_mismatch")
     if any(e["state"] != "COMPLETED" for r in (before, after) for e in r["executions"]):
         reasons.append("incomplete_test_executions")
     if any(not e["result"] for r in (before, after) for e in r["executions"]):

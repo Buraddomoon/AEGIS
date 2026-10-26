@@ -274,3 +274,54 @@ def test_completed_child_without_validation_result_is_not_comparable(admin):
     assert "missing_validation_results" in report["comparison"]["comparability_reasons"]
     assert report["summary"]["after"]["valid_tests"] == 0
     assert report["summary"]["detected_rate_delta_percentage_points"] is None
+
+
+def test_missing_planned_child_is_not_a_complete_comparative_scope(admin):
+    first = create_queued(admin, ["demo-shell", "demo-powershell"])
+    assert claim_next() == first["id"]
+    process_run(first["id"])
+    with session_factory()() as db:
+        source = db.get(CampaignRun, first["id"])
+        fixture = CampaignRun(
+            campaign_id=source.campaign_id,
+            laboratory_id=source.laboratory_id,
+            requested_by=source.requested_by,
+            idempotency_key=uuid.uuid4().hex,
+            state="COMPLETED",
+            scope=source.scope,
+            scope_hash=source.scope_hash,
+            synthetic=True,
+            ended_at=now(),
+        )
+        db.add(fixture)
+        db.flush()
+        child = Execution(
+            run_id=fixture.id,
+            test_id="demo-shell",
+            asset_id=source.scope["asset_id"],
+            marker="missing-child-fixture-" + uuid.uuid4().hex,
+            state="COMPLETED",
+            executed=True,
+            synthetic=True,
+        )
+        db.add(child)
+        db.flush()
+        db.add(
+            ValidationResult(
+                execution_id=child.id,
+                outcome="INCONCLUSIVE",
+                reason="Synthetic incomplete-manifest fixture.",
+                logic_version=source.scope["logic_version"],
+                synthetic=True,
+                collection_complete=False,
+                telemetry_available=False,
+                alerts_available=False,
+            )
+        )
+        fixture_id = fixture.id
+        db.commit()
+    result = admin.get(
+        "/api/v1/coverage/compare/report", params={"before": first["id"], "after": fixture_id}
+    ).json()
+    assert not result["comparison"]["comparable"]
+    assert "execution_manifest_mismatch" in result["comparison"]["comparability_reasons"]
