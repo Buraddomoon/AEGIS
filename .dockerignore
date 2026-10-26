@@ -13,6 +13,7 @@ docs
 .mypy_cache
 .ruff_cache
 **/*.agekey
+**/*.key
 **/*.age
 **/*.dump
 **/*.dump.partial

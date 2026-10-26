@@ -23,7 +23,16 @@ def check_paths(paths: list[str]) -> list[str]:
                 for part in path.split("/")
             )
             or path.endswith(
-                (".log", ".pyc", ".tsbuildinfo", ".dump", ".dump.partial", ".age", ".agekey")
+                (
+                    ".log",
+                    ".pyc",
+                    ".tsbuildinfo",
+                    ".dump",
+                    ".dump.partial",
+                    ".age",
+                    ".agekey",
+                    ".key",
+                )
             )
             or (path.split("/")[-1].startswith(".env") and path != ".env.example")
         ):

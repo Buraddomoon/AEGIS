@@ -31,7 +31,7 @@ def test_checks_only_index_and_redacts_secret_values(tmp_path, all_tracked):
 
 
 @pytest.mark.parametrize(
-    "path", [".env", "backup.agekey", "dir/.env.production", "line\nbreak.age"]
+    "path", [".env", "backup.agekey", "private.key", "dir/.env.production", "line\nbreak.age"]
 )
 def test_rejects_sensitive_paths_even_with_newline_in_filename(tmp_path, path):
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
