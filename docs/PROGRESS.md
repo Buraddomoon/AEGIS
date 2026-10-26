@@ -1639,3 +1639,11 @@ Este marco acrescenta **14commits granulares**, incluindo o checkpoint,
 totalizando **251**. Privado/main exclusiva e push por commit, sem branches/PRs,
 force push ou histórico reescrito. Consultar git log/status para hash/mensagem
 final, árvore limpa e sincronização efetivamente concluída após o push.
+
+## 2026-10-26 — em desenvolvimento: backups criptografados
+
+Próxima etapa autorizada por “prossiga”. ADR0016 fixa age/X25519 com dependência
+opcional host-only, chave separada, artefatos privados e verificação pela mesma
+restauração offline existente. Retenção só plano; sem upload, exclusões, mudanças
+no Demo ativo ou novo ensaio Linux/Wazuh. Implementação e testes ainda pendentes;
+não declarar cópias cifradas/recuperação validadas antes de executar os checks.
