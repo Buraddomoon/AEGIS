@@ -13,3 +13,10 @@ Vite atende 18780 e faz proxy `/api` para FastAPI 18781. Configure `PUBLIC_ORIGI
 O Compose completo e o Vite usam a mesma porta 18780; interrompa os serviços de aplicação antes de desenvolver com Vite. Banco/Redis podem continuar ativos. `make down` não remove volumes; o override de desenvolvimento continua associado ao projeto até os containers serem recriados sem ele.
 
 Locks Python são específicos a CPython 3.13/Linux x86_64, com hashes de wheels. Para outra plataforma, revise `python scripts/lock_dependencies.py` e `--dev`, execute testes e atualize o ADR. Não remova verificação de hashes para contornar incompatibilidades sem uma resolução revisada. Node usa `npm ci` e lock de integridade.
+
+O gerador exige Linux e cria `.env` com modo0600. Não copie `.env.example` para
+esse arquivo: valores vazios/exemplos são recusados, assim como links, arquivos
+compartilhados, permissões públicas e escrita concorrente. Uma configuração válida
+é preservada byte a byte; somente a configuração histórica sem APP_DB_PASSWORD
+recebe esse segredo independente. Se houver erro, corrija o arquivo local após
+revisão; não apague segredos existentes para tentar reinstalar o banco.
