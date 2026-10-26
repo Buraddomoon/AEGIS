@@ -1,4 +1,4 @@
-"""Audit production lock, fail unknown findings, keep reviewed finding visible."""
+"""Audit production and host-backup locks; reject unknown findings, expose reviewed ones."""
 
 import json
 import subprocess
@@ -16,6 +16,8 @@ result = subprocess.run(
         "pip_audit",
         "-r",
         "requirements.lock",
+        "-r",
+        "requirements-backup.lock",
         "--no-deps",
         "--disable-pip",
         "--format",
