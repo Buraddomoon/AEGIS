@@ -182,6 +182,16 @@ Os testes usam schemas PostgreSQL temporários; não truncam o banco da aplicaç
 
 CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de execuções redundantes. Desenvolvimento exclusivamente em `main`, commits granulares e push direto, conforme política em [AGENTS.md](AGENTS.md).
 
+## Backup local verificável
+
+Backup consistente PostgreSQL e cópias age/X25519 com chave separada. O comando
+`verify-sealed-backup` decripta a cópia, restaura num PostgreSQL descartável sem
+rede e compara todas as tabelas/estrutura antes de emitir recibo; não troca o
+banco em uso. `backup-vault-plan` só indica retenção, sem excluir arquivos.
+[Ferramentas, custódia e limites](docs/operations/encrypted-backups.md).
+Chave/cópia no mesmo computador não protegem contra perda do host; transporte
+externo, segredos/configuração/imagens e cutover exigem procedimentos próprios.
+
 ## Limitações reais
 
 - MVP de workspace único: usuários autenticados compartilham as consultas; não há isolamento multi-tenant, MFA, SSO ou recuperação de senha pela interface.

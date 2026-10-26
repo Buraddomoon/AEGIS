@@ -1,5 +1,15 @@
 # Changelog
 
+## Continuidade2026-10-26 — backups cifrados verificáveis
+
+- age/X25519 em streaming com pyrage opcional host-only, chaves privadas separadas,
+  limites/arquivos privados e publicação exclusiva, sem novo endpoint.
+- Decriptação autenticada completa, hash dos bytes consumidos e restore na mesma
+  engine offline, sem fallback ao original ou alteração no banco em uso.
+- Inventário/retenção somente leitura: snapshots distintos e verificados, chave
+  disponível, cópias incompletas/não verificadas preservadas; sem exclusão/upload.
+- Sem mudança de schema, frontend, senha humana ou novo ensaio Linux/Wazuh.
+
 ## Continuidade2026-10-26 — cobertura por recorte e relatórios comparativos
 
 - Filtros por ambiente, período de solicitação e release/legado, preservando

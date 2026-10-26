@@ -313,3 +313,12 @@ política de retenção destrutiva não estão estabelecidos.
 Fontes: [pg_dump17](https://www.postgresql.org/docs/17/app-pgdump.html),
 [pg_restore17](https://www.postgresql.org/docs/17/app-pgrestore.html),
 [snapshots exportados](https://www.postgresql.org/docs/17/functions-admin.html#FUNCTIONS-SNAPSHOT-SYNCHRONIZATION).
+
+## Cópias cifradas
+
+A extensão host-only age/X25519 acrescenta `backup-keygen`, `seal-backup`,
+`verify-sealed-backup` e `backup-vault-plan`. A cópia cifrada pode ser decriptada
+e restaurada no mesmo clone offline sem acessar banco/dump fonte. Originais,
+chaves, imagens e evidências não são removidos; retenção permanece só plano.
+[Procedimento, custódia e limites](encrypted-backups.md). Transporte externo,
+guarda independente de chaves e cutover continuam pendentes.

@@ -142,3 +142,19 @@ Tests: test_analytics_selection/queries/api, test_analysis_export e UI
 coverage-filters/comparison.test.tsx; E2E Demo separado de qualquer lab real.
 Autovacuum só das tabelas dos schemas/bancos pytest descartáveis é desabilitado
 antes do seed para determinismo de NOWAIT; nunca fazer isso no banco ativo.
+
+Backups cifrados (ADR0016): vault.py é host-only e pyrage1.4.0 é extra opcional
+backup/dev; nunca importar crypto na API/worker ou adicionar ao lock runtime.
+Somente age v1/X25519, sem plugins/SSH/senhas/cripto própria. Chave0600 separada,
+sem imprimir segredo/argv. Framing fixo, manifesto4MiB/conteúdo1GiB; autenticar
+stream inteiro e conferir hash/count dos bytes consumidos antes de unpack/restore,
+incluindo corrida in-place. Expected SHA precisa de origem independente confiável;
+public-key encryption não autentica remetente e pg_restore executa SQL.
+verify-sealed usa staging privado e mesma engine/guardas offline, sem fallback ao
+banco/dump fonte. Só publicar recibo após cleanup de clone E staging. Sem upload,
+cutover ou limpeza de backups/keys/imagens/journals. Plano cifrado só leitura:
+mínimo7snapshots distintos verificados/com chave e30dias; re-selagem não verificada
+não influencia idade/ordem dos bons. Recibos locais são registros, não assinaturas.
+Testes test_backup_vault e test_backup_cli; make test-recovery. SIGKILL pode deixar
+staging e unlink não apaga seguramente. Chave/cópia locais não protegem contra
+perda do host; destino/custódia externos precisam de decisão própria do usuário.

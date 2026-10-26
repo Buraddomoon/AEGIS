@@ -10,6 +10,7 @@ Código ÆGIS: MIT. Dependências são instaladas como componentes separados; ne
 | pySigma | LGPL-2.1-only; biblioteca separada sem modificação |
 | React, Vite, TypeScript, Tailwind, TanStack Query, Recharts | MIT |
 | Lucide | ISC, com avisos upstream de ícones |
+| pyrage1.4.0, extra backup/dev somente host | MIT upstream; Rust age0.12.1 e dependências mantêm licenças/avisos próprios; formato age v1 |
 | Argon2-cffi | MIT; backend Argon2 mantém avisos próprios |
 | httpx, Uvicorn | BSD-3-Clause |
 | PostgreSQL | PostgreSQL License |
@@ -20,6 +21,6 @@ Código ÆGIS: MIT. Dependências são instaladas como componentes separados; ne
 | Sigma importado pelo usuário | Licença da regra original, não definida pelo AEGIS |
 | Puppeteer Core | Apache-2.0; navegador do host possui licença própria |
 
-Fontes oficiais: [Redis](https://redis.io/legal/licenses/), [pySigma](https://github.com/SigmaHQ/pySigma), [psycopg](https://www.psycopg.org/), [ATT&CK](https://github.com/mitre-attack/attack-stix-data), [Atomic](https://github.com/redcanaryco/atomic-red-team), [Lucide](https://lucide.dev/license).
+Fontes oficiais: [pyrage](https://github.com/woodruffw/pyrage/tree/c2aff17ff4154df5ce066e7734aaf8e090cb9e39), [age Rust](https://github.com/str4d/rage), [Redis](https://redis.io/legal/licenses/), [pySigma](https://github.com/SigmaHQ/pySigma), [psycopg](https://www.psycopg.org/), [ATT&CK](https://github.com/mitre-attack/attack-stix-data), [Atomic](https://github.com/redcanaryco/atomic-red-team), [Lucide](https://lucide.dev/license).
 
 Versões de todas as dependências Python/Node constam dos lockfiles. As licenças das distribuições Python são preservadas pelo pip em dist-info e as Node em seus pacotes. Antes de redistribuir imagens/bundles, revisar também dependências transitivas, disponibilizar avisos/fontes exigidos e registrar digests. Nenhum serviço comercial de IA ou outro serviço pago é necessário ao funcionamento principal.

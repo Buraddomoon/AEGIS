@@ -9,3 +9,11 @@ Cookies de sessão HttpOnly; token persistido por SHA-256, CSRF distinto vincula
 Wazuh recebe credenciais somente no ambiente de implantação; não aparecem em endpoints de status, auditoria, URL ou relatórios. CA própria pode ser montada somente leitura em override; nunca usar verify=False. Rotação de senhas do banco existente exige procedimento PostgreSQL, não apenas editar `.env`. `init_env.py` preserva valores existentes.
 
 E2E usa senha aleatória via stdin de subprocessos, sem arquivo de credenciais; schema e usuário são descartados. Não compartilhar `.local` ou dumps sem inspeção.
+
+Identidades age de backup ficam em `.local/backup-keys`,0600/0700, separadas do
+ciphertext. Só o destinatário público e ID/caminho são exibidos; a chave não passa
+por argumentos, API ou auditoria. `.agekey`/`.age` são ignorados pelo Git/build e
+recusados pelo scanner staged. Gerar identidade nova não recripta cópias antigas,
+que precisam da original. Custódia independente e destino externo permanecem
+escolhas operacionais; chave e cópia locais não protegem da perda do host.
+[Operação](../operations/encrypted-backups.md).
