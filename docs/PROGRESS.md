@@ -1845,3 +1845,102 @@ Este marco acrescenta **8 commits granulares**, incluindo este checkpoint,
 totalizando **272**. Somente main, repositório AEGIS privado, push após cada commit;
 sem PR/branch/force push ou reescrita. Código 88e8c10, evidência 5ef9ad3. Conferir
 hash/mensagem finais, árvore limpa e sincronização após o push deste documento.
+
+## 2026-10-26 — prévia Sigma entregue no Demo
+
+Continuidade após pergunta sobre o que falta para fechar o produto e autorização
+para seguir. Base e0e44ba, main limpa/sincronizada, repositório privado confirmado.
+Pesquisa oficial atual confirmou o bloqueio real: OpenSearch 2.0.3 / Elasticsearch 2.1.1
+continuam exigindo pySigma<2, enquanto o core da aplicação permanece 2.0.1. SHA dos
+wheels e METADATA conferidos iguais ao snapshot anterior; nenhum backend instalado,
+constraint ignorada ou parser reduzido. Conversão SIEM continua pendente.
+
+### Incremento funcional
+
+- [ADR0017](architecture/decisions/0017-sigma-mapping-preview.md): prévia independente
+  com ProcessingPipeline/FieldMappingTransformation oficiais, um rename fixo por
+  perfil, modelo novo apenas em memória e invariância de valores/estrutura/condição.
+- Política plana de strings literais, condição única e limites antes do parser;
+  modificadores/fieldref/keywords/nesting/unknown fields e custom/pipeline/vars não
+  entram no subconjunto. YAML/preflight seguros anteriores continuam obrigatórios.
+- GET de versão/hash/perfil com viewer, rate 30/min, erros estáticos e documento
+  inteiro por SHA; unsupported sem before/after. Não modifica versão, scope,
+  relatório, cobertura ou veredicto; nenhum flag de conversão/consulta/implantação
+  ou mapping físico é habilitado. Perfil candidato/hash anteriores inalterados.
+- UI em Regras → Preparação de conversão → Gerar prévia de campos. Antes/depois
+  reais; recusa de contexto/contrato/flags divergentes, resposta atrasada e cache
+  após erro. Conversão bloqueada continua explícita.
+- Smoke Compose verifica a prévia positiva no papel SQL runtime e só seleciona
+  laboratório autorizado de kind=demo/synthetic=true. Nada inicia um lab real.
+
+Arquivos: sigma_mapping.py, endpoint em api.py, MappingPreview.tsx/RuleReadiness.tsx,
+types.ts, testes Python/UI e harness e2e/smoke. Sem dependência, migração ou mudança
+na engine/worker/contratos de execução. Versão do código continua 0.2.0.
+[Evidência detalhada](evidence/sigma-mapping-2026-10-26/README.md) e
+[revisão de segurança](security/review-sigma-mapping-2026-10-26.md).
+
+### Verificação
+
+| Check | Resultado |
+|---|---|
+| Novos testes | 35 domínio/pipeline + 7 API + 13 UI; incluídos na suíte final |
+| `make test` |**786 Python passaram** em 306,72 s e **66 React passaram** em 3,63 s |
+| Lint/build/audit/pip check | Aprovados; npm: zero; um advisory DiskCache conhecido/revisado e visível; aviso TestClient/httpx preservado |
+| Guard novo em processo | Core/pipeline reais sem cache/backend/rede/subprocessos/gravações; loaders de pipeline proibidos |
+| Firefox E2E | 4 runs / 16 testes sintéticos, 13 capturas e zero erros JS, relatório histórico idêntico e modal em 390 px sem overflow |
+| Docker | Build próprio e troca só de API/worker, sem recriar DB/Redis/migrate; health ready: 200 |
+| Smoke da imagem final | Prévia/hash/histórico, SQL restrito, análise/preparação, manual+agendado, grant/revoke, 8 resultados sintéticos e relatórios aprovados |
+| Backup pré-deploy | 32 tabelas / 3.169 linhas restauradas em clone offline; hash/estrutura iguais e cleanup confirmado |
+| Fonte/Git | 321 arquivos, 80 Markdown, 218 links locais e 14 cabeçalhos PNG; sem achados nos padrões/paths rastreados |
+
+CI final executável d5982a9: **SUCCESS**,
+[run40398531188](https://github.com/Buraddomoon/AEGIS/actions/runs/40398531188),
+782 passed / 4 skipped opcionais Docker e 66 React, lint/tipos/build/auditoria. Os quatro
+opcionais passaram localmente. Commits posteriores só atualizam docs/capturas.
+A execução remota redundante 70b5499 foi cancelada pela política de concurrency.
+
+Revisão especializada adicional somente leitura do código 283c544 não encontrou
+bloqueador concreto: rename/invariância, flags desabilitados, ownership/SHA e
+contexto da UI conferidos. O revisor não executou testes, serviços, rede ou SIEM
+e não leu segredos; não é pentest independente nem garantia de ausência de falhas.
+
+Corrigidos dois problemas de fixtures: import normaliza whitespace, portanto a
+invariância usa conteúdo efetivamente salvo; /api/v1 não pode casar a versão v1
+do teste de resposta atrasada. Falhas iniciais não foram contadas como pass.
+E2E repetido após ajuste de enquadramento da captura e teste do modal 390 px; ambas
+as rodadas passaram, sem efeitos fora dos schemas descartáveis. Galeria agora
+com 13 imagens Demo e uma Linux histórica; PNGs inspecionados e sem dados empresariais.
+
+### Implantação local e continuidade
+
+Imagem API/worker atual:
+sha256:ec57c8c9177fa8a4a8a5141bb958ed86e6bcf245f003dcb2f7972ea34a5d0314.
+Anterior ef97abf preservada em aegis-before-sigma-mapping:20261026 e na tag
+recovery; não apagar imagens necessárias aos dumps anteriores. Guard pré-deploy
+confirmou zero jobs/reservas/agendamentos retomáveis. Nenhuma senha/configuração
+humana alterada; administrador ativo e mesmas credenciais em http://localhost:18780.
+
+Banco mantém a0d9c7e21b45 / 32 tabelas e 23 runs: 21 anteriores mais duas do smoke, todas
+as novas sintéticas. Conta temporária desativada/plano revogado, zero pendências,
+reservas ou planos retomáveis; schemas pytest/E2E removidos, autovacuum public
+intacto. Linux/Wazuh com zero containers; nove volumes/journals anteriores preservados.
+Nenhum alvo externo/SIEM consultado e nenhuma nova simulação real.
+
+Backup 20261026T204444Z-b85ee5892de445f08a99c18a3e28e5b2, dump SHA256
+2253cab121564ccd2d2e9e36ab0fca44bbd9be0a095a6d00c69e8e9e65ce02f4:
+verified, 32 tabelas / 3.169 linhas, network=none, application_started=false,
+clone_removed=true em 4,752 s. É backup privado em claro; não equivale a criptografia
+ou recuperação operacional do destino. Cópia/chave cifradas anteriores preservadas;
+custódia externa continua adiada, sem upload/compra/novo destino.
+
+Pendências reais para fechar a operação: backend/pipeline completo compatíveis e
+mapping físico/consulta validados sob escopo; rotação PKI/binding/recuperação dos
+laboratórios; recuperação entre hosts/configuração/secrets/imagens/cutover/RPO/RTO
+e custódia independente. Windows/PDF/outros provedores/multi-workspace continuam
+expansões. Próximo incremento local sugerido: rotação/verificação de certificados
+como operação offline revisável, sem reiniciar labs ou reaproveitar autorizações.
+
+Este marco acrescenta **10 commits granulares**, incluindo este checkpoint,
+totalizando **282**. main exclusiva, GitHub AEGIS privado, push após cada commit;
+sem PR/branch/force push ou reescrita. Código/harness d5982a9, evidência 283c544.
+Conferir hash/mensagem finais, árvore limpa e sincronização após o push final.

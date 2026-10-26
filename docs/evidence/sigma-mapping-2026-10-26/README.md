@@ -50,7 +50,10 @@ então a invariância compara o conteúdo salvo; a rota /api/v1 não pode ser
 confundida com /versions/v1 no teste de resposta atrasada. Falhas iniciais não
 foram contabilizadas como testes aprovados. Aviso Starlette/TestClient/httpx permanece.
 
-CI do commit final executável e revisão de fonte: consultar o
+CI do commit final executável d5982a9: **SUCCESS**,
+[run40398531188](https://github.com/Buraddomoon/AEGIS/actions/runs/40398531188),
+782 passed / 4 skipped opcionais Docker e 66 React; lint/tipos/build/auditoria
+aprovados. Os quatro opcionais passaram localmente. Revisão de fonte no
 [checkpoint](../../PROGRESS.md). Commits posteriores só registram documentação
 ou capturas; não alegar validação de código novo pela CI de um commit anterior.
 

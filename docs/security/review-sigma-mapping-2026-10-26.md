@@ -34,3 +34,9 @@ alegação de ausência de vulnerabilidades. Não há consulta a SIEM ou novo en
 
 [ADR0017](../architecture/decisions/0017-sigma-mapping-preview.md) ·
 [Testes e validação](../evidence/sigma-mapping-2026-10-26/README.md).
+
+Revisão especializada adicional somente leitura de 283c544: nenhum bloqueador
+concreto encontrado em rename/invariância, endpoint de versão/hash, UI ou imports
+fixos. O revisor não executou testes/serviços/rede/SIEM nem leu segredos. Conclusão
+limitada à inspeção estática; resultados executados acima foram verificados pelo
+agente responsável.
