@@ -5,25 +5,38 @@ import json
 import os
 import subprocess
 from pathlib import Path
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 def openssl(*args: str):
     subprocess.run(
-        ["openssl", *args], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        ["/usr/bin/openssl", *args],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=10,
+        env={"PATH": "/usr/bin:/bin", "LC_ALL": "C", "OPENSSL_CONF": "/dev/null"},
     )
 
 
-def initialize(output: Path, *, server_ip: str = "172.30.88.2") -> Path:
+def initialize(
+    output: Path, *, server_ip: str = "172.30.88.2", identifiers: dict[str, str] | None = None
+) -> Path:
     if server_ip not in {"172.30.88.2", "172.30.89.2"}:
         raise ValueError("Endereço fora das duas redes de laboratório revisadas.")
+    names = ("runner_id", "laboratory_id", "asset_id")
+    if identifiers is None:
+        identifiers = {name: str(uuid4()) for name in names}
+    elif set(identifiers) != set(names):
+        raise ValueError("Forneça exatamente as três identidades existentes.")
+    else:
+        identifiers = {name: str(UUID(identifiers[name])) for name in names}
     output = output.resolve()
     output.mkdir(
         mode=0o700, parents=True, exist_ok=False
     )  # Never rotate identity/journal implicitly.
     previous = os.umask(0o077)
     try:
-        identifiers = {name: str(uuid4()) for name in ("runner_id", "laboratory_id", "asset_id")}
         for purpose in ("server", "client"):
             root = output / f"{purpose}-ca"
             openssl(
@@ -46,6 +59,10 @@ def initialize(output: Path, *, server_ip: str = "172.30.88.2") -> Path:
                 "basicConstraints=critical,CA:TRUE",
                 "-addext",
                 "keyUsage=critical,keyCertSign,cRLSign",
+                "-addext",
+                "subjectKeyIdentifier=hash",
+                "-addext",
+                "authorityKeyIdentifier=keyid:always",
             )
             leaf = output / f"runner-{purpose}"
             openssl(
@@ -64,6 +81,7 @@ def initialize(output: Path, *, server_ip: str = "172.30.88.2") -> Path:
                 f"/CN=aegis-{purpose}-{identifiers['runner_id']}",
             )
             extensions = "basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\n"
+            extensions += "subjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid:always\n"
             extensions += (
                 f"extendedKeyUsage=serverAuth\nsubjectAltName=IP:{server_ip}\n"
                 if purpose == "server"
