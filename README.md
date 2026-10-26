@@ -2,37 +2,25 @@
 
 **Purple Team Automation & Detection Validation Platform**
 
-Simulações controladas, resultados reproduzíveis e decisões de detecção sustentadas por evidências.
+Se um comportamento de ataque acontecesse no laboratório, os controles conseguiriam
+observá-lo, detectá-lo e demonstrar essa detecção com evidências?
 
-Equipes defensivas precisam verificar se seus controles observam e detectam comportamentos de ataque. O ÆGIS conecta campanhas, aprovação de escopo, execução, coleta, correlação e acompanhamento histórico num único fluxo.
+O ÆGIS automatiza esse ciclo: campanha → aprovação de escopo → simulação controlada
+→ coleta → correlação → evidências → comparação. O resultado preserva versões,
+identificadores e limites da análise, para que outra pessoa consiga verificá-lo.
 
-**Estado: Demo/Linux 0.2 com pipeline Wazuh validado em um ensaio local autorizado.** Demo mantém eventos sintéticos explícitos. Linux admite somente um marcador benigno revisado, com mTLS, aprovação por outra pessoa, recibos e cleanup persistidos. Wazuh 4.14.9 gerou um alerta original correlacionado: **DETECTED, synthetic=false**, sem atribuição ATT&CK artificial. Atomic Red Team não executa. Não é um SIEM, EDR ou shell remoto.
+**Versão do código: 0.2.0.** Demo persistente e funcional; Linux restrito a um
+marcador benigno; pipeline Wazuh validado em um ensaio próprio encerrado. O
+repositório permanece **privado**. Não é SIEM, EDR ou shell remoto.
 
-![Dashboard real do Demo Mode, com evidências explicitamente sintéticas](docs/images/overview.png)
+![Dashboard real do Demo, com dados sintéticos identificados](docs/images/overview.png)
 
-## O que funciona
+## Executar localmente
 
-- Login local com Argon2id, sessões opacas, CSRF, RBAC e limite distribuído de tentativas.
-- Catálogo oficial Enterprise ATT&CK20.0:706 técnicas/subtécnicas ativas; pesquisa, matriz, estados de retirada, proveniência e snapshots históricos. Publicação transacional revisada por CLI com commit/hashes, preservando escopos/evidências.
-- Quatro simulações em allowlist demonstrativa, com requisitos, comportamento e cleanup definidos. Arquivo marcador genérico não recebe técnica ATT&CK artificial.
-- Campanhas de escopo imutável, solicitações idempotentes, aprovação administrativa de uso único, expiração, confirmação de início e limite de duração.
-- Worker independente, fila transacional PostgreSQL, claim exclusivo, cancelamento cooperativo, cleanup e recuperação de execuções abandonadas.
-- Agendamentos Demo com aprovação explícita, validade, duração, limite de horários, pausa/revogação e histórico de autorizações.
-- Eventos originais, hashes SHA-256, justificativas de correlação, evidências inspecionáveis e auditoria.
-- Dashboard e métricas da API, denominadores explícitos, comparação de duas execuções e exportação HTML/JSON.
-- Cobertura por período/release/legado e relatórios agregados/comparativos HTML/JSON, com snapshot de leitura, membros/hashes e bloqueio de equivalência quando faltam resultados ou contexto.
-- Inventário Sigma com parsing pySigma, YAML limitado e versões imutáveis; associação revisada com testes, histórico e sinalização de revisão necessária. Análise estática por versão e diagnóstico de preparação/mapeamento com bloqueios explícitos. Nenhuma implantação automática de regras.
-- Runner Linux opt-in com um teste marcador benigno, mTLS, subprocesso supervisionado, lease, diário/fencing persistente e cleanup restrito; campanha integrada autorizada validou API/worker/SQL runtime, recibos, cleanup e UI, sem SIEM.
-- Coleta Wazuh opt-in no worker: binding administrativo de agente/regra, política/hash aprovados, polling com prazo integral, paginação, resumo imutável e UI/relatórios. Validação real do pipeline incluiu TLS, agente, regra, ACLs, evento original, evidência e relatório.
-- Backup consistente do Demo e restauração verificável em PostgreSQL temporário sem rede; inventário de dados/estrutura, hashes internos e plano de retenção sem exclusão. [Procedimento e limites](docs/operations/backup-recovery.md).
-- Ensaio de boot da API recuperada em quarentena somente leitura: sessões históricas e execução automática bloqueadas, revisão agregada e comparação dos dados após leitura. Não reativa a operação normal.
-- Reconciliação offline do clone Demo: invalida acessos/autorizações restaurados e encerra pendências sintéticas com auditoria, sem retomar jobs ou modificar o ambiente em uso.
-- Ensaio de novo ciclo Demo no destino recuperado, com conta/lab/aprovação novos, API/worker/Redis isolados e preservação verificável do histórico. Sem cutover.
-- [Ensaio Wazuh registrado](docs/evidence/wazuh-2026-10-22/README.md): uma campanha, um marcador de 43 bytes, um alerta da regra 100200, cleanup conferido. Containers/redes encerrados; volumes preservados. Não integra o Demo nem os testes padrão; nova execução requer novo escopo autorizado.
-
-## Início rápido
-
-Requisitos: Docker Engine com Compose, Git, Python 3 para gerar a configuração local; acesso à internet no primeiro build. Nenhuma instalação de Wazuh é necessária.
+Ambiente validado: Linux x86_64, Docker Engine com Compose, Make, Git e Python3.13.
+O host precisa de acesso ao repositório privado e internet para o primeiro build.
+Node/Python de desenvolvimento não são necessários dentro do host para executar
+as aplicações em containers; Python no host gera a configuração local.
 
 ```bash
 git clone git@github.com:Buraddomoon/AEGIS.git aegis
@@ -41,172 +29,167 @@ make up
 make bootstrap
 ```
 
-O repositório é **privado**; o clone exige acesso autorizado. `make up` gera segredos aleatórios em `.env` (0600), constrói a SPA/API, aplica migrações, faz seed e inicia PostgreSQL, Redis e worker. `make bootstrap` solicita usuário e senha no terminal, sem conta administrativa publicada.
+Abra **http://localhost:18780**. O bootstrap solicita seu usuário e senha; não há
+credenciais padrão. `make up` gera `.env` privado com segredos aleatórios,
+constrói a aplicação, aplica migrações, faz seed e inicia API/worker/PostgreSQL/Redis.
+O gerador preserva configurações válidas e recusa arquivos inseguros ou segredos
+vazios: **não copie `.env.example` para `.env`**.
 
-Abra **http://localhost:18780**. Se não houver Make: execute `python3 scripts/init_env.py`, `docker compose up -d --build` e `docker compose run --rm migrate python -m aegis.cli bootstrap`.
+Sem Make: `python3 scripts/init_env.py`, `docker compose up -d --build` e
+`docker compose run --rm migrate python -m aegis.cli bootstrap`.
 
-Para parar, `make down`. O volume do banco é preservado. Recursos configurados: limites de memória por serviço no Compose; consumo real depende do host e não foi usado como benchmark.
+Para parar: `make down`, preservando o volume do banco. A API publica somente
+loopback18780; banco/Redis não publicam portas no Compose padrão. Não instale
+Wazuh para usar o Demo. [Instalação e solução de problemas](docs/operations/deployment.md).
 
-## Demonstração reproduzível
+## Demonstração em sete passos
 
-1. Autentique com o administrador criado localmente.
-2. Abra **Campanhas → Nova campanha**, escolha Demo Lab e os quatro testes.
-3. Solicite execução; revise testes, versão do ambiente e fingerprint do escopo.
-4. Aprove e depois **Confirme e inicie**. A autorização permite uma única execução e expira.
-5. Abra resultados, eventos e evidências; confira `synthetic: true` e os hashes.
-6. Consulte cobertura e exporte relatório HTML ou JSON.
-7. Repita a campanha, aprove novamente e compare em **Cobertura de detecção**.
+1. Entre com a conta administrativa criada no bootstrap.
+2. Em **Campanhas**, crie uma campanha com Demo Lab e os quatro testes.
+3. Solicite execução e revise o escopo, a versão do ambiente e o hash.
+4. Aprove e confirme o início. Cada aprovação permite uma única execução.
+5. Abra os resultados e inspecione eventos, evidências, justificativas e hashes.
+6. Em **Cobertura de detecção**, aplique os filtros e exporte HTML ou JSON.
+7. Repita com nova aprovação e compare as duas execuções.
 
-Uma campanha com os quatro testes produz, por desenho do adaptador Demo:
-
-| Simulação | Resultado sintético | Interpretação |
+| Teste Demo | Resultado esperado, sintético | Evidência/interpretação |
 |---|---|---|
-| Shell Unix benigno | DETECTED | Alerta da regra esperada correlacionado à execução |
-| PowerShell benigno | OBSERVED_NOT_ALERTED | Telemetria correlacionada e consulta completa sem alerta esperado |
-| Descoberta de processos | NO_TELEMETRY | Execução confirmada, evidência insuficiente de telemetria |
+| Shell Unix benigno | DETECTED | Alerta esperado correlacionado ao teste |
+| PowerShell benigno | OBSERVED_NOT_ALERTED | Telemetria confirmada, sem alerta correspondente |
+| Descoberta de processos | NO_TELEMETRY | Execução confirmada, telemetria insuficiente |
 | Marcador temporário | INCONCLUSIVE | Consulta demonstrativamente indisponível |
 
-Isso representa **1 detectado / 3 testes válidos = 33,3% neste escopo sintético**; o inconclusivo é excluído. Não representa 33,3% de proteção de uma organização. Repetir sem alterar o escopo reproduz os mesmos cenários; não simula uma melhoria defensiva inexistente.
+Os quatro cenários usam adaptadores Demo e persistem dados reais da aplicação,
+sempre `synthetic=true`. Nenhum comando PowerShell ou comportamento ofensivo é
+executado nesse modo. **1 detectado / 3 testes válidos = 33,3% neste escopo
+sintético**; o inconclusivo fica fora do denominador. Esse número não mede a
+segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 
-![Execução real do aplicativo com resultados demonstrativos](docs/images/execution.png)
+![Resultados reais da aplicação para uma campanha sintética](docs/images/execution.png)
 
-Em **Matriz ATT&CK**, consulte origem, integridade e histórico do catálogo.
-O snapshot inicial distribuído contém somente técnicas ativas; uma publicação
-revisada do bundle completo também registra149revogadas e12descontinuadas.
-Cobertura da release atual é separada dos resultados históricos; atualizar
-metadados não comprova detecção. [Publicação e limites](docs/integrations/mitre-attack.md).
+## Funcionalidades e limites de validação
 
-![Consulta real de proveniência e histórico do snapshot inicial no Demo E2E](docs/images/attack-catalog.png)
+| Área | Implementado | Limite |
+|---|---|---|
+| Identidade | Argon2id, sessões opacas, CSRF, RBAC, rate limit | Workspace único; sem MFA/SSO |
+| Campanhas | Escopo/hash imutáveis, aprovação, fila PostgreSQL, cancelamento, timeout, cleanup | Linux exige revisão separada; nenhum comando arbitrário |
+| ATT&CK | Fonte oficial Enterprise20.0,706 técnicas/subtécnicas ativas no snapshot inicial; matriz, busca, proveniência e publicação controlada | Catalogado não significa testado; publicação completa inclui retiradas |
+| Evidências | Eventos originais, correlação por identidade/marcador/tempo/regra, hashes e histórico | Ausência de alerta não comprova ausência de telemetria |
+| Cobertura | Modo/período/release/legado, comparação e HTML/JSON com denominadores | Contexto incompleto bloqueia equivalência; delta não comprova causalidade |
+| Sigma | Parsing pySigma, versões, vínculos revisados, análise estática e diagnóstico de preparação | Conversão/implantação bloqueadas sem backend/pipeline compatíveis |
+| Agendamentos | Grants delimitados, limite de ocorrências, pausa/revogação e auditoria | Somente Demo; mínimo60s, até100horários e90dias por plano |
+| Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing e recibos/cleanup | Um marcador43bytes; sem técnica ATT&CK atribuída artificialmente |
+| Wazuh | Indexer somente leitura, TLS, binding agente/regra, paginação e coleta correlacionada | Um ensaio Linux/Wazuh4.14.9; sem Windows/archives/outras regras |
+| Recuperação | Backup consistente, restore offline, quarentena, reconciliação e novo ciclo Demo em clone | Sem cutover, recuperação entre hosts ou RPO/RTO garantidos |
+| Cópia cifrada | age/X25519 opcional host-only, chave separada, restore verificado e plano de retenção | Sem upload/expurgo; originais permanecem em claro; custódia ainda local |
 
-Em **Cobertura de detecção**, aplique período/ambiente/release antes de exportar
-o recorte ou comparar duas runs da mesma campanha. Legado permanece desconhecido;
-nenhuma mudança de taxa comprova melhoria defensiva por si só.
-[Filtros, denominadores e exportação](docs/operations/coverage-reports.md).
+![Filtros e exportações reais de cobertura no Demo E2E](docs/images/coverage.png)
 
-![Filtros e exportações reais no fluxo E2E Demo](docs/images/coverage.png)
+[Galeria de capturas reais e sua origem](docs/images/README.md) ·
+[Critérios de aceitação](docs/product/acceptance-criteria.md) ·
+[Roadmap](docs/product/roadmap.md)
 
-Para automatizar: abra **Agendamentos**, crie um plano para a campanha, defina início/fim, intervalo e limite de horários, revise e autorize como administrador. O worker executa automaticamente dentro desses limites. Atrasos acima de 30 segundos e laboratório ocupado geram descartes auditados, consumindo o orçamento sem backlog. Pausar exige nova aprovação para retomar; revogar encerra o plano. [Política e operação](docs/operations/scheduling.md).
+## Ensaios reais já encerrados
 
-![Agendamento Demo real com ocorrência e autorização rastreáveis](docs/images/schedules.png)
+O Linux próprio validou um marcador de43bytes, cleanup e idempotência; o recibo
+sem SIEM foi classificado **INCONCLUSIVE**, sem inventar alerta.
+[Escopo, instalação e limites](labs/linux/README.md).
 
-Regras Sigma podem ser associadas a testes após revisão explícita de versões,
-com justificativa, histórico e retirada. Novas versões sinalizam revisão
-necessária. A comparação explica mudanças dos escopos registrados, preservando
-relatórios antigos. Vínculos não comprovam implantação nem detecção.
-[Guia de operação](docs/operations/rule-test-reviews.md).
+Em2026-10-22, uma campanha separada percorreu marcador → observador passivo →
+agente001 → manager/regra100200 → FilebeatTLS → Indexer → correlação → relatório:
+**COMPLETED / DETECTED / CLEANED, synthetic=false**. Foram avaliados **um teste e
+zero técnicas ATT&CK**. A regra confirma a instrumentação desse marcador; não
+comprova eficácia de EDR ou proteção empresarial.
+[Alerta original, hashes e encerramento](docs/evidence/wazuh-2026-10-22/README.md).
 
-![Revisão real da interface usando uma regra de demonstração não implantada](docs/images/rule-test-links.png)
-
-![Comparação real de dois escopos Demo com versões e vínculos diferentes](docs/images/scope-comparison.png)
-
-Em **Regras → Análise estática**, inspecione condições, campos declarados e
-achados de uma versão salva. A análise é parcial e identificada por versão/hash;
-ausência de achados não comprova eficácia. Conversão Sigma/SIEM não configurada.
-[Checks e limites](docs/integrations/sigma.md#análise-estática-de-versões).
-
-![Análise real de uma versão Sigma de demonstração com seleção não referenciada](docs/images/sigma-analysis.png)
-
-Em **Regras → Preparação de conversão**, veja campos candidatos e requisitos
-pendentes por versão/hash. O backend oficial revisado exige pySigma<2, enquanto
-a aplicação usa2.0.1; conversão permanece bloqueada. Perfil de marcador não é
-pipeline executável e não comprova mapping físico do índice.
-[Contrato e fontes](docs/integrations/sigma.md#preparação-de-conversão-e-campos-candidatos).
-
-![Diagnóstico real com campos do marcador mapeados e conversão bloqueada](docs/images/sigma-readiness.png)
-
-## Linux Lab integrado — etapa 3
-
-O ensaio local explicitamente autorizado executou um programa fixo em container isolado: criou, conferiu o hash e removeu um marcador de 43 bytes. O diário preservou um único início após restart e retry. Sem consulta ao SIEM, a classificação foi **INCONCLUSIVE**; o comprovante de execução não é alerta defensivo.
-
-`make lab-init`, `make lab-config` e `make lab-build` preparam PKI/configuração/imagem sem iniciar o laboratório. `make lab-up`, `make lab-preflight`, `make lab-inspect`, `make lab-smoke` e `make lab-down` operam somente esse laboratório, após autorização específica. Não fazem parte do `make up` padrão. [Instalação, escopo, limitações e recuperação](labs/linux/README.md).
-
-O segundo ensaio, autorizado separadamente, percorreu cadastro/revisão → preflight mTLS → autorização do laboratório → solicitação pelo operador → aprovação por outro administrador → fila/worker → marcador → cleanup → relatório. Banco confirmou **uma única campanha real**, resultado INCONCLUSIVE, recibo de 43 bytes, zero eventos/alertas defensivos inventados e reserva liberada. Contas temporárias foram desativadas; laboratório revogado e containers/redes encerrados.
-
-`make linux-platform-config` e `make linux-platform-build` preparam o stack integrado separado. `make linux-platform-up/smoke/down` exigem autorização específica, conforme o [escopo concreto](labs/linux/README.md#escopo-concreto-do-novo-ensaio-integrado). API desse ensaio usa localhost:18785, banco próprio e o runner fixado; o Demo padrão continua em 18780.
-
-![Histórico real da única campanha Linux autorizada, resultado inconclusivo e recibo separado de evidência defensiva](docs/images/linux-execution.png)
-
-## Wazuh — ensaio local real validado
-
-O ensaio autorizado de 2026-10-22 percorreu arquivo real → observador passivo RO → agente 001 → manager/regra 100200 → Filebeat TLS → Indexer → worker/correlação → evidência e relatórios. Campanha `987bd48f-fafc-4a34-bf2a-2d310e7ca794`: **COMPLETED / DETECTED / CLEANED**, `synthetic=false`. Aprovação segregada de 120s, apenas um marcador de 43 bytes. O pipeline usou imagens oficiais4.14.9 fixadas por digest e credenciais/PKI próprias.
-
-[Alerta original, observação e resultado verificáveis](docs/evidence/wazuh-2026-10-22/README.md) incluem IDs/hash, limites e encerramento. A regra valida somente a instrumentação desse marcador: **um teste válido, zero técnicas ATT&CK avaliadas**, sem comprovar eficácia de EDR ou proteção empresarial. Archives não foram habilitados. O [procedimento](labs/wazuh/ASSAY.md) não autoriza repetição; o stack foi encerrado, o laboratório revogado e as contas temporárias desativadas. Relatórios completos e banco do ensaio foram preservados localmente.
-
-A captura abaixo mostra o Demo padrão, que continua sem conector configurado. O ensaio usou banco/porta18786 separados; seus dados não foram inseridos artificialmente no Demo.
-
-![Estado real da aplicação: Wazuh desconectado e configuração por implantação](docs/images/wazuh-preparation.png)
+As autorizações foram consumidas: containers/redes encerrados, laboratórios
+revogados, contas temporárias desativadas e volumes/journals preservados. Os dados
+reais não foram inseridos no Demo. Um novo ensaio exige escopo e autorização
+específicos; `make up`, testes e CI não iniciam esses laboratórios.
 
 ## Arquitetura
 
 ```mermaid
 flowchart LR
   Browser[React / TypeScript] --> API[FastAPI / RBAC / CSRF]
-  API --> DB[(PostgreSQL: dados + fila)]
-  API --> Redis[(Redis: limites / heartbeat)]
-  Worker[Worker independente + dispatcher Demo] --> DB
+  API --> DB[(PostgreSQL: dados e fila)]
+  API --> Redis[(Redis: limites e heartbeat)]
+  Worker[Worker e dispatcher Demo] --> DB
   Worker --> Demo[ExecutionAdapter Demo]
-  Worker --> Linux[ExecutionAdapter Linux: mTLS / marcador fixo]
-  Linux --> Receipts[Recibo + cleanup, separados de telemetria]
+  Worker --> Linux[ExecutionAdapter Linux / mTLS]
+  Linux --> Receipts[Recibo e cleanup]
   Receipts --> DB
   Demo --> Telemetry[TelemetryProvider Demo]
-  Telemetry --> Validate[Correlação independente de SIEM]
+  Worker --> Wazuh[Coleta Wazuh aprovada]
+  Telemetry --> Validate[Correlação e validação]
+  Wazuh --> Validate
   Validate --> Evidence[Evidências / resultados / relatórios]
   Evidence --> DB
-  Worker --> Wazuh[Coleta Wazuh aprovada]
-  Wazuh -->|Alerta original correlacionado| Validate
 ```
 
-Monólito modular, sem microsserviços desnecessários. PostgreSQL é fonte de verdade e fila durável (`FOR UPDATE SKIP LOCKED`); Redis não transporta jobs serializados. API e worker usam papel de banco sem privilégios administrativos; evidências, versões Sigma e auditoria têm escrita append-only. [Arquitetura e decisões](docs/architecture/overview.md).
+Monólito modular com worker independente. PostgreSQL guarda a fila transacional
+(`FOR UPDATE SKIP LOCKED`); Redis atende rate limit e heartbeat, sem serializar
+jobs. API/worker usam papel SQL sem privilégios administrativos; auditoria,
+evidências e versões preservam histórico append-only. Integrações seguem contratos
+independentes do SIEM. Ferramentas de backup operam apenas no host.
+[Arquitetura](docs/architecture/overview.md) · [ADRs](docs/architecture/decisions) ·
+[API/OpenAPI](docs/api/overview.md).
 
-Stack: Python 3.13, FastAPI, Pydantic 2, SQLAlchemy 2, Alembic, psycopg 3, PostgreSQL 17, Redis 8; React, TypeScript, Vite, Tailwind 4, TanStack Query, Recharts e Lucide. Versões efetivas e hashes estão nos lockfiles. [Licenças](THIRD_PARTY_NOTICES.md).
+Python3.13, FastAPI, Pydantic2, SQLAlchemy2, Alembic, psycopg3, PostgreSQL17,
+Redis8; React, TypeScript, Vite, Tailwind4, TanStack Query, Recharts e Lucide.
+Versões/hashes estão nos locks. [Licenças e dados de terceiros](THIRD_PARTY_NOTICES.md).
 
-## Desenvolvimento e validação
+## Desenvolvimento e verificações
 
-Requisitos adicionais: Python 3.13, Node 24, npm e Firefox instalado para o E2E. Os locks Python publicados são para Linux x86_64 / CPython 3.13.
+Requisitos adicionais: Python3.13, Node24/npm e Firefox para E2E. Locks Python
+específicos a CPython3.13/Linuxx86_64; não remover hashes para contornar outra plataforma.
 
 ```bash
-make setup                 # ou make PYTHON=/caminho/python3.13 setup
-make infra                 # somente PostgreSQL/Redis locais
+make setup                 # aceita PYTHON=/caminho/python3.13
+make infra                 # PostgreSQL/Redis próprios em loopback18782/18783
 make migrate
-make test                  # domínio, integração PostgreSQL e componentes React
-make test-wazuh            # fixtures de coleta, campanhas, observador e TLS local; sem instalar SIEM
+make test                  # domínio, PostgreSQL e React
 make lint
 make build
 make audit
-make e2e                   # API, worker e schema descartável, navegador real
+make e2e                   # navegador/API/worker reais; schema descartável
+make release-check         # versões, links locais, cabeçalhos PNG e padrões de segredos
 ```
 
-Se estiver usando o Compose completo, pare API/worker (`docker compose stop api worker`) antes de iniciar `make dev-web`, que também utiliza a porta 18780. Para desenvolvimento, em terminais separados: `make dev-api`, `make dev-worker`, `make dev-web`. Bootstrap local: `.venv/bin/python -m aegis.cli bootstrap`; seed local: `.venv/bin/python -m aegis.cli seed`.
+Não execute suítes que compartilham RedisDB15 simultaneamente. Testes não truncam
+as tabelas da aplicação. O E2E usa schema e credenciais temporários e produz as
+capturas Demo. O Compose completo e `make dev-web` disputam18780; siga a
+[configuração de desenvolvimento](docs/development/setup.md).
 
-Os testes usam schemas PostgreSQL temporários; não truncam o banco da aplicação. E2E usa credenciais aleatórias em memória e schema descartável, executa o worker real e gera as capturas deste README. Sem mocks no fluxo E2E. Consulte [testes e evidências de validação](docs/development/testing.md).
+CI principal valida lint/tipos, PostgreSQL/React, build e auditoria, com cache e
+cancelamento de runs redundantes. Uma revisão de fonte separada confere mudanças
+de documentação sem instalar dependências nem bancos. `release-check` lê o índice
+Git; não substitui testes, auditoria, revisão humana ou ensaio de instalação.
+[Evidências de entrega](docs/operations/release.md) · [Testes](docs/development/testing.md).
 
-CI executa lint, tipos, testes, build e auditoria, com cache e cancelamento de execuções redundantes. Desenvolvimento exclusivamente em `main`, commits granulares e push direto, conforme política em [AGENTS.md](AGENTS.md).
+## Operação e limitações
 
-## Backup local verificável
-
-Backup consistente PostgreSQL e cópias age/X25519 com chave separada. O comando
-`verify-sealed-backup` decripta a cópia, restaura num PostgreSQL descartável sem
-rede e compara todas as tabelas/estrutura antes de emitir recibo; não troca o
-banco em uso. `backup-vault-plan` só indica retenção, sem excluir arquivos.
-[Ferramentas, custódia e limites](docs/operations/encrypted-backups.md).
-Chave/cópia no mesmo computador não protegem contra perda do host; transporte
-externo, segredos/configuração/imagens e cutover exigem procedimentos próprios.
-
-## Limitações reais
-
-- MVP de workspace único: usuários autenticados compartilham as consultas; não há isolamento multi-tenant, MFA, SSO ou recuperação de senha pela interface.
-- Linux real é limitado a um marcador fixo, sem atribuição ATT&CK artificial, Atomic ou comandos genéricos. Recuperação após crash mantém quarentena até cleanup confirmado; rotação de binding/certificado original ainda exige intervenção manual. Demo usa cancelamento cooperativo; Linux supervisiona processo e lease.
-- Wazuh validado apenas em um laboratório próprio com versão 4.14.9, schema aegis-json/1, agente Linux e regra de instrumentação100200. Isso não valida outras versões, Windows, regras padrão ou técnicas ATT&CK. Archives e coleta de ambientes empresariais não foram testados. Fixtures e reprocessamento de evidência gravada não são novas validações externas.
-- Sigma validado sintaticamente não equivale a detecção implantada. Associação com testes registra planejamento revisado; análise estática parcial está disponível; semântica completa, conversão compatível e implantação no SIEM continuam pendentes.
-- Agendamento habilitado somente para Demo: até 16 planos ativos, 100 horários por plano, mínimo 60 segundos de intervalo e validade máxima de 90 dias. Sem cron livre, Lab real, PDF, Caldera ou funções de IA. Relatórios são exportações dos registros persistidos, sem armazenamento de binários no banco.
-- Há um aviso transitivo conhecido em DiskCache, exigido pelo pySigma. O caminho de parsing usado não importa/utiliza o cache vulnerável; a revisão e sua verificação estão em [advisories](docs/security/dependency-advisories.json). Não alegamos ausência de vulnerabilidades.
-- Atualização ATT&CK é administrativa local, sem sincronização automática ou rollback de release; normalizador valida somente o perfil Enterprise utilizado. Legado sem versão no scope permanece desconhecido, e backup exige imagem/schema compatíveis.
-- Instalação padrão é HTTP em loopback. Exposição externa exige TLS, cookie Secure, revisão operacional e gestão própria de segredos. Não anunciar como enterprise-ready.
-
-[Roadmap](docs/product/roadmap.md) · [Critérios de aceite](docs/product/acceptance-criteria.md) · [Progresso e retomada](docs/PROGRESS.md) · [API/OpenAPI](docs/api/overview.md) · [Segurança](SECURITY.md)
+- Padrão local HTTP/loopback. Exposição externa requer TLS, cookies Secure e revisão
+  de proxy, segredos e operação. Sem isolamento multi-tenant ou recuperação de senha na UI.
+- DiskCache transitivo do pySigma tem advisory revisado e ainda visível. O caminho
+  de parsing utilizado não carrega o cache; não alegamos zero vulnerabilidades.
+  [Revisão e premissa testada](docs/security/dependency-advisories.json).
+- Sigma sem backend/pipeline compatível permanece bloqueado; Atomic importa somente
+  metadados. Windows, PDF, Caldera, outros SIEMs/EDRs e IA permanecem roadmap.
+- Backup não recupera automaticamente configuração, segredos, imagens ou journals
+  dos laboratórios. Chave/ciphertext no mesmo computador não protegem contra perda
+  do host. Destino externo foi adiado; nenhuma cópia foi enviada.
+  [Backup/restore](docs/operations/backup-recovery.md) ·
+  [Criptografia e custódia](docs/operations/encrypted-backups.md).
+- Sem garantia de desempenho, alta disponibilidade ou maturidade enterprise-ready.
+  [Progresso e retomada](docs/PROGRESS.md) registra testes efetivamente executados.
 
 ## Uso autorizado e licença
 
-Utilize somente em ambientes previamente autorizados. A plataforma não fornece comandos arbitrários, evasão, persistência maliciosa, coleta de credenciais ou exfiltração. Somente os ensaios benignos Linux e o pipeline Wazuh próprio explicitamente autorizados foram executados; nenhum alvo empresarial ou externo foi acessado.
+Use apenas em ambientes previamente autorizados. Sem shell remoto, evasão,
+persistência maliciosa, roubo de credenciais ou exfiltração. Nenhuma infraestrutura
+empresarial ou alvo externo foi utilizado nos ensaios.
 
-Código ÆGIS sob [MIT](LICENSE). Dataset MITRE e bibliotecas mantêm suas próprias licenças. A disponibilidade da licença não altera a visibilidade privada do repositório.
+Código sob [MIT](LICENSE); dados MITRE e dependências mantêm suas próprias licenças.
+Isso não altera a visibilidade privada. [Contribuição](CONTRIBUTING.md) ·
+[Política de segurança](SECURITY.md) · [Regras para agentes](AGENTS.md).
