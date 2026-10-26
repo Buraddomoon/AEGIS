@@ -85,6 +85,9 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 
 ![Filtros e exportações reais de cobertura no Demo E2E](docs/images/coverage.png)
 
+A prévia fica em **Regras → Preparação de conversão → Gerar prévia de campos**.
+[Subconjunto suportado e limites](docs/integrations/sigma.md#prévia-de-transformação-de-campos).
+
 [Galeria de capturas reais e sua origem](docs/images/README.md) ·
 [Critérios de aceitação](docs/product/acceptance-criteria.md) ·
 [Roadmap](docs/product/roadmap.md)

@@ -8,7 +8,7 @@ imagem de Demo prova uma detecção externa.
 As 13 capturas Demo foram geradas por `scripts/e2e.py` e `apps/web/e2e.mjs` no fluxo
 Firefox de 2026-10-26: 4 runs / 16 testes sintéticos, zero erros JavaScript e viewport de 390 px
 sem overflow, incluindo o modal de transformação. A rodada atual acrescentou a
-prévia oficial de rename e preservou o relatório histórico. São14arquivos com a
+prévia oficial de rename e preservou o relatório histórico. São 14 arquivos com a
 captura Linux anterior; nenhuma nova execução real de laboratório.
 [Política e limites da prévia](../integrations/sigma.md#prévia-de-transformação-de-campos).
 

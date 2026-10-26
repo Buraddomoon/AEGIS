@@ -42,9 +42,9 @@ segurança completa ou autorização de laboratório. Não há publicação auto
 | Escopo | Referência verificável |
 |---|---|
 | Versões de entrega | pyproject.toml, apps/web/package.json e package-lock.json: 0.2.0 |
-| Instalação Demo | Docker build/Compose/smoke já executados nos marcos anteriores; nesta consolidação, configuração nova temporária e Compose renderizado sem subir serviços |
-| Interface e fluxo completo | [E2E Firefox de 2026-10-26](../evidence/coverage-reports-2026-10-26/README.md), 4 runs / 16 testes sintéticos; 12 capturas Demo |
-| Galeria | [Arquivos e origem das 13 capturas](../images/README.md), incluindo uma histórica Linux |
+| Instalação Demo | Build/Compose/smoke executados; nova API/worker com prévia Sigma validados sem recriar DB/Redis; detalhes no registro de progresso |
+| Interface e fluxo completo | [E2E Firefox com prévia Sigma](../evidence/sigma-mapping-2026-10-26/README.md), 4 runs / 16 testes sintéticos; 13 capturas Demo |
+| Galeria | [Arquivos e origem das 14 capturas](../images/README.md), incluindo uma histórica Linux |
 | Linux real | [Escopo do laboratório](../../labs/linux/README.md); ensaio encerrado, recibo sem SIEM é INCONCLUSIVE |
 | Wazuh real | [Um ensaio fechado](../evidence/wazuh-2026-10-22/README.md), 4.14.9/regra 100200, um marcador, zero técnicas ATT&CK |
 | Cópia cifrada | [Restore real offline](../evidence/encrypted-backups-2026-10-26/README.md), 32 tabelas / 3.169 linhas; origem intacta |
