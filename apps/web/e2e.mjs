@@ -51,6 +51,27 @@ async function screenshot(name) {
   if (dismiss) await dismiss.click()
   await page.screenshot({ path: `../../docs/images/${name}.png`, fullPage: true })
 }
+async function selectComparisonPair(before, after) {
+  await page.waitForFunction(
+    (id) => {
+      const select = document.querySelector('.comparison-form select')
+      return select && !select.disabled && [...select.options].some((o) => o.value === id)
+    },
+    {},
+    before,
+  )
+  await page.select('.comparison-form select', before)
+  await page.waitForFunction(
+    (id) => {
+      const select = [...document.querySelectorAll('.comparison-form select')][1]
+      return select && !select.disabled && [...select.options].some((o) => o.value === id)
+    },
+    {},
+    after,
+  )
+  const selects = await page.$$('.comparison-form select')
+  await selects[1].select(after)
+}
 async function approveAndRun() {
   await button('Revisar e aprovar')
   await page.click('dialog input[type="checkbox"]')
@@ -130,12 +151,54 @@ try {
   await approveAndRun()
   await navigate('coverage')
   await text('Comparação entre execuções')
-  await page.select('.comparison-form select', firstId)
-  const selects = await page.$$('.comparison-form select')
-  await selects[1].select(secondId)
+  await selectComparisonPair(firstId, secondId)
   await button('Comparar execuções')
   await text('Configurações equivalentes')
   assert.equal(await page.$eval('tbody', (el) => el.querySelectorAll('tr').length), 4)
+  const exportedComparison = page.waitForResponse(
+    (r) => r.url().includes('/coverage/compare/report?') && r.url().includes('format=json'),
+  )
+  await button('Exportar comparação JSON')
+  const comparedReport = await (await exportedComparison).json()
+  assert.equal(comparedReport.synthetic, true)
+  assert.equal(comparedReport.comparison.before_id, firstId)
+  assert.equal(comparedReport.comparison.after_id, secondId)
+  assert.equal(comparedReport.summary.before.valid_tests, 3)
+  assert.equal(comparedReport.summary.after.valid_tests, 3)
+  assert.equal(comparedReport.summary.detected_rate_delta_percentage_points, 0)
+  assert.ok(comparedReport.before.run.executions.some((e) => e.evidence.length))
+  const exportedScope = page.waitForResponse(
+    (r) => r.url().includes('/coverage/report?') && r.url().includes('format=json'),
+  )
+  await button('Exportar recorte JSON')
+  const scopedReport = await (await exportedScope).json()
+  assert.equal(scopedReport.metrics.total_runs, 2)
+  assert.equal(scopedReport.metrics.valid_tests, 6)
+  assert.equal(scopedReport.metrics.members.length, 2)
+  assert.match(scopedReport.integrity_sha256, /^[a-f0-9]{64}$/)
+  await screenshot('coverage')
+  await page.select('select[aria-label="Release dos indicadores"]', 'legacy')
+  await button('Aplicar recorte')
+  await text('Versão não registrada no legado')
+  await text('Sem denominador válido')
+  await page.select('select[aria-label="Release dos indicadores"]', 'all')
+  await page.$eval('input[aria-label="Solicitadas a partir de"]', (el) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(
+      el,
+      '2100-01-01T00:00:00',
+    )
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+    el.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+  await button('Aplicar recorte')
+  await text('0 execuções no recorte')
+  await page.$eval('input[aria-label="Solicitadas a partir de"]', (el) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, '')
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+    el.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+  await button('Aplicar recorte')
+  await text('2 execuções no recorte')
   await navigate('overview')
   await text('8 testes concluídos')
   const coverage = await page.evaluate(async () => (await fetch('/api/v1/coverage')).json())
@@ -307,11 +370,9 @@ level: informational
     'Rule reviews must not rewrite historical reports',
   )
   await navigate('coverage')
-  await page.select('.comparison-form select', firstId)
-  const diffSelects = await page.$$('.comparison-form select')
-  await diffSelects[1].select(reviewedId)
+  await selectComparisonPair(firstId, reviewedId)
   await button('Comparar execuções')
-  await text('Configurações diferentes')
+  await text('Equivalência não confirmada')
   await text('Versões do inventário Sigma · 1 alteração(ões)')
   await text('Associações entre regras e testes · 1 alteração(ões)')
   await screenshot('scope-comparison')
@@ -366,7 +427,7 @@ level: informational
       runs: 4,
       tests: 16,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 11,
+      screenshots: 12,
       browserErrors: errors.length,
     }),
   )
