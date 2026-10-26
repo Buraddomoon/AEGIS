@@ -5,8 +5,8 @@ arquivos originais versionados. Dados Demo vêm da API/worker/PostgreSQL reais n
 schema E2E descartável; eventos/alertas desse adaptador são **sintéticos**. Nenhuma
 imagem de Demo prova uma detecção externa.
 
-As12capturas Demo foram geradas por `scripts/e2e.py` e `apps/web/e2e.mjs` no fluxo
-Firefox de2026-10-26:4runs/16testes sintéticos, zero erros JavaScript e viewport390px
+As 12 capturas Demo foram geradas por `scripts/e2e.py` e `apps/web/e2e.mjs` no fluxo
+Firefox de 2026-10-26: 4 runs / 16 testes sintéticos, zero erros JavaScript e viewport de 390 px
 sem overflow. [Evidência e limites](../evidence/coverage-reports-2026-10-26/README.md).
 Não houve uma nova rodada de navegador durante a consolidação da documentação.
 
@@ -24,7 +24,7 @@ Não houve uma nova rodada de navegador durante a consolidação da documentaç�
 | [Preparação Sigma](sigma-readiness.png) | Campos candidatos com conversão explicitamente bloqueada |
 | [Wazuh desconectado](wazuh-preparation.png) | Demo padrão sem conector; não representa o banco do ensaio Wazuh |
 | [Mobile](mobile.png) | Interface Demo em viewport móvel; screenshot pode excluir a barra de rolagem |
-| [Linux encerrado](linux-execution.png) | Captura histórica de2026-10-21: campanha real autorizada, INCONCLUSIVE sem SIEM, recibo separado de detecção |
+| [Linux encerrado](linux-execution.png) | Captura histórica de 2026-10-21: campanha real autorizada, INCONCLUSIVE sem SIEM, recibo separado de detecção |
 
 A imagem Linux foi capturada consultando o histórico após o único ensaio integrado,
 sem repetir o marcador. Ver [escopo e encerramento](../../labs/linux/README.md).

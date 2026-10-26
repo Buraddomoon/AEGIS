@@ -1,4 +1,7 @@
-# Aceite do MVP Demo
+# Aceite por escopo — código 0.2.0
+
+Critérios abaixo cobrem incrementos comprovados; não equivalem ao cumprimento de
+todo o roadmap. A versão do código não foi elevada para simular marcos concluídos.
 
 | Critério | Evidência / estado |
 |---|---|
@@ -64,3 +67,12 @@ Retenção somente leitura usa snapshots distintos e verificados/chave disponív
 sem exclusão/upload. Originais permanecem em claro, chave/cópia ainda locais.
 Guarda independente, recuperação entre hosts e RPO/RTO não são critérios aceitos.
 [Procedimento](../operations/encrypted-backups.md).
+
+Consolidação de entrega: gerador local com recusa de arquivos inseguros/segredos
+vazios, preservação de configuração válida e testes em diretórios descartáveis.
+Compose renderizado com configuração nova sem iniciar serviços; versões/links
+inline locais/cabeçalhos PNG/padrões de credenciais verificados no índice Git.
+README/galeria distinguem Demo, histórico Linux e ensaio Wazuh encerrado. CI leve
+separada para documentação não instala dependências nem bancos. Não é um novo
+boot completo, E2E, ensaio de laboratório ou release publicada.
+[Procedimento e limites](../operations/release.md).

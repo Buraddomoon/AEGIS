@@ -1,5 +1,15 @@
 # Changelog
 
+## Continuidade 2026-10-26 — consolidação de entrega
+
+- Gerador de configuração recusa arquivos inseguros, links/FIFO, segredos vazios
+  ou de exemplo e escrita concorrente; preserva configurações válidas.
+- Scanner do índice Git inteiro e `make release-check` para versões, links locais
+  inline e cabeçalhos/dimensões das capturas, com limites explícitos.
+- CI documental leve, README centrado na demonstração, galeria com procedência e
+  correção de descrições históricas de Wazuh/Lab na documentação operacional.
+- Sem atualização de dependências/schema/versão, implantação ou novo ensaio real.
+
 ## Continuidade2026-10-26 — backups cifrados verificáveis
 
 - age/X25519 em streaming com pyrage opcional host-only, chaves privadas separadas,

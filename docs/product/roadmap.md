@@ -1,5 +1,8 @@
 # Roadmap baseado em critérios verificáveis
 
+Código atual0.2.0. Os números abaixo organizam marcos funcionais; não são tags ou
+GitHub Releases publicadas. Ver [aceite por escopo](acceptance-criteria.md).
+
 ## 0.1 — Demo persistente
 
 Fundação, fluxo completo, evidências, interface, relatórios e comparações. Testes locais e de navegador, Compose e documentação. O aceite é desse escopo, não de toda a plataforma futura.
@@ -89,3 +92,10 @@ real32tabelas/3.169linhas verificada com origem/usuários preservados. Retençã
 inventário/plano, sem exclusão. Chave/cópia no mesmo computador não protegem de
 perda do host; destino externo, custódia, configuração/secrets/imagens e RPO/RTO
 continuam pendentes. [Operação](../operations/encrypted-backups.md).
+
+Consolidação de entrega concluída: instalação com configuração segura, README
+centrado no fluxo, galeria com procedência e revisão offline de fonte em CI leve.
+Custódia externa permanece adiada por escolha do usuário; sem novo ensaio real.
+Próximo incremento funcional sugerido: reavaliar backend/pipeline Sigma em ambiente
+de testes com constraints oficiais compatíveis, mantendo conversão bloqueada até
+validar o contrato. Não envolve implantação de regras ou operação Linux/Wazuh.

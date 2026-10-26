@@ -132,9 +132,10 @@ omite Config.Env e não expõe erros/paths brutos. `make wazuh-lab-inspect` é s
 leitura e retorna exit1 se o projeto não existe. Esses testes não validam um
 runtime Wazuh nem substituem a inspeção das permissões/mounts dentro do container.
 
-O ensaio [real proposto](../../labs/wazuh/ASSAY.md) foi autorizado sob preflight;
-permanece bloqueado por recursos disponíveis. `check-rule` futuro usa log sintético
-no sandbox wazuh-logtest e não equivale à ingestão real do marcador.
+O ensaio [real documentado](../../labs/wazuh/ASSAY.md) passou pelo preflight e foi
+executado e encerrado em 2026-10-22. `check-rule` foi verificado com log sintético
+no sandbox wazuh-logtest; a ingestão real foi conferida separadamente no ensaio.
+A autorização foi consumida e não permite iniciar novamente o laboratório.
 
 ## Ensaio Wazuh real registrado em 2026-10-22
 
@@ -194,3 +195,19 @@ a auditoria abrange requirements-backup.lock, sem ocultar advisory existente.
 [Restore real local registrado](../evidence/encrypted-backups-2026-10-26/README.md):
 32tabelas/3.169linhas a partir da cópia cifrada, origem intacta e cleanup aprovado.
 Sem E2E navegador novo ou Linux/Wazuh; essa entrega só acrescenta ferramentas host.
+
+## Consolidação de entrega — 2026-10-26
+
+`test_init_env.py` cobre configuração privada/aleatória/idempotente, preservação
+do histórico, recusa de segredos vazios/exemplos/duplicados, links/FIFO/mode/limites,
+UTF-8 inválido e concorrência. Não usa `.env` real. `test_repository_checks.py`
+exercita índices Git descartáveis, segredos redigidos, arquivo seguro só no worktree
+e nomes com newline. `test_release_check.py` usa Git real temporário para versões,
+locks, destinos ausentes/escape/esquema de URL, PNG inválido e leitura do índice.
+
+`make release-check` só lê o índice; adicione previamente os arquivos revisados.
+Confere metadados/links inline locais/cabeçalhos PNG e padrões, sem serviços/rede.
+Não valida âncoras/links externos, procedência de pixels ou ausência de segredos;
+não substitui `make test`, `make audit` ou ensaio de instalação. CI source-review
+aplica esse check a documentação/metadados sem instalar o stack. Resultados da
+suíte e CI desta consolidação em [PROGRESS](../PROGRESS.md).

@@ -6,7 +6,7 @@ Migrate/seed/bootstrap recebem credencial de owner; API/worker usam `aegis_app` 
 
 Cookies de sessão HttpOnly; token persistido por SHA-256, CSRF distinto vinculado por hash. Frontend não usa localStorage para sessão. Senhas Argon2id. Expiração no backend; logout remove a sessão. Erros de validação não ecoam valores recebidos.
 
-Wazuh recebe credenciais somente no ambiente de implantação; não aparecem em endpoints de status, auditoria, URL ou relatórios. CA própria pode ser montada somente leitura em override; nunca usar verify=False. Rotação de senhas do banco existente exige procedimento PostgreSQL, não apenas editar `.env`. `init_env.py` preserva valores existentes.
+Wazuh recebe credenciais somente no ambiente de implantação; não aparecem em endpoints de status, auditoria, URL ou relatórios. CA própria pode ser montada somente leitura em override; nunca usar verify=False. Rotação de senhas do banco existente exige procedimento PostgreSQL, não apenas editar `.env`. `init_env.py` preserva configurações válidas e recusa segredos vazios/exemplos, links, modo diferente de0600, arquivo compartilhado ou escritor concorrente. Não corrige permissões nem substitui credenciais automaticamente.
 
 E2E usa senha aleatória via stdin de subprocessos, sem arquivo de credenciais; schema e usuário são descartados. Não compartilhar `.local` ou dumps sem inspeção.
 

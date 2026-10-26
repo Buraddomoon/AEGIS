@@ -1,4 +1,4 @@
-# Escopo da versão funcional 0.1
+# Escopo inicial e incrementos do código 0.2.0
 
 Pergunta central: há evidência suficiente de que um comportamento executado foi observado e detectado? O MVP responde dentro de um laboratório sintético explicitamente identificado, sem extrapolação para segurança empresarial.
 
@@ -13,3 +13,14 @@ Fora do release inicial 0.1: execução real remota, agendamento de laboratório
 Agendamento de campanhas Demo foi entregue como extensão do MVP, sob aprovação explícita e limites persistentes. Consulte [operação](../operations/scheduling.md) e ADR 0002 para políticas, contratos e validação.
 
 Incremento 0.2 entregue: uma campanha Linux de marcador fixo em runner opt-in, autorizada e validada localmente, com os mesmos contratos/fila, segregação de aprovação, recibos e cleanup reais. Sem coleta SIEM, não comprova detecção. Sem Windows, Atomic executável, scheduler Linux ou shell.
+
+Incrementos posteriores: pipeline Wazuh validado em um ensaio próprio fechado,
+versões/vínculos/análise Sigma, publicação controlada do catálogo ATT&CK, recortes
+de cobertura/relatórios comparativos, recuperação Demo em clone e backup cifrado
+local. O código continua0.2.0; os números do roadmap não representam tags publicadas.
+[Critérios e evidências por escopo](acceptance-criteria.md).
+
+Consolidação de entrega inclui configuração local segura/idempotente e verificação
+offline de arquivos versionados, versões, links e capturas. Custódia externa foi
+adiada; não é requisito concluído nem autoriza transporte de cópia/chave. Instalação
+padrão e validação de código nunca iniciam Linux/Wazuh.

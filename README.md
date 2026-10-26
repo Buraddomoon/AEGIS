@@ -17,7 +17,7 @@ repositório permanece **privado**. Não é SIEM, EDR ou shell remoto.
 
 ## Executar localmente
 
-Ambiente validado: Linux x86_64, Docker Engine com Compose, Make, Git e Python3.13.
+Ambiente validado: Linux x86_64, Docker Engine com Compose, Make, Git e Python 3.13.
 O host precisa de acesso ao repositório privado e internet para o primeiro build.
 Node/Python de desenvolvimento não são necessários dentro do host para executar
 as aplicações em containers; Python no host gera a configuração local.
@@ -39,7 +39,7 @@ Sem Make: `python3 scripts/init_env.py`, `docker compose up -d --build` e
 `docker compose run --rm migrate python -m aegis.cli bootstrap`.
 
 Para parar: `make down`, preservando o volume do banco. A API publica somente
-loopback18780; banco/Redis não publicam portas no Compose padrão. Não instale
+127.0.0.1:18780; banco/Redis não publicam portas no Compose padrão. Não instale
 Wazuh para usar o Demo. [Instalação e solução de problemas](docs/operations/deployment.md).
 
 ## Demonstração em sete passos
@@ -73,13 +73,13 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 |---|---|---|
 | Identidade | Argon2id, sessões opacas, CSRF, RBAC, rate limit | Workspace único; sem MFA/SSO |
 | Campanhas | Escopo/hash imutáveis, aprovação, fila PostgreSQL, cancelamento, timeout, cleanup | Linux exige revisão separada; nenhum comando arbitrário |
-| ATT&CK | Fonte oficial Enterprise20.0,706 técnicas/subtécnicas ativas no snapshot inicial; matriz, busca, proveniência e publicação controlada | Catalogado não significa testado; publicação completa inclui retiradas |
+| ATT&CK | Fonte oficial Enterprise 20.0, 706 técnicas/subtécnicas ativas no snapshot inicial; matriz, busca, proveniência e publicação controlada | Catalogado não significa testado; publicação completa inclui retiradas |
 | Evidências | Eventos originais, correlação por identidade/marcador/tempo/regra, hashes e histórico | Ausência de alerta não comprova ausência de telemetria |
 | Cobertura | Modo/período/release/legado, comparação e HTML/JSON com denominadores | Contexto incompleto bloqueia equivalência; delta não comprova causalidade |
 | Sigma | Parsing pySigma, versões, vínculos revisados, análise estática e diagnóstico de preparação | Conversão/implantação bloqueadas sem backend/pipeline compatíveis |
-| Agendamentos | Grants delimitados, limite de ocorrências, pausa/revogação e auditoria | Somente Demo; mínimo60s, até100horários e90dias por plano |
-| Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing e recibos/cleanup | Um marcador43bytes; sem técnica ATT&CK atribuída artificialmente |
-| Wazuh | Indexer somente leitura, TLS, binding agente/regra, paginação e coleta correlacionada | Um ensaio Linux/Wazuh4.14.9; sem Windows/archives/outras regras |
+| Agendamentos | Grants delimitados, limite de ocorrências, pausa/revogação e auditoria | Somente Demo; mínimo 60 s, até 100 horários e 90 dias por plano |
+| Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing e recibos/cleanup | Um marcador de 43 bytes; sem técnica ATT&CK atribuída artificialmente |
+| Wazuh | Indexer somente leitura, TLS, binding agente/regra, paginação e coleta correlacionada | Um ensaio Linux/Wazuh 4.14.9; sem Windows/archives/outras regras |
 | Recuperação | Backup consistente, restore offline, quarentena, reconciliação e novo ciclo Demo em clone | Sem cutover, recuperação entre hosts ou RPO/RTO garantidos |
 | Cópia cifrada | age/X25519 opcional host-only, chave separada, restore verificado e plano de retenção | Sem upload/expurgo; originais permanecem em claro; custódia ainda local |
 
@@ -91,12 +91,12 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 
 ## Ensaios reais já encerrados
 
-O Linux próprio validou um marcador de43bytes, cleanup e idempotência; o recibo
+O Linux próprio validou um marcador de 43 bytes, cleanup e idempotência; o recibo
 sem SIEM foi classificado **INCONCLUSIVE**, sem inventar alerta.
 [Escopo, instalação e limites](labs/linux/README.md).
 
-Em2026-10-22, uma campanha separada percorreu marcador → observador passivo →
-agente001 → manager/regra100200 → FilebeatTLS → Indexer → correlação → relatório:
+Em 2026-10-22, uma campanha separada percorreu marcador → observador passivo →
+agente 001 → manager/regra 100200 → Filebeat TLS → Indexer → correlação → relatório:
 **COMPLETED / DETECTED / CLEANED, synthetic=false**. Foram avaliados **um teste e
 zero técnicas ATT&CK**. A regra confirma a instrumentação desse marcador; não
 comprova eficácia de EDR ou proteção empresarial.
@@ -135,18 +135,18 @@ independentes do SIEM. Ferramentas de backup operam apenas no host.
 [Arquitetura](docs/architecture/overview.md) · [ADRs](docs/architecture/decisions) ·
 [API/OpenAPI](docs/api/overview.md).
 
-Python3.13, FastAPI, Pydantic2, SQLAlchemy2, Alembic, psycopg3, PostgreSQL17,
-Redis8; React, TypeScript, Vite, Tailwind4, TanStack Query, Recharts e Lucide.
+Python 3.13, FastAPI, Pydantic 2, SQLAlchemy 2, Alembic, psycopg 3, PostgreSQL 17,
+Redis 8; React, TypeScript, Vite, Tailwind 4, TanStack Query, Recharts e Lucide.
 Versões/hashes estão nos locks. [Licenças e dados de terceiros](THIRD_PARTY_NOTICES.md).
 
 ## Desenvolvimento e verificações
 
-Requisitos adicionais: Python3.13, Node24/npm e Firefox para E2E. Locks Python
-específicos a CPython3.13/Linuxx86_64; não remover hashes para contornar outra plataforma.
+Requisitos adicionais: Python 3.13, Node 24/npm e Firefox para E2E. Locks Python
+específicos a CPython 3.13/Linuxx86_64; não remover hashes para contornar outra plataforma.
 
 ```bash
 make setup                 # aceita PYTHON=/caminho/python3.13
-make infra                 # PostgreSQL/Redis próprios em loopback18782/18783
+make infra                 # PostgreSQL/Redis próprios em 127.0.0.1:18782/18783
 make migrate
 make test                  # domínio, PostgreSQL e React
 make lint
@@ -156,7 +156,7 @@ make e2e                   # navegador/API/worker reais; schema descartável
 make release-check         # versões, links locais, cabeçalhos PNG e padrões de segredos
 ```
 
-Não execute suítes que compartilham RedisDB15 simultaneamente. Testes não truncam
+Não execute suítes que compartilham Redis DB 15 simultaneamente. Testes não truncam
 as tabelas da aplicação. O E2E usa schema e credenciais temporários e produz as
 capturas Demo. O Compose completo e `make dev-web` disputam18780; siga a
 [configuração de desenvolvimento](docs/development/setup.md).

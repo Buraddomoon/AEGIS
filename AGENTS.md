@@ -33,6 +33,16 @@ Use migrações Alembic explícitas. Mantenha aprovações de uso único delimit
 
 Comandos: `make setup`, `make up`, `make test`, `make lint`, `make build`, `make e2e`, `make down`. Testes de integração usam PostgreSQL e Redis exclusivos do projeto. Nunca limpar dados de outros projetos. Não declarar checks aprovados sem executá-los. Atualize docs/PROGRESS.md com evidência e pendências. UI em pt-BR; nenhuma ação decorativa. Interfaces não operacionais devem informar indisponibilidade.
 
+Entrega: `make release-check` lê o índice Git (versões, links locais inline,
+cabeçalhos PNG e padrões de credenciais). Adicionar somente arquivos revisados;
+não confundir índice/HEAD/worktree nem tratar o check como testes/instalação ou
+ausência garantida de segredos. `scripts/check_staged.py --all` varre todo índice.
+CI source-review valida docs sem dependências/bancos; CI principal continua para
+código. `init_env.py` recusa arquivos inseguros/vazios/exemplos e preserva válidos;
+não sobrescrever/resetar .env ou segredos humanos para contornar erro. Testes
+test_init_env/test_repository_checks/test_release_check são locais/descartáveis.
+Sem mudar versão/tag/visibilidade ou repetir ensaios para consolidar portfólio.
+
 Agendamentos operam somente em Demo: planos imutáveis, até 16 ativos/64 abertos, grant exato por run/ocorrência, validade e orçamento incluindo descartes. Não reativar runs antigas ao reaprovar. Locks de controle: schedule → run → lab; worker lê plano/grant sem row lock. Dispatcher usa sessão SQL própria por thread/transação e savepoint no laboratório ocupado. Cleanup permanece obrigatório após revogação. Ver ADR 0002 e docs/operations/scheduling.md.
 
 Runner Linux standalone: leia ADR 0003 e labs/linux/README.md. Allowlist contém somente linux-file-marker/v1. Não aceitar comandos/paths/scripts de API. Comprovante execution_receipt não é telemetria defensiva e não pode virar DETECTED. Campanhas Linux opt-in integram API/worker/UI conforme ADR 0004: registro derivado da configuração de implantação, isolamento revisado, preflight mTLS de 5 min, autorização do laboratório e aprovação explícita por administrador diferente do solicitante. Dispatch durável antes da RPC; geração antes de start; recibos/cleanup imutáveis separados de telemetria. Sem SIEM, INCONCLUSIVE. Crash real mantém reserva até recuperação verificada do job original; 404 não libera. Métricas/histórico por modo, scheduler somente Demo. O usuário autorizou dois ensaios específicos em 2026-10-21 (standalone e uma campanha integrada), ambos encerrados; isso não autoriza Wazuh, alvos externos, recorrência ou novos tipos de teste. Não iniciar Lab automaticamente com make up/test/CI. Testes: make test-runner. Watchdog deve kill/reap antes de SQLite; resultado terminal/ownership sob mesmo lock. Preservar diário, identidade e fences após restart; nunca reaplicar efeito ambíguo.
