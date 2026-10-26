@@ -27,7 +27,7 @@ from aegis.catalog.api import router as catalog_router
 from aegis.config import settings
 from aegis.db import get_db
 from aegis.domain.validation import digest
-from aegis.integrations import sigma_readiness
+from aegis.integrations import sigma_mapping, sigma_readiness
 from aegis.integrations.sigma_analysis import analyze as analyze_sigma
 from aegis.integrations.yaml_import import parse_sigma
 from aegis.models import (
@@ -743,6 +743,30 @@ def conversion_readiness(
         "rule_version": saved.version,
         **result,
     }
+
+
+@router.get("/rules/{rule_id}/versions/{version_id}/mapping-preview", tags=["Sigma"])
+def rule_mapping_preview(
+    rule_id: str,
+    version_id: str,
+    user: Viewer,
+    db: DB,
+    profile_id: Annotated[str, Query(max_length=80)] = sigma_readiness.PROFILE_ID,
+) -> dict:
+    if profile_id != sigma_readiness.PROFILE_ID:
+        raise HTTPException(404, "Perfil de mapeamento não encontrado.")
+    saved = checked_rule_version(db, rule_id, version_id)
+    rate_limit("sigma-mapping:" + user.id, 30, 60)
+    try:
+        result = sigma_mapping.preview(saved.content, profile_id)
+    except sigma_mapping.MappingUnavailable:
+        raise HTTPException(503, "Pipeline de prévia indisponível para esta versão.") from None
+    except (SigmaError, yaml.YAMLError, ValueError, TypeError, RecursionError):
+        raise HTTPException(422, "Conteúdo fora dos limites da prévia Sigma.") from None
+    result.pop("document_sha256")
+    result.update(rule_id=rule_id, rule_version_id=saved.id, rule_version=saved.version)
+    result["document_sha256"] = digest(result)
+    return result
 
 
 @router.post("/rules", status_code=201, tags=["Sigma"])
