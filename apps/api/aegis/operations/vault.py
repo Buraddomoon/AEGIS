@@ -295,3 +295,144 @@ def decrypted(vault, identifier, expected_hash, identity, work):
                 scratch.seek(0)
                 unpack(scratch, staging, envelope["backup_id"])
             yield staging, envelope
+
+
+def check_directory(path):
+    """Side-effect-free counterpart used by the advisory inventory."""
+    no_symlink_parents(path)
+    info = path.stat()
+    if (
+        not stat.S_ISDIR(info.st_mode)
+        or info.st_uid != os.getuid()
+        or stat.S_IMODE(info.st_mode) != 0o700
+    ):
+        raise VaultError("Private directories must be owned by this user and mode0700")
+
+
+def retention_inventory(destination, keys, *, at=None):
+    """Read-only local observations, never a deletion/transfer or custody guarantee."""
+    from aegis.operations.backup import INVENTORY_FORMAT, retention_plan
+
+    at = at or datetime.now(UTC)
+    if at.tzinfo is None:
+        raise VaultError("Retention reference must include timezone")
+    no_symlink_parents(destination)
+    no_symlink_parents(keys)
+    recipients = set()
+    if keys.exists():
+        check_directory(keys)
+        paths = list(keys.iterdir())
+        if len(paths) > 256:
+            raise VaultError("Key inventory exceeds reviewed bound")
+        for path in paths:
+            if not re.fullmatch(r"[a-f0-9]{32}\.agekey", path.name):
+                continue
+            # No mkdir/fsync in the read-only inventory.
+            with private_file(path, maximum=1024) as stream:
+                try:
+                    identity = crypto().x25519.Identity.from_str(stream.read().decode().strip())
+                except (ValueError, crypto().IdentityError):
+                    raise VaultError("Invalid local identity; secret omitted") from None
+            recipients.add(str(identity.to_public()))
+    rows = []
+    records = {}
+    if destination.exists():
+        check_directory(destination)
+        paths = list(destination.iterdir())
+        if len(paths) > 1024:
+            raise VaultError("Vault inventory exceeds reviewed bound")
+        for folder in sorted(paths):
+            check_directory(folder)
+            row = {"id": folder.name, "action": "keep", "reason": "incomplete_or_unrecognized_copy"}
+            rows.append(row)
+            if not re.fullmatch(SEALED_ID, folder.name) or not (folder / "envelope.json").exists():
+                continue
+            with private_file(folder / "envelope.json", maximum=16384) as stream:
+                envelope = json.load(stream)
+            backup_id = envelope.get("backup_id")
+            expected = envelope.get("ciphertext_sha256")
+            if (
+                envelope.get("format") != FORMAT
+                or envelope.get("id") != folder.name
+                or backup_id != folder.name.rsplit("-", 1)[0]
+                or not isinstance(expected, str)
+                or not re.fullmatch(r"[a-f0-9]{64}", expected)
+                or envelope.get("status") != "sealed_not_yet_verified"
+            ):
+                raise VaultError("Invalid envelope in inventory")
+            with private_file(folder / "bundle.age") as stream:
+                if (
+                    hash_stream(stream) != expected
+                    or os.fstat(stream.fileno()).st_size != envelope["ciphertext_bytes"]
+                ):
+                    raise VaultError("Ciphertext integrity mismatch in inventory")
+            created = datetime.fromisoformat(envelope["created_at"])
+            if created.tzinfo is None:
+                raise VaultError("Envelope timestamp must include timezone")
+            receipts = list(folder.glob("verification-*.json"))
+            if len(receipts) > 256:
+                raise VaultError("Verification inventory exceeds reviewed bound")
+            verified = False
+            for path in receipts:
+                if not re.fullmatch(r"verification-[a-f0-9]{32}\.json", path.name):
+                    continue
+                with private_file(path, maximum=1024 * 1024) as stream:
+                    receipt = json.load(stream)
+                recovery = receipt.get("recovery", {})
+                if (
+                    receipt.get("format") == FORMAT
+                    and receipt.get("id") == folder.name
+                    and receipt.get("status") == "decrypted_and_restore_verified"
+                    and receipt.get("ciphertext_sha256") == expected
+                    and receipt.get("recipient") == envelope["recipient"]
+                    and recovery.get("status") == "verified"
+                    and recovery.get("backup_id") == backup_id
+                    and recovery.get("inventory_format") == INVENTORY_FORMAT
+                    and recovery.get("clone_removed") is True
+                    and recovery.get("network") == "none"
+                    and recovery.get("application_started") is False
+                ):
+                    verified = True
+            available = envelope["recipient"] in recipients
+            row.update(
+                backup_id=backup_id,
+                created_at=envelope["created_at"],
+                verification_recorded=verified,
+                key_present_locally=available,
+                ciphertext_sha256=expected,
+                ciphertext_bytes=envelope["ciphertext_bytes"],
+            )
+            row["reason"] = (
+                "unverified_copy_preserved" if not verified else "missing_local_key_preserved"
+            )
+            if verified and available:
+                row["reason"] = "awaiting_age_policy"
+            # Count distinct backup snapshots, not repeated encryption of the same snapshot.
+            if backup_id not in records or created > datetime.fromisoformat(
+                records[backup_id]["created_at"]
+            ):
+                records[backup_id] = {"id": backup_id, "created_at": envelope["created_at"]}
+    verified_ids = {row["backup_id"] for row in rows if row["reason"] == "awaiting_age_policy"}
+    policy = {
+        r["id"]: r
+        for r in retention_plan(
+            [record for key, record in records.items() if key in verified_ids], at
+        )
+    }
+    for row in rows:
+        if row["reason"] == "awaiting_age_policy":
+            row.update(
+                action=policy[row["backup_id"]]["action"], reason=policy[row["backup_id"]]["reason"]
+            )
+    return {
+        "deletion_performed": False,
+        "transfer_performed": False,
+        "observed_at": at.isoformat(),
+        "distinct_backups": len(records),
+        "copies": rows,
+        "limitations": [
+            "Local editable receipts are historical records, not signatures or current restore tests",
+            "A local parsed key does not prove independent custody or off-host recoverability",
+            "At least seven distinct snapshots and thirty days are preserved; all actions are advisory",
+        ],
+    }

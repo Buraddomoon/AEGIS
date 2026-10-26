@@ -861,6 +861,7 @@ def main():
     cycle.add_argument("backup_id")
     subparsers.add_parser("retention-plan")
     subparsers.add_parser("keygen")
+    subparsers.add_parser("vault-plan")
     sealed = subparsers.add_parser("seal")
     sealed.add_argument("backup_id")
     sealed.add_argument("--recipient", required=True)
@@ -888,6 +889,11 @@ def main():
             output = rehearse(
                 args.backup_id, application=True, reconcile_demo=True, demo_cycle=True
             )
+        elif args.action == "vault-plan":
+            local = ROOT / ".local"
+            if local.exists():
+                vault.check_directory(local)
+            output = vault.retention_inventory(local / "backup-vault", local / "backup-keys")
         elif args.action == "keygen":
             _, keys, _ = vault_paths()
             output = vault.generate_key(keys)

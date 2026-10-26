@@ -157,3 +157,93 @@ def test_symlink_parent_refused_and_key_never_overwritten(tmp_path, monkeypatch)
     with pytest.raises(FileExistsError):
         vault.generate_key(tmp_path / "keys")
     assert (tmp_path / "keys" / (key["key_id"] + ".agekey")).read_bytes() == original
+
+
+def test_inventory_is_read_only_and_preserves_unverified_missing_keys_and_incomplete_copies(sealed):
+    root, _, _, _, envelope = sealed
+    partial = root / "vault" / "incomplete-preserved"
+    partial.mkdir(mode=0o700)
+    vault.write_private(partial / "bundle.age.partial", b"partial")
+    before = {p: (p.stat().st_mtime_ns, p.read_bytes()) for p in root.rglob("*") if p.is_file()}
+    result = vault.retention_inventory(root / "vault", root / "keys")
+    assert result["deletion_performed"] is result["transfer_performed"] is False
+    row = next(r for r in result["copies"] if r["id"] == envelope["id"])
+    assert row["key_present_locally"] and not row["verification_recorded"]
+    assert row["reason"] == "unverified_copy_preserved" and row["action"] == "keep"
+    assert before == {
+        p: (p.stat().st_mtime_ns, p.read_bytes()) for p in root.rglob("*") if p.is_file()
+    }
+    missing = vault.retention_inventory(root / "absent", root / "absent-keys")
+    assert missing["copies"] == [] and not (root / "absent").exists()
+
+
+def record_verification(root, envelope):
+    from aegis.operations.backup import INVENTORY_FORMAT
+
+    receipt = {
+        "format": vault.FORMAT,
+        "id": envelope["id"],
+        "status": "decrypted_and_restore_verified",
+        "ciphertext_sha256": envelope["ciphertext_sha256"],
+        "recipient": envelope["recipient"],
+        "recovery": {
+            "status": "verified",
+            "backup_id": envelope["backup_id"],
+            "inventory_format": INVENTORY_FORMAT,
+            "clone_removed": True,
+            "network": "none",
+            "application_started": False,
+        },
+    }
+    path = root / "vault" / envelope["id"] / ("verification-" + "b" * 32 + ".json")
+    vault.write_json(path, receipt)
+    return path, receipt
+
+
+def test_inventory_receipt_is_hash_bound_and_key_availability_is_not_assumed(sealed):
+    root, _, _, _, envelope = sealed
+    path, receipt = record_verification(root, envelope)
+    row = vault.retention_inventory(root / "vault", root / "keys")["copies"][0]
+    assert row["verification_recorded"] and row["action"] == "keep"
+    row = vault.retention_inventory(root / "vault", root / "missing-keys")["copies"][0]
+    assert row["verification_recorded"] and not row["key_present_locally"]
+    assert row["reason"] == "missing_local_key_preserved"
+    receipt["ciphertext_sha256"] = "0" * 64
+    path.write_text(json.dumps(receipt))
+    row = vault.retention_inventory(root / "vault", root / "keys")["copies"][0]
+    assert not row["verification_recorded"] and row["action"] == "keep"
+
+
+def test_retention_counts_distinct_verified_snapshots_and_unverified_copies_do_not_replace_good_backups(
+    sealed,
+):
+    from datetime import UTC, datetime
+
+    root, source, key, _, original = sealed
+    record_verification(root, original)
+    original_path = root / "vault" / original["id"] / "envelope.json"
+    original["created_at"] = "2026-01-01T00:00:00+00:00"
+    original_path.write_text(json.dumps(original))
+    for i in range(10):
+        identifier = "20260201T160000Z-" + f"{i:032x}"
+        manifest = json.loads((source / "manifest.json").read_text())
+        manifest["id"] = identifier
+        (source / "manifest.json").write_text(json.dumps(manifest))
+        envelope = vault.seal(source, identifier, root / "vault", key["recipient"])
+        envelope["created_at"] = "2026-02-01T00:00:00+00:00"
+        (root / "vault" / envelope["id"] / "envelope.json").write_text(json.dumps(envelope))
+    plan = vault.retention_inventory(
+        root / "vault", root / "keys", at=datetime(2026, 10, 26, tzinfo=UTC)
+    )
+    assert plan["distinct_backups"] == 11
+    assert all(r["action"] == "keep" for r in plan["copies"]), (
+        "Unverified copies must not evict good snapshots"
+    )
+    # Ten ciphertexts of one good snapshot still count as only one retained snapshot.
+    for _ in range(8):
+        envelope = vault.seal(source, identifier, root / "vault", key["recipient"])
+        record_verification(root, envelope)
+    plan = vault.retention_inventory(
+        root / "vault", root / "keys", at=datetime(2026, 10, 26, tzinfo=UTC)
+    )
+    assert all(r["action"] == "keep" for r in plan["copies"])
