@@ -574,3 +574,62 @@ def test_invalid_reconciliation_binding_refused_before_reader_provision(monkeypa
         backup_cli.boot_application(
             "unused", "a" * 32, "unused", None, reconciliation_hash="../invalid"
         )
+
+
+@pytest.mark.parametrize("failure", [None, "restore", "cleanup", "tamper"])
+def test_sealed_recovery_uses_only_authenticated_staging_and_publishes_after_cleanup(
+    archive, monkeypatch, failure
+):
+    from aegis.operations import vault
+
+    source, manifest = archive
+    destination, keys, work = backup_cli.vault_paths()
+    key = vault.generate_key(keys)
+    envelope = backup_cli.seal_backup(ID, key["recipient"])
+    # Prove source unavailable: a verified copy must never fall back to it.
+    source.rename(source.with_name("preserved-original"))
+    monkeypatch.setattr(backup_cli, "source", lambda: pytest.fail("Source database accessed"))
+    monkeypatch.setattr(
+        backup_cli, "load_backup", lambda *a, **k: pytest.fail("Plain backup fallback")
+    )
+    active = []
+
+    def restored(identifier, **kwargs):
+        folder = kwargs["_archive_folder"]
+        active.append(folder)
+        assert folder.parent == work
+        assert backup_cli.validate_backup(folder, identifier)[1] == manifest
+        assert not list((destination / envelope["id"]).glob("verification-*.json"))
+        if failure in {"restore", "cleanup"}:
+            raise backup_cli.BackupError("Injected restore/cleanup failure")
+        return {"status": "verified", "clone_removed": True, "network": "none"}
+
+    monkeypatch.setattr(backup_cli, "rehearse", restored)
+    if failure == "tamper":
+        (destination / envelope["id"] / "bundle.age").write_bytes(b"tampered")
+    if failure:
+        with pytest.raises((backup_cli.BackupError, vault.VaultError)):
+            backup_cli.verify_sealed(envelope["id"], envelope["ciphertext_sha256"], key["key_id"])
+        assert not list((destination / envelope["id"]).glob("verification-*.json"))
+    else:
+        result = backup_cli.verify_sealed(
+            envelope["id"], envelope["ciphertext_sha256"], key["key_id"]
+        )
+        assert result["status"] == "decrypted_and_restore_verified"
+        assert result["recovery"]["clone_removed"]
+        assert len(list((destination / envelope["id"]).glob("verification-*.json"))) == 1
+    assert all(not folder.exists() for folder in active)
+    assert not work.exists() or list(work.iterdir()) == []
+    assert (source.with_name("preserved-original") / "database.dump").exists()
+
+
+def test_sealed_copy_is_not_published_for_invalid_existing_backup(archive):
+    from aegis.operations import vault
+
+    source, _ = archive
+    destination, keys, _ = backup_cli.vault_paths()
+    key = vault.generate_key(keys)
+    (source / "database.dump").write_bytes(b"invalid")
+    with pytest.raises(backup_cli.BackupError):
+        backup_cli.seal_backup(ID, key["recipient"])
+    assert not destination.exists()

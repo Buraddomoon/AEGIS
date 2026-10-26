@@ -20,7 +20,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from aegis.config import settings
-from aegis.operations import reconciliation
+from aegis.operations import reconciliation, vault
 from aegis.operations.backup import FORMAT, INVENTORY_FORMAT, compare, inventory, retention_plan
 from aegis.operations.recovery import LARGE_OBJECT_FUNCTIONS
 from sqlalchemy import create_engine, text
@@ -240,6 +240,11 @@ def load_backup(identifier, *, require_current_inventory=True):
     folder = BACKUPS / identifier
     if not folder.is_dir():
         raise BackupError("Backup not found")
+    return validate_backup(folder, identifier, require_current_inventory=require_current_inventory)
+
+
+def validate_backup(folder, identifier, *, require_current_inventory=True):
+    """Identical validation for a local archive or fully authenticated private staging."""
     private_directory(folder)
     for name in ("manifest.json", "database.dump"):
         path = folder / name
@@ -553,12 +558,18 @@ def compare_reconciled(original, reconciled):
             raise BackupError("Reconciliation changed protected history")
 
 
-def rehearse(identifier, *, application=False, reconcile_demo=False, demo_cycle=False):
+def rehearse(
+    identifier, *, application=False, reconcile_demo=False, demo_cycle=False, _archive_folder=None
+):
     if demo_cycle and not (application and reconcile_demo):
         raise BackupError("Fresh cycle requires reconciliation and quarantine verification")
     if reconcile_demo and not application:
         raise BackupError("Reconciliation requires quarantined application verification")
-    folder, manifest = load_backup(identifier)
+    folder, manifest = (
+        load_backup(identifier)
+        if _archive_folder is None
+        else validate_backup(_archive_folder, identifier)
+    )
     image = application_image() if application else None
     redis_image = None
     if demo_cycle:
@@ -793,6 +804,49 @@ def plan():
     return {"deletion_performed": False, "plan": result}
 
 
+def vault_paths():
+    local = ROOT / ".local"
+    vault.private_directory(local)
+    return local / "backup-vault", local / "backup-keys", local / "backup-vault-work"
+
+
+def seal_backup(identifier, recipient):
+    folder, _ = load_backup(identifier)
+    destination, _, _ = vault_paths()
+    return vault.seal(folder, identifier, destination, recipient)
+
+
+def verify_sealed(identifier, expected_hash, key_id):
+    destination, keys, work = vault_paths()
+    identity = vault.load_key(keys, key_id)
+    # No use of BACKUPS/source()/DATABASE_URL for recovering a sealed copy.
+    with vault.decrypted(destination, identifier, expected_hash, identity, work) as (
+        folder,
+        envelope,
+    ):
+        restored = rehearse(envelope["backup_id"], _archive_folder=folder)
+        receipt = {
+            "format": vault.FORMAT,
+            "id": identifier,
+            "ciphertext_sha256": expected_hash,
+            "key_id": key_id,
+            "recipient": str(identity.to_public()),
+            "status": "decrypted_and_restore_verified",
+            "verified_at": datetime.now(UTC).isoformat(),
+            "recovery": restored,
+            "limitations": [
+                "Local key and ciphertext only; no off-host copy or independent key custody tested",
+                "Original plaintext backups are preserved, not encrypted or erased",
+                "No cutover, application boot, roles, secrets or RPO/RTO guarantee",
+            ],
+        }
+    # Emit durable success only after the clone AND private staging are gone.
+    vault.write_json(
+        destination / identifier / ("verification-" + uuid.uuid4().hex + ".json"), receipt
+    )
+    return receipt
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="action", required=True)
@@ -806,6 +860,14 @@ def main():
     cycle = subparsers.add_parser("verify-recovered-cycle")
     cycle.add_argument("backup_id")
     subparsers.add_parser("retention-plan")
+    subparsers.add_parser("keygen")
+    sealed = subparsers.add_parser("seal")
+    sealed.add_argument("backup_id")
+    sealed.add_argument("--recipient", required=True)
+    encrypted = subparsers.add_parser("verify-sealed")
+    encrypted.add_argument("sealed_id")
+    encrypted.add_argument("--expected-sha256", required=True)
+    encrypted.add_argument("--key-id", required=True)
     args = parser.parse_args()
     try:
         if args.action == "create":
@@ -826,10 +888,17 @@ def main():
             output = rehearse(
                 args.backup_id, application=True, reconcile_demo=True, demo_cycle=True
             )
+        elif args.action == "keygen":
+            _, keys, _ = vault_paths()
+            output = vault.generate_key(keys)
+        elif args.action == "seal":
+            output = seal_backup(args.backup_id, args.recipient)
+        elif args.action == "verify-sealed":
+            output = verify_sealed(args.sealed_id, args.expected_sha256, args.key_id)
         else:
             output = plan()
         print(json.dumps(output, ensure_ascii=False, indent=2))
-    except BackupError as error:
+    except (BackupError, vault.VaultError) as error:
         raise SystemExit(
             str(error) + "; source unchanged. No sensitive details displayed."
         ) from None

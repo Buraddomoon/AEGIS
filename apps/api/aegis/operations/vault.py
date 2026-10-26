@@ -120,7 +120,7 @@ def load_key(keys, identifier):
         value = stream.read().decode().strip()
     try:
         return crypto().x25519.Identity.from_str(value)
-    except ValueError:
+    except (ValueError, crypto().IdentityError):
         raise VaultError("Invalid X25519 identity; secret omitted") from None
 
 
@@ -170,7 +170,7 @@ def seal(folder, identifier, destination, recipient):
         raise VaultError("Invalid backup ID")
     try:
         public = crypto().x25519.Recipient.from_str(recipient)
-    except ValueError:
+    except (ValueError, crypto().RecipientError):
         raise VaultError("Only a valid X25519 age recipient is accepted") from None
     private_directory(folder)
     private_directory(destination)
@@ -190,7 +190,10 @@ def seal(folder, identifier, destination, recipient):
         path = target / "bundle.age.partial"
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
         with os.fdopen(fd, "wb") as output:
-            crypto().encrypt_io(reader, output, [public])
+            try:
+                crypto().encrypt_io(reader, output, [public])
+            except (crypto().EncryptError, OSError):
+                raise VaultError("Encryption failed; private partial copy preserved") from None
             output.flush()
             os.fsync(output.fileno())
         if reader.digest.hexdigest() != manifest.get("dump_sha256"):
@@ -282,7 +285,12 @@ def decrypted(vault, identifier, expected_hash, identity, work):
             # Unlinked private scratch. No caller can consume partially authenticated data.
             with tempfile.TemporaryFile(dir=staging) as scratch:
                 limited = BoundedWriter(scratch)
-                crypto().decrypt_io(encrypted, limited, [identity])
+                try:
+                    crypto().decrypt_io(encrypted, limited, [identity])
+                except (crypto().DecryptError, OSError):
+                    raise VaultError(
+                        "Decryption/authentication failed; no content released"
+                    ) from None
                 limited.flush()
                 scratch.seek(0)
                 unpack(scratch, staging, envelope["backup_id"])
