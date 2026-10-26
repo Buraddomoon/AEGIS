@@ -234,10 +234,15 @@ export interface ScheduleOccurrence {
 export interface Coverage {
   scope: string
   synthetic: boolean
-  catalogued_techniques: number
-  evaluated_techniques: number
+  catalogued_techniques: number | null
+  evaluated_techniques: number | null
   historical_evaluated_techniques?: number
   attack_catalog?: CatalogReference
+  selection?: CoverageSelection
+  scope_sha256?: string
+  snapshot_at?: string
+  run_states?: Record<string, number>
+  unversioned_runs?: number
   total_runs: number
   completed_tests: number
   valid_tests: number
@@ -308,6 +313,7 @@ export interface Comparison {
   synthetic: boolean
   comparable: boolean
   same_scope: boolean
+  comparability_reasons?: string[]
   before_scope: Scope
   after_scope: Scope
   scope_changes: {
@@ -320,6 +326,17 @@ export interface Comparison {
   }
   tests: { test_id: string; before: string; after: string; changed: boolean }[]
   limitation: string
+}
+
+export interface CoverageSelection {
+  mode: 'demo' | 'linux'
+  catalog_release: string
+  requested_from: string | null
+  requested_before: string | null
+  resolved_catalog_release_id: string | null
+  evaluation_catalog: CatalogReference | null
+  time_basis: string
+  interval: string
 }
 
 export interface SigmaAnalysis {

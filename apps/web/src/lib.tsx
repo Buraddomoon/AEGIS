@@ -243,16 +243,23 @@ export function Go({ to, children }: { to: string; children: ReactNode }) {
     </a>
   )
 }
-export async function downloadReport(runId: string, format: 'json' | 'html') {
-  const response = await fetch(`/api/v1/reports/${runId}?format=${format}`, {
+export async function downloadFile(path: string, filename: string) {
+  const response = await fetch(`/api/v1${path}`, {
     credentials: 'same-origin',
   })
-  if (!response.ok) throw new Error('Não foi possível exportar o relatório.')
+  if (!response.ok) {
+    const error = await response.json().catch(() => null)
+    throw new Error(error?.error?.message ?? 'Não foi possível exportar o relatório.')
+  }
   const blob = await response.blob(),
     url = URL.createObjectURL(blob),
     link = document.createElement('a')
   link.href = url
-  link.download = `aegis-${runId}.${format}`
+  link.download = filename
   link.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+export function downloadReport(runId: string, format: 'json' | 'html') {
+  return downloadFile(`/reports/${runId}?format=${format}`, `aegis-${runId}.${format}`)
 }

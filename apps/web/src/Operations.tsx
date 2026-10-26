@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ScopeChanges } from './ScopeChanges'
+import { CoverageFilters, useCoverageFilters } from './CoverageFilters'
 import {
   ArrowLeft,
   ArrowRight,
@@ -35,18 +35,7 @@ import {
   useAction,
   useData,
 } from './lib'
-import type {
-  Campaign,
-  Comparison,
-  Coverage,
-  EventRecord,
-  Lab,
-  Page,
-  Run,
-  RunDetail,
-  Test,
-  User,
-} from './types'
+import type { Campaign, EventRecord, Lab, Page, Run, RunDetail, Test, User } from './types'
 
 export function Campaigns({ user }: { user: User }) {
   const labs = useData<Page<Lab>>('/labs'),
@@ -740,220 +729,12 @@ function ApprovalReview({ detail: r, onClose }: { detail: RunDetail; onClose: ()
   )
 }
 
-export function CoveragePage() {
-  const [mode, setMode] = useState('demo'),
-    data = useData<Coverage>(`/coverage?mode=${mode}`, 5000),
-    runs = useData<Page<Run>>(`/executions?mode=${mode}&state=COMPLETED&limit=1000`),
-    [before, setBefore] = useState(''),
-    [after, setAfter] = useState(''),
-    [comparison, setComparison] = useState<Comparison | null>(null),
-    { busy, run } = useAction()
-  if (data.isLoading) return <Loading />
-  if (data.error) return <Failure error={data.error} />
-  const c = data.data!
-  return (
-    <>
-      <PageHeading
-        eyebrow="OBSERVAR. DETECTAR. MELHORAR."
-        title="Cobertura de detecção"
-        description="Avalie resultados com denominadores explícitos e compare execuções reproduzíveis."
-      />
-      <div className="toolbar">
-        <label>
-          Escopo dos indicadores
-          <select
-            aria-label="Modo dos indicadores"
-            disabled={busy}
-            value={mode}
-            onChange={(e) => {
-              setMode(e.target.value)
-              setBefore('')
-              setAfter('')
-              setComparison(null)
-            }}
-          >
-            <option value="demo">Demo · sintético</option>
-            <option value="linux">Linux real</option>
-          </select>
-        </label>
-      </div>
-      <div className="stats-grid">
-        <div className="metric">
-          <span>Técnicas catalogadas</span>
-          <strong>{c.catalogued_techniques}</strong>
-          <p>Snapshot oficial ATT&CK</p>
-        </div>
-        <div className="metric">
-          <span>Técnicas avaliadas nesta release</span>
-          <strong>{c.evaluated_techniques}</strong>
-          <p>
-            {c.historical_evaluated_techniques ?? c.evaluated_techniques} no histórico de todas as
-            releases
-          </p>
-        </div>
-        <div className="metric metric-accent">
-          <span>Detectados / testes válidos · histórico</span>
-          <strong>
-            {c.outcomes.DETECTED ?? 0} / {c.valid_tests}
-          </strong>
-          <p>{c.detected_percentage ?? '—'}% no escopo</p>
-        </div>
-        <div className="metric">
-          <span>Inconclusivos</span>
-          <strong>{c.outcomes.INCONCLUSIVE ?? 0}</strong>
-          <p>Excluídos da taxa de detecção</p>
-        </div>
-      </div>
-      <div className="notice">
-        <ShieldCheck size={19} />
-        <div>
-          {c.scope}
-          <p>
-            {c.denominator}. {c.limitation}
-          </p>
-        </div>
-      </div>
-      <Panel
-        title="Comparação entre execuções"
-        subtitle="Escolha duas execuções da mesma campanha; diferenças de configuração são explicitadas."
-      >
-        <form
-          className="comparison-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            void run(
-              async () =>
-                setComparison(
-                  await api<Comparison>(`/coverage/compare?before=${before}&after=${after}`),
-                ),
-              'Comparação carregada.',
-            )
-          }}
-        >
-          <label>
-            Execução anterior
-            <select
-              required
-              disabled={busy}
-              value={before}
-              onChange={(e) => {
-                setBefore(e.target.value)
-                setComparison(null)
-              }}
-            >
-              <option value="">Selecione uma execução</option>
-              {runs.data?.items.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.id.slice(0, 8)} · {date(r.created_at)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <ArrowRight size={20} />
-          <label>
-            Execução atual
-            <select
-              required
-              disabled={busy}
-              value={after}
-              onChange={(e) => {
-                setAfter(e.target.value)
-                setComparison(null)
-              }}
-            >
-              <option value="">Selecione uma execução</option>
-              {runs.data?.items
-                .filter((r) => r.id !== before)
-                .map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.id.slice(0, 8)} · {date(r.created_at)}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <button
-            className="button primary"
-            disabled={busy || !before || !after || before === after}
-          >
-            Comparar execuções
-          </button>
-        </form>
-        {comparison && (
-          <>
-            <div className={`notice ${comparison.comparable ? '' : 'warning'}`}>
-              {comparison.comparable
-                ? 'Configurações equivalentes; comparação do mesmo escopo.'
-                : 'Configurações diferentes ou resultados parciais. Revise as diferenças antes de concluir melhoria ou regressão.'}
-            </div>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Teste</th>
-                    <th>Anterior</th>
-                    <th>Atual</th>
-                    <th>Mudança</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparison.tests.map((t) => (
-                    <tr key={t.test_id}>
-                      <td>{t.test_id}</td>
-                      <td>
-                        <Badge value={t.before} />
-                      </td>
-                      <td>
-                        <Badge value={t.after} />
-                      </td>
-                      <td>{t.changed ? 'Resultado alterado' : 'Sem alteração'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="mono muted-text comparison-context">
-              Execuções: {comparison.before_id} → {comparison.after_id}
-            </p>
-            <ScopeChanges changes={comparison.scope_changes} />
-            <details className="scope-details">
-              <summary>Inspecionar configurações, regras e ambiente</summary>
-              <pre>
-                {JSON.stringify(
-                  { antes: comparison.before_scope, depois: comparison.after_scope },
-                  null,
-                  2,
-                )}
-              </pre>
-            </details>
-          </>
-        )}
-      </Panel>
-      <Panel
-        title="Lacunas observadas"
-        subtitle="As categorias indicam evidências disponíveis; não comprovam risco de negócio."
-      >
-        <div className="gap-grid">
-          {['OBSERVED_NOT_ALERTED', 'NO_TELEMETRY', 'INCONCLUSIVE'].map((s) => (
-            <div key={s}>
-              <Badge value={s} />
-              <strong>{c.outcomes[s] ?? 0}</strong>
-              <p>
-                {s === 'OBSERVED_NOT_ALERTED'
-                  ? 'Revisar a regra esperada e repetir o escopo após mudanças aprovadas.'
-                  : s === 'NO_TELEMETRY'
-                    ? 'Verificar instrumentação e disponibilidade da coleta antes de avaliar a detecção.'
-                    : 'Restabelecer a fonte de dados e repetir a coleta para obter uma conclusão confiável.'}
-              </p>
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </>
-  )
-}
+export { CoveragePage } from './CoveragePage'
 
 export function Reports() {
-  const data = useData<Page<Run>>('/reports?limit=1000'),
+  const filters = useCoverageFilters(),
+    [page, setPage] = useState(0),
+    data = useData<Page<Run>>(`/reports?${filters.query}&limit=100&offset=${page * 100}`),
     campaigns = useData<Page<Campaign>>('/campaigns?limit=1000'),
     { busy, run } = useAction()
   return (
@@ -962,6 +743,12 @@ export function Reports() {
         eyebrow="EVIDÊNCIAS QUE PODEM SER INSPECIONADAS"
         title="Relatórios"
         description="Exporte resultados, escopo, aprovação, eventos e limitações em HTML ou JSON."
+      />
+      <CoverageFilters
+        filters={filters}
+        busy={busy}
+        onApply={() => setPage(0)}
+        modeLabel="Modo dos relatórios"
       />
       <Panel
         title="Execuções concluídas"
@@ -1002,7 +789,7 @@ export function Reports() {
                       <div className="inline-actions">
                         <button
                           className="button small"
-                          disabled={busy}
+                          disabled={busy || filters.dirty || data.isFetching}
                           onClick={() =>
                             void run(() => downloadReport(r.id, 'html'), 'HTML exportado.')
                           }
@@ -1012,7 +799,7 @@ export function Reports() {
                         </button>
                         <button
                           className="button small"
-                          disabled={busy}
+                          disabled={busy || filters.dirty || data.isFetching}
                           onClick={() =>
                             void run(() => downloadReport(r.id, 'json'), 'JSON exportado.')
                           }
@@ -1033,6 +820,24 @@ export function Reports() {
           </Empty>
         )}
       </Panel>
+      <div className="pagination">
+        <button className="button" disabled={busy || page === 0} onClick={() => setPage(page - 1)}>
+          Anterior
+        </button>
+        <span>
+          Página {page + 1} · {data.data?.total ?? 0} relatórios no recorte
+        </span>
+        <button
+          className="button"
+          disabled={busy || (page + 1) * 100 >= (data.data?.total ?? 0)}
+          onClick={() => setPage(page + 1)}
+        >
+          Próxima
+        </button>
+      </div>
+      <div className="notice">
+        <Go to="coverage">Exportar recorte agregado ou comparação entre execuções</Go>
+      </div>
       <div className="notice">
         <Clock3 size={18} />
         PDF faz parte do roadmap. Agendamentos Demo preservam a autorização de origem. Nenhum

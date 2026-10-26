@@ -22,24 +22,28 @@ it('keeps comparison selectors fixed until the matching historical response arri
       json: async () =>
         path.includes('/coverage/compare')
           ? delayed
-          : path.includes('/executions')
-            ? {
-                items: [
-                  { id: 'first', created_at: '2026-10-22T12:00:00Z' },
-                  { id: 'later', created_at: '2026-10-22T13:00:00Z' },
-                ],
-              }
-            : {
-                catalogued_techniques: 706,
-                evaluated_techniques: 0,
-                total_runs: 2,
-                completed_tests: 0,
-                valid_tests: 0,
-                detected_percentage: null,
-                outcomes: {},
-                denominator: 'Testes válidos',
-                limitation: 'Demo sintético',
-              },
+          : path.includes('/catalog/attack/releases')
+            ? { items: [], total: 0 }
+            : path.includes('/coverage/runs')
+              ? {
+                  items: [
+                    { id: 'first', campaign_id: 'same', created_at: '2026-10-22T12:00:00Z' },
+                    { id: 'later', campaign_id: 'same', created_at: '2026-10-22T13:00:00Z' },
+                  ],
+                  total: 2,
+                  scope_sha256: 'a'.repeat(64),
+                }
+              : {
+                  catalogued_techniques: 706,
+                  evaluated_techniques: 0,
+                  total_runs: 2,
+                  completed_tests: 0,
+                  valid_tests: 0,
+                  detected_percentage: null,
+                  outcomes: {},
+                  denominator: 'Testes válidos',
+                  limitation: 'Demo sintético',
+                },
     })),
   )
   render(
@@ -52,6 +56,8 @@ it('keeps comparison selectors fixed until the matching historical response arri
   const before = await screen.findByLabelText('Execução anterior'),
     after = screen.getByLabelText('Execução atual'),
     mode = screen.getByLabelText('Modo dos indicadores')
+  await screen.findByRole('option', { name: /first ·/ })
+  await waitFor(() => expect(before).toBeEnabled())
   await userEvent.selectOptions(before, 'first')
   await userEvent.selectOptions(after, 'later')
   await userEvent.click(screen.getByRole('button', { name: 'Comparar execuções' }))

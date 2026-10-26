@@ -2144,3 +2144,35 @@ td > small {
     flex-direction: column;
   }
 }
+
+.coverage-filter-form {
+  margin: 24px 0 10px;
+}
+.coverage-filter-form fieldset {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.coverage-filter-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 200px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.coverage-filter-form select,
+.coverage-filter-form input {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .coverage-filter-form label {
+    flex-basis: 100%;
+  }
+}
