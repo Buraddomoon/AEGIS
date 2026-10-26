@@ -16,7 +16,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest==9.1.1", "pytest-cov>=7,<8", "ruff==0.17.1", "mypy==2.4.0", "types-PyYAML", "pip-audit==2.10.1"]
+backup = ["pyrage==1.4.0"]
+dev = ["pyrage==1.4.0", "pytest==9.1.1", "pytest-cov>=7,<8", "ruff==0.17.1", "mypy==2.4.0", "types-PyYAML", "pip-audit==2.10.1"]
 
 [tool.setuptools.packages.find]
 where = ["apps/api"]

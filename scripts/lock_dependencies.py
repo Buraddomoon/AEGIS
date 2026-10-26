@@ -5,11 +5,19 @@ import json
 import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dev", action="store_true")
+group = parser.add_mutually_exclusive_group()
+group.add_argument("--dev", action="store_true")
+group.add_argument("--backup", action="store_true")
 args = parser.parse_args()
+targets = (
+    tomllib.loads(Path("pyproject.toml").read_text())["project"]["optional-dependencies"]["backup"]
+    if args.backup
+    else [".[dev]" if args.dev else "."]
+)
 with tempfile.TemporaryDirectory() as directory:
     report = Path(directory) / "resolution.json"
     subprocess.run(
@@ -22,7 +30,7 @@ with tempfile.TemporaryDirectory() as directory:
             "--ignore-installed",
             "--report",
             str(report),
-            ".[dev]" if args.dev else ".",
+            *targets,
         ],
         check=True,
     )
@@ -36,6 +44,9 @@ for item in sorted(resolved["install"], key=lambda p: p["metadata"]["name"].lowe
         continue
     sha = item["download_info"]["archive_info"]["hashes"]["sha256"]
     lines.append(f"{name}=={item['metadata']['version']} --hash=sha256:{sha}")
-Path("requirements-dev.lock" if args.dev else "requirements.lock").write_text(
-    "\n".join(lines) + "\n"
+destination = (
+    "requirements-backup.lock"
+    if args.backup
+    else ("requirements-dev.lock" if args.dev else "requirements.lock")
 )
+Path(destination).write_text("\n".join(lines) + "\n")
