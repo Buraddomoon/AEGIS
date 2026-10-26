@@ -63,6 +63,10 @@ clean-demo:
 smoke:
 	$(VENV)/python scripts/smoke_compose.py
 
+.PHONY: release-check
+release-check:
+	$(VENV)/python scripts/check_release.py
+
 # Operator-only Demo recovery. Verify always creates its own offline clone.
 .PHONY: backup-demo verify-backup backup-retention-plan test-recovery
 backup-demo:
