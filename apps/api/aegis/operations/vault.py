@@ -437,13 +437,17 @@ def retention_inventory(destination, keys, *, at=None):
                 records[backup_id]["created_at"]
             ):
                 records[backup_id] = {"id": backup_id, "created_at": envelope["created_at"]}
-    verified_ids = {row["backup_id"] for row in rows if row["reason"] == "awaiting_age_policy"}
-    policy = {
-        r["id"]: r
-        for r in retention_plan(
-            [record for key, record in records.items() if key in verified_ids], at
-        )
-    }
+    verified_records = {}
+    for row in rows:
+        if row["reason"] != "awaiting_age_policy":
+            continue
+        identifier = row["backup_id"]
+        candidate = {"id": identifier, "created_at": row["created_at"]}
+        if identifier not in verified_records or datetime.fromisoformat(
+            candidate["created_at"]
+        ) > datetime.fromisoformat(verified_records[identifier]["created_at"]):
+            verified_records[identifier] = candidate
+    policy = {r["id"]: r for r in retention_plan(list(verified_records.values()), at)}
     for row in rows:
         if row["reason"] == "awaiting_age_policy":
             row.update(

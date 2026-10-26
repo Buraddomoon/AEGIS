@@ -274,3 +274,36 @@ def test_in_place_ciphertext_replacement_after_precheck_cannot_reuse_expected_ha
         ):
             pytest.fail("Replaced valid ciphertext exposed under the wrong expected hash")
     assert not list((root / "work").iterdir())
+
+
+def test_unverified_resealing_cannot_reorder_the_verified_retention_minimum(sealed):
+    from datetime import UTC, datetime
+
+    root, source, key, _, first = sealed
+    record_verification(root, first)
+    first["created_at"] = "2026-01-01T00:00:00+00:00"
+    (root / "vault" / first["id"] / "envelope.json").write_text(json.dumps(first))
+    for i in range(8):
+        identifier = "20260102T160000Z-" + f"{i:032x}"
+        manifest = json.loads((source / "manifest.json").read_bytes())
+        manifest["id"] = identifier
+        (source / "manifest.json").write_text(json.dumps(manifest))
+        copy = vault.seal(source, identifier, root / "vault", key["recipient"])
+        copy["created_at"] = f"2026-01-{i + 2:02}T00:00:00+00:00"
+        (root / "vault" / copy["id"] / "envelope.json").write_text(json.dumps(copy))
+        record_verification(root, copy)
+    now = datetime(2026, 10, 26, tzinfo=UTC)
+    before = {
+        r["id"]: r["action"]
+        for r in vault.retention_inventory(root / "vault", root / "keys", at=now)["copies"]
+    }
+    assert before[first["id"]] == "review_only"
+    manifest["id"] = ID
+    (source / "manifest.json").write_text(json.dumps(manifest))
+    unverified = vault.seal(source, ID, root / "vault", key["recipient"])
+    after = {
+        r["id"]: r["action"]
+        for r in vault.retention_inventory(root / "vault", root / "keys", at=now)["copies"]
+    }
+    assert {identifier: after[identifier] for identifier in before} == before
+    assert after[unverified["id"]] == "keep"
