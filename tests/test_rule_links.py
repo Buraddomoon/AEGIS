@@ -203,7 +203,11 @@ def test_scope_and_report_preserved_after_rule_review(admin):
     response = admin.post(f"/api/v1/rules/{rule['id']}/test-links", json=review_body(version))
     assert response.status_code == 201, response.text
     assert original == admin.get(f"/api/v1/reports/{first['id']}").json()
-    assert first_coverage == admin.get("/api/v1/coverage").json()
+    latest_coverage = admin.get("/api/v1/coverage").json()
+    # The query timestamp changes; all analytical facts must remain identical.
+    assert {k: v for k, v in first_coverage.items() if k != "snapshot_at"} == {
+        k: v for k, v in latest_coverage.items() if k != "snapshot_at"
+    }
     technique = admin.get("/api/v1/techniques/T1059.004").json()
     assert technique["operational_rules"] == []
     assert len(technique["planned_rule_links"]) == 1

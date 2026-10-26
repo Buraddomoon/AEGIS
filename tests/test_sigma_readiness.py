@@ -142,7 +142,11 @@ def test_readiness_api_pins_history_and_does_not_change_coverage_or_audit(admin)
     with session_factory()() as db:
         count = db.scalar(select(func.count()).select_from(AuditEvent))
     assert admin.get(url).json() == first.json()
-    assert admin.get("/api/v1/coverage").json() == coverage
+    latest_coverage = admin.get("/api/v1/coverage").json()
+    # Read-only analysis must preserve every metric, excluding query metadata.
+    assert {k: v for k, v in latest_coverage.items() if k != "snapshot_at"} == {
+        k: v for k, v in coverage.items() if k != "snapshot_at"
+    }
     assert admin.get(url, params={"profile_id": "absent"}).status_code == 404
     assert admin.get(url.replace(rule["id"], "other")).status_code == 404
     assert admin.get(url.replace(version["id"], "absent")).status_code == 404
