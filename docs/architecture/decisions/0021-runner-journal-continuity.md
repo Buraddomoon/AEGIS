@@ -1,6 +1,6 @@
 # ADR 0021 — Revisão do diário original antes de inicializar o runner
 
-Data: 2026-10-27. Status: implementação incremental; não autoriza abrir volumes reais.
+Data: 2026-10-27. Status: bibliotecas implementadas; não autoriza abrir volumes reais.
 
 O construtor do runner inicializa o schema e marca jobs RUNNING como INTERRUPTED.
 Portanto, iniciar o servidor para descobrir se o diário é o correto já modifica o
@@ -20,6 +20,9 @@ podem ainda não estar no DB: não usar immutable=1 ou copiar somente o DB para
 concluir continuidade. Arquivo SHM da origem é inventariado, não interpretado.
 Recusar rollback journals/arquivos desconhecidos e WAL sem DB coerente. O scratch
 é removido ao terminar; falha no fechamento impede publicar resultado de sucesso.
+O perfil conservador verifica o formato/checksums/salts do WAL e exige terminar
+num commit completo; caudas incompletas, antigas após reset ou corrompidas bloqueiam,
+sem truncar/recuperar automaticamente. Checksums de formato não autenticam origem.
 
 SQLite somente leitura/query_only, trusted_schema desabilitado, limites de
 tamanho/linhas/instruções/tempo, sem extensões, SQL fornecido ou funções de usuário.
@@ -41,10 +44,26 @@ vínculo do banco e ausência de outros consumidores. Nenhuma flag autoriza ativ
 marcador, detecção ou operação normal. Nenhum endpoint ou CLI de leitura arbitrária
 de volumes é exposto neste incremento.
 
+`persisted_review.collect` recebe engine explicitamente, sem descobrir credenciais
+ou usar settings/Demo como fallback. Sessão própria REPEATABLE READ READ ONLY,
+statement_timeout15s. Exigir laboratório/ativo Linux reais, revogação/ociosidade,
+runner e hash do binding antigo idênticos ao plano e ao menos um dispatch conhecido.
+Reutilizar predicado ADR0019 e exportar todas as provas CLEANED até seu limite1000;
+histórico vazio/incompleto/diferente bloqueia. O chamador ainda precisa comprovar
+que o engine corresponde ao volume PostgreSQL Linux original; SQL sozinho não
+atesta esse vínculo físico. O bundle e seu hash não são assinatura nem autorização.
+
+`expected_proofs` decodifica apenas bundle com hash esperado independente, contexto,
+limites/flags/IDs coerentes e jobs únicos. Encaminha identidade/provas à revisão do
+diário. Os dois gates podem ser combinados e testados com PostgreSQL/SQLite reais
+temporários, sem runner, daemon, SIEM ou efeitos. Não acrescentar rota pública de
+exportação, leitura de volume ou ativação para expor esses componentes internos.
+
 Fontes oficiais consultadas:
 
 - [SQLite WAL e leitura somente leitura](https://www.sqlite.org/wal.html).
 - [SQLite pragmas](https://www.sqlite.org/pragma.html).
+- [Formato SQLite/WAL](https://www.sqlite.org/fileformat2.html#wal_file_format).
 - [Authorizer SQLite](https://www.sqlite.org/c3ref/set_authorizer.html).
 - [Python 3.13 sqlite3](https://docs.python.org/3.13/library/sqlite3.html).
 
