@@ -2325,3 +2325,78 @@ totalizando **322**. main exclusiva e GitHub AEGIS privado, push após cada comm
 Código de continuidade92901e9/1bf7d87/b3833f3/ca75231, intentsf2250ef, casos/contrato
 6fd1f1f e observadorfc5da3d; evidências8760feb/8dc9fae. Conferir hash/mensagem
 finais, árvore limpa e origin/main após publicar; sem branches/PR/force ou reescrita.
+
+## 2026-10-27 — runtime fixo dos probes, start intent e cleanup por ownership
+
+Baseb502080/322 commits. Continuação automática em unidades conectadas, sem
+interromper ao fim de cada componente. Não houve novo ensaio Linux/Wazuh, abertura
+interna de volumes originais, marcador/campanha, troca de PKI/binding, build/deploy/
+migração/seed, criação/parada/remoção Docker ou mudança de credenciais humanas.
+
+### Implementado e limites
+
+- `runner_activation_probe_runtime.py`: receita fechada journal-before/after,
+  Python isolado/módulo fixo, imagem por ID, UID10001, rede none, /state read-only/
+  nocopy e limites. Revisão de imagem sem VOLUME declarado e runtime projetado:
+  mounts efetivos/configurados, argv/UID/imagem/namespace/limites/estado/ownership.
+  Ambiente só key/boolean por allowlist sem duplicatas, loader ou overrides.
+- `probe_start_requested` no intent durável: só probe observado, hashes de receita/
+  gates/bundle, sem replay após retomada. `ActivationIntents.review` reconfere
+  histórico/estado/lock antes de efeito externo, sem acrescentar evento.
+- `runner_activation_probe_result.py`: decoder estrito/bundle/descritor/identidade/
+  flags/contagens/hash e comparação de inventário lógico completo, inclusive jobs
+  adicionais. Piso/teto derivam dos estados conhecidos e restarts implícitos.
+- `runner_activation_cleanup.py`: driver concreto interno stop SIGTERM/5s e rm por
+  ID completo. Durabilidade/ownership/imagem antes de efeito, reconciliação de
+  erro ambíguo por consultas, retenção de dependências e ausência final repetida.
+  Sem force/volumes/global delete; driver real não foi aplicado a recurso algum.
+
+ADR0023, AGENTS, Make, README/changelog/roadmap/aceite/testes/runbook atualizados.
+Sem dependência/migração/endpoint novo. Não há CLI apply, create/start/transporte
+de bundle ou coordenador completo. Bibliotecas internas não autorizam abrir os
+volumes nem provar mTLS/registro revogado. [Evidência](evidence/probe-runtime-2026-10-27/README.md).
+
+### Verificação e correções
+
+Revisão especializada estática encontrou loader override possível apesar de -I;
+corrigido por allowlist projetada sem valores. Consulta real de metadados mostrou
+LANG ausente na imagem Python (receita agora o define, runtime exige) e Mounts
+opcional no HostConfig (index). Regressão opcional só lê DemoAPI existente.
+Revisão do resultado encontrou contagens impossíveis para job conhecido SUCCEEDED;
+piso/teto por estado corrigidos e seis casos de writer/probe SQLite temporário
+acrescentados. Deltas reconferidos por leitura, sem alegação de pentest/runtime real.
+
+- Suíte global local: **1.352 passaram/376,43s**, antes do último ajuste e seis
+  casos. Cinco projeções opcionais somente sobre objetos Demo existentes.
+- Target final `make test-runner-activation`: **367 passaram/28,32s**; inclui o
+  decoder corrigido e todos os seis novos casos. **1.358 casos distintos locais
+  em rodadas separadas**, sem somar reruns. Aviso TestClient/httpx permanece.
+- Lint completo aprovado: Ruff/format165 arquivos, mypy4, TypeScript/Prettier.
+  Frontend/build/E2E não repetidos localmente por ausência de mudança nesses fluxos;
+  CI código6d4174a ainda em andamento, sem tratar execução pendente como sucesso.
+
+Consulta real somente leitura: recibo91aa6eaa5bc34447b49a7fe970e14a8e,
+2026-10-27T18:08:57.725953Z, SHA canônico
+8aaee0e5025f25ac1ad3e8c916140737a3e77594025a3d6f28dc2a92ff38b53e.
+Arquivo0600/pai0700/hash reconferidos/fsync. Projeção completa parseada no DemoAPI
+existente e metadados da imagem runner local; sem valoresEnv/Source físico e sem
+afirmar runtime do probe ou proveniência/código atual da imagem. Demo continua
+ready/database/redis true, imagemAPI92ffbc4e… inalterada. PKIs/volumes/journals/
+backups/imagens/histórico preservados; custódia externa permanece adiada.
+
+### Próximo trabalho real
+
+Conectar os componentes a coordenador fixo opt-in: create/start com transporte
+limitado do bundle, plano/escopo/imagens/proveniência atuais, vínculo físico do DB
+Linux e revisão persistida, journal antes do construtor Runner, novo mTLS/recusa
+de trust antigo sem confundir expiração, registro ainda revogado e encerramento
+verificado. Worker parado, sem migrate/seed/smoke/marker. Só depois do harness
+completo apresentar escopo específico para nova autorização; ensaios consumidos
+não são reutilizados. Plano antigo expirado, PKI exige nova conferência; jobs
+ambíguos continuam em quarentena, sem replay/liberação manual de reservas.
+
+Este registro acrescenta **10 commits**, incluindo este arquivo de evidência,
+totalizando **332**. main exclusiva/push após cada commit/repositório privado;
+nenhuma branch/PR/force. Código635dc41/3c99f95/c261a03/99ebd4a/fcb41cf e correção
+final6d4174a; target/projeçãoad75285, contrato2123901 e docs6f822c9. Conferir hash
+final/sincronização e registrar o resultado final do CI no próximo checkpoint.
