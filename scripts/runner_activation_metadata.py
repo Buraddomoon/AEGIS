@@ -86,14 +86,17 @@ def command(kind, value=None):
     raise ActivationError("docker_query_not_allowed")
 
 
-def _execute(arguments, *, payload=None, timeout=None):
+def _execute(arguments, *, payload=None, timeout=None, output_limit=None):
     # Private shared transport. Public read-only query adapters never supply stdin.
-    # Only the closed journal lifecycle adapter supplies a proof bundle.
+    # Only closed probe adapters supply private payloads or select the proof cap.
     if payload is not None and (type(payload) is not bytes or len(payload) > 4 * 1024**2):
         raise ActivationError("docker_input_invalid_or_excessive")
     budget = TIMEOUT if timeout is None else timeout
     if type(budget) not in (int, float) or not 0 < budget <= 20:
         raise ActivationError("docker_time_budget_invalid")
+    limit = MAX_OUTPUT if output_limit is None else output_limit
+    if type(limit) is not int or limit not in {MAX_OUTPUT, 4 * 1024**2}:
+        raise ActivationError("docker_output_profile_invalid")
     # Never inherit contexts, DOCKER_HOST, plugins, proxies or CLI credentials.
     with tempfile.TemporaryDirectory(prefix="aegis-activation-docker-") as config:
         process = subprocess.Popen(
@@ -144,7 +147,7 @@ def _execute(arguments, *, payload=None, timeout=None):
                             selector.unregister(key.fileobj)
                             continue
                         count += len(chunk)
-                        if count > MAX_OUTPUT:
+                        if count > limit:
                             raise ActivationError("docker_response_too_large")
                         if key.data == "stdout":
                             output.extend(chunk)

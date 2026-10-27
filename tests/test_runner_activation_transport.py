@@ -105,3 +105,39 @@ def test_invalid_or_unbounded_deadline_is_rejected_before_spawning(monkeypatch, 
     )
     with pytest.raises(transport.ActivationError, match="time_budget"):
         transport._execute(("closed-fixture-only",), payload=b"proof", timeout=budget)
+
+
+def test_private_proof_output_profile_is_bounded_and_default_metadata_limit_stays_unchanged(
+    monkeypatch,
+):
+    processes = child(
+        monkeypatch, "import os,sys;sys.stdin.buffer.read();os.write(1,b'x'*(4*1024**2))"
+    )
+    result = transport._execute(
+        ("closed-fixture-only",), payload=b"request", timeout=5, output_limit=4 * 1024**2
+    )
+    assert len(result) == 4 * 1024**2 and processes[0][0].returncode == 0
+    with pytest.raises(transport.ActivationError, match="response_too_large"):
+        transport._execute(("closed-fixture-only",), payload=b"request", timeout=5)
+    assert processes[1][0].poll() is not None and transport.MAX_OUTPUT == 65536
+
+
+@pytest.mark.parametrize("channel", [1, 2])
+def test_private_output_cap_still_counts_stderr_and_reaps_overflow(monkeypatch, channel):
+    processes = child(
+        monkeypatch, f"import os,sys;sys.stdin.buffer.read();os.write({channel},b'x'*(4*1024**2+1))"
+    )
+    with pytest.raises(transport.ActivationError, match="response_too_large"):
+        transport._execute(
+            ("closed-fixture-only",), payload=b"request", timeout=5, output_limit=4 * 1024**2
+        )
+    assert processes[0][0].poll() is not None
+
+
+@pytest.mark.parametrize("limit", [0, 1, 65537, 4 * 1024**2 + 1, True, "4194304"])
+def test_only_closed_output_profiles_are_allowed_before_spawn(monkeypatch, limit):
+    monkeypatch.setattr(
+        transport.subprocess, "Popen", lambda *a, **k: pytest.fail("No child permitted")
+    )
+    with pytest.raises(transport.ActivationError, match="output_profile"):
+        transport._execute(("closed-fixture-only",), payload=b"request", output_limit=limit)
