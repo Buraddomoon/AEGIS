@@ -441,3 +441,28 @@ def test_missing_id_closing_resource_or_unpinned_start_is_rejected(tmp_path, sce
         with pytest.raises(intents.ActivationError):
             store.append("probe_start_requested", payload)
         assert all(event["kind"] != "probe_start_requested" for event in store.events)
+
+
+@pytest.mark.parametrize("role", ["db", "runner", "network-isolated", "journal-before"])
+def test_conflicted_ownership_cannot_be_adopted_removed_replayed_or_closed_after_resume(
+    tmp_path, role
+):
+    root = tmp_path / "intents"
+    with intents.ActivationIntents(root) as store:
+        origin = begin(store)
+        store.request(role)
+        store.append("ownership_conflict", {"role": role, "evidence_sha256": "f" * 64})
+    with intents.ActivationIntents(root) as store:
+        store.resume(origin["id"], origin["begin_sha256"])
+        assert store.review()["resources"][role]["state"] == "CONFLICT"
+        for kind, data in [
+            ("observed", {"role": role, "resource_id": "d" * 64}),
+            ("removal_requested", {"role": role}),
+            ("probe_start_requested", start_payload(role)),
+            ("closed", {"evidence_sha256": "e" * 64}),
+        ]:
+            with pytest.raises(intents.ActivationError):
+                store.append(kind, data)
+        if role != "journal-before":
+            with pytest.raises(intents.ActivationError, match="dependency_is_closing"):
+                store.request("api")

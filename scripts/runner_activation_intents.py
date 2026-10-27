@@ -121,7 +121,7 @@ def _apply(state, event, identifier):
         if role in {"db", "redis", "api", "runner"}:
             parents |= {key for key in owned if key.startswith("network-")}
         if any(
-            key in owned and owned[key]["state"] in {"REMOVAL_REQUESTED", "ABSENT"}
+            key in owned and owned[key]["state"] in {"REMOVAL_REQUESTED", "ABSENT", "CONFLICT"}
             for key in parents
         ):
             raise ActivationError("intent_dependency_is_closing")
@@ -130,7 +130,17 @@ def _apply(state, event, identifier):
     if role not in owned:
         raise ActivationError("intent_ownership_required")
     item = owned[role]
-    if kind == "observed":
+    if kind == "ownership_conflict":
+        if (
+            set(data) != {"role", "evidence_sha256"}
+            or item["state"] != "REQUESTED"
+            or item["resource_id"] is not None
+        ):
+            raise ActivationError("intent_conflict_invalid")
+        _hash(data["evidence_sha256"])
+        item["state"] = "CONFLICT"
+        item["conflict_evidence_sha256"] = data["evidence_sha256"]
+    elif kind == "observed":
         if (
             set(data) != {"role", "resource_id"}
             or item["state"] not in {"REQUESTED", "REMOVAL_REQUESTED"}
