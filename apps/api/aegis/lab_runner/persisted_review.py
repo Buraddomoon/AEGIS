@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -11,13 +12,19 @@ from aegis.lab_runner.continuity import ContinuityError
 from aegis.lab_runner.protocol import JobView, RunnerIdentity
 
 if TYPE_CHECKING:
-    from sqlalchemy import Engine
+    from sqlalchemy import Connection, Engine
 
 # Wire profile /1 bound; broadening the DB reviewer doesn't silently broaden stdin.
 MAX_PROOFS = 1000
 
 
-def collect(engine: Engine, identity: RunnerIdentity, old_descriptor_sha256: str) -> dict:
+def collect(
+    engine: Engine,
+    identity: RunnerIdentity,
+    old_descriptor_sha256: str,
+    *,
+    verify: Callable[[Connection], None] | None = None,
+) -> dict:
     """No settings, credentials, runner client, audit writes, or lifecycle effects.
 
     The caller must prove this engine reaches the original Linux DB volume.
@@ -49,9 +56,54 @@ def collect(engine: Engine, identity: RunnerIdentity, old_descriptor_sha256: str
         db.connection(execution_options={"isolation_level": "REPEATABLE READ"})
         db.execute(text("SET TRANSACTION READ ONLY"))
         db.execute(text("SET LOCAL statement_timeout='15s'"))
-        lab = db.get(Laboratory, str(identity.laboratory_id))
-        binding = db.get(LinuxLabBinding, str(identity.laboratory_id))
-        asset = db.get(Asset, str(identity.asset_id))
+        # This does not bypass RLS: PostgreSQL raises if a policy would hide rows.
+        db.execute(text("SET LOCAL row_security=off"))
+        # Lock before ANY SELECT establishes the RR snapshot. These identifiers
+        # are code-owned model names, never input. ONLY excludes descendants and
+        # NOWAIT preserves fail-closed behavior if DDL already owns a relation.
+        tables = sorted(
+            model.__tablename__
+            for model in (
+                Laboratory,
+                Asset,
+                LinuxLabBinding,
+                CampaignRun,
+                Execution,
+                RunnerDispatch,
+                RunnerCleanup,
+            )
+        )
+        db.execute(
+            text(
+                "LOCK TABLE "
+                + ", ".join('ONLY "' + name + '"' for name in tables)
+                + " IN ACCESS SHARE MODE NOWAIT"
+            )
+        )
+        if verify is not None:
+            verify(db.connection())
+        if verify is None:
+            lab = db.get(Laboratory, str(identity.laboratory_id))
+            binding = db.get(LinuxLabBinding, str(identity.laboratory_id))
+            asset = db.get(Asset, str(identity.asset_id))
+        else:
+            # ACCESS SHARE prevents replacement/RLS/type DDL, but not every
+            # inheritance change. Query only the exact relations inspected.
+            lab = db.scalar(
+                select(Laboratory)
+                .where(Laboratory.id == str(identity.laboratory_id))
+                .with_hint(Laboratory, "ONLY", "postgresql")
+            )
+            binding = db.scalar(
+                select(LinuxLabBinding)
+                .where(LinuxLabBinding.laboratory_id == str(identity.laboratory_id))
+                .with_hint(LinuxLabBinding, "ONLY", "postgresql")
+            )
+            asset = db.scalar(
+                select(Asset)
+                .where(Asset.id == str(identity.asset_id))
+                .with_hint(Asset, "ONLY", "postgresql")
+            )
         if (
             lab is None
             or binding is None
@@ -66,12 +118,16 @@ def collect(engine: Engine, identity: RunnerIdentity, old_descriptor_sha256: str
             or binding.configuration_hash != old_descriptor_sha256
         ):
             raise ContinuityError("persisted_original_binding_mismatch")
-        status = binding_review.review(db, lab)
+        status = (
+            binding_review.review(db, lab)
+            if verify is None
+            else binding_review.review(db, lab, only_roots=True)
+        )
         if status["blockers"] or not status["dispatch_history_complete"]:
             raise ContinuityError("persisted_binding_review_blocked")
         # Review above checked both parent scope and this lab's assets. Only accept
         # the exact original integrated runner and complete, immutable CLEANED proofs.
-        rows = db.execute(
+        query = (
             select(CampaignRun, Execution, RunnerDispatch, RunnerCleanup)
             .select_from(CampaignRun)
             .join(Execution, Execution.run_id == CampaignRun.id)
@@ -80,7 +136,11 @@ def collect(engine: Engine, identity: RunnerIdentity, old_descriptor_sha256: str
             .where(CampaignRun.laboratory_id == lab.id)
             .order_by(Execution.id)
             .limit(binding_review.HISTORY_LIMIT + 1)
-        ).all()
+        )
+        if verify is not None:
+            for model in (CampaignRun, Execution, RunnerDispatch, RunnerCleanup):
+                query = query.with_hint(model, "ONLY", "postgresql")
+        rows = db.execute(query).all()
         if (
             not rows
             or len(rows) > binding_review.HISTORY_LIMIT

@@ -110,6 +110,24 @@ def test_db_cannot_write_even_if_review_implementation_regresses(
         assert not db.get(Laboratory, descriptor["laboratory_id"]).authorized
 
 
+def test_connection_verifier_cannot_write_before_the_business_snapshot(binding_lab, pg_engine):
+    _, descriptor = binding_lab
+    identity, fingerprint = arguments(binding_lab)
+
+    def verifier(connection):
+        connection.execute(
+            text("UPDATE laboratories SET authorized=true WHERE id=:id"),
+            {"id": descriptor["laboratory_id"]},
+        )
+        pytest.fail("Read-only must also protect the connection verifier")
+
+    with pytest.raises(DBAPIError) as error:
+        persisted_review.collect(pg_engine, identity, fingerprint, verify=verifier)
+    assert error.value.orig.sqlstate == "25006"
+    with session_factory()() as db:
+        assert not db.get(Laboratory, descriptor["laboratory_id"]).authorized
+
+
 @pytest.mark.parametrize(
     "problem",
     [

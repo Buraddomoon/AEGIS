@@ -65,6 +65,18 @@ models/settings; imports SQL só dentro de collect. Um processo novo verifica es
 fronteira. O probe não inicia runner nem comprova seu próprio mount/volume/rede.
 Invocação real depende do executor/scope futuros e nunca integra make up/test.
 
+O coletor agora adquire ACCESS SHARE ONLY/NOWAIT nas sete relações, em ordem fixa
+e antes do primeiro SELECT/snapshot. Hook interno de verificação recebe a mesma
+conexão/sessão READ ONLY/RR da coleta; não validar schema numa transação anterior.
+Locks protegem substituição de tabela, alteração de RLS/tipos e fazem DDL ocupado
+falhar, sem exigir grants adicionais. Não congelam todo DDL: leituras estritas
+usam ONLY em cada relação e subconsulta para não incorporar herança anexada depois.
+Modo de raízes é interno; revisão da API mantém comportamento padrão sem esse flag.
+
+SET LOCAL row_security=off não ignora políticas: PostgreSQL falha se uma política
+filtraria linhas. Perfil do probe recusa superuser/BYPASSRLS e tabela com RLS;
+o guard evita conclusão por histórico oculto, sem alterar segurança global.
+
 Fontes oficiais consultadas:
 
 - [SQLite WAL e leitura somente leitura](https://www.sqlite.org/wal.html).
@@ -72,6 +84,8 @@ Fontes oficiais consultadas:
 - [Formato SQLite/WAL](https://www.sqlite.org/fileformat2.html#wal_file_format).
 - [Authorizer SQLite](https://www.sqlite.org/c3ref/set_authorizer.html).
 - [Python 3.13 sqlite3](https://docs.python.org/3.13/library/sqlite3.html).
+- [PostgreSQL17 LOCK e ordem do snapshot](https://www.postgresql.org/docs/17/sql-lock.html).
+- [PostgreSQL17 row_security e falha em vez de filtragem](https://www.postgresql.org/docs/17/runtime-config-client.html).
 
 Complementa [ADR0019](0019-runner-binding-review.md) e
 [ADR0020](0020-runner-activation-plan.md). Testes usam somente diários temporários.
