@@ -41,6 +41,9 @@ Validade curta exige nova verificação antes de uso; recibo não renova aprova�
   Não há runner, API, diário ou marcador nesse teste.
 - Um caso adicional impede commit de arquivo .key mesmo sem assinatura PEM;
   artefatos também excluídos do contexto Docker.
+- Suíte local final `make test`: **839 Python passaram** em271,12s e
+  **66 React passaram** em3,58s, incluindo quatro opcionais Docker. Aviso upstream
+  de depreciação Starlette/TestClient-httpx permanece visível.
 - CI executável d6d49ad: **835 Python passaram, quatro opcionais Docker pulados,
   66 React passaram**; lint/tipos/build/auditoria aprovados.
   [Run40409355739](https://github.com/Buraddomoon/AEGIS/actions/runs/40409355739).

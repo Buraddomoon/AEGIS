@@ -193,6 +193,6 @@ em retry após erro; falha não produz recibo de sucesso nem apaga resíduos. Ch
 folha0444 só sob pai0700 para secrets UID10001, CAs0600; .key fora de Git/build.
 Comandos make runner-pki-inspect/prepare/verify e make test-runner-pki. TLS dos
 testes só echo loopback, sem runner/marcador. Preparação não prova volume/journal,
-não rotaciona PKI Wazuh, ativa lab ou renova aprovação. Troca altera descritor;
+não rotaciona PKI Wazuh nem ativa lab ou renova aprovação. Troca altera descritor;
 jobs ambíguos continuam em quarentena, sem replay/liberação de reserva. Ativação
 e novo preflight/revisão exigem escopo próprio. Ver docs/operations/runner-pki.md.
