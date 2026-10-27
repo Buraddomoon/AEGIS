@@ -92,7 +92,7 @@ def _execute(arguments, *, payload=None, timeout=None):
     if payload is not None and (type(payload) is not bytes or len(payload) > 4 * 1024**2):
         raise ActivationError("docker_input_invalid_or_excessive")
     budget = TIMEOUT if timeout is None else timeout
-    if not isinstance(budget, (int, float)) or not 0 < budget <= 20:
+    if type(budget) not in (int, float) or not 0 < budget <= 20:
         raise ActivationError("docker_time_budget_invalid")
     # Never inherit contexts, DOCKER_HOST, plugins, proxies or CLI credentials.
     with tempfile.TemporaryDirectory(prefix="aegis-activation-docker-") as config:

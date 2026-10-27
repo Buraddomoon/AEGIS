@@ -98,7 +98,7 @@ def test_unbounded_or_nonbytes_stdin_is_rejected_before_spawning(monkeypatch, pa
         transport._execute(("closed-fixture-only",), payload=payload)
 
 
-@pytest.mark.parametrize("budget", [0, -1, 21, "20", float("inf"), float("nan")])
+@pytest.mark.parametrize("budget", [0, -1, 21, "20", float("inf"), float("nan"), True, False])
 def test_invalid_or_unbounded_deadline_is_rejected_before_spawning(monkeypatch, budget):
     monkeypatch.setattr(
         transport.subprocess, "Popen", lambda *a, **k: pytest.fail("No child permitted")
