@@ -99,9 +99,9 @@ Indexer/manager/agente/Filebeat, não migrar host nem trocar credenciais humanas
 Uma campanha posterior exige outro escopo/solicitação/aprovação separada. Prova
 de handshake/diário não é evidência de detecção, ingestão SIEM ou retomada segura.
 
-Estado atual: guardas do backend e harness de planejamento/rechecagem disponíveis;
-executor de ativação, inspeção do banco/diário Linux parado e ensaio específico
-continuam pendentes.
+Estado atual: guardas do backend, harness de planejamento/rechecagem e componentes
+de revisão do banco/diário disponíveis. A integração desses componentes ao executor,
+a inspeção autorizada dos volumes Linux originais e o ensaio continuam pendentes.
 
 ## Harness de metadados executável
 
@@ -164,3 +164,49 @@ concorrentes do host/daemon: um executor futuro deverá recalcular todos os gate
 Testes: `make test-runner-activation`, fixtures Docker e processos Python pequenos
 em temporários; sem containers, marcador ou banco. Revisão arquitetural somente
 leitura complementa testes e não é pentest nem validação do volume original.
+
+## Componentes de continuidade implementados
+
+`aegis.lab_runner.persisted_review.collect` recebe engine explicitamente do
+chamador e identidade/hash do binding antigo fixados pelo plano. Não descobre
+credenciais, não usa banco Demo como fallback e não consulta runner/SIEM. Cria
+snapshot próprio READ ONLY/REPEATABLE READ15s; exige laboratório revogado/ocioso,
+ativo real, vínculo antigo exato e ao menos um dispatch CLEANED conhecido. Reutiliza
+ADR0019 e exporta o histórico completo até1000; vazio/incompleto bloqueia. Sem
+auditoria de escrita, alteração de binding ou liberação de reserva.
+
+O bundle privado inclui as provas originais e precisa de hash esperado independente
+ao ser decodificado. O hash não autentica remetente nem comprova que o banco veio
+do volume correto. O executor ainda deverá conferir esse vínculo físico antes de
+usar o resultado. Não imprimir o bundle em logs nem expor uma rota pública nova.
+
+`aegis.lab_runner.continuity.review` examina diretório privado do UID do processo,
+sem criar arquivo na origem ou instanciar Journal/Runner. Exige instance.lock
+existente e exclusivo, arquivos regulares limitados e sem links, nomes conhecidos
+e estabilidade antes/depois. Copia DB+WAL para scratch; SHM é reconstruído ali,
+nunca na origem. WAL não é ignorado: formato/checksums/salts/commit final são
+conferidos antes do SQLite. Perfil conservador recusa caudas antigas de reset,
+incompletas ou danificadas; não truncar ou reparar para fazer a revisão passar.
+
+SQLite query_only/read-only/trusted_schema off/authorizer restrito, schema v1
+exato, integrity_check/foreign_key_check e orçamento de instruções/tempo. Confere
+identidade do protocolo, spec/hash/geração/recibo, todos os jobs terminais CLEANED
+e os eventos. Comprovantes conhecidos precisam coincidir integralmente; jobs
+standalone adicionais são preservados e revisados. Restart legado sem evento é
+explicitamente contado, inclusive quando houve falha/retry de cleanup. Não
+reescrever eventos antigos para ocultar essa limitação.
+
+`python -m aegis.lab_runner.journal_probe --expected-sha256 HASH_REVISADO` é o
+ponto de entrada para **um probe futuro autorizado**: lê bundle por stdin até4MiB,
+somente /state e devolve resumo/hash do inventário, sem specs/markers/recibos ou
+paths. Não aceita destino/comando, não conecta serviços nem importa settings/
+servidor/engine do runner. Seu uso sobre os volumes reais **não ocorreu**. Antes
+de invocá-lo, o executor deve provar volume exato read-only, UID10001, network=none,
+imagens por ID/proveniência e cleanup durável. Não montar volume real para testar
+esse comando sem escopo específico. Não há target Make que o faça implicitamente.
+
+Os resultados mantêm vínculo físico/ativação/operação normal falsos. O inventário
+lógico completo permite comparação antes/depois sem depender do layout de
+checkpoint; não autentica exclusão de passado desconhecido nem substitui fences
+do backend. Testes: `make test-runner-continuity`, só schema PG e diários temporários.
+[Decisão](../architecture/decisions/0021-runner-journal-continuity.md).

@@ -78,7 +78,7 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 | Cobertura | Modo/período/release/legado, comparação e HTML/JSON com denominadores | Contexto incompleto bloqueia equivalência; delta não comprova causalidade |
 | Sigma | Parsing pySigma, versões, vínculos revisados, análise estática, preparação e prévia restrita de campos | Conversão/implantação bloqueadas sem backend/pipeline compatíveis |
 | Agendamentos | Grants delimitados, limite de ocorrências, pausa/revogação e auditoria | Somente Demo; mínimo 60 s, até 100 horários e 90 dias por plano |
-| Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing, recibos, candidato PKI, revisão de vínculo e plano/rechecagem de metadados locais | Um marcador de 43 bytes; ativação da rotação pendente; plano não comprova diário/mounts nem autoriza execução |
+| Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing, recibos, candidato PKI, revisão de vínculo, plano de metadados e probe de continuidade testado em dados temporários | Um marcador de 43 bytes; ativação da rotação e inspeção autorizada dos volumes originais pendentes; plano/probe não autorizam execução |
 | Wazuh | Indexer somente leitura, TLS, binding agente/regra, paginação e coleta correlacionada | Um ensaio Linux/Wazuh 4.14.9; sem Windows/archives/outras regras |
 | Recuperação | Backup consistente, restore offline, quarentena, reconciliação e novo ciclo Demo em clone | Sem cutover, recuperação entre hosts ou RPO/RTO garantidos |
 | Cópia cifrada | age/X25519 opcional host-only, chave separada, restore verificado e plano de retenção | Sem upload/expurgo; originais permanecem em claro; custódia ainda local |

@@ -59,6 +59,12 @@ diário. Os dois gates podem ser combinados e testados com PostgreSQL/SQLite rea
 temporários, sem runner, daemon, SIEM ou efeitos. Não acrescentar rota pública de
 exportação, leitura de volume ou ativação para expor esses componentes internos.
 
+`journal_probe` é o ponto de entrada restrito /state; stdin até4MiB/hash independente,
+resumo sem conteúdo de jobs, sem argumento de path/comando. Decoder importável sem
+models/settings; imports SQL só dentro de collect. Um processo novo verifica essa
+fronteira. O probe não inicia runner nem comprova seu próprio mount/volume/rede.
+Invocação real depende do executor/scope futuros e nunca integra make up/test.
+
 Fontes oficiais consultadas:
 
 - [SQLite WAL e leitura somente leitura](https://www.sqlite.org/wal.html).

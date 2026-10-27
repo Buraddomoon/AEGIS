@@ -224,3 +224,18 @@ não inferir proveniência de imagem, conteúdo do volume ou autorização. Não
 regenerar plano para contornar bloqueios. Executor futuro ainda pendente, requer
 intents/cleanup e novo escopo antes de iniciar Linux. make test-runner-activation
 nunca inicia lab; testes usam fixtures/filhos Python em temporários.
+
+Continuidade do diário (ADR0021): continuity.review nunca instancia Journal/Runner,
+abre SQLite só no scratch privado e preserva DB/WAL/SHM/lock originais. Exigir lock
+preexistente/quiescência, schema v1, identidade, todos os jobs terminais CLEANED e
+provas conhecidas completas. WAL conservador exige formato/checksums/salts válidos
+e commit final; cauda parcial/antiga bloqueia sem truncar/reparar. Restart histórico
+implícito é contado, inclusive falha/retry de cleanup, sem inventar evento novo.
+persisted_review.collect recebe engine explícito do banco Linux original, snapshot
+READ ONLY/REPEATABLE READ15s, binding antigo exato e predicado ADR0019; nunca usar
+Demo/settings como fallback. Decoder exige hash independente/flags/IDs/provas únicas.
+journal_probe só /state, bundle stdin até4MiB e resumo sem conteúdo dos jobs; sem
+opção de path/comando/rede, import de settings/engine/server ou lifecycle. Invocar
+esse probe num volume real exige escopo específico e mount somente leitura/UID/
+isolamento comprovados pelo executor futuro. make test-runner-continuity só usa
+schema PostgreSQL descartável e SQLite temporário, sem volumes/containers de lab.

@@ -274,3 +274,26 @@ CI bdb31c1 aprovado:883 Python passaram/quatro opcionais Docker pulados,79 React
 lint/tipos/build/auditoria. Inclui os cinco casos adicionais em uma rodada única;
 advisory DiskCache conhecido continua revisado/visível, não ocultado.
 [Execução40513069341](https://github.com/Buraddomoon/AEGIS/actions/runs/40513069341).
+
+## Continuidade do diário e provas persistidas — 2026-10-27
+
+`make test-runner-continuity` executa três arquivos, sem iniciar Linux/Wazuh:
+
+- `test_runner_journal_continuity.py`: SQLite real em temporários, schema do writer,
+  origem imutável, lock/arquivos/limites/identidade, jobs/recibos/gerações/eventos,
+  WAL confirmado/incompleto/corrompido, SHM ausente reconstruído só no scratch,
+  inventário independente do layout, timeout/cleanup e SQL authorizer restrito.
+  Regressão com Runner real usa somente prepare e intent RUNNING, sem start:
+  reinício → falha de cleanup → retry; conta o restart implícito preservando eventos.
+- `test_runner_persisted_review.py`: PostgreSQL/schema descartável, readonly/isolation/
+  timeout reais e tentativa DML rejeitada pelo servidor; binding/IDs/revogação/
+  pendências/histórico/provas. Bundle completo decodificado e combinado a SQLite
+  temporário; nenhuma chamada ao runner, Docker ou banco Linux original.
+- `test_runner_journal_probe.py`: stdin/hash/limites/duplicatas/JSON inválido, caminho
+  fixo, saída sem conteúdo de jobs e import em processo novo sem settings/engine/
+  servidor, arquivos de segredo, rede ou subprocessos. CLI help não inicia probe.
+
+PG/Redis de desenvolvimento devem estar configurados como no restante dos testes;
+Redis DB15 é reservado pela fixture comum, sem executar outra suíte de integração
+simultaneamente. Contagens finais/CI no PROGRESS; o aviso upstream de TestClient
+permanece visível. Testes não comprovam volume original, mounts Docker ou ativação.

@@ -127,3 +127,10 @@ Compose, quatro imagens explícitas e volumes existentes/quiescência em Docker 
 Artefato privado/hash/TTL15min, sem apply ou confiança operacional. Continuam
 pendentes o executor com intents/cleanup, inspeção autorizada do banco/diário
 originais, mTLS/mounts reais, registro revogado e encerramento verificável.
+
+Componentes de continuidade entregues: leitura do diário parado por cópia privada
+DB+WAL, schema/identidade/jobs/eventos e correspondência completa às provas do
+banco Linux em snapshot somente leitura. Probe fixo /state com stdin limitado e
+resumo sem conteúdo de jobs; testes em PG/SQLite temporários, sem abrir volumes
+reais. Falta integrar ao executor com intents/ownership/cleanup e provar mounts,
+continuidade original e mTLS sob um novo escopo autorizado. Sem ativação implícita.

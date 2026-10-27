@@ -104,3 +104,9 @@ Compose, imagens locais por ID, volumes/labels/consumidores e TTL15min; consulta
 real e fixtures não concedem autorização nem comprovam diário/runtime/imagens.
 Executor/ativação/banco original/mTLS novo ainda fora do aceite. Nenhum ensaio
 anterior é reaberto por um plano. [Contrato](../operations/runner-pki-activation.md).
+
+Continuidade banco/diário aceita como componente testado em schemas/diários
+temporários: snapshot PG somente leitura, binding antigo exato, provas completas
+por hash e revisão DB+WAL sem inicializar a origem. Probe /state limitado e sem
+conteúdo de jobs na saída. Não equivale a inspeção dos volumes reais, ativação,
+mTLS novo ou permissão de retomar jobs. Esses itens continuam fora do aceite.

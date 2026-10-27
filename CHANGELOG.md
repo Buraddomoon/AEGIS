@@ -1,5 +1,16 @@
 # Changelog
 
+## Continuidade 2026-10-27 — revisão íntegra do diário antes da ativação
+
+- Revisão offline de DB/WAL sem inicializar nem modificar a origem: lock,
+  integridade/schema/identidade, gerações, recibos e todos os jobs/eventos.
+- Bundle completo do histórico Linux em PostgreSQL READ ONLY/REPEATABLE READ,
+  binding antigo exato e provas CLEANED fixadas por hash independente.
+- Probe de caminho fixo /state, entrada limitada e resumo sem conteúdo dos jobs;
+  import isolado de settings/servidor/engine. Sem lifecycle, rede ou ativação.
+- Compatibilidade com restart implícito seguido de falha/retry de cleanup,
+  validada com writer real temporário, sem start/efeito. Volumes reais intactos.
+
 ## Continuidade 2026-10-27 — plano verificável da ativação Linux
 
 - Harness host-only `runner_activation.py plan/recheck`: fixa manifesto PKI,
