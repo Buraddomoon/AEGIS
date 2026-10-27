@@ -2040,3 +2040,98 @@ Este marco acrescenta **10 commits granulares**, incluindo este checkpoint,
 totalizando **292**. main exclusiva, push origin/main após cada commit, privado;
 sem branch/PR/force/rebase. Código final d6d49ad; conferir hash/mensagem finais,
 árvore limpa e sincronização após push deste checkpoint.
+
+
+## 2026-10-27 — revisão segura de vínculo e preparação da ativação coordenada
+
+Base f42bfed. Entregue API/UI administrativa de revisão persistida, reforço das
+três mutações Linux/Wazuh e serialização de novas solicitações Linux. Rotação
+física continua sem ativação; nenhum novo ensaio, marcador ou consulta SIEM.
+
+### Funcionalidades, arquivos e decisões
+
+- `binding_review.py`: predicado compartilhado exige Linux revogado, sem reserva,
+  pais/filhos pendentes ou dispatch sem confirmação terminal íntegra de cleanup.
+  Confere hashes/spec/geração/recibo/IDs/marker, sem reparar dados históricos.
+- `GET /labs/{id}/binding-review`: administrador,30/min, snapshot próprio
+  REPEATABLE READ READ ONLY/15s. Até1.000 dispatches, excesso bloqueia;
+  amostra25 e contagem dos examinados explícitas. Sem runner/diário/ativação.
+- `linux_labs.register`, `telemetry.bind/unbind` recalculam o predicado sob lock.
+  `services.request_run` Linux adquire lab lock/populate_existing antes do scope,
+  impedindo criar pedido após revogação usando leitura anterior.
+- `BindingReview.tsx`/Management: pendências reais na tela administrativa,
+  contexto/flags conferidos e sucesso cacheado ocultado após erro/refetch.
+  Cadastro/revisão de isolamento e cancelamento continuam ações explícitas.
+- ADR0019, comando `make test-binding-review`, runbook e plano coordenado de
+  secrets/volumes, sem executor de ativação. Sem dependência/migração/versão nova.
+
+[Operação](operations/linux-binding-review.md),
+[plano a implementar](operations/runner-pki-activation.md) e
+[evidência/revisão](evidence/binding-review-2026-10-27/README.md).
+
+### Testes e problemas encontrados
+
+| Verificação | Resultado observado |
+|---|---|
+| Rodada completa local |882 Python/79 React passaram;314,96s/3,93s; quatro opcionais Docker incluídos |
+| Suíte nova depois dos cinco casos adicionais |48 passaram/33,20s;887 casos Python distintos exercitados e coletados no estado final |
+| Linux/Wazuh dirigidos |70 passaram/90,79s antes dos cinco últimos casos, somente fixtures |
+| `make lint` |Ruff/format145 arquivos, mypy4, TypeScript e Prettier aprovados |
+| `make e2e`/build |Firefox PASS,4 runs/16 simulações Demo, zero browserErrors, SPA compilada |
+| CI bdb31c1 |SUCCESS:883 Python/quatro opcionais Docker pulados/79 React; lint/tipos/build/auditoria |
+
+[CI40513069341](https://github.com/Buraddomoon/AEGIS/actions/runs/40513069341).
+Aviso Starlette/TestClient-httpx e advisory DiskCache5.6.3/PYSEC-2026-2447 conhecido
+continuam visíveis; npm sem vulnerabilidades na auditoria do CI. Nenhuma alegação
+de ausência geral de vulnerabilidades. Capturas novas privadas; galeria histórica
+publicada preservada, sem commit de binários redundantes.
+
+Revisão especializada encontrou a janela de criação sem lab lock; corrigida e
+coberta por concorrência PostgreSQL real. Revisão estática final sem bloqueador
+concreto no delta, sem pentest. Teste antigo de remoção Wazuh precisava exigir409
+com pedido pendente e depois cancelar explicitamente antes de remover; reexecução
+passou. Verificador do deploy supunha apenas not_linux no Demo; havia também
+laboratory_authorized. Expectativa ajustada e GET repetido, sem mudar laboratório.
+
+### Estado operacional e proteção local
+
+Demo localhost18780 ready/database/redis true. Apenas API/worker atualizados para
+sha256:92ffbc4e1de7f47aa6f6e53636cf3a3d9e153cf869228e669f8263368bcaff7d.
+Imagem anterior ec57c8c preservada em aegis-before-binding-review:20261027;
+DB/Redis não recriados. Schema a0d9c7e21b45/32 tabelas, mesmas23 runs, zero runs
+não terminais/reservas/agendamentos retomáveis. Consulta live autenticada200,
+blocked/not_linux+laboratory_authorized, sem gravação de auditoria pelo GET;
+logout401. Duas contas temporárias desativadas, zero sessões próprias; credenciais
+humanas preservadas. Nenhum laboratório/diário/evidência real alterado.
+
+Backup pré-deploy20261027T133323Z-45b5e62652f24170b4fd16035c268162, dumpSHA
+b78d9528476e49899edb1583afda190ed58c8a487b2330ba02ba8ef7e914e7fb,
+restore verificado32 tabelas/3.390 linhas em5,759s, clone network=none removido e
+sem aplicação. Backup privado em claro; não é nova cópia cifrada nem cutover.
+Cópias/chaves/imagens anteriores preservadas; custódia externa continua adiada.
+
+Linux/Wazuh permanecem sem containers; volumes históricos preservados. Candidato
+PKI90204499ca2144aca175fe809538b7e7 reverificado offline com mesmo manifesto,
+ainda sem ativação. Validade curta exige nova conferência antes de qualquer uso.
+Um schema pytest antigo1405a560…58a, com contas/runs de2026-10-26T22:06:33Z, foi
+identificado no inventário final e preservado; não assumir vazio global nem fazer
+DROP automático de resíduo cuja proveniência não foi acompanhada neste marco.
+Não é run/reserva ativa da aplicação. Detalhes e limites na evidência.
+
+### Pendências e próximo passo
+
+Implementar harness opt-in da troca coordenada com hash/perfil/imagens exatos,
+inventário de volume/banco Linux parado e encerramento verificável, conforme o
+plano. Só depois propor escopo específico de ensaio sem marcador. Recuperação
+de jobs sob descritor alterado continua em quarentena; autorizações consumidas
+não são reutilizadas. PKI Indexer/manager/agente/Filebeat continua separada.
+
+Permanecem backend/pipeline Sigma completos compatíveis e mapping físico/consulta
+validados, recuperação entre hosts/configuração/secrets/imagens/cutover/RPO/RTO e
+custódia independente adiada. Windows/PDF/outros provedores são expansões.
+
+Este marco acrescenta **10 commits granulares**, incluindo este checkpoint,
+totalizando **302**. main exclusiva, GitHub AEGIS privado e push após cada commit;
+sem branch/PR/force ou reescrita. Código de produção99b6758/c6fc456, casos finais
+bdb31c1, evidência1531990. Conferir hash/mensagem, árvore limpa e origin/main
+depois do push deste checkpoint; CI de código já aprovado, docs usam source-review.

@@ -22,6 +22,10 @@ Incremento sobre f42bfed, sem novo ensaio Linux/Wazuh ou ativação de certifica
   **PASS**, quatro runs/16 testes, zero browserErrors. Build SPA aprovado.
   Doze capturas novas ficaram privadas; imagens históricas publicadas intactas.
   E2E é Demo e não comprova browser/ativação do runner real.
+- CI final de código bdb31c1: **SUCCESS**,883 Python/quatro skips opcionais Docker,
+  79 React, lint/tipos/build e auditoria; DiskCache5.6.3/PYSEC-2026-2447 conhecido
+  continua revisado e visível, npm zero. Inclui os cinco casos adicionais em uma
+  rodada completa. [Run40513069341](https://github.com/Buraddomoon/AEGIS/actions/runs/40513069341).
 
 Primeira execução dirigida ainda carregava o teste antigo que permitia remover
 binding com solicitação pendente: uma falha/69 sucessos. Contrato e teste foram
@@ -66,6 +70,14 @@ aceitar o conjunto real de bloqueios e repetido só o GET, sem mutação do lab.
 Health ready/database/redis true em localhost18780. Linux/Wazuh sem containers.
 Candidato PKI anterior reverificado, manifesto24179f34…8d5f ainda válido no
 instante da consulta, sem ativação/banco/diário/lab. Isso não prolonga sua validade.
+
+Inspeção final encontrou um schema pytest histórico
+`aegis_test_1405a5602f0746a7a3a059e32b3ad58a`, com três contas/duas runs de
+2026-10-26T22:06:33Z, anterior a este incremento. A asserção local que supunha
+nenhum schema de teste global foi recusada; não é atividade pendente do Demo.
+Schema antigo preservado, sem DROP automático nem interpretação como resíduo
+criado pelos testes de hoje. Public mantém23 runs, zero pendências/reservas/
+agendamentos retomáveis e zero sessões/contas temporárias ativas deste marco.
 
 ## Limites que permanecem
 

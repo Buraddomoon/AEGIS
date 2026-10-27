@@ -258,3 +258,8 @@ worker/PostgreSQL reais: PASS,4runs/16testes/zero browserErrors; build aprovado.
 Não é ensaio Linux/Wazuh nem prova browser da ativação. Capturas dessa rodada
 ficam privadas; imagens históricas publicadas preservadas. Estado final em
 [PROGRESS](../PROGRESS.md).
+
+CI bdb31c1 aprovado:883 Python passaram/quatro opcionais Docker pulados,79 React,
+lint/tipos/build/auditoria. Inclui os cinco casos adicionais em uma rodada única;
+advisory DiskCache conhecido continua revisado/visível, não ocultado.
+[Execução40513069341](https://github.com/Buraddomoon/AEGIS/actions/runs/40513069341).
