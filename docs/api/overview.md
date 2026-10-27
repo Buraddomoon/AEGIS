@@ -39,6 +39,13 @@ Polling controlado da UI acompanha estado e evidências, sem WebSocket fictício
 
 Coleta Wazuh: GET `/labs/{id}/wazuh-binding` mostra status/política pública, sem segredos. PUT no mesmo caminho exige administrador, review e confirm_read_only_scope=true, Lab revogado/sem reserva; POST `/remove` com confirm remove vínculo e preserva escopos históricos. Conflito de agent/asset já vinculado retorna 409 com rollback da versão do ambiente. Endpoint não recebe destino, índice, query DSL ou credenciais. Executions incluem collection (tentativas/janela/disponibilidade/completude), separada de runner_receipt/runner_cleanup/events/evidence.
 
+Revisão Linux: GET `/labs/{id}/binding-review`, administrador,30/min/usuário,
+snapshot REPEATABLE READ READ ONLY/15s. Agregados de pais/filhos pendentes e provas
+de cleanup por dispatch, limite1.000 e amostra25; sem runner/SIEM/ativação. Registro
+Linux e bind/unbind Wazuh repetem esse predicado sob lock e recusam409 enquanto
+houver pendência, mesmo sem reserva. Cancelar solicitações antes de mudar vínculo;
+nenhum histórico é reescrito. [Contrato e limites](../operations/linux-binding-review.md).
+
 Associações revisadas: GET `/rule-test-links` (rule_id/test_id/include_retired/limit/offset), POST `/rules/{id}/test-links` e DELETE `/rules/{id}/test-links/{link_id}` (retirada sem exclusão). Operador/admin escreve com CSRF; viewer consulta. Body fixa versão/hash/test_version/justificativa e replaces_id. Comparação retorna `scope_changes` de snapshots; vínculos desconhecidos no legado retornam null com link_context_recorded=false. [Contrato e limites](../operations/rule-test-reviews.md).
 
 Análise Sigma: GET da versão salva confere SHA e retorna analyzer_version/pysigma_version, checks/skipped_checks, facts/findings e compatibility=not_configured. Somente leitura, sessão de qualquer papel, 60/min por usuário. 409 por integridade divergente, 422 por conteúdo não analisável/limites. Não altera veredictos nem implanta regras. [Contrato e limites](../integrations/sigma.md#análise-estática-de-versões).

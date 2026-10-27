@@ -90,7 +90,7 @@ O overlay usa `!override` para substituir a porta 18780 por 18785, requer Compos
 
 Após crash real, `CLEANUP_FAILED` mantém reserva. Administrador usa a ação de recuperação para consultar/cancelar/limpar somente o UUID/spec/geração originais; nunca prepara ou inicia outro job. `404` remoto após RPC ambígua **não** autoriza liberação. Sem dispatch persistido, nenhum RPC foi permitido. Resposta perdida de cleanup pode ser confirmada por consulta e cleanup idempotente; journal deve ser preservado para recusar start atrasado.
 
-Se identidade, endpoint ou certificados do binding mudaram/expiraram, recuperação automatizada recusa a configuração nova. Restaure o vínculo original válido ou faça inspeção/cleanup offline do runner original, documentando a intervenção; não apague journal nem altere reserva manualmente para contornar a quarentena. Reiniciar/renovar certificado não concede nova autorização de execução.
+Se identidade, endpoint ou certificados do binding mudaram/expiraram, recuperação automatizada recusa a configuração nova. Mantenha a quarentena e planeje inspeção/cleanup do runner original sob escopo próprio, documentando a intervenção; não restaure confiança antiga para contornar bloqueios, apague journal ou altere reserva manualmente. Reiniciar/renovar certificado não concede nova autorização de execução.
 
 Resultado do ensaio integrado: uma campanha COMPLETED, marcador de 43 bytes, cleanup CLEANED e workspace vazio, INCONCLUSIVE sem eventos/alertas defensivos. Captura opcional falhou inicialmente por esperar pouco o login; corrigida e validada por consulta do histórico, sem outro efeito. Banco confirmou uma única campanha real. Admin, operador e visualizador temporário foram desativados; laboratório revogado/sem reserva; containers/redes encerrados e volumes preservados. Comando de captura não foi apresentado como execução integral com exit 0; passos de negócio, persistência e UI têm verificações separadas registradas no PROGRESS.
 
@@ -100,3 +100,10 @@ Não leem chaves/diário originais nem ativam a troca. Certificados candidatos t
 validade curta e precisam ser reverificados antes de qualquer uso. Ativação
 coordenada, novo binding/preflight e recuperação sob vínculo alterado continuam
 pendentes e exigem escopo próprio; os ensaios anteriores não os autorizam.
+
+Administradores podem consultar [pendências do vínculo](../../docs/operations/linux-binding-review.md)
+na API/UI antes de preparar a troca. Registro Linux e bind/unbind Wazuh também
+verificam pais/filhos pendentes e cleanup íntegro, além da reserva. Solicitação
+pendente precisa de cancelamento explícito antes da revisão, preservando scopes.
+O [plano coordenado](../../docs/operations/runner-pki-activation.md) ainda depende
+de harness e autorização específica; consulta positiva não prova o diário real.

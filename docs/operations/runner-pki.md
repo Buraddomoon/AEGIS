@@ -110,6 +110,9 @@ Antes de uma ativação sob escopo próprio:
 
 Recuperação automática de jobs sob certificado/binding antigo, ativação coordenada,
 rotação da PKI Wazuh e validação num laboratório em execução continuam pendentes.
+[Revisão persistida de bloqueios](linux-binding-review.md) já implementada na
+API/UI; [plano coordenado](runner-pki-activation.md) explicita arquivos, volumes e
+interrupções. Ambos preservam a exigência de novo escopo para iniciar o lab.
 [Recuperação Linux](../../labs/linux/README.md#recuperação-e-rotação) ·
 [ADR0018](../architecture/decisions/0018-offline-runner-pki.md).
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## Continuidade 2026-10-27 — bloqueios para revisão do vínculo Linux
+
+- Revisão administrativa API/UI com snapshot somente leitura, pendências de pais/
+  filhos e integridade das confirmações de cleanup por dispatch/spec/geração.
+- Registro Linux e alteração/remoção de vínculo Wazuh recusam pendências mesmo
+  sem reserva; solicitação Linux serializada com revogação/revisão do laboratório.
+- Plano de troca coordenada de secrets/identidades/volumes, com interrupção diante
+  de ambiguidade. Sem ativação, novo ensaio ou recuperação sob confiança alterada.
+
 ## Continuidade 2026-10-27 — candidato PKI offline do runner
 
 - Inventário público, preparação separada e verificação por hashes revisados,
