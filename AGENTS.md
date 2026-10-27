@@ -252,3 +252,12 @@ retém DB/cache/runner e containers incertos retêm redes. Ausência registrada 
 hash da observação mas não comprova daemon; futuro executor deve conferi-lo, assim
 como plano/TTL/autorização antes de novos efeitos. Cleanup próprio precisa continuar
 possível após expiração, sem reativar recursos/jobs. Testes em make test-runner-activation.
+
+Reconciliação ownership: runner_activation_ownership.py só observa nomes/owner
+composto/ID conhecido e inspect projetado com cinco labels/ID/nome exatos. Usa uma
+label ID:papel, sem pressupor AND de filtros repetidos. Name substring pode bloquear
+por nome parecido, nunca permitir remoção aproximada. Erro/ambiguidade/renomeação/
+drift bloqueiam; repetir listas e reconferir no futuro executor antes do efeito.
+Ausência nunca vem de erro no inspect. stopped_or_empty_snapshot não comprova
+mounts/isolamento nem autoriza stop/rm. Sem Config.Env/inspect bruto ou lifecycle;
+testes locais usam fixtures e não comprovam templates sobre objetos reais do ensaio.

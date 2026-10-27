@@ -246,6 +246,13 @@ recusam dependentes novos durante/depois da remoção, antes/depois de resume; e
 em memória não sobrepõe o histórico. Processo novo proíbe rede/processos/segredos
 no import. Esses casos não consultam Docker nem criam recursos de laboratório.
 
+Também inclui `test_runner_activation_ownership.py`: fixtures de containers/redes
+presentes/ausentes, colisão/rename/labels/ID histórico, listas repetidas/drift,
+estado parcial, projeções limitadas e catálogo de consultas sem mutações. Não
+assumir AND de múltiplos filtros label nem tratar falha de inspect como ausência.
+Esses testes não comprovaram templates em objetos reais de ativação; nenhum foi
+criado para esse fim. Executor compartilhado já tem testes de timeout/limite/env.
+
 `make test-runner-pki` executa 52 casos de geração, inspeção, preparação,
 integridade, limites, drift, tempo, SAN/EKU, pares e fsync/retry. Três desses
 casos usam TLS real de echo em loopback, aceitando o novo par e recusando

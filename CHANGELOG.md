@@ -1,5 +1,14 @@
 # Changelog
 
+## Continuidade 2026-10-27 — reconciliação de ownership somente leitura
+
+- Observador de recursos do catálogo cruza nome, label composta e ID conhecido,
+  valida inspect projetado e repete listas para recusar drift/colisões/renomeações.
+- Filtros não dependem de AND/OR de labels repetidas; nomes semelhantes bloqueiam
+  conservadoramente. Erro de inspect não significa ausência.
+- Sem Config.Env, inspect bruto, lifecycle ou autorização. Templates cobertos por
+  fixtures, sem criar recursos reais para teste ou alegar validação runtime.
+
 ## Continuidade 2026-10-27 — intenção durável de recursos de ativação
 
 - Armazenamento host-only de ownership com catálogo fechado, eventos exclusivos,

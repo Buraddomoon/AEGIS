@@ -46,3 +46,31 @@ Testes somente em diretórios temporários, cobrindo interrupções, replay, own
 concorrência e retenção de dependências. Complementa
 [ADR0020](0020-runner-activation-plan.md) e
 [ADR0021](0021-runner-journal-continuity.md).
+
+## Reconciliação somente leitura implementada
+
+`runner_activation_ownership.py` observa somente o catálogo. Consulta nome,
+label composta exclusiva `io.aegis.activation-resource=ID:PAPEL` e ID histórico
+quando conhecido; exige concordância e inspect por nome com ID/nome/cinco labels
+exatos. Uma label composta evita depender de AND/OR para filtros label repetidos.
+O filtro name usa substring documentada; nomes semelhantes bloqueiam, nunca
+autorizam remoção aproximada. Projetar só identidade/imagem/estado ou contagem de
+membros da rede, sem Config.Env, mountpoints, inspect bruto ou nomes de membros.
+
+Repetir as listas ao final; falha, ambiguidade, recurso renomeado/duplicado ou
+IDs/labels divergentes bloqueiam. Recurso sem ID após create ambíguo é localizado
+pelo nome/owner; nunca interpretar erro de inspect como ausência. Ausência exige
+listas vazias, inclusive ID anterior quando conhecido. Snapshot não impede corrida
+do daemon depois da consulta; executor deve reconferir antes/depois de seus efeitos.
+
+Reutilizar Unix local/config vazia/env mínimo/10s/64KiB do executor de consultas,
+somente ps/network ls/container inspect/network inspect projetados. Sem lifecycle,
+SQL ou chamadas ao runner. `stopped_or_empty_snapshot` é observação parcial,
+sem provar mounts/isolamento/proveniência ou autorizar efeito. Testes desse novo
+reconciliador usam fixtures; ainda sem validação em objetos reais de ativação.
+
+Fontes oficiais consultadas:
+
+- [Docker container ls](https://docs.docker.com/reference/cli/docker/container/ls/).
+- [Docker network ls](https://docs.docker.com/reference/cli/docker/network/ls/).
+- [Docker container inspect](https://docs.docker.com/reference/cli/docker/container/inspect/).

@@ -247,3 +247,17 @@ no daemon, mount, PKI ou journal. O executor ainda deverá confirmar tudo antes
 dos efeitos e no encerramento. Plano/TTL/escopo válido é obrigatório para iniciar
 novos efeitos; expirou não significa abandonar cleanup de recursos próprios.
 [ADR0022](../architecture/decisions/0022-activation-resource-intents.md).
+
+Reconciliação disponível em `runner_activation_ownership.py`, ainda interna e sem
+CLI de lifecycle. Cruza nome, owner composto ID:papel e ID histórico; inspect exige
+nome/ID/cinco labels exatos. Lista por nome usa substring documentada: nome parecido
+é bloqueio conservador, sem limpeza por aproximação. Label única evita ambiguidade
+de AND/OR para filtros repetidos. Ausência depende de listas vazias repetidas,
+incluindo ID anterior; erro de consulta/inspect nunca vira ausência.
+
+Projeção mostra somente identidade, imagem/estado do container ou contagem de
+membros da rede. Rede com membros/container rodando não são stopped_or_empty_snapshot.
+Mesmo um snapshot parado/vazio mantém effects_authorized/runtime_mounts_verified/
+network_isolation_verified/normal_operation_permitted false. Ainda requer prova de
+runtime, autorização e nova conferência antes de cada efeito. Testes usam fixtures;
+não houve inspeção real de objetos de ativação nem criação/remoção para validar isso.

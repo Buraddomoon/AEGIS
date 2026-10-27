@@ -70,6 +70,7 @@ def resource(identifier, plan_sha256, role):
             "io.aegis.activation-id": identifier,
             "io.aegis.activation-plan-sha256": plan_sha256,
             "io.aegis.activation-role": role,
+            "io.aegis.activation-resource": identifier + ":" + role,
         },
     }
 
