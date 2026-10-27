@@ -374,3 +374,70 @@ assert 'aegis.lab_runner.engine' not in sys.modules
         timeout=5,
     )
     assert result.returncode == 0, result.stderr
+
+
+def start_payload(role="journal-before"):
+    return {
+        "role": role,
+        "recipe_sha256": "1" * 64,
+        "gates_sha256": "2" * 64,
+        "proof_bundle_sha256": "3" * 64,
+    }
+
+
+@pytest.mark.parametrize("resume", [False, True])
+def test_probe_start_intent_is_durable_and_never_replayed_even_after_resume(tmp_path, resume):
+    root = tmp_path / "intents"
+    with intents.ActivationIntents(root) as store:
+        origin = begin(store)
+        store.request("journal-before")
+        store.append("observed", {"role": "journal-before", "resource_id": "d" * 64})
+        store.append("probe_start_requested", start_payload())
+        record = json.loads((store.folder / "0003.json").read_bytes())
+        assert record["data"] == start_payload()
+        if not resume:
+            with pytest.raises(intents.ActivationError, match="already_requested"):
+                store.append("probe_start_requested", start_payload())
+            absent(store, "journal-before")
+    if resume:
+        with intents.ActivationIntents(root) as store:
+            store.resume(origin["id"], origin["begin_sha256"])
+            item = store.state["resources"]["journal-before"]
+            assert item["state"] == "START_REQUESTED" and item["start"]["recipe_sha256"] == "1" * 64
+            with pytest.raises(intents.ActivationError, match="already_requested"):
+                store.append("probe_start_requested", start_payload())
+            absent(store, "journal-before")
+
+
+@pytest.mark.parametrize("role", ["runner", "api", "db", "redis", "network-isolated"])
+def test_start_intent_never_authorizes_non_probe_role(tmp_path, role):
+    with intents.ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        store.request(role)
+        store.append("observed", {"role": role, "resource_id": "d" * 64})
+        with pytest.raises(intents.ActivationError, match="probe_start_invalid"):
+            store.append("probe_start_requested", start_payload(role))
+
+
+@pytest.mark.parametrize("scene", ["not_observed", "closing", "recipe", "gates", "proof", "extra"])
+def test_missing_id_closing_resource_or_unpinned_start_is_rejected(tmp_path, scene):
+    with intents.ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        store.request("journal-before")
+        if scene != "not_observed":
+            store.append("observed", {"role": "journal-before", "resource_id": "d" * 64})
+        if scene == "closing":
+            store.append("removal_requested", {"role": "journal-before"})
+        payload = start_payload()
+        key = {
+            "recipe": "recipe_sha256",
+            "gates": "gates_sha256",
+            "proof": "proof_bundle_sha256",
+        }.get(scene)
+        if key:
+            payload[key] = "not-a-hash"
+        if scene == "extra":
+            payload["command"] = "arbitrary"
+        with pytest.raises(intents.ActivationError):
+            store.append("probe_start_requested", payload)
+        assert all(event["kind"] != "probe_start_requested" for event in store.events)

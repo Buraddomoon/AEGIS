@@ -144,8 +144,27 @@ def _apply(state, event, identifier):
         if item["state"] == "REQUESTED":
             item["state"] = "OBSERVED"
         item["resource_id"] = data["resource_id"]
+    elif kind == "probe_start_requested":
+        if (
+            set(data) != {"role", "recipe_sha256", "gates_sha256", "proof_bundle_sha256"}
+            or role not in {"journal-before", "journal-after"}
+            or item["state"] != "OBSERVED"
+            or item["resource_id"] is None
+        ):
+            raise ActivationError("intent_probe_start_invalid_or_already_requested")
+        for key in ("recipe_sha256", "gates_sha256", "proof_bundle_sha256"):
+            _hash(data[key])
+        # Durable intent is deliberately not a success record. A resumed
+        # START_REQUESTED may have had an effect; only reconciliation/cleanup
+        # can follow, never another start.
+        item["state"] = "START_REQUESTED"
+        item["start"] = {key: data[key] for key in data if key != "role"}
     elif kind == "removal_requested":
-        if set(data) != {"role"} or item["state"] not in {"REQUESTED", "OBSERVED"}:
+        if set(data) != {"role"} or item["state"] not in {
+            "REQUESTED",
+            "OBSERVED",
+            "START_REQUESTED",
+        }:
             raise ActivationError("intent_removal_invalid")
         _require_no_dependents(role, owned)
         item["state"] = "REMOVAL_REQUESTED"
