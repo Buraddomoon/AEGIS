@@ -86,7 +86,14 @@ def command(kind, value=None):
     raise ActivationError("docker_query_not_allowed")
 
 
-def _execute(arguments):
+def _execute(arguments, *, payload=None, timeout=None):
+    # Private shared transport. Public read-only query adapters never supply stdin.
+    # Only the closed journal lifecycle adapter supplies a proof bundle.
+    if payload is not None and (type(payload) is not bytes or len(payload) > 4 * 1024**2):
+        raise ActivationError("docker_input_invalid_or_excessive")
+    budget = TIMEOUT if timeout is None else timeout
+    if not isinstance(budget, (int, float)) or not 0 < budget <= 20:
+        raise ActivationError("docker_time_budget_invalid")
     # Never inherit contexts, DOCKER_HOST, plugins, proxies or CLI credentials.
     with tempfile.TemporaryDirectory(prefix="aegis-activation-docker-") as config:
         process = subprocess.Popen(
@@ -98,7 +105,7 @@ def _execute(arguments):
                 "unix:///var/run/docker.sock",
                 *arguments,
             ],
-            stdin=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL if payload is None else subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=ENV,
@@ -106,15 +113,32 @@ def _execute(arguments):
         try:
             output = bytearray()
             count = 0
-            deadline = time.monotonic() + TIMEOUT
+            deadline = time.monotonic() + budget
+            sent = 0
             with selectors.DefaultSelector() as selector:
-                selector.register(process.stdout, selectors.EVENT_READ, True)
-                selector.register(process.stderr, selectors.EVENT_READ, False)
+                selector.register(process.stdout, selectors.EVENT_READ, "stdout")
+                selector.register(process.stderr, selectors.EVENT_READ, "stderr")
+                if payload:
+                    os.set_blocking(process.stdin.fileno(), False)
+                    selector.register(process.stdin, selectors.EVENT_WRITE, "stdin")
+                elif payload is not None:
+                    process.stdin.close()
                 while selector.get_map():
                     remaining = deadline - time.monotonic()
                     if remaining <= 0:
                         raise ActivationError("docker_query_timed_out")
                     for key, _ in selector.select(remaining):
+                        if key.data == "stdin":
+                            try:
+                                sent += os.write(key.fd, payload[sent : sent + 16384])
+                            except BlockingIOError:
+                                continue
+                            except BrokenPipeError:
+                                raise ActivationError("docker_input_delivery_unconfirmed") from None
+                            if sent == len(payload):
+                                selector.unregister(process.stdin)
+                                process.stdin.close()
+                            continue
                         chunk = os.read(key.fd, 8192)
                         if not chunk:
                             selector.unregister(key.fileobj)
@@ -122,7 +146,7 @@ def _execute(arguments):
                         count += len(chunk)
                         if count > MAX_OUTPUT:
                             raise ActivationError("docker_response_too_large")
-                        if key.data:
+                        if key.data == "stdout":
                             output.extend(chunk)
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
@@ -134,6 +158,8 @@ def _execute(arguments):
             if process.poll() is None:
                 process.kill()
             process.wait()
+            if process.stdin is not None and not process.stdin.closed:
+                process.stdin.close()
             process.stdout.close()
             process.stderr.close()
 
