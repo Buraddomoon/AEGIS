@@ -2220,3 +2220,108 @@ Este marco acrescenta **7 commits granulares**, incluindo este checkpoint,
 totalizando **309**. Código ab662e0/27ea2db, contrato/Make d05a00f e evidência
 b3e639a. Conferir hash/mensagem finais, árvore limpa e origin/main após o push;
 nenhuma branch temporária, PR, force push ou reescrita de histórico.
+
+## 2026-10-27 — continuidade, ownership durável e reconciliação somente leitura
+
+Basebd4404e/309 commits. Continuação automática em três unidades verificáveis,
+sem encerramentos intermediários do trabalho. Nenhum Linux/Wazuh iniciado,
+marcador/campanha novo, troca de mounts/PKI ou leitura interna dos volumes reais.
+Não houve deploy/restart/migração/seed, novas contas ou alteração de senhas.
+Compactação é controlada pelo ambiente; este checkpoint permite retomada sem
+afirmar que um comando /compact foi executado.
+
+### Componentes entregues
+
+1. **Continuidade banco/diário** — `continuity.py`, `persisted_review.py` e
+   `journal_probe.py` em apps/api/aegis/lab_runner. Snapshot PG próprio READ ONLY/
+   REPEATABLE READ15s, binding antigo exato, revogação/ociosidade, predicadoADR0019
+   e todas as provas CLEANED conhecidas por hash. SQLite só em cópia privada DB+
+   WAL, SHM reconstruído no scratch, lock/arquivos/schema/integridade/identidade/
+   jobs/recibos/gerações/eventos. Probe fixo /state, stdin4MiB/hash, saída sem
+   conteúdo dos jobs e import sem settings/modelos SQL/engine/server/rede/processos.
+2. **Ownership durável** — `scripts/runner_activation_intents.py`, catálogo
+   fechado sem worker/migrate/controller/Wazuh/volumes; nomes/labels derivados,
+   eventos exclusivos0600/0700/hashchain/fsync, lock cooperativo e retomada por
+   ID/hash. Histórico parcial bloqueia; publicação incerta invalida sessão.
+   API incerta retém DB/cache/runner; containers incertos retêm redes. Novos
+   dependentes são recusados durante/depois da remoção, inclusive após resume.
+3. **Observador de ownership** — `scripts/runner_activation_ownership.py`, cruza
+   nome, owner composto ID:papel e ID anterior; inspect de nome/ID/cinco labels
+   exatos e repetição das listas. Uma label evita pressupor AND/OR de filtros
+   repetidos. Nome parecido bloqueia, sem limpeza aproximada. Nunca interpretar
+   erro como ausência; só consultas projetadas/Unix local/config/env isolados,
+   10s/64KiB compartilhados. Nenhum lifecycle ou autorização é implementado aqui.
+
+ADRs0021/0022, AGENTS, Make, README/changelog/roadmap/aceite/testing/runbook
+atualizados. [Evidência completa](evidence/journal-continuity-2026-10-27/README.md).
+`test-runner-continuity` usa PG/SQLite temporários; `test-runner-activation` inclui
+plan/metadados/intents/ownership. Nenhum dos targets inicia laboratório real.
+
+### Validação executada e problemas corrigidos
+
+- `make test-runner-continuity`: **104 passaram/9,60s** (65 continuidade,
+  30 PG/bundle e9 probe). DML de regressão foi rejeitado pelo PostgreSQL read-only.
+- Rodada global `pytest -q`: **1.073 passaram/364,68s**, antes dos novos testes
+  de intents/ownership. Quatro projeções Docker opcionais leram só objetos Demo
+  existentes, sem criar recursos. Demais schemas/fixtures/temporários conforme
+  contratos existentes, sem abrir o banco Linux original.
+- `make test-runner-activation` final: **184 passaram/34,37s** (82 existentes,
+  52 intents e50 ownership). **1.175 casos Python distintos exercitados localmente
+  em rodadas distintas**, sem somar reruns; coleta final também confirmou1.175.
+- Lint completo aprovado: Ruff/format159 arquivos, mypy4, TypeScript e Prettier.
+  Aviso upstream TestClient-httpx permanece. Frontend/build/E2E não repetidos
+  localmente por ausência de mudança nesses fluxos; CI valida frontend/build.
+- Revisão de fontes356 arquivos/93Markdown/278links/14 cabeçalhosPNG e scanner
+  do índice completo aprovados; não equivalem a pentest ou ausência de segredos.
+
+Revisão especializada estática encontrou restart implícito seguido de falha/retry
+de cleanup recusado pelo leitor; corrigido com teste do writer real temporário,
+somente prepare/intent RUNNING, nunca start/supervise. Teste de import em processo
+novo encontrou settings indireto no decoder; imports SQL restritos ao collect.
+Revisão de ownership encontrou novo dependente após pedido de remover dependência;
+bloqueio cobre caminho direto e retomada. Ajustes confirmados por nova leitura,
+sem bloqueadores adicionais concretos, sem alegação de pentest.
+
+Consulta real somente leitura do observador: nove papéis absent_snapshot,
+nonceb46cbcbd00404c87a942062db5f8386d, em2026-10-27T17:00:17.687401Z;
+reciboSHA bb5ca450e5603b996d2714c158714bc4a8d2743cce71b167fc90d5bb4c2dd6eb,
+privado0600/pai0700, hash/permissões reconferidos. Sem recursos/intent real criado,
+sem volume aberto. Isso valida listas ausentes; templates de inspect de objetos
+presentes continuam só com fixtures e exigem ensaio autorizado futuro.
+
+CI final de código fc5da3d **SUCCESS**:
+[run40546471235](https://github.com/Buraddomoon/AEGIS/actions/runs/40546471235),
+**1.171 Python passaram/quatro projeções Demo opcionais puladas/320,97s** e
+**79 React passaram/12 arquivos**, além de lint/tipos/build/advisory review.
+DiskCache5.6.3/PYSEC-2026-2447 conhecido continua revisado e visível, sem alegação
+de ausência geral de vulnerabilidades. CI source-review8dc9fae também SUCCESS;
+redundantes canceladas por concurrency. Logs completos privados em
+.local/pki-milestone/ownership-code-ci-result.log; nenhuma evidência/confidencial
+bruta foi adicionada ao Git.
+
+### Estado preservado e sequência seguinte
+
+Demo localhost18780 continua ready/database/redis true; imagens/contas/credenciais
+humanas inalteradas. PKI/candidatos/planos, journals/volumes/backups/imagens e
+evidências históricos preservados; nenhum schema antigo foi limpo. Plano3f3836…
+expirado não foi reusado; PKI exige nova conferência de validade, sem inferir >=24h
+de uma prova passada. Custódia externa permanece adiada, sem upload ou serviço pago.
+
+Próximo: integrar componentes a executor de lifecycle **fixo/opt-in** com intenção
+antes dos efeitos, query de ownership e prova de mounts/rede/UID/limites/imagem;
+verificar banco/journal Linux originais e mTLS novo sem marcador, registrar binding
+explicitamente ainda revogado e encerrar recursos com ausência verificada. Worker
+parado, sem migrate/seed/smoke/efeito implícito. Só após ter harness completo e
+reviewable apresentar escopo específico para nova autorização real; não pedir
+aprovação de implementação incompleta nem reutilizar ensaios consumidos. Jobs
+ambíguos seguem em quarentena, sem replay ou liberação manual de reserva.
+
+Permanecem PKI de serviços Wazuh separada, backend/pipeline Sigma completo/mapping
+físico compatível, recuperação entre hosts/config/secrets/imagens/cutover/RPO/RTO
+e custódia independente adiada. Windows/PDF/outros provedores são expansões.
+
+Este incremento acrescenta **13 commits granulares**, incluindo este checkpoint,
+totalizando **322**. main exclusiva e GitHub AEGIS privado, push após cada commit.
+Código de continuidade92901e9/1bf7d87/b3833f3/ca75231, intentsf2250ef, casos/contrato
+6fd1f1f e observadorfc5da3d; evidências8760feb/8dc9fae. Conferir hash/mensagem
+finais, árvore limpa e origin/main após publicar; sem branches/PR/force ou reescrita.
