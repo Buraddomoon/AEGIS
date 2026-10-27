@@ -311,3 +311,26 @@ PG/Redis de desenvolvimento devem estar configurados como no restante dos testes
 Redis DB15 é reservado pela fixture comum, sem executar outra suíte de integração
 simultaneamente. Contagens finais/CI no PROGRESS; o aviso upstream de TestClient
 permanece visível. Testes não comprovam volume original, mounts Docker ou ativação.
+
+## Runtime/resultado/cleanup dos probes — 2026-10-27
+
+`make test-runner-activation` inclui:
+
+- `test_runner_activation_probe_runtime.py`: receita fechada, limites efetivos,
+  mount read-only/nocopy, namespaces, env sem valores/duplicatas/loader, identidade
+  e ownership repetido. Um caso opcional parseia o template no DemoAPI **existente**;
+  daemon/API ausentes resultam em skip. Nunca criar recursos para passar o teste,
+  nem interpretar metadados do Demo como runtime aprovado para o probe.
+- `test_runner_activation_intents.py`: start intent exclusivo de probe observado,
+  hashes de receita/gates/bundle e recusa de replay antes/depois de retomada.
+- `test_runner_activation_cleanup.py`: intents reais em temporários e daemon
+  simulado, incluindo API incerta/dependências retidas, erro com efeito ambíguo,
+  ID descoberto após create incerto, daemon/bytes duráveis alterados, fsync falho,
+  ausência final alterada e catálogo sem force/volumes/start/exec/global delete.
+- `test_runner_activation_probe_result.py`: saída real do probe sobre SQLite
+  temporário, hash/identidade/descritor/flags/contagens, resposta inválida e
+  comparação de inventário completo. Não autentica origem física/imagem.
+
+O driver concreto de cleanup nunca é chamado pelos testes; somente o método
+interno `_execute` substituído por fixture. Não há target/CLI de lifecycle novo.
+Contagens/CI finais estão no PROGRESS; testes não autorizam ensaio Linux/Wazuh.

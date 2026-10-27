@@ -140,3 +140,11 @@ hashchain, recursos em catálogo fechado, lock/retomada e retenção de dependê
 Referência de escopo/ausência registrada não é autorização nem consulta ao daemon.
 Falta integrar os componentes ao executor de ciclo de vida fixo, validar runtime/
 mounts/mTLS/registro revogado e fechar os recursos sob novo escopo específico.
+
+Receita e revisão de runtime dos probes entregues: imagem por ID, módulo fixo,
+UID/rede/limites/mount read-only/nocopy e env por allowlist sem expor valores.
+Start intent durável impede replay; decoder compara contextos/inventário completo.
+Cleanup interno com driver concreto fechado, durabilidade/ownership/imagem antes
+dos efeitos, dependências retidas e ausência reconferida. Driver real não invocado;
+sem CLI apply ou create/start implementados. Faltam coordenador completo/transporte
+do bundle e gates físicos/mTLS/registro revogado para um novo ensaio autorizado.

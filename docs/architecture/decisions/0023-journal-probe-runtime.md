@@ -1,6 +1,7 @@
 # ADR 0023 — Runtime fixo e encerramento do probe de continuidade
 
-Data: 2026-10-27. Status: implementação incremental; não autoriza ensaio.
+Data: 2026-10-27. Status: receita, revisão, resultados, start intent e cleanup
+interno implementados; coordenador/create/start pendentes. Não autoriza ensaio.
 
 O primeiro componente de lifecycle será restrito a journal-before/journal-after.
 Não iniciar o servidor Runner para inspecionar seu diário. Compilar argumentos
@@ -24,11 +25,29 @@ a revisão e ownership. Nunca imprimir Config.Env, inspect bruto ou Source físi
 do volume. Consultas e processos locais têm limites de tempo/saída e recolhem seus
 filhos; falha não vira ausência nem autoriza próximo gate.
 
+Projeção de ambiente retorna apenas nomes/booleans: allowlist sem duplicatas,
+PATH/LANG/flags/TMPDIR fixos, metadados de build Python sem consumo pelo entrypoint
+isolado. Recusar variáveis do loader/overrides; -I sozinho não barra LD_PRELOAD.
+LANG ausente em imagem base é permitido somente porque a receita o define;
+runtime exige o valor fixo. Não consultar/registrar valores de env secretos.
+
+Decodificar saída limitada/sem campos extras, fixar bundle e descritor antigo,
+identidade, flags falsas, contagens inteiras coerentes e SHA do inventário. Comparar
+snapshots completos antes/depois, inclusive jobs adicionais e restart implícito.
+Uma saída emitida pela imagem não autentica o volume ou a proveniência do código.
+
 Intenção durável deve preceder create e start. Retomada nunca repete start ambíguo.
 Cleanup próprio continua possível com plano expirado: conferir nome/labels/ID exatos,
 registrar remoção antes de stop/rm, remover só container identificado e confirmar
 ausência por consultas repetidas. Erro de cleanup impede recibo de sucesso e mantém
 artefatos para retomada. Não executar kill/rm de alvos livres nem apagar histórico.
+
+O cleanup interno cobre o catálogo completo ADR0022, com stop/rm por ID completo,
+imagem do plano e rechecagem durável/daemon antes de cada efeito. Não usa TTL para
+abandonar recursos, não inicia trabalho, não exige que a PKI antiga ainda seja
+válida. API incerta retém DB/cache/runner; containers incertos retêm redes. Falha
+ambígua de CLI só é resolvida por estado/ausência posteriores confirmados e fica
+explicitamente registrada no resumo. Segunda passagem de ausência antes do close.
 
 Este componente não prova origem do banco, proveniência da imagem, autorização
 humana ou mTLS/registro do novo binding. O coordenador completo ainda precisa ligar

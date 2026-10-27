@@ -261,3 +261,41 @@ Mesmo um snapshot parado/vazio mantém effects_authorized/runtime_mounts_verifie
 network_isolation_verified/normal_operation_permitted false. Ainda requer prova de
 runtime, autorização e nova conferência antes de cada efeito. Testes usam fixtures;
 não houve inspeção real de objetos de ativação nem criação/remoção para validar isso.
+
+## Receita do probe e cleanup interno
+
+`runner_activation_probe_runtime.py` compila só journal-before/journal-after;
+não chama create/start. Imagem por ID, entrypoint Python isolado e módulo fixo,
+hash em argv/bundle por stdin, UID10001, /state read-only/nocopy, rede none,
+root read-only, capabilities removidas e limites192MiB/0,5CPU/16pids. Scratch
+tmpfs64MiB noexec/nosuid/nodev e shm1MiB; nenhum secret/socket/porta. Imagem com
+VOLUME declarado bloqueia antes do efeito. O executor futuro precisa reconferir
+que o volume original existe: --mount de volume nomeado pode criar um ausente,
+logo metadados não são uma trava atômica contra outro escritor do daemon.
+
+Revisão projetada compara imagem/referência/argv/UID/mount efetivo+nocopy/opções/
+namespaces/limites/estado e ownership antes/depois. Env só nomes/booleans, nunca
+valores: allowlist sem duplicatas, PATH/LANG/flags/TMPDIR fixos, recusa overrides
+do loader. LANG/TMPDIR explícitos; campos opcionais Go usam index. Projeção
+completa foi parseada em DemoAPI **já existente**, somente leitura. Essa consulta
+não executou probe nem demonstrou o runtime no journal Linux real.
+
+`probe_start_requested` registra recipe/gates/bundle SHA antes do efeito, somente
+para probe observado. Mesmo sem confirmação de start, retomada não pode repeti-lo.
+`runner_activation_probe_result.py` decodifica contexto/identidade/flags/contagens
+e compara inventários lógicos completos. Hash/saída não substituem proveniência,
+mount, banco físico, mTLS ou autorização humana; flags operacionais continuam falsas.
+
+`runner_activation_cleanup.py` implementa cleanup **interno**, sem comando CLI ou
+target Make de lifecycle. Seu driver concreto não foi invocado em recursos reais.
+Recebe store travado/retomado e imagens originais do plano; revalida bytes duráveis,
+nome/cinco labels/ID/imagem antes de cada stop SIGTERM/5s ou rm sem force/volumes.
+Erro ambíguo exige consulta nova, nunca ausência inferida do erro. Retém dependências
+incertas, repete ausência no final e só então encerra o intent. TTL/PKI expirados
+não abandonam cleanup próprio. Consulta final não impede alterações posteriores
+por root/daemon; ownership local não é uma assinatura ou trava distribuída.
+
+Ainda faltam coordenador completo, create/start com transporte limitado do bundle,
+vínculo físico do banco original, mTLS novo/recusa do trust anterior, registro
+revogado e escopo específico de um ensaio. Não executar componentes manualmente
+para contornar esses gates. [ADR0023](../architecture/decisions/0023-journal-probe-runtime.md).

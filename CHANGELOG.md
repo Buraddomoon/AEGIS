@@ -1,5 +1,18 @@
 # Changelog
 
+## Continuidade 2026-10-27 — runtime e encerramento controlado dos probes
+
+- Receita fixa para journal-before/after e revisão somente leitura de imagem,
+  mount read-only/nocopy, UID/namespaces/rede/limites/argv/estado e ownership.
+- Ambiente com allowlist/valores fixos, sem duplicatas ou overrides de loader;
+  projeção só de nomes/booleans. LANG/TMPDIR explícitos, opcionais Go via index.
+- Intent durável antes do start, sem repetição após crash/retomada; resultados
+  vinculados às provas persistidas e comparação do inventário lógico completo.
+- Cleanup interno por ownership/ID/imagem, sem force/volumes, reconciliação de
+  erros ambíguos, retenção de dependências e ausência repetida antes do close.
+- Testes em temporários/daemon fixtures e consulta de metadados Demo existentes.
+  Coordenador/create/start/ensaio real continuam pendentes, sem CLI apply.
+
 ## Continuidade 2026-10-27 — reconciliação de ownership somente leitura
 
 - Observador de recursos do catálogo cruza nome, label composta e ID conhecido,

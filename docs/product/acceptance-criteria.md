@@ -115,3 +115,11 @@ Ownership aceito como armazenamento testado em temporários: catálogo/nomes/lab
 derivados, eventos/hashchain/fsync, retomada por hash, recusa de histórico parcial e
 retenção de dependências. Não aceita Docker/apply/ativação ou ausência real apenas
 pelo hash de uma observação registrada. [ADR0022](../architecture/decisions/0022-activation-resource-intents.md).
+
+Runtime de probes aceito como componente testado: receita restrita, revisão de
+configuração/mounts/env/isolamento e decoder/contexto/contagens/comparação lógica.
+Intent de start não repetível e cleanup interno aceitos com registros duráveis
+temporários/daemon fixtures; query real apenas de metadados Demo já existentes.
+Isso não aceita runtime no volume original, create/start, coordenador completo,
+origem física do banco, mTLS novo ou ativação autorizada. Nenhum driver de cleanup
+foi aplicado a recursos reais. [ADR0023](../architecture/decisions/0023-journal-probe-runtime.md).

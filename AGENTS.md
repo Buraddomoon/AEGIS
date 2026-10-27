@@ -261,3 +261,26 @@ drift bloqueiam; repetir listas e reconferir no futuro executor antes do efeito.
 Ausência nunca vem de erro no inspect. stopped_or_empty_snapshot não comprova
 mounts/isolamento nem autoriza stop/rm. Sem Config.Env/inspect bruto ou lifecycle;
 testes locais usam fixtures e não comprovam templates sobre objetos reais do ensaio.
+
+Runtime do probe (ADR0023): runner_activation_probe_runtime compila somente os
+papéis journal-before/journal-after, imagem por ID, Python -I/-B/módulo fixo,
+stdin para provas, /state read-only/nocopy, UID10001 e network=none. Sem shell,
+secrets, ports, pull ou imagem com VOLUME declarado. Revisão antes/depois exige
+configuração/mounts/limites/ownership exatos. Env projetado só como key/boolean,
+allowlist sem duplicatas e valores fixos; recusar LD_PRELOAD/LD_AUDIT/PYTHONPATH.
+LANG/TMPDIR são explícitos na receita; LANG pode faltar só na imagem base.
+Campos opcionais Go usam index. Teste opcional só consulta DemoAPI existente,
+sem criar objetos nem interpretar o Demo como probe aprovado. Start intent
+durável só permite probes observados e nunca repete start após crash/retomada.
+probe_result confere bundle/contexto/flags/contagens/hash e compara inventário
+lógico completo; isso não prova mounts, origem física, imagem ou autorização.
+
+Cleanup de ativação: runner_activation_cleanup tem driver concreto interno,
+sem CLI/Make/API. Não invocá-lo em recursos reais sem o procedimento autorizado;
+testes usam daemon fixtures. Revalidar intent durável e ownership nome/labels/ID/
+imagem antes de stop SIGTERM/5s ou rm, sem force/volumes. Erro só é reconciliado
+por nova consulta, ausência reconferida no final. Falha retém dependências e
+impede close/sucesso. Retomada exige begin hash/plano/imagens originais; expiração
+não bloqueia cleanup próprio, mas nunca permite novo start. Coordenador completo,
+create/start/transport de bundle e ensaio real ainda pendentes. Nenhum volume
+Linux original aberto/serviço iniciado decorre destes componentes internos.
