@@ -10,6 +10,8 @@ from pathlib import Path
 import pytest
 from aegis.domain.validation import digest
 from aegis.lab_runner import journal_probe
+from aegis.lab_runner.journal import Journal
+from test_runner_journal_continuity import add_job
 from test_runner_journal_continuity import journal as journal
 from test_runner_persisted_review import bundle as bundle
 
@@ -144,3 +146,46 @@ assert 'aegis.lab_runner.server' not in sys.modules
         timeout=5,
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("state", ["SUCCEEDED", "FAILED", "INTERRUPTED"])
+@pytest.mark.parametrize("scene", ["too_few_events", "impossible_implicit_restart"])
+def test_known_terminal_states_constrain_event_floor_and_implicit_restart_ceiling(
+    state,
+    scene,
+    journal,
+    bundle,
+    tmp_path,
+    monkeypatch,
+):
+    root = tmp_path / "terminal-state"
+    root.mkdir(mode=0o700)
+    identity = journal[1]
+    writer = Journal(root)
+    with writer.connection() as db:
+        db.execute(
+            "INSERT INTO metadata VALUES ('identity',?)",
+            (digest(identity.model_dump(mode="json")),),
+        )
+    writer.close()
+    proof = add_job(root, identity, state)
+    bundle["proofs"] = [proof.model_dump(mode="json")]
+    bundle["proofs_sha256"] = digest(bundle["proofs"])
+    monkeypatch.setattr(journal_probe, "STATE_DIRECTORY", root)
+    monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(json.dumps(bundle).encode())))
+    output = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", output)
+    assert journal_probe.main(["--expected-sha256", digest(bundle)]) == 0
+    reply = json.loads(output.getvalue())
+    assert (
+        results.decode(json.dumps(reply).encode(), bundle, digest(bundle))["snapshot"][
+            "events_reviewed"
+        ]
+        == 4
+    )
+    if scene == "too_few_events":
+        reply["snapshot"]["events_reviewed"] = 3
+    else:
+        reply["snapshot"]["implicit_restart_histories"] = 2 if state == "INTERRUPTED" else 1
+    with pytest.raises(results.ActivationError, match="counts_mismatch"):
+        results.decode(json.dumps(reply).encode(), bundle, digest(bundle))

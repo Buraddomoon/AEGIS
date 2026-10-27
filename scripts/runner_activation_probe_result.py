@@ -66,12 +66,22 @@ def decode(raw, bundle, expected_sha256):
         ):
             raise ActivationError("journal_probe_snapshot_context_mismatch")
         _hash(snapshot["inventory_sha256"])
+        additional = snapshot["jobs_reviewed"] - len(proofs)
+        interrupted = sum(view.state == "INTERRUPTED" for view in proofs.values())
+        minimum_events = (
+            3 * snapshot["jobs_reviewed"]
+            + sum(view.state in {"SUCCEEDED", "FAILED"} for view in proofs.values())
+            # An INTERRUPTED job without an implicit restart needs its explicit
+            # terminal event. Assigning implicit histories to known interrupted
+            # jobs first gives the conservative lower bound.
+            + max(0, interrupted - snapshot["implicit_restart_histories"])
+        )
         if (
             not len(proofs) <= snapshot["jobs_reviewed"] <= MAX_JOBS
-            or not 3 * snapshot["jobs_reviewed"] <= snapshot["events_reviewed"] <= MAX_EVENTS
+            or not minimum_events <= snapshot["events_reviewed"] <= MAX_EVENTS
             or snapshot["expected_proofs_matched"] != len(proofs)
             or snapshot["additional_jobs_reviewed"] != snapshot["jobs_reviewed"] - len(proofs)
-            or not 0 <= snapshot["implicit_restart_histories"] <= snapshot["jobs_reviewed"]
+            or not 0 <= snapshot["implicit_restart_histories"] <= interrupted + additional
         ):
             raise ActivationError("journal_probe_snapshot_counts_mismatch")
         return item
