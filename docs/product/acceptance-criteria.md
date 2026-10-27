@@ -91,3 +91,10 @@ e falhas de durabilidade/retry. Candidato real verificado sem chaves antigas,
 diário, banco ou laboratório. Ativação, novo binding/preflight, recuperação sob
 confiança alterada e PKI dos serviços Wazuh não estão aceitos.
 [Operação](../operations/runner-pki.md).
+
+Revisão de vínculo: API administrativa somente leitura e UI aceitas para mostrar
+bloqueios persistidos; mutações Linux/Wazuh recusam pendências e cleanup inválido
+mesmo sem reserva. Solicitação Linux serializada com revogação/revisão, com teste
+PostgreSQL concorrente. Ausência de bloqueio não é autorização, validade da PKI
+ou integridade do diário. Ativação e recuperação real sob confiança alterada
+permanecem fora do aceite. [Limites](../operations/linux-binding-review.md).

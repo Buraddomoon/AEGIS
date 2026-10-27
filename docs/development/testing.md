@@ -236,3 +236,25 @@ privados da origem e importações de banco/worker/runner. Não representa sandb
 contra root nem ensaio de laboratório; não inicia API, runner, marcador ou Wazuh.
 Scanner do repositório também recusa arquivos .key. Consulte
 [operação PKI](../operations/runner-pki.md).
+
+## Revisão persistida do vínculo — 2026-10-27
+
+`make test-binding-review`: 48 casos PostgreSQL em schema descartável, com cliente
+runner proibido. Estados desconhecidos, pais/filhos pendentes, isolamento entre
+laboratórios, cleanup ausente/corrompido, hashes/spec/geração/recibos/identidades,
+limites, RBAC e ausência de mutações. GET prova READ ONLY/REPEATABLE READ; as três
+mutações revalidam após um GET positivo. Teste concorrente real mantém revogação
+sob lock e prova que nova solicitação aguarda e rejeita a leitura antiga.
+
+`binding-review.test.tsx`: 13 casos para bloqueios, denominador da revisão
+incompleta, consulta GET, acesso administrativo, flags/contexto contraditórios e
+sucesso cacheado ocultado após erro. Nenhuma operação do laboratório é acionada.
+
+Rodada completa antes dos cinco últimos casos adicionais: **882 Python** em314,96s
+e **79 React** em3,93s. A suíte de revisão foi repetida depois: **48 passaram** em
+33,20s, incluindo esses cinco; total de887 casos Python distintos exercitados.
+O aviso conhecido Starlette/TestClient-httpx permanece. E2E Firefox Demo com API/
+worker/PostgreSQL reais: PASS,4runs/16testes/zero browserErrors; build aprovado.
+Não é ensaio Linux/Wazuh nem prova browser da ativação. Capturas dessa rodada
+ficam privadas; imagens históricas publicadas preservadas. Estado final em
+[PROGRESS](../PROGRESS.md).

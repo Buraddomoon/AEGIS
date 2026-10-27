@@ -112,3 +112,12 @@ validade, com hashes revisados. Echo TLS em loopback valida confiança nova/recu
 antiga; não inicia runner. Ativação coordenada, binding/preflight e recuperação
 de jobs sob vínculo alterado continuam pendentes. PKI dos serviços Wazuh não é
 abrangida. [Procedimento e limites](../operations/runner-pki.md).
+
+Revisão persistida do vínculo entregue na API/UI administrativa: pendências de
+pais/filhos, validação de cleanup/spec/geração/identidades e bloqueio acima do
+limite de histórico. Registro Linux e bind/unbind Wazuh impõem o predicado sob
+lock; novas solicitações Linux participam do lock de revogação/revisão. Plano de
+troca coordenada documentado; harness, inspeção do banco/diário Linux parado,
+ativação/preflight e recuperação sob confiança alterada continuam pendentes.
+[Revisão](../operations/linux-binding-review.md) ·
+[Plano](../operations/runner-pki-activation.md).
