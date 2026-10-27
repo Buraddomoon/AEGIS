@@ -78,6 +78,19 @@ def test_metadata_normalizes_options_without_mutating_daemon_data():
     }
 
 
+@pytest.mark.parametrize("role", ["postgres", "redis", "application", "runner"])
+def test_optional_config_user_is_root_only_for_db_or_cache(role):
+    docker = FakeDocker()
+    docker.responses["image", images()[role]]["user"] = None
+    assert 'index .Config "User"' in metadata.IMAGE_FORMAT
+    if role in {"postgres", "redis"}:
+        result = metadata.metadata(images(), docker=docker)
+        assert result["images"][role]["user"] == ""
+    else:
+        with pytest.raises(metadata.ActivationError, match="image_metadata_mismatch"):
+            metadata.metadata(images(), docker=docker)
+
+
 @pytest.mark.parametrize(
     "kind,value",
     [

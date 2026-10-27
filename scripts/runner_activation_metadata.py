@@ -19,7 +19,7 @@ ENV = {"PATH": "/usr/bin:/bin", "LC_ALL": "C"}
 DAEMON_FORMAT = '{"id":{{json .ID}},"os":{{json .OSType}},"architecture":{{json .Architecture}}}'
 IMAGE_FORMAT = (
     '{"id":{{json .Id}},"os":{{json .Os}},"architecture":{{json .Architecture}},'
-    '"user":{{json .Config.User}}}'
+    '"user":{{json (index .Config "User")}}}'
 )
 VOLUME_FORMAT = (
     '{"name":{{json .Name}},"driver":{{json .Driver}},"scope":{{json .Scope}},'
@@ -221,6 +221,10 @@ def metadata(images, *, docker=None):
     inspected = {}
     for role in IMAGES:
         item = document(docker.query("image", images[role]))
+        # Official DB/cache images may omit Config.User entirely. Docker then
+        # defaults to root; application/runner must still explicitly be 10001.
+        if isinstance(item, dict) and item.get("user") is None and role in {"postgres", "redis"}:
+            item = {**item, "user": ""}
         if (
             not isinstance(item, dict)
             or set(item) != {"id", "os", "architecture", "user"}
