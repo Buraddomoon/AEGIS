@@ -68,12 +68,20 @@ def projection(spec, phase="created"):
         "oom_killed": False,
         "exit_code": 0,
         "error_present": False,
+        "environment": [{"key": key, "valid": True} for key in runtime.ENV_FIXED],
     }
 
 
 class Docker:
     def __init__(self, spec, phase="created"):
-        self.image = {"id": IMAGE, "user": "10001:10001", "volumes": None}
+        self.image = {
+            "id": IMAGE,
+            "user": "10001:10001",
+            "volumes": None,
+            "environment": [
+                {"key": key, "valid": True} for key in runtime.ENV_FIXED if key != "TMPDIR"
+            ],
+        }
         self.item = projection(spec, phase)
         self.calls = []
 
@@ -116,7 +124,7 @@ def test_fixed_recipe_excludes_server_shell_network_secrets_and_automatic_volume
             "--force",
         )
     )
-    assert args.count("--mount") == 1 and args.count("--env") == 1
+    assert args.count("--mount") == 1 and args.count("--env") == 2
     assert not any(".key" in value or "docker.sock" in value for value in args)
     spec = runtime.recipe(operation, PLAN, role, IMAGE, PROOFS)
     spec["host"]["CapDrop"].append("mutated")
@@ -170,7 +178,7 @@ def test_runtime_review_checks_config_and_repeats_exact_ownership(phase):
         is False
     )
     assert len(owned.calls) == 14 and len(docker.calls) == 1
-    assert not any("Config.Env" in str(call) for call in docker.calls)
+    assert "{{json .Config.Env}}" not in runtime.CONTAINER_FORMAT
     assert "$m.Source" not in runtime.EFFECTIVE_MOUNTS
     assert '{{if eq $m.Type "volume"}}{{json $m.Source}}' in runtime.CONFIGURED_MOUNTS
 
@@ -361,3 +369,50 @@ assert 'aegis.lab_runner.engine' not in sys.modules
         timeout=5,
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    "scene", ["loader", "audit", "path", "temp", "extra", "duplicate", "missing", "boolean"]
+)
+def test_environment_cannot_override_loader_paths_temp_or_add_hidden_variables(scene):
+    spec = runtime.recipe(uuid4().hex, PLAN, "journal-before", IMAGE, PROOFS)
+    item = projection(spec)
+    values = item["environment"]
+    if scene in {"loader", "audit", "extra"}:
+        values.append(
+            {
+                "key": {"loader": "LD_PRELOAD", "audit": "LD_AUDIT", "extra": "PYTHONPATH"}[scene],
+                "valid": True,
+            }
+        )
+    elif scene == "duplicate":
+        values.append(dict(values[0]))
+    elif scene == "missing":
+        values.pop()
+    else:
+        key = "PATH" if scene == "path" else "TMPDIR"
+        next(value for value in values if value["key"] == key)["valid"] = (
+            1 if scene == "boolean" else False
+        )
+    with pytest.raises(runtime.ActivationError, match="environment_mismatch"):
+        runtime.validate(spec, item, OBJECT, "created")
+
+
+def test_base_image_can_omit_lang_but_recipe_sets_it_and_runtime_requires_it():
+    op = uuid4().hex
+    spec = runtime.recipe(op, PLAN, "journal-before", IMAGE, PROOFS)
+    docker = Docker(spec)
+    docker.image["environment"] = [
+        item for item in docker.image["environment"] if item["key"] != "LANG"
+    ]
+    assert runtime.review_image(op, PLAN, "journal-before", IMAGE, PROOFS, docker=docker)[
+        "anonymous_volumes_excluded"
+    ]
+    args = runtime.create_arguments(op, PLAN, "journal-before", IMAGE, PROOFS)
+    assert "LANG=C.UTF-8" in args and "TMPDIR=/tmp" in args
+    item = projection(spec)
+    item["environment"] = [value for value in item["environment"] if value["key"] != "LANG"]
+    with pytest.raises(runtime.ActivationError, match="environment_mismatch"):
+        runtime.validate(spec, item, OBJECT, "created")
+    assert 'index .HostConfig "Mounts"' in runtime.CONFIGURED_MOUNTS
+    assert "{{json .Config.Env}}" not in runtime.IMAGE_FORMAT

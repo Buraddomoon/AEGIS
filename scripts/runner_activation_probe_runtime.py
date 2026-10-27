@@ -52,6 +52,33 @@ HOST_EMPTY = (
     "DnsOptions",
     "DnsSearch",
 )
+ENV_FIXED = {
+    "PATH": ("/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",),
+    "LANG": ("C.UTF-8",),
+    "PYTHONDONTWRITEBYTECODE": ("1",),
+    "PYTHONUNBUFFERED": ("1",),
+    "PIP_DISABLE_PIP_VERSION_CHECK": ("1",),
+    "TMPDIR": ("/tmp",),
+}
+# Image build metadata only; -I and the fixed entrypoint do not consume these.
+ENV_METADATA = frozenset({"GPG_KEY", "PYTHON_VERSION", "PYTHON_SHA256"})
+
+
+def _environment_projection():
+    fixed = [
+        f"(eq $e {json.dumps(key + '=' + value)})"
+        for key, values in ENV_FIXED.items()
+        for value in values
+    ]
+    metadata = [f"(eq $key {json.dumps(key)})" for key in sorted(ENV_METADATA)]
+    return (
+        "[{{range $i, $e := .Config.Env}}{{if $i}},{{end}}"
+        '{{$key := index (split $e "=") 0}}'
+        '{"key":{{json $key}},"valid":{{json (or ' + " ".join(fixed + metadata) + ")}}}{{end}}]"
+    )
+
+
+ENVIRONMENT_FORMAT = _environment_projection()
 
 
 def recipe(operation_id, plan_sha256, role, image, proof_sha256):
@@ -129,6 +156,8 @@ def create_arguments(operation_id, plan_sha256, role, image, proof_sha256):
         "/tmp:" + TMPFS,
         "--env",
         "TMPDIR=/tmp",
+        "--env",
+        "LANG=C.UTF-8",
         "--mount",
         "type=volume,source=" + VOLUME + ",target=/state,readonly,volume-nocopy",
     ]
@@ -156,7 +185,7 @@ EFFECTIVE_MOUNTS = (
     '"propagation":{{json $m.Propagation}}}{{end}}]'
 )
 CONFIGURED_MOUNTS = (
-    "[{{range $i, $m := .HostConfig.Mounts}}{{if $i}},{{end}}"
+    '[{{range $i, $m := (index .HostConfig "Mounts")}}{{if $i}},{{end}}'
     '{"type":{{json $m.Type}},"source_name":'
     '{{if eq $m.Type "volume"}}{{json $m.Source}}{{else}}null{{end}},'
     '"target":{{json $m.Target}},"readonly":{{json $m.ReadOnly}},'
@@ -176,7 +205,7 @@ CONTAINER_FORMAT = (
             "stdin_open": ".Config.OpenStdin",
             "tty": ".Config.Tty",
             "healthcheck": ".Config.Healthcheck.Test",
-            "stop_timeout": ".Config.StopTimeout",
+            "stop_timeout": '(index .Config "StopTimeout")',
             "status": ".State.Status",
             "running": ".State.Running",
             "restarting": ".State.Restarting",
@@ -203,14 +232,21 @@ CONTAINER_FORMAT = (
     + EFFECTIVE_MOUNTS
     + ',"configured_mounts":'
     + CONFIGURED_MOUNTS
+    + ',"environment":'
+    + ENVIRONMENT_FORMAT
     + "}"
 )
-IMAGE_FORMAT = _projection(
-    {
-        "id": ".Id",
-        "user": ".Config.User",
-        "volumes": '(index .Config "Volumes")',
-    }
+IMAGE_FORMAT = (
+    _projection(
+        {
+            "id": ".Id",
+            "user": ".Config.User",
+            "volumes": '(index .Config "Volumes")',
+        }
+    )[:-1]
+    + ',"environment":'
+    + ENVIRONMENT_FORMAT
+    + "}"
 )
 
 
@@ -241,12 +277,13 @@ def review_image(operation_id, plan_sha256, role, image, proof_sha256, *, docker
     item = document(docker.query("image", operation_id, plan_sha256, role, image, proof_sha256))
     if (
         not isinstance(item, dict)
-        or set(item) != {"id", "user", "volumes"}
+        or set(item) != {"id", "user", "volumes", "environment"}
         or item["id"] != image
         or item["user"] != "10001:10001"
         or item["volumes"] not in (None, {})
     ):
         raise ActivationError("journal_probe_image_mismatch")
+    _validate_environment(item["environment"], image=True)
     return {"image": image, "anonymous_volumes_excluded": True, "image_provenance_verified": False}
 
 
@@ -284,6 +321,7 @@ def validate(spec, item, known_id, phase):
         "oom_killed",
         "exit_code",
         "error_present",
+        "environment",
     }
     if (
         not isinstance(item, dict)
@@ -291,6 +329,7 @@ def validate(spec, item, known_id, phase):
         or any(digest(item[key]) != digest(value) for key, value in config.items())
     ):
         raise ActivationError("journal_probe_config_mismatch")
+    _validate_environment(item["environment"])
     host = item["host"]
     if (
         not isinstance(host, dict)
@@ -346,6 +385,28 @@ def validate(spec, item, known_id, phase):
         )
     ):
         raise ActivationError("journal_probe_state_mismatch")
+
+
+def _validate_environment(items, *, image=False):
+    if not isinstance(items, list) or len(items) > len(ENV_FIXED) + len(ENV_METADATA):
+        raise ActivationError("journal_probe_environment_mismatch")
+    keys = set()
+    for item in items:
+        if (
+            not isinstance(item, dict)
+            or set(item) != {"key", "valid"}
+            or not isinstance(item["key"], str)
+            or item["valid"] is not True
+            or item["key"] not in {*ENV_FIXED, *ENV_METADATA}
+            or item["key"] in keys
+        ):
+            raise ActivationError("journal_probe_environment_mismatch")
+        keys.add(item["key"])
+    # Current official Python images may omit LANG. The recipe explicitly sets
+    # it and TMPDIR; any inherited value for either must still satisfy policy.
+    required = set(ENV_FIXED) - ({"TMPDIR", "LANG"} if image else set())
+    if not required <= keys:
+        raise ActivationError("journal_probe_environment_mismatch")
 
 
 def review(
