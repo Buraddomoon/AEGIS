@@ -416,3 +416,44 @@ def test_base_image_can_omit_lang_but_recipe_sets_it_and_runtime_requires_it():
         runtime.validate(spec, item, OBJECT, "created")
     assert 'index .HostConfig "Mounts"' in runtime.CONFIGURED_MOUNTS
     assert "{{json .Config.Env}}" not in runtime.IMAGE_FORMAT
+
+
+def test_projection_parses_on_existing_demo_api_only_when_available():
+    """Template syntax/field shapes only, never approval of that API as a probe."""
+    if not Path("/usr/bin/docker").is_file() or not Path("/var/run/docker.sock").exists():
+        pytest.skip("Optional existing Demo metadata projection; no Docker resources created")
+    try:
+        raw = runtime._execute(
+            (
+                "ps",
+                "--all",
+                "--no-trunc",
+                "--quiet",
+                "--filter",
+                "label=com.docker.compose.project=aegis",
+                "--filter",
+                "label=com.docker.compose.service=api",
+            )
+        )
+    except runtime.ActivationError:
+        pytest.skip("Local daemon unavailable; no Docker resources created")
+    identifiers = raw.decode("ascii").splitlines()
+    if not identifiers:
+        pytest.skip("Existing Demo API absent; no Docker resources created")
+    assert len(identifiers) == 1
+    # query uses an ID but review would separately require exact probe ownership.
+    item = runtime.document(
+        runtime._execute(
+            runtime.command(
+                "container", "1" * 32, PLAN, "journal-before", IMAGE, PROOFS, identifiers[0]
+            )
+        )
+    )
+    assert isinstance(item["environment"], list)
+    assert all(set(entry) == {"key", "valid"} for entry in item["environment"])
+    assert all(type(entry["valid"]) is bool for entry in item["environment"])
+    assert all("source" not in mount for mount in item["mounts"])
+    assert all(
+        mount["type"] == "volume" or mount["source_name"] is None
+        for mount in item["configured_mounts"]
+    )
