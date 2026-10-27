@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { LinuxRegistration } from './LinuxRegistration'
+import { BindingReview } from './BindingReview'
 import { WazuhBinding } from './WazuhBinding'
 import { RuleTestLinks } from './RuleTestLinks'
 import { RuleAnalysis } from './RuleAnalysis'
@@ -35,6 +36,7 @@ export function Laboratories({ user }: { user: User }) {
   const data = useData<Page<Lab & { active_run_state: string | null }>>('/labs', 3000),
     { busy, run } = useAction(),
     [registering, setRegistering] = useState(false),
+    [bindingLab, setBindingLab] = useState<Lab | null>(null),
     [telemetryLab, setTelemetryLab] = useState<Lab | null>(null),
     [selected, setSelected] = useState<string | null>(null)
   return (
@@ -119,6 +121,11 @@ export function Laboratories({ user }: { user: User }) {
             {user.role === 'administrator' && (
               <div className="inline-actions">
                 {!l.synthetic && (
+                  <button className="button" onClick={() => setBindingLab(l)}>
+                    Revisar pendências do vínculo
+                  </button>
+                )}
+                {!l.synthetic && (
                   <button
                     className="button"
                     disabled={busy}
@@ -188,6 +195,12 @@ export function Laboratories({ user }: { user: User }) {
         <WazuhBinding lab={telemetryLab} user={user} onClose={() => setTelemetryLab(null)} />
       )}
       {registering && <LinuxRegistration onClose={() => setRegistering(false)} />}
+      {bindingLab && (
+        <BindingReview
+          lab={data.data?.items.find((lab) => lab.id === bindingLab.id) ?? bindingLab}
+          onClose={() => setBindingLab(null)}
+        />
+      )}
       {selected && <VerificationHistory id={selected} onClose={() => setSelected(null)} />}
     </>
   )
