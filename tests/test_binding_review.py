@@ -8,7 +8,7 @@ import pytest
 from aegis import binding_review, linux_labs, services
 from aegis.db import session_factory
 from aegis.domain.validation import digest
-from aegis.lab_runner.protocol import JobSpec, JobView
+from aegis.lab_runner.protocol import ExecutionReceipt, JobSpec, JobView
 from aegis.models import (
     AuditEvent,
     Campaign,
@@ -248,6 +248,41 @@ def test_no_dispatch_means_no_intent_not_a_cleanup_attestation(binding_lab):
     result = read_review(identity)
     assert not result["blockers"] and result["dispatches_examined"] == 0
     assert not result["journal_verified"]
+
+
+@pytest.mark.parametrize("change", [None, "job_id", "asset_id", "scope_hash", "sha256"])
+def test_successful_cleanup_receipt_is_bound_to_the_original_spec(binding_lab, change):
+    _, identity = binding_lab
+    history(identity)
+    with session_factory()() as db:
+        cleanup = db.scalar(select(RunnerCleanup))
+        content = copy.deepcopy(cleanup.content)
+        spec = JobSpec.model_validate(content["spec"])
+        receipt = ExecutionReceipt(
+            job_id=spec.job_id,
+            runner_id=spec.runner_id,
+            laboratory_id=spec.laboratory_id,
+            asset_id=spec.asset_id,
+            marker=spec.marker,
+            scope_hash=spec.scope_hash,
+            artifact_sha256="f" * 64,
+            artifact_bytes=43,
+            started_at=now(),
+            ended_at=now(),
+        ).model_dump(mode="json")
+        if change in {"job_id", "asset_id"}:
+            receipt[change] = str(uuid4())
+        elif change == "scope_hash":
+            receipt[change] = "0" * 64
+        content.update(
+            state="SUCCEEDED",
+            receipt=receipt,
+            receipt_sha256="0" * 64 if change == "sha256" else digest(receipt),
+        )
+        cleanup.content, cleanup.sha256 = content, digest(content)
+        db.commit()
+    result = read_review(identity)
+    assert (result["status"] == "blocked") is (change is not None)
 
 
 def test_dispatch_budget_and_sample_limits_fail_closed(binding_lab, monkeypatch):
