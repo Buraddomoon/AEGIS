@@ -26,6 +26,7 @@ class World:
             store.request(key)
             exists = key != role or phase == "start"
             obj = Owner(operation, key, present=exists)
+            obj.details["plan"] = store.review()["header"]["plan_sha256"]
             self.owners[key] = obj
             identifier = f"{index + 1:064x}"
             obj.details["id"] = identifier

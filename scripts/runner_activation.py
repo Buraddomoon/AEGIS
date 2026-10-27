@@ -88,7 +88,7 @@ def sha256(value):
     return value
 
 
-def snapshot(source, candidate, manifest_sha256, images, *, docker=None):
+def snapshot(source, candidate, manifest_sha256, images, *, docker=None, inventory_reader=None):
     sha256(manifest_sha256)
     source, candidate = pki.private_directory(source), pki.private_directory(candidate)
     verified = pki.verify(source, candidate, manifest_sha256)
@@ -100,7 +100,11 @@ def snapshot(source, candidate, manifest_sha256, images, *, docker=None):
     files = {
         name: hashlib.sha256(pki.read(ROOT / name, maximum=262144)).hexdigest() for name in COMPOSE
     }
-    observed = metadata(images, docker=docker)
+    # Internal adapter for the same immutable plan during an owned operation.
+    # The public plan/recheck commands always use the quiescent inventory.
+    observed = (
+        metadata(images, docker=docker) if inventory_reader is None else inventory_reader(images)
+    )
     # Recheck after the daemon queries too. Snapshots still are not a global lock.
     if pki.verify(source, candidate, manifest_sha256) != verified or files != {
         name: hashlib.sha256(pki.read(ROOT / name, maximum=262144)).hexdigest() for name in COMPOSE
@@ -169,7 +173,8 @@ def plan(source, candidate, manifest_sha256, images, output_root, *, docker=None
     }
 
 
-def recheck(path, expected_sha256, *, docker=None):
+def load_plan(path, expected_sha256):
+    """Read a pinned, unexpired plan; does not grant authorization or query Docker."""
     sha256(expected_sha256)
     path = pki.absolute(path)
     if path.name != "plan.json":
@@ -214,6 +219,13 @@ def recheck(path, expected_sha256, *, docker=None):
         or not created <= pki.clock() < expires
     ):
         raise ActivationError("plan_expired_or_invalid_time")
+    return artifact
+
+
+def recheck(path, expected_sha256, *, docker=None):
+    artifact = load_plan(path, expected_sha256)
+    created = datetime.fromisoformat(artifact["created_at"])
+    expires = datetime.fromisoformat(artifact["expires_at"])
     images = {role: artifact["metadata"]["images"][role]["id"] for role in IMAGES}
     current = snapshot(
         Path(artifact["source_path"]),
