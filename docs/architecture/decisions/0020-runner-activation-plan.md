@@ -1,6 +1,6 @@
 # ADR 0020 — Plano verificável antes da ativação da PKI Linux
 
-Data: 2026-10-27. Status: em implementação; não autoriza ativação.
+Data: 2026-10-27. Status: plan/recheck implementados; não autoriza ativação.
 
 O candidato PKI e a revisão persistida são pré-requisitos distintos. Antes de
 implementar um executor que inicie o laboratório, preparar uma ferramenta host-only

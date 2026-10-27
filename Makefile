@@ -199,3 +199,12 @@ test-runner-pki:
 .PHONY: test-binding-review
 test-binding-review:
 	$(VENV)/pytest tests/test_binding_review.py -q
+
+# Read-only host metadata planning. No activation/lifecycle command is exposed.
+.PHONY: runner-activation-plan runner-activation-recheck test-runner-activation
+runner-activation-plan:
+	$(VENV)/python scripts/runner_activation.py plan --source "$(PKI_SOURCE)" --candidate "$(PKI_CANDIDATE)" --manifest-sha256 "$(PKI_SHA256)" --application-image "$(APPLICATION_IMAGE_ID)" --runner-image "$(RUNNER_IMAGE_ID)" --postgres-image "$(POSTGRES_IMAGE_ID)" --redis-image "$(REDIS_IMAGE_ID)"
+runner-activation-recheck:
+	$(VENV)/python scripts/runner_activation.py recheck --plan "$(ACTIVATION_PLAN)" --expected-sha256 "$(ACTIVATION_SHA256)"
+test-runner-activation:
+	$(VENV)/pytest tests/test_runner_activation_metadata.py tests/test_runner_activation_plan.py -q

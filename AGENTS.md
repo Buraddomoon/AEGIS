@@ -209,3 +209,18 @@ revisão; não editar histórico para passar. UI esconde sucesso cacheado após 
 ou contexto divergente. Testes make test-binding-review e binding-review.test.tsx.
 Pré-requisito persistido não comprova diário/volume, PKI atual ou autorização.
 Harness de ativação e ensaio real ainda pendentes; ver runner-pki-activation.md.
+
+Planejamento de ativação (ADR0020): scripts/runner_activation.py só plan/recheck,
+sem apply/lifecycle/Compose, banco/journal/runner/SIEM. Metadados via catálogo
+fechado em runner_activation_metadata.py, /usr/bin/docker/Unix local, config vazia,
+env mínimo, timeout10s e stdout+stderr64KiB com kill/reap; nunca Config.Env/inspect
+bruto. Exigir quatro IDs sha256 locais distintos, zero containers/redes do projeto
+inclusive parados, zero consumidores dos volumes, labels/local/options/datas e
+arquitetura/UID revisados. Config.User ausente só normaliza root em DB/cache;
+API/runner ainda exigem10001:10001. Não criar volume/imagem ausente. PKI validada
+antes/depois, Compose hash, artefato0600/exclusivo/fsync em0700, SHA canônico e15min
+incluindo conferência no final. Todos os gates operacionais continuam falsos;
+não inferir proveniência de imagem, conteúdo do volume ou autorização. Não
+regenerar plano para contornar bloqueios. Executor futuro ainda pendente, requer
+intents/cleanup e novo escopo antes de iniciar Linux. make test-runner-activation
+nunca inicia lab; testes usam fixtures/filhos Python em temporários.

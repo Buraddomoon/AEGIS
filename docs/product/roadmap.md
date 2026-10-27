@@ -121,3 +121,9 @@ troca coordenada documentado; harness, inspeção do banco/diário Linux parado,
 ativação/preflight e recuperação sob confiança alterada continuam pendentes.
 [Revisão](../operations/linux-binding-review.md) ·
 [Plano](../operations/runner-pki-activation.md).
+
+Harness de metadados da ativação entregue: plan/recheck host-only, hashes da PKI/
+Compose, quatro imagens explícitas e volumes existentes/quiescência em Docker local.
+Artefato privado/hash/TTL15min, sem apply ou confiança operacional. Continuam
+pendentes o executor com intents/cleanup, inspeção autorizada do banco/diário
+originais, mTLS/mounts reais, registro revogado e encerramento verificável.

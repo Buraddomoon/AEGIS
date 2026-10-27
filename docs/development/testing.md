@@ -228,6 +228,17 @@ Contagens finais, CI e evidência em PROGRESS; não confundir teste com convers�
 
 ## Preparação offline da PKI do runner
 
+Planejamento de ativação: `make test-runner-activation` executa os testes de
+`test_runner_activation_metadata.py` e `test_runner_activation_plan.py`. Fixtures
+de daemon cobrem queries/IDs/labels/consumidores/arquitetura/UID; filhos Python
+curtos verificam timeout/limite somado de stdout+stderr, kill/reap e ambiente sem
+DOCKER_HOST/config/proxies herdados. PKI real em temporários verifica hash/identidade,
+drift, política exata/flags, TTL antes/depois, proteção de arquivos, fsync interrompido
+e preservação de planos anteriores. Nenhum container/banco/journal/SIEM é iniciado.
+Uma consulta real de metadados é evidência separada da forma das projeções; não
+comprova conteúdo do volume, imagem confiável, mTLS de laboratório ou ativação.
+[Contrato operacional](../operations/runner-pki-activation.md).
+
 `make test-runner-pki` executa 52 casos de geração, inspeção, preparação,
 integridade, limites, drift, tempo, SAN/EKU, pares e fsync/retry. Três desses
 casos usam TLS real de echo em loopback, aceitando o novo par e recusando

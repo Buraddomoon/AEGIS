@@ -98,3 +98,9 @@ mesmo sem reserva. Solicitação Linux serializada com revogação/revisão, com
 PostgreSQL concorrente. Ausência de bloqueio não é autorização, validade da PKI
 ou integridade do diário. Ativação e recuperação real sob confiança alterada
 permanecem fora do aceite. [Limites](../operations/linux-binding-review.md).
+
+Plan/recheck da ativação Linux aceitos para snapshots de metadados: hashes PKI/
+Compose, imagens locais por ID, volumes/labels/consumidores e TTL15min; consulta
+real e fixtures não concedem autorização nem comprovam diário/runtime/imagens.
+Executor/ativação/banco original/mTLS novo ainda fora do aceite. Nenhum ensaio
+anterior é reaberto por um plano. [Contrato](../operations/runner-pki-activation.md).

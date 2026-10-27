@@ -4,6 +4,8 @@ Este documento prepara a revisão de uma intervenção futura. Nenhum comando de
 ativação ou ensaio foi executado neste incremento. As autorizações de outubro21/22
 continuam consumidas. A ferramenta atual oferece somente inspect/prepare/verify.
 Este plano não é um executor e não recebe uma aprovação pelo simples merge/push.
+O novo harness `runner_activation.py` acrescenta **plan/recheck somente de
+metadados**, descritos abaixo; ainda não oferece apply ou lifecycle.
 
 ## Perfil inicial delimitado
 
@@ -52,9 +54,9 @@ parcial deve falhar mTLS, sem verify=false ou confiança dupla como fallback.
 [recriação](https://docs.docker.com/reference/cli/docker/compose/up/),
 [limites de restart](https://docs.docker.com/reference/cli/docker/compose/restart/).
 
-Os targets Make atuais ainda selecionam o ids.env original. **Não usar up/smoke
-como executor de rotação.** Falta implementar um harness de ativação com hash e
-perfil exatos, ambiente saneado, inventário/guardas e fechamento no finally.
+Os targets Make de lifecycle ainda selecionam o ids.env original. **Não usar up/smoke
+como executor de rotação.** Plan/recheck já fixam hashes/perfil/ambiente e verificam
+metadados; falta implementar o executor com gates internos e fechamento no finally.
 Não sobrepor lab.env Wazuh com ids.env Linux: os projetos têm PKIs/segredos distintos.
 
 ## Ordem e pontos de interrupção
@@ -97,5 +99,68 @@ Indexer/manager/agente/Filebeat, não migrar host nem trocar credenciais humanas
 Uma campanha posterior exige outro escopo/solicitação/aprovação separada. Prova
 de handshake/diário não é evidência de detecção, ingestão SIEM ou retomada segura.
 
-Estado atual: plano e guardas do backend disponíveis; harness de ativação,
-inspeção do banco/diário Linux parado e ensaio específico continuam pendentes.
+Estado atual: guardas do backend e harness de planejamento/rechecagem disponíveis;
+executor de ativação, inspeção do banco/diário Linux parado e ensaio específico
+continuam pendentes.
+
+## Harness de metadados executável
+
+`scripts/runner_activation.py plan` inspeciona somente metadados locais e publica
+um plano privado. `recheck` compara o plano com o estado atual. Ambos exigem PKI
+válida; não abrem banco/diário, não chamam runner/SIEM e não aceitam comandos ou
+outros projetos. Não requerem a instalação do Wazuh. Os comandos Docker usam
+`/usr/bin/docker`, socket Unix local, config vazia e ambiente mínimo, ignorando
+contextos, DOCKER_HOST/proxies/credenciais do usuário. Não leem `.env`.
+
+Revise os quatro IDs completos **já presentes** no Docker: application, runner,
+postgres e redis. Tags, abreviações, imagens ausentes ou repetidas são recusadas;
+nenhum pull/build ocorre. O plano verifica arquitetura Linux nativa e UID explícito
+da API/runner. ID de imagem não prova sua proveniência, conteúdo ou correspondência
+ao código atual; isso continua um gate humano/operacional pendente.
+
+```bash
+make runner-activation-plan PKI_SOURCE=.local/linux-lab \
+  PKI_CANDIDATE=.local/pki-candidates/ID_RETORNADO PKI_SHA256=HASH_DO_MANIFESTO \
+  APPLICATION_IMAGE_ID=sha256:HASH_COMPLETO RUNNER_IMAGE_ID=sha256:HASH_COMPLETO \
+  POSTGRES_IMAGE_ID=sha256:HASH_COMPLETO REDIS_IMAGE_ID=sha256:HASH_COMPLETO
+# Retorna plan_path e plan_sha256; não retorna uma autorização.
+make runner-activation-recheck ACTIVATION_PLAN=CAMINHO_RETORNADO \
+  ACTIVATION_SHA256=HASH_CANONICO_REVISADO
+```
+
+Substitua os placeholders por hashes reais distintos. Alternativa direta:
+`.venv/bin/python scripts/runner_activation.py --help`. Plan aceita `--output-root`,
+separado da origem/candidato, padrão `.local/pki-activation-plans`; sem exclusões.
+Make sem variáveis completas é recusado, sem tentar descobrir/baixar imagens.
+
+O formato `aegis-runner-activation-plan/1` fixa manifesto/descritores/IDs PKI,
+hashes dos três Compose, origens esperadas dos secrets individuais, daemon,
+imagens e os dois volumes. Exige ausência de containers **inclusive parados**,
+redes do projeto/nome reservado e consumidores dos volumes de qualquer projeto.
+Volumes precisam existir com labels/local/sem opções externas e data com timezone.
+Uma ausência/ocupação bloqueia sem criar substitutos ou parar o consumidor.
+Não desmontar recursos de terceiros para fazer a revisão passar.
+
+Cada consulta tem10s e64KiB somados stdout/stderr; excesso/falha mata e recolhe
+somente o filho CLI. Projeções nunca retornam Config.Env, Mountpoint ou inspect
+bruto. Config.User ausente em imagem oficial DB/cache equivale ao padrão root;
+API/runner continuam exigindo10001:10001. Metadados de volumes não provam conteúdo,
+integridade, continuidade dos fences ou mounts futuros.
+
+Plano exclusivo0600/diretório0700, flush/fsync, sem sobrescrever anteriores.
+`plan_sha256` é hash do JSON canônico, **não sha256sum plan.json**; precisa de
+registro esperado independente confiável e não é assinatura. Recheck exige política
+exata, até15min, PKI/Compose/metadados atuais iguais e TTL válido também ao final.
+Mudança exige investigação/plano novo, nunca edição do plano ou do histórico.
+Falha de publicação pode deixar artefato privado: presença não é recibo de sucesso.
+
+`metadata_plan_revalidated_not_activated` afirma apenas a comparação de metadados.
+`pending_gates` explicita autorização própria, proveniência, banco, diário, runtime,
+mTLS, registro revogado e encerramento. Todas as flags de autorização/ativação/
+verificação interna/operação normal permanecem **false**, assim como
+`profile.executor_implemented`. Nenhuma destas consultas impede alterações
+concorrentes do host/daemon: um executor futuro deverá recalcular todos os gates.
+
+Testes: `make test-runner-activation`, fixtures Docker e processos Python pequenos
+em temporários; sem containers, marcador ou banco. Revisão arquitetural somente
+leitura complementa testes e não é pentest nem validação do volume original.

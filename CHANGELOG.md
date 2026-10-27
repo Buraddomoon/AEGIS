@@ -1,5 +1,17 @@
 # Changelog
 
+## Continuidade 2026-10-27 — plano verificável da ativação Linux
+
+- Harness host-only `runner_activation.py plan/recheck`: fixa manifesto PKI,
+  identidades/descritores, Compose, quatro imagens por ID e metadados dos volumes.
+- Docker somente leitura em catálogo fechado/Unix local, config/env isolados,
+  timeout/limite/reap; recusa containers/redes existentes e volumes ocupados,
+  ausentes ou com identificação divergente, sem criar substitutos.
+- Artefato privado exclusivo/fsync, hash canônico revisado e TTL15min; rechecagem
+  recusa drift/expiração e mantém todos os gates operacionais falsos.
+- Corrigida projeção de imagem oficial com Config.User opcional, sem relaxar
+  UID10001:10001 da aplicação/runner. Sem apply, start, banco/journal/SIEM.
+
 ## Continuidade 2026-10-27 — bloqueios para revisão do vínculo Linux
 
 - Revisão administrativa API/UI com snapshot somente leitura, pendências de pais/
