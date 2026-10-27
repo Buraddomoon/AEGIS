@@ -1,6 +1,6 @@
 # ADR 0022 — Intenção e ownership antes de efeitos de ativação
 
-Data: 2026-10-27. Status: implementação incremental; executor ainda não disponível.
+Data: 2026-10-27. Status: armazenamento implementado; executor ainda não disponível.
 
 O executor futuro precisa registrar intenção durável antes de create/start e
 reconciliar falhas ambíguas por nome exato e labels, inclusive quando o Docker não
@@ -22,6 +22,9 @@ Transições: create_requested → observed (opcional em erro ambíguo) →
 removal_requested → absence_recorded. Não registrar ausência sem pedido prévio de
 remoção, nem encerrar enquanto houver recursos sem ausência registrada. API incerta
 retém DB/cache/runner; redes permanecem enquanto houver container próprio incerto.
+Novos dependentes são recusados durante e depois da remoção das dependências,
+inclusive após retomada. Observação tardia de ID após erro ambíguo não desfaz o
+pedido de remoção já durável. Comparar replay persistido ao estado em memória.
 Hash do comprovante de consulta é obrigatório ao registrar ausência/fechamento.
 
 Eventos encadeados por hash/índice e schema exato; carregamento revalida todas as
@@ -35,6 +38,9 @@ terá de consultar o daemon e comparar nomes/labels/IDs/mounts antes de cada efe
 e após encerramento. Flags de ativação/autorização/operação normal continuam falsas.
 Root/daemon/usuário proprietário são fronteiras de confiança; hashes locais não
 são assinaturas. Locks não impedem outro software de alterar o daemon.
+O executor futuro terá root fixo .local/pki-activation-intents; locks de diretórios
+diferentes não são uma trava distribuída. Verificar plano/TTL/escopo antes de todo
+novo efeito; expiração não deve impedir reconciliação/cleanup dos próprios recursos.
 
 Testes somente em diretórios temporários, cobrindo interrupções, replay, ownership,
 concorrência e retenção de dependências. Complementa

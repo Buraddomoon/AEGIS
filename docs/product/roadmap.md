@@ -134,3 +134,9 @@ banco Linux em snapshot somente leitura. Probe fixo /state com stdin limitado e
 resumo sem conteúdo de jobs; testes em PG/SQLite temporários, sem abrir volumes
 reais. Falta integrar ao executor com intents/ownership/cleanup e provar mounts,
 continuidade original e mTLS sob um novo escopo autorizado. Sem ativação implícita.
+
+Ownership durável entregue como componente host-only: eventos exclusivos/fsync,
+hashchain, recursos em catálogo fechado, lock/retomada e retenção de dependências.
+Referência de escopo/ausência registrada não é autorização nem consulta ao daemon.
+Falta integrar os componentes ao executor de ciclo de vida fixo, validar runtime/
+mounts/mTLS/registro revogado e fechar os recursos sob novo escopo específico.

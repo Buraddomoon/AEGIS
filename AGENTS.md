@@ -239,3 +239,16 @@ opção de path/comando/rede, import de settings/engine/server ou lifecycle. Inv
 esse probe num volume real exige escopo específico e mount somente leitura/UID/
 isolamento comprovados pelo executor futuro. make test-runner-continuity só usa
 schema PostgreSQL descartável e SQLite temporário, sem volumes/containers de lab.
+
+Intents da ativação (ADR0022): runner_activation_intents.py só registra ownership,
+sem CLI/daemon/lifecycle ou autorização. Root fixo do executor futuro em
+.local/pki-activation-intents; locks de outro root não protegem esse projeto.
+Catálogo não inclui worker/migrate/controller/Wazuh/volumes. Eventos exclusivos
+0600/hashchain/fsync, lock cooperativo e bloqueio de histórico parcial/não encerrado.
+Retomada por ID/hash do begin revalida/fsync, sem repetir create/start. Escrita
+incerta invalida a sessão e exige retomada; preservar todos os arquivos. Dependência
+em remoção/ausente recusa novos dependentes, inclusive após resume; API incerta
+retém DB/cache/runner e containers incertos retêm redes. Ausência registrada exige
+hash da observação mas não comprova daemon; futuro executor deve conferi-lo, assim
+como plano/TTL/autorização antes de novos efeitos. Cleanup próprio precisa continuar
+possível após expiração, sem reativar recursos/jobs. Testes em make test-runner-activation.

@@ -239,6 +239,13 @@ Uma consulta real de metadados é evidência separada da forma das projeções; 
 comprova conteúdo do volume, imagem confiável, mTLS de laboratório ou ativação.
 [Contrato operacional](../operations/runner-pki-activation.md).
 
+O mesmo target inclui `test_runner_activation_intents.py`: diretórios temporários,
+eventos/ownership/transições, fsync interrompido, hashchain/retomada, lock concorrente
+e substituído, histórico parcial/unsafe, limites e recursos proibidos. Regressões
+recusam dependentes novos durante/depois da remoção, antes/depois de resume; estado
+em memória não sobrepõe o histórico. Processo novo proíbe rede/processos/segredos
+no import. Esses casos não consultam Docker nem criam recursos de laboratório.
+
 `make test-runner-pki` executa 52 casos de geração, inspeção, preparação,
 integridade, limites, drift, tempo, SAN/EKU, pares e fsync/retry. Três desses
 casos usam TLS real de echo em loopback, aceitando o novo par e recusando

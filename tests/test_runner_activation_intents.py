@@ -3,6 +3,7 @@
 import json
 import os
 import stat
+import subprocess
 import sys
 from pathlib import Path
 from uuid import uuid4
@@ -337,3 +338,39 @@ def test_unsafe_lock_cannot_start_or_append_operation(tmp_path, problem):
             store.request("runner")
     with pytest.raises((intents.ActivationError, OSError)):
         intents.ActivationIntents(root)
+
+
+def test_event_budget_blocks_before_creating_an_extra_file(tmp_path, monkeypatch):
+    with intents.ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        monkeypatch.setattr(intents, "MAX_EVENTS", 1)
+        with pytest.raises(intents.ActivationError, match="session_or_limit_invalid"):
+            store.request("runner")
+        assert sorted(path.name for path in store.folder.iterdir()) == ["0000.json"]
+
+
+def test_import_cannot_contact_daemon_services_or_read_secrets():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+import sys
+sys.path.insert(0, 'scripts')
+def guard(event, args):
+    if event in {'socket.connect', 'socket.getaddrinfo', 'subprocess.Popen', 'os.system'}:
+        raise AssertionError('No external effects permitted')
+    if event == 'open' and isinstance(args[0], str) and ('.env' in args[0] or args[0].endswith('.key')):
+        raise AssertionError('No secrets permitted')
+sys.addaudithook(guard)
+import runner_activation_intents
+assert 'aegis.config' not in sys.modules
+assert 'aegis.models' not in sys.modules
+assert 'aegis.lab_runner.engine' not in sys.modules
+""",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert result.returncode == 0, result.stderr

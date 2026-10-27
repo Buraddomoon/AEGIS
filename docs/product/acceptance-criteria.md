@@ -110,3 +110,8 @@ temporários: snapshot PG somente leitura, binding antigo exato, provas completa
 por hash e revisão DB+WAL sem inicializar a origem. Probe /state limitado e sem
 conteúdo de jobs na saída. Não equivale a inspeção dos volumes reais, ativação,
 mTLS novo ou permissão de retomar jobs. Esses itens continuam fora do aceite.
+
+Ownership aceito como armazenamento testado em temporários: catálogo/nomes/labels
+derivados, eventos/hashchain/fsync, retomada por hash, recusa de histórico parcial e
+retenção de dependências. Não aceita Docker/apply/ativação ou ausência real apenas
+pelo hash de uma observação registrada. [ADR0022](../architecture/decisions/0022-activation-resource-intents.md).

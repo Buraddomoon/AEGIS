@@ -210,3 +210,40 @@ lógico completo permite comparação antes/depois sem depender do layout de
 checkpoint; não autentica exclusão de passado desconhecido nem substitui fences
 do backend. Testes: `make test-runner-continuity`, só schema PG e diários temporários.
 [Decisão](../architecture/decisions/0021-runner-journal-continuity.md).
+
+## Ownership e encerramento duráveis
+
+`scripts/runner_activation_intents.py` fornece armazenamento interno, sem CLI de
+ativação. Registra ID/hash do plano e referência do escopo, recursos de catálogo
+fechado e observações de IDs/ausência. Referenciar SHA de escopo não verifica nem
+concede autorização. Nenhum evento chama Docker, runner, banco ou rede.
+
+Root padrão .local/pki-activation-intents, privado, com lock cooperativo durante
+a operação. O executor futuro deve fixar esse root; escolher outro diretório não
+protege contra a operação existente. Eventos exclusivos0600 numerados, encadeados
+por hash e fsync antes do retorno. Histórico pendente/parcial/inesperado bloqueia
+outra operação. Não apagar lock, pasta vazia ou arquivo truncado para liberar.
+
+IDs completos e nomes/labels são derivados do projeto/nonce/papel. Somente DB,
+cache, API, runner, journal-before/journal-after e três redes são recursos próprios.
+Volumes, worker, migrate, controller e Wazuh não podem adquirir ownership. Mesmo
+quando create falha sem ID, a intenção preserva nome/labels para reconciliação
+exata; isso não é autorização para remover por prefixo, nome parecido ou projeto.
+
+Remoção precisa de intenção própria; ausência e fechamento precisam do hash de
+observação produzido pelo executor. Enquanto API estiver incerta, preservar DB/
+cache/runner; preservar redes enquanto houver containers incertos. Não criar novo
+dependente de recurso em remoção ou ausente, inclusive após resume. Observação
+tardia de ID não reinicia um recurso cujo pedido de remoção já foi registrado.
+
+Publicação interrompida invalida a sessão; artefatos são preservados. Retomada
+explícita por ID/hash do begin revalida histórico, transições e durabilidade,
+sem executar/repetir efeitos. Estado em memória divergente é recusado. Resumo
+de escrita incerta informa publication_unconfirmed_requires_resume.
+
+absence_recorded_not_runtime_verified mantém autorização/ativação/ausência real/
+operação normal false. O armazenamento não prova consultas nem presença/ausência
+no daemon, mount, PKI ou journal. O executor ainda deverá confirmar tudo antes
+dos efeitos e no encerramento. Plano/TTL/escopo válido é obrigatório para iniciar
+novos efeitos; expirou não significa abandonar cleanup de recursos próprios.
+[ADR0022](../architecture/decisions/0022-activation-resource-intents.md).

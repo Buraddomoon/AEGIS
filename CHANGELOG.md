@@ -1,5 +1,14 @@
 # Changelog
 
+## Continuidade 2026-10-27 — intenção durável de recursos de ativação
+
+- Armazenamento host-only de ownership com catálogo fechado, eventos exclusivos,
+  hashchain, fsync, lock cooperativo e retomada explícita por ID/hash.
+- Histórico incompleto bloqueia outra operação; publicação incerta invalida sessão.
+  Sem replay, exclusão de arquivos/volumes, Docker, lifecycle ou autorização.
+- Retenção de dependências também impede criar API durante/depois da remoção de
+  DB/cache/runner/redes. Ausência registrada permanece distinta de verificação real.
+
 ## Continuidade 2026-10-27 — revisão íntegra do diário antes da ativação
 
 - Revisão offline de DB/WAL sem inicializar nem modificar a origem: lock,
