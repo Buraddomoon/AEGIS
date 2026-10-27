@@ -89,6 +89,14 @@ Custódia externa adiada pelo usuário e PKI dos serviços Wazuh continuam separ
 - Scanner completo do índice e source-review aprovados antes de publicar os
   documentos; contagens/resultado final do CI registrados no checkpoint seguinte.
 
-Logs privados: .local/pki-milestone/probe-runtime-full-tests.log e
-probe-runtime-activation-tests.log. CI de código6d4174a está em andamento no
-momento deste registro; não é tratado como aprovado até finalizar.
+Logs privados: .local/pki-milestone/probe-runtime-full-tests.log,
+probe-runtime-activation-tests.log e probe-runtime-code-ci-result.log.
+
+CI final de código6d4174a **SUCCESS**:
+[run40557124921](https://github.com/Buraddomoon/AEGIS/actions/runs/40557124921).
+**1.353 Python passaram/cinco projeções Demo opcionais puladas/409,50s** e
+**79 React passaram/12 arquivos**, além de lint/tipos/build577ms/advisory review.
+DiskCache5.6.3/PYSEC-2026-2447 conhecido permanece revisado e visível: parser path
+not affected, sem alegar ausência geral de vulnerabilidades. Não houve novo E2E
+local ou ensaio de lab para obter esse resultado. CI de fontesfe82f67 também
+**SUCCESS**, run40557736451; redundantes canceladas por concurrency.

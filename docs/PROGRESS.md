@@ -2400,3 +2400,24 @@ totalizando **332**. main exclusiva/push após cada commit/repositório privado;
 nenhuma branch/PR/force. Código635dc41/3c99f95/c261a03/99ebd4a/fcb41cf e correção
 final6d4174a; target/projeçãoad75285, contrato2123901 e docs6f822c9. Conferir hash
 final/sincronização e registrar o resultado final do CI no próximo checkpoint.
+
+### Fechamento da validação deste incremento
+
+CI código6d4174a **SUCCESS**:
+[run40557124921](https://github.com/Buraddomoon/AEGIS/actions/runs/40557124921).
+**1.353 Python passaram/cinco projeções Demo opcionais puladas/409,50s**,
+**79 React passaram/12 arquivos**, lint/tipos/build577ms/advisory review.
+DiskCache5.6.3/PYSEC-2026-2447 conhecido permanece revisado/visível, sem alegação
+de ausência geral de vulnerabilidades. Fontesfe82f67 **SUCCESS**, run40557736451;
+redundantes canceladas por concurrency. Logs completos privados em
+.local/pki-milestone/probe-runtime-code-ci-result.log, sem dados brutos no Git.
+
+Revisão local de fontes/scanner completo aprovados para364arquivos/95Markdown/
+284links locais/14cabeçalhosPNG; isso não equivale a pentest ou ausência de segredos.
+Este fechamento acrescenta o **11ºcommit deste incremento**, totalizando **333**.
+Mensagem: `docs(progress): checkpoint verified probe runtime and cleanup validation`.
+Conferir hash final, main limpa e origin/main após push; repositório AEGIS privado.
+PKIs/planos/volumes/journals/backups/imagens e credenciais preservados. Sem novo
+ensaio, deploy ou alteração de configurações humanas. Próxima unidade continua
+sendo o coordenador fixo de create/start/transporte e gates físicos/mTLS/binding;
+não declarar rotação operacional concluída nem reutilizar autorizações consumidas.
