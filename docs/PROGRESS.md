@@ -1944,3 +1944,99 @@ Este marco acrescenta **10 commits granulares**, incluindo este checkpoint,
 totalizando **282**. main exclusiva, GitHub AEGIS privado, push após cada commit;
 sem PR/branch/force push ou reescrita. Código/harness d5982a9, evidência 283c544.
 Conferir hash/mensagem finais, árvore limpa e sincronização após o push final.
+
+
+## 2026-10-27 — preparação offline da rotação mTLS do runner
+
+Continuidade do incremento iniciado em2026-10-26, base e234b61, main exclusiva,
+GitHub Buraddomoon/AEGIS privado confirmado. Escopo cumprido sem ativação de
+certificados, start de laboratório, consulta SIEM ou novas autorizações reais.
+
+### Funcionalidades e decisões
+
+- ADR0018 e scripts/runner_pki.py: inspect/prepare/verify host-only, contratos por
+  SHA canônico revisado e candidato privado separado. Geração aditiva em
+  init_linux_lab.py preserva três UUIDs, endpoint e nomes de secrets.
+- Somente cinco arquivos públicos lidos da origem; nenhuma chave antiga,
+  ids.env ou diário. Duas CAs/quatro pares novos/distintos, cadeias/purpose/EKU/
+  SAN/IP/CN/P-256/pares e validade real verificados. Origem expirada pode ser
+  inventariada explicitamente; candidato exige agora e >=24h restantes nas folhas.
+- OpenSSL fixo com ambiente mínimo e política padrão do sistema preservada;
+  sem biblioteca nova, proxy, shell, dependência de banco/Docker/rede ou apply.
+- Arquivos limitados/owner/permissões, sem symlinks/hardlinks/FIFO; fsync dos
+  artefatos e diretórios/ancestrais privados inclusive retry. Erro não emite recibo
+  de sucesso; resíduos privados podem permanecer, inclusive manifesto final.
+- .key ignorado por Git/Docker e recusado no scanner; comandos Make e runbook
+  documentados. Sem migração, UI/API novas, mudança de versão ou imagem runtime.
+
+[Operação](operations/runner-pki.md),
+[evidência](evidence/runner-pki-2026-10-27/README.md) e
+[revisão](security/review-runner-pki-2026-10-27.md).
+
+### Verificação e problemas resolvidos
+
+| Check | Resultado |
+|---|---|
+| `make test` final | **839 Python passaram** em271,12s e **66 React passaram** em3,58s; quatro opcionais Docker incluídos |
+| Novos casos | 52 PKI, incluindo três TLS echo loopback, mais um scanner .key; todos incluídos no total |
+| `make lint` | Ruff/format143arquivos, mypy4arquivos, TypeScript e Prettier aprovados |
+| `make audit` / pip check | npm zero; DiskCache5.6.3/PYSEC-2026-2447 conhecido/revisado e visível; requirements consistentes |
+| Fonte | 329 arquivos,84Markdown,233links locais e14cabeçalhos PNG; scanner completo/release-check aprovados |
+
+Aviso de depreciação Starlette/TestClient-httpx preservado. Build foi aprovado
+no CI; não houve novo deploy, captura ou E2E porque não há mudança UI/API/runtime.
+Prova offline e TLS loopback não são execução de laboratório real.
+
+CI executável d6d49ad: **SUCCESS**, 835 Python / quatro skips Docker opcionais,
+66 React, lint/tipos/build/auditoria;
+[run40409355739](https://github.com/Buraddomoon/AEGIS/actions/runs/40409355739).
+Commits posteriores só documentam operação/evidência/progresso e usam CI leve;
+source-review bda2afc passou. Execuções intermediárias de código redundantes
+canceladas por concurrency, sem repetir instalação/build remoto por docs.
+
+Revisão especializada encontrou fsync de ancestrais incompleto e depois retry
+incompleto após falha. ecb4713/a57f5da corrigiram ambos, com regressões; revisão
+estática final confirmou resolução sem bloqueador concreto no delta. Não é
+pentest. Fixture hardlink inicialmente tocava candidato compartilhado; corrigida
+para cópia local antes do link e casos repetidos passaram. Falhas iniciais não
+foram contadas como aprovação. Sessão da suíte anterior ficou sem recibo recuperável
+após continuação; a rodada final foi executada novamente e registrada em log local.
+
+### Prova e estado operacional
+
+Candidato real90204499ca2144aca175fe809538b7e7 criado fora da origem, manifesto
+SHA24179f34ad0a2c708496e9b0b3798a18d547c4648975c95893330458f0ed8d5f.
+Prepare/verify sob audit hook restrito e nova verificação em2026-10-27 passaram:
+offline_candidate_verified_not_activated, todas as flags de ativação/banco/diário/
+lab/operação normal false. IDs/endpoint preservados, descritor mudou; bytes
+públicos e metadados dos originais intactos. Folhas originais servidor/cliente
+expiradas permaneceram assim; não declarar rotação aplicada. Candidato tem validade
+curta e deve ser reverificado ou substituído por outro candidato antes de uso.
+
+Demo localhost18780 ready, database/redis true, API/worker ainda na imagem
+ec57c8c9177fa8a4a8a5141bb958ed86e6bcf245f003dcb2f7972ea34a5d0314.
+Leitura READ ONLY confirmou schema a0d9c7e21b45,32tabelas,23runs e zero runs
+não terminais/reservas/agendamentos retomáveis. Nenhuma senha humana alterada.
+Linux/Wazuh sem containers, nove volumes históricos preservados. Sem novo efeito,
+cleanup de evidências, imagens/backup removidos ou acesso a outros alvos.
+
+### Pendências reais e continuidade
+
+Entregue somente preparação offline. Ativação coordenada dos dois lados mTLS,
+revisão/binding/preflight com descritor novo e recuperação de jobs sob vínculo
+alterado continuam pendentes. Não converter recibo offline em autorização: jobs
+ambíguos mantêm quarentena; preservar IDs/volume/diário sem replay ou reserva
+liberada manualmente. PKI Indexer/manager/agente/Filebeat não foi rotacionada.
+
+Também permanecem: backend/pipeline Sigma completos oficialmente compatíveis e
+mapping físico/consulta validados sob escopo, recuperação entre hosts/configuração/
+secrets/imagens/cutover/RPO/RTO. Custódia externa adiada pelo usuário, sem upload
+ou compra. Windows/PDF/outros provedores/multi-workspace são expansões do roadmap.
+Próximo passo da PKI: preparar um plano de ativação concreto com validade atual,
+preservação do journal e revisão do binding; qualquer start/troca ativa/ensaio
+precisa de escopo específico próprio e não reutiliza as autorizações consumidas.
+
+Este marco acrescenta **10 commits granulares**, incluindo este checkpoint,
+totalizando **292**. main exclusiva, push origin/main após cada commit, privado;
+sem branch/PR/force/rebase. Código final d6d49ad; conferir hash/mensagem finais,
+árvore limpa e sincronização após push deste checkpoint.
