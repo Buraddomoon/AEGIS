@@ -2135,3 +2135,88 @@ totalizando **302**. main exclusiva, GitHub AEGIS privado e push após cada comm
 sem branch/PR/force ou reescrita. Código de produção99b6758/c6fc456, casos finais
 bdb31c1, evidência1531990. Conferir hash/mensagem, árvore limpa e origin/main
 depois do push deste checkpoint; CI de código já aprovado, docs usam source-review.
+
+## 2026-10-27 — harness de planejamento da ativação Linux
+
+Base8acbf3a/302 commits. Entregue ferramenta host-only executável plan/recheck,
+sem iniciar Linux/Wazuh, abrir banco/diário original, aplicar PKI ou executar
+marcador/campanha. Este incremento prepara um gate concreto do executor futuro,
+sem apresentar ativação como implementada.
+
+### Implementação e decisões
+
+- `scripts/runner_activation_metadata.py`: consultas Docker em catálogo fechado,
+  Unix local, config vazia/env mínimo, projeções sem Config.Env/inspect bruto,
+  limite agregado64KiB/10s e kill/reap do filho em falha. Exige zero containers
+  inclusive parados/redes do projeto, zero consumidores dos volumes, labels/
+  local/options/datas coerentes e quatro imagens locais distintas por ID.
+- `scripts/runner_activation.py`: perfil Linux integrado172.30.88.2/API18785,
+  PKI/hash antes/depois, descritores/IDs preservados e Compose por hash. Plano
+  exclusivo0600/diretório0700/fsync; recheck exige hash canônico independente,
+  política exata, material/metadata iguais e TTL15min antes/depois. Não altera
+  fontes ou planos anteriores; erros não publicam recibo de sucesso.
+- ADR0020, Make plan/recheck/test-runner-activation, AGENTS/runbook/README/roadmap
+  atualizados. Nenhuma dependência/migração/endpoint/frontend novo ou deploy.
+  Flags de autorização/banco/diário/mounts/rede/proveniência/ativação/operação
+  normal false e oito gates pendentes explícitos; não há apply/lifecycle.
+
+[Contrato](operations/runner-pki-activation.md),
+[ADR0020](architecture/decisions/0020-runner-activation-plan.md) e
+[evidência completa](evidence/activation-plan-2026-10-27/README.md).
+
+### Testes, inspeção real e problemas encontrados
+
+`make test-runner-activation`: **82 passaram/45,90s**. `make test-runner-pki`:
+**52 passaram/28,90s**. Total134 casos dirigidos executados neste incremento,
+sem somar rodadas repetidas. PKI real temporária, TLS echo loopback, fixtures
+Docker e filhos Python para timeout/limite/reap; nenhum laboratório iniciado.
+969 casos Python coletados no estado final; coleta não significa execução local
+de todos eles. Lint completo aprovado: Ruff/format149 arquivos, mypy4, TypeScript
+e Prettier. Aviso upstream Starlette/TestClient-httpx permanece visível.
+
+Primeira consulta real recusou imagem PostgreSQL cujo Config.User era ausente.
+Projeção corrigida com index/campo opcional; quatro regressões mantêm UID10001
+obrigatório da API/runner, aceitando default root apenas nas imagens DB/cache.
+Consulta repetida passou, sem enfraquecer os controles. Revisão arquitetural
+especializada somente leitura não encontrou bloqueador concreto; não é pentest.
+
+Plan real3f38362663b840009d3149cfd113c83b, hash
+f7324e0999595546fcdfb3b43e4617c8938eb035f5b6bf9981773716300abee6;
+recheck2026-10-27T14:20:06.673617Z aprovado somente como metadados.
+Expiração14:34:27.588950Z, sem renovação implícita pelo registro desta prova.
+Mesma PKI candidata90204499ca2144aca175fe809538b7e7 reverificada, sem ativação.
+Volumes Linux journal/postgres-data com labels/data/local confirmados e sem
+consumidores; nomes/metadados não comprovam conteúdo ou fences. Imagens/IDs,
+limites e recibo privado estão na evidência, sem chaves ou credenciais publicadas.
+
+CI final de código/Make d05a00f **SUCCESS**:
+[run40520616501](https://github.com/Buraddomoon/AEGIS/actions/runs/40520616501),
+965 Python passaram/quatro projeções Docker opcionais puladas/351,09s;79 React
+passaram, além de lint/tipos/build/advisory review. DiskCache5.6.3/PYSEC-2026-2447
+conhecido continua revisado e visível; npm sem achados nessa auditoria, sem alegação
+de ausência geral de vulnerabilidades. CI de entrega b3e639a também SUCCESS;
+redundantes canceladas conforme concurrency. E2E/frontend não foram repetidos
+localmente porque não houve mudança do produto em execução; ver marco anterior.
+Revisão final de fontes:343 arquivos/90 Markdown/262 links/14 cabeçalhos PNG e
+scanner do índice aprovados, sem equivaler a pentest ou prova geral de segredos.
+
+### Estado e próxima etapa
+
+Demo localhost18780 continua ready/database/redis true, imagem API/worker92ffbc4e…
+preservada. Sem restart/build/pull/seed/migração, conta nova ou mudança de senha.
+Zero containers Linux/Wazuh, volumes/journals/backups/chaves/imagens históricos
+intactos; schema pytest antigo não removido. Custódia externa continua adiada,
+sem upload/serviço pago. GitHub AEGIS privado, somente main e push após cada commit.
+
+Próximo: implementar o executor com intenção/ownership/cleanup duráveis e gates
+do banco/diário Linux originais, mounts/isolamento/mTLS, registro ainda revogado
+e encerramento verificável; manter worker parado. Só então apresentar escopo
+específico para autorização real, sem reutilizar ensaios consumidos. Plano atual
+não permite marcador e não libera jobs ambíguos sob descritor alterado. Wazuh PKI,
+backend Sigma completo/mapping físico, recuperação entre hosts e custódia externa
+continuam pendências separadas; Windows/PDF/outros provedores são expansões.
+
+Este marco acrescenta **7 commits granulares**, incluindo este checkpoint,
+totalizando **309**. Código ab662e0/27ea2db, contrato/Make d05a00f e evidência
+b3e639a. Conferir hash/mensagem finais, árvore limpa e origin/main após o push;
+nenhuma branch temporária, PR, force push ou reescrita de histórico.
