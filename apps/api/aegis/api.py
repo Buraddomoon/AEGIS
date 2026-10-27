@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from aegis import (
     analytics,
+    binding_review,
     linux_labs,
     queries,
     rule_links,
@@ -227,6 +228,18 @@ def preflight_linux(lab_id: str, data: schemas.Confirm, user: Admin, db: DB) -> 
     return queries.record(
         linux_labs.preflight(db, services.get_or_404(db, Laboratory, lab_id), user)
     )
+
+
+@router.get(
+    "/labs/{lab_id}/binding-review",
+    response_model=schemas.BindingReviewRead,
+    tags=["Laboratories"],
+)
+def review_linux_binding(lab_id: str, user: Admin, db: DB) -> dict:
+    rate_limit("binding-review:" + user.id, 30, 60)
+    with analytics.read_snapshot(db) as snapshot:
+        lab = services.get_or_404(snapshot, Laboratory, lab_id)
+        return binding_review.review(snapshot, lab)
 
 
 @router.get("/labs/{lab_id}/verifications", tags=["Laboratories"])

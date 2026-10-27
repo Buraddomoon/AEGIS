@@ -61,6 +61,26 @@ class LinuxRegistration(Input):
     confirm_isolation_review: Literal[True]
 
 
+class BindingReviewRead(BaseModel):
+    format: Literal["aegis-linux-binding-review/1"]
+    laboratory_id: str
+    environment_version: int
+    reviewed_at: AwareDatetime
+    status: Literal["blocked", "persisted_prerequisites_satisfied"]
+    blockers: list[str]
+    nonterminal_runs: int
+    nonterminal_tests: int
+    dispatches_examined: int
+    dispatch_history_complete: bool
+    unconfirmed_cleanup_count: int
+    unconfirmed_execution_ids: list[str]
+    unconfirmed_sample_truncated: bool
+    runner_contacted: Literal[False]
+    journal_verified: Literal[False]
+    activation_permitted: Literal[False]
+    normal_operation_permitted: Literal[False]
+
+
 class WazuhBindingReview(Input):
     review: str = Field(min_length=20, max_length=4000)
     confirm_read_only_scope: Literal[True]

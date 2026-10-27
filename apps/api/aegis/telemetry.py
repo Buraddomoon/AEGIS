@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from aegis import binding_review
 from aegis.db import session_factory
 from aegis.domain.contracts import Collection, ExecutionContext
 from aegis.domain.validation import digest
@@ -73,8 +74,7 @@ def status(db: Session, lab: Laboratory) -> dict:
 
 
 def bind(db: Session, lab: Laboratory, actor: User, review: str) -> WazuhBinding:
-    if lab.kind != "linux" or lab.authorized or lab.active_run_id:
-        raise HTTPException(409, "Binding exige Linux Lab revogado e sem reserva.")
+    binding_review.require_review(db, lab)
     try:
         value = descriptor()
     except (ValueError, OSError):
@@ -115,10 +115,7 @@ def bind(db: Session, lab: Laboratory, actor: User, review: str) -> WazuhBinding
 
 
 def unbind(db: Session, lab: Laboratory, actor: User):
-    if lab.authorized or lab.active_run_id:
-        raise HTTPException(
-            409, "Revogue o laboratório e conclua cleanup antes de remover binding."
-        )
+    binding_review.require_review(db, lab)
     item = binding(db, lab.id)
     if item:
         db.delete(item)

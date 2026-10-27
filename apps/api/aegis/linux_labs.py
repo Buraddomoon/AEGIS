@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from aegis import binding_review
 from aegis.config import settings
 from aegis.domain.validation import digest
 from aegis.integrations.linux_runner import LinuxRunnerClient, RunnerConnection
@@ -101,8 +102,8 @@ def register(db: Session, data, actor: User) -> Laboratory:
     lab = db.scalar(
         select(Laboratory).where(Laboratory.id == identity["laboratory_id"]).with_for_update()
     )
-    if lab and (lab.kind != "linux" or lab.active_run_id):
-        raise HTTPException(409, "Identidade já utilizada ou laboratório reservado.")
+    if lab:
+        binding_review.require_review(db, lab)
     if lab is None:
         lab = Laboratory(
             id=identity["laboratory_id"],
@@ -126,8 +127,6 @@ def register(db: Session, data, actor: User) -> Laboratory:
             )
         )
     else:
-        if lab.authorized:
-            raise HTTPException(409, "Revogue a autorização antes de revisar o binding.")
         asset = db.get(Asset, identity["asset_id"])
         if not asset or asset.laboratory_id != lab.id or asset.synthetic:
             raise HTTPException(

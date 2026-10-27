@@ -190,6 +190,10 @@ def test_binding_removal_requires_no_reservation_and_preserves_historical_scope(
     login(client, "administrator")
     client.patch(f"/api/v1/labs/{lab['id']}/authorization", json={"authorized": False})
     result = client.post(f"/api/v1/labs/{lab['id']}/wazuh-binding/remove", json={"confirm": True})
+    assert result.status_code == 409  # An unreserved pending request still blocks review.
+    cancelled = client.post(f"/api/v1/executions/{run['id']}/cancel", json={"confirm": True})
+    assert cancelled.status_code == 200, cancelled.text
+    result = client.post(f"/api/v1/labs/{lab['id']}/wazuh-binding/remove", json={"confirm": True})
     assert result.status_code == 200
     assert result.json()["status"] == "unbound"
     historical = client.get("/api/v1/executions/" + run["id"]).json()

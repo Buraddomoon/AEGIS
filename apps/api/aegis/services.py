@@ -141,6 +141,15 @@ def request_run(
             raise HTTPException(409, "Chave de idempotência já usada em outra campanha.")
         return existing
     campaign = get_or_404(db, Campaign, campaign_id)
+    if get_or_404(db, Laboratory, campaign.laboratory_id).kind == "linux":
+        # Serialize creation with revocation/rebinding. Refresh the identity map:
+        # a scope read before the administrator's lock must not survive it.
+        db.scalar(
+            select(Laboratory)
+            .where(Laboratory.id == campaign.laboratory_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
     scope = snapshot_scope(db, campaign)
     run = CampaignRun(
         id=uid(),
