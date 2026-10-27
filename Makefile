@@ -212,4 +212,4 @@ test-runner-activation:
 # Temporary PostgreSQL schema + SQLite only. Never mount/start a Linux lab.
 .PHONY: test-runner-continuity
 test-runner-continuity:
-	$(VENV)/pytest tests/test_runner_journal_continuity.py tests/test_runner_persisted_review.py tests/test_runner_journal_probe.py -q
+	$(VENV)/pytest tests/test_runner_journal_continuity.py tests/test_runner_persisted_review.py tests/test_runner_journal_probe.py tests/test_runner_persisted_probe.py -q

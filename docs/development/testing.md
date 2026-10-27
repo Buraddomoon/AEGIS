@@ -353,3 +353,17 @@ e PKI real descartável. Cobrem membros/consumidores extras, fontes alteradas,
 estado/labels/imagens, snapshots repetidos, prazo inclusive IO final, SHA/ID do
 plano/intent, PKI/Compose e expiração após últimas consultas. Recheck público
 continua recusando projeto ocupado. Não leem volumes nem consultam SQL de lab.
+
+Leitor PostgreSQL: `test_runner_persisted_probe.py` usa perfis de conexão em
+fixtures e schema/histórico PostgreSQL real descartável. Testa input/contexto/
+senhas privadas, env libpq, perfil fixo/role, types/nullability/RLS/views/herança,
+mesma sessão/backend/snapshot e DDL concorrente bloqueado. Metadados alterados em
+schemas aleatórios são revertidos; child de herança criado pelo teste é removido.
+Herança anexada após o guard não amplia leituras ONLY. `test_runner_persisted_review`
+verifica também que o hook não pode escrever (SQLSTATE25006). Endpoint/netns de
+produção continuam só fixtures, sem original Linux. `test-runner-continuity`
+inclui o novo arquivo; não executar junto de outra suíte PG/Redis15.
+
+Transporte privado também testa cap4MiB para provas, stderr contado e overflow/
+kill-reap; metadata continua com64KiB por padrão e limites arbitrários são recusados.
+Esses filhos são Python local com bytes sintéticos, nunca Docker ou dados reais.

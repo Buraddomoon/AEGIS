@@ -2504,3 +2504,48 @@ TOCTOU de duas conexões e correção foi implementada/testada em schemas PG pr�
 esse código ainda está em trabalho e terá checkpoint próprio. Depois: transporte
 privado do bundle, runtime físico/proveniência e harness completo antes de novo
 escopo autorizado. Nenhum fim de etapa encerra automaticamente o trabalho.
+
+## 2026-10-27 — leitor PG fixo, snapshot único e provas privadas; trabalho segue
+
+Desde82bf8a3/342:1a5cf77 acrescenta modo interno de raízes à revisão, preservando
+escopo padrão da API;38c7987 conecta hook/perfil/coleta no mesmo snapshot protegido;
+f03a4f8 entrega persisted_probe e ADR0024;f745f31 oferece cap privado4MiB sem ampliar
+limite64KiB das consultas. Este checkpoint é o **14ºcommit** desdee377a4b, total347.
+
+Leitor não oferece URL/SQL/host livre, settings fallback ou PG* ambiental. Apenas
+loopback5432/aegis/aegis_app/public/PID1/UIDGID10001 com pipe. Senha só stdin16KiB,
+excluída do contexto público; sem argv/env/log. Role não elevada, PostgreSQL17,
+read-only/RR/schema/search_path e ausência de temporários conferidos. Catálogos
+exigem tabelas ordinárias/SELECT/cols/types/nullability e sem RLS/herança. Sem
+consulta a alembic_version, grant ou migração. Provas<=4MiB incluindo newline,
+emitidas só depois de dispose; nenhuma saída parcial/segredo em erros.
+
+Revisão especializada encontrou TOCTOU entre conexão do perfil e coleta. Agora
+ACCESS SHARE ONLY/NOWAIT nas sete tabelas vem antes do primeiro SELECT, e hook
+recebe a MESMA conexão/snapshot da coleta. RLS/type/replacement DDL fica bloqueado;
+row_security=off faz erro em vez de filtragem, sem bypass/controle global alterado.
+AS não congela todo DDL: teste real anexou childQUEUED depois do guard, leitura
+semONLY o vê e collector estrito ignora expansão das relações verificadas. API
+binding padrão continua contando child pendente (regressão própria). Nenhum modo
+de raízes é recebido por endpoint público nem usado para contornar schema inválido.
+
+Verificação: **52 testes persisted_probe** passaram/4,36s, **31 persisted_review**
+passaram/10,68s; rodada final com binding: **132 passaram/49,23s**. Inclui catálogos/
+DDL revertido/mesmo backend/ALTER RLS bloqueado55P03, DDL prévio recusa antes do
+snapshot, hookDML rejeitado25006 e herança tardia. Transporte+metadata: **78 passaram/
+1,22s**,30 transporte/48metadata, com perfis64KiB/4MiB e limites/tipos arbitrários
+recusados. Testes usam PG/schema próprio/fixtures de endpoint e filhos Python;
+nenhum Linux original/namespace de produção/driver real foi validado.
+
+Suíte global em andamento sobre basef745f31, log privado
+.local/pki-milestone/persisted-probe-global-tests.log; não declarar aprovação antes
+de finalizar. Nenhum ensaio Linux/Wazuh, leitura interna de volumes, novo marcador,
+campanha, build/deploy, troca PKI/binding ou credencial humana. Só DDL próprio em
+schemas pytest, revertido/removido; dados e configuração originais preservados.
+
+Continuação imediata: runtime/driver fechado do leitor no namespace do DB próprio,
+captura0600 do bundle, imagem/proveniência e harness completo de revisão sem
+simulação antes de solicitar nova autorização. PGSQL read-only não torna PGDATA
+read-only: startup escreve metadados operacionais e precisa de escopo explícito.
+Sem iniciar o lab para resolver implementação incompleta nem reaproveitar aprovação.
+PKI/mTLS/registro revogado da rotação continuarão separados do primeiro diagnóstico.

@@ -313,3 +313,16 @@ Dois snapshots e guard durável, prazo absoluto20s desde a entrada até a releit
 final, por query com orçamento restante. inventory sozinho não comprova quiescência
 ou autoriza efeito. Schema/SQL/volume físico/rede/proveniência/autorização continuam
 gates separados; sem invocação real desses novos componentes por testes/CI.
+
+Leitor PG fixo (ADR0024): persisted_probe só127.0.0.1:5432/aegis/aegis_app/public,
+PID1/UID/GID10001/Docker marker e pipe privado. Não aceitar URL/SQL/path livres,
+settings fallback ou PG* ambiental; senha só stdin16KiB, fora do contexto público.
+Perfil/schema e collect na MESMA conexão RR/READONLY, SQL15s e ACCESS SHARE ONLY/
+NOWAIT antes de qualquer SELECT. Role sem elevação/temporários; schema/tipos/
+nullability/SELECT/RLS/herança conferidos sem ler alembic_version ou conceder grants.
+row_security=off é fail-closed (erro se política filtraria, não bypass); leituras
+estritas ONLY não incorporam herança anexada após verificação. APIbinding padrão
+não usa only_roots. Bundle até4MiB incluindo newline, emitido só apósdispose;
+capturar0600/0700, nunca ecoar/logar. Namespace físico/proveniência/harness reais
+ainda separados: import/PID1 não autorizam operação. Transporte mantém consultas
+64KiB e só adapter fechado pode selecionar cap4MiB de provas. Sem invocação real.

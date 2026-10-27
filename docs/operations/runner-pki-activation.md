@@ -323,3 +323,19 @@ inclui parados e objetos de outros projetos nos volumes, repete snapshots e conf
 estado durável com prazo total20s, incluindo IO final. Não aceita exceções livres
 de recursos nem converte metadados em prova física/SQL/autorização. O callback
 real ainda precisa combinar esses gates com leitura do banco Linux original.
+
+Leitor fixo já implementado em `aegis.lab_runner.persisted_probe`: senha por stdin,
+contexto público fixado, loopback/PostgreSQL17/databaseaegis/useraegis_app/public,
+guard de PID1/UID/GID/Docker marker, sem endpoint ou arquivo de configuração livre.
+Perfil/schema/coleta compartilham snapshot RR/READONLY e locks antes de SELECT;
+recusam role elevada, RLS/temporários/views/herança/tipos/nullability incompatíveis.
+Runtime não pode ler alembic_version: nenhum grant ou migration é feito para passar.
+Saída contém provas originais e exige captura privada<=4MiB, sem log/TTY.
+
+O leitor não prova sozinho que loopback é o DB Linux original: driver/coordenador
+deverá conferir namespace/mounts/imagem/HBA e aprovação antes do start. Esses
+controles físicos ainda estão em implementação; não iniciar PG ou montar volume
+real para testar o módulo. Startup de PostgreSQL escreve metadados operacionais
+no PGDATA mesmo que as consultas sejam read-only, e deve constar no futuro escopo
+autorizado. Não confundir SQL read-only com volume fisicamente read-only.
+[ADR0024](../architecture/decisions/0024-fixed-postgresql-proof-probe.md).
