@@ -87,3 +87,36 @@ mTLS novo sem marcador, registrar binding ainda revogado e encerrar recursos com
 prova de ausência. Só depois submeter escopo concreto para nova autorização.
 Hash de bundle/escopo/observação não autentica origem nem concede essa permissão.
 Custódia externa segue adiada; nenhuma cópia/upload/serviço pago foi contratado.
+
+## Continuação automática — observador de ownership
+
+Código fc5da3d: [runner_activation_ownership.py](../../../scripts/runner_activation_ownership.py)
+e50 novos casos em test_runner_activation_ownership.py. Consulta por nome, owner
+composto e ID anterior, inspect de nome/ID/cinco labels exatos e repetição das
+listas. Labels repetidas não são usadas como um AND presumido; nomes parecidos
+bloqueiam conservadoramente. Erro, colisão/rename/duplicata/drift nunca vira
+ausência nem autoriza limpeza. Executa somente consultas do catálogo projetado.
+
+`make test-runner-activation` final: **184 passaram/34,37s** (82 existentes,
+52 intents e50 ownership). Com a rodada global anterior, **1.175 casos Python
+distintos foram executados localmente em rodadas distintas**; coleta final também
+confirmou1.175. Lint repetido aprovado com159 arquivos Python, mypy/TypeScript/
+Prettier. A suíte global não foi repetida localmente após as bibliotecas host-only;
+os novos casos foram executados e CI final valida a composição completa.
+
+Consulta real somente leitura passou para os **nove papéis** com nonce novo
+`b46cbcbd00404c87a942062db5f8386d`, em2026-10-27T17:00:17.687401Z;
+nenhum desses nomes representa recurso criado.
+SHA canônico do recibo:
+`bb5ca450e5603b996d2714c158714bc4a8d2743cce71b167fc90d5bb4c2dd6eb`.
+Arquivo privado `.local/pki-milestone/ownership-absence-receipt.json`.
+As consultas confirmaram ausência somente dos nomes/labels desse catálogo/nonce;
+não provaram isolamento geral ou inexistência de todos os recursos do host.
+Nenhum intent real/container/rede foi criado, nenhum volume aberto ou serviço
+alterado. Templates de inspect para **objetos presentes** continuam validados por
+fixtures, sem prova em objetos reais de ativação. Todas as flags operacionais falsas.
+
+Revisão especializada estática não encontrou bloqueador concreto no novo
+observador; não substitui ensaio. Próximo continua sendo integrar lifecycle fixo,
+mounts/isolamento/mTLS/registro revogado e fechamento antes de pedir autorização
+específica. A consulta de ausência não autoriza create/start/stop/rm ou marcador.
