@@ -346,3 +346,10 @@ fica em CONFLICT persistido e não pode ser removida por cleanup posterior.
 Testes de cleanup selecionado provam que o intent pai segue aberto e dependências
 continuam protegidas. A função interna não expõe CLI apply e exige um coordenador
 confiável real para computar gates; JSON de fixture não é autorização de ensaio.
+
+Metadados ativos: `test_runner_activation_active_metadata.py` e
+`test_runner_activation_active_plan.py` juntam daemon fixtures/intents temporários
+e PKI real descartável. Cobrem membros/consumidores extras, fontes alteradas,
+estado/labels/imagens, snapshots repetidos, prazo inclusive IO final, SHA/ID do
+plano/intent, PKI/Compose e expiração após últimas consultas. Recheck público
+continua recusando projeto ocupado. Não leem volumes nem consultam SQL de lab.

@@ -2461,3 +2461,46 @@ com recursos próprios presentes, consumidor exclusivo do journal, inventário f
 e bloqueio de recursos estrangeiros. Código em trabalho separado ainda não deve
 ser apresentado como validado antes de seus testes. Depois: recheck de plano ativo,
 origem física PG, mTLS/binding e coordenador completo antes do escopo de novo ensaio.
+
+## 2026-10-27 — checkpoint ativo de metadados e plano, continuidade imediata
+
+Desde0b59aa9/339: e44e6ee entrega inventário sem inferir quiescência e revisão
+durante operação com ownership durável;1eed10e conecta essa revisão à PKI/Compose/
+inventário do plano original e ao ID/SHA do intent. Recheck CLI público permanece
+quiescente; novo componente é interno e não aceita exceções de recursos por API.
+
+Snapshots de todos os membros do projeto/nomes reservados/consumidores de volumes,
+incluindo parados e consumidores de outros projetos, precisam coincidir com os
+IDs/nomes/cinco labels/imagens próprios. Runner/outcome ambíguo/CONFLICT/remoção
+impedem novo efeito. Prazo absoluto20s, por query com orçamento restante, comparação
+repetida e releitura durável final. Flags SQL/volume físico/proveniência/rede/
+autorização continuam falsas. load_plan preserva hash/política/TTL sem daemon;
+active_plan revalida inputs e TTL depois do último IO. Nenhum lifecycle real.
+
+Testes locais: **28 metadados ativos** e **14 plano ativo** passaram, além das
+34 regressões do plano quiescente. Target ampliado final: **472 passaram/57,60s**.
+Ruff/format172 arquivos passaram nesse marco. Revisão especializada encontrou
+prazo não abrangendo IO final: corrigido/regressão inicial+final. Integração inicial
+expôs fixture hardcoded em planlabela64 (nove falhas); derivação do SHA real do
+intent corrigiu a fixture sem afrouxar guardas,42 casos passaram depois.
+
+CI de1eed10e **SUCCESS**, [run40564482908](https://github.com/Buraddomoon/AEGIS/actions/runs/40564482908):
+**1.458 Python passaram/cinco projeções opcionais puladas/508,58s**,
+**79 React passaram/12 arquivos**, build636ms e lint/tipos/advisory review.
+DiskCache5.6.3/PYSEC-2026-2447 conhecido permanece revisado e visível. Log completo
+privado em .local/pki-milestone/active-plan-code-ci-result.log. Não é ensaio real
+nem prova de ausência geral de vulnerabilidades. CI redundante cancelado.
+
+Este checkpoint é o **9ºcommit** desdee377a4b, totalizando **342**. main exclusiva,
+GitHub privado/push direto após cada commit, sem branch/PR/force. Não houve novo
+Linux/Wazuh, leitura interna de volumes, marcador/campanha, troca PKI/binding,
+build/deploy/migração/seed ou alteração de credenciais humanas; originais preservados.
+
+Continuação já em andamento: leitor PostgreSQL fixo em loopback no namespace DB,
+senha por stdin e contexto público separado, sem destino/settings livres. Perfil
+e schema precisam ser conferidos NA MESMA sessão RR/READONLY da coleta, com locks
+antes do snapshot, sem RLS/herança/views/tipos incompatíveis. Revisão encontrou
+TOCTOU de duas conexões e correção foi implementada/testada em schemas PG próprios;
+esse código ainda está em trabalho e terá checkpoint próprio. Depois: transporte
+privado do bundle, runtime físico/proveniência e harness completo antes de novo
+escopo autorizado. Nenhum fim de etapa encerra automaticamente o trabalho.

@@ -47,3 +47,25 @@ Fontes oficiais consultadas:
 
 Complementa [ADR0018](0018-offline-runner-pki.md) e
 [ADR0019](0019-runner-binding-review.md). O runbook de ativação continua separado.
+
+## Rechecagem interna durante a operação
+
+`load_plan` compartilha os mesmos guards de arquivo/hash/política/TTL, sem daemon.
+`runner_activation_active_plan.recheck` é interno, sem CLI: exige ID/SHA do plano
+no intent travado, alvo/phase de probe e snapshot PKI/Compose/inventário idêntico.
+Usa adapter somente leitura para metadados de recursos próprios presentes; o
+recheck público continua exigindo quiescência e nunca aceita uma lista livre de
+exceções. Reconfere ownership e TTL depois do IO final. Não verifica autorização.
+
+`runner_activation_active_metadata` compara inventário fixado, imagens/IDs/cinco
+labels, lista completa do projeto e nomes de redes reservados, inclusive objetos
+parados. Somente consumidor próprio esperado do journal e DB original são aceitos;
+consumidor de outro projeto também bloqueia. CONFLICT/remoção/pedido ambíguo/outro
+runner presente impedem o próximo efeito. Repete snapshots e bytes duráveis, com
+prazo absoluto20s desde a entrada até depois da releitura final. Consultas recebem
+o orçamento restante, sem inspect bruto/Config.Env/Source físico ou lifecycle.
+
+O helper `inventory` não prova quiescência. Esses componentes não conferem dados
+internos/identidade física do PostgreSQL, conteúdo do journal, origem da imagem,
+isolamento real ou autorização humana. Flags operacionais continuam falsas e o
+perfil público mantém executor_implemented=false até existir coordenador completo.

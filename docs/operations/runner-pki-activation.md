@@ -314,3 +314,12 @@ snapshot PostgreSQL,
 vínculo físico do banco original, mTLS novo/recusa do trust anterior, registro
 revogado e escopo específico de um ensaio. Não executar componentes manualmente
 para contornar esses gates. [ADR0023](../architecture/decisions/0023-journal-probe-runtime.md).
+
+Rechecagem durante a operação está disponível somente como componente interno:
+`runner_activation_active_plan.recheck` mantém PKI/Compose/inventário fixados e
+vincula ID/SHA ao intent. O recheck CLI comum continua recusando projeto ativo.
+`active_metadata` exige recursos próprios/IDs/imagens/labels e consumidores exatos,
+inclui parados e objetos de outros projetos nos volumes, repete snapshots e confere
+estado durável com prazo total20s, incluindo IO final. Não aceita exceções livres
+de recursos nem converte metadados em prova física/SQL/autorização. O callback
+real ainda precisa combinar esses gates com leitura do banco Linux original.

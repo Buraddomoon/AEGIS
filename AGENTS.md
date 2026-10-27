@@ -304,3 +304,12 @@ Start intent precede última revisão e RPC, sem retry ambíguo. Cleanup selecio
 não fecha intent pai, não remove outros recursos e respeita dependências. CONFLICT
 persiste colisão antes da tentativa de create e recusa adoção/cleanup/replay até
 após resume; não editar/excluir histórico para liberar. Sem novo CLI apply/ensaio.
+
+Plano em operação: active_plan.recheck só interno, vinculando ID/SHA ao intent,
+PKI/Compose/inventário atuais e TTL também após último IO. Recheck público continua
+quiescente. active_metadata exige membros/IDs/imagens/labels/consumidores exatos,
+inclui parados/consumidores externos e recusa CONFLICT/remoção/runner/pedido ambíguo.
+Dois snapshots e guard durável, prazo absoluto20s desde a entrada até a releitura
+final, por query com orçamento restante. inventory sozinho não comprova quiescência
+ou autoriza efeito. Schema/SQL/volume físico/rede/proveniência/autorização continuam
+gates separados; sem invocação real desses novos componentes por testes/CI.
