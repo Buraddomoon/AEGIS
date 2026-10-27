@@ -448,3 +448,118 @@ def test_history_limits_block_without_truncated_success(journal, monkeypatch):
     monkeypatch.setattr(continuity, "MAX_EVENTS", 2)
     with pytest.raises(continuity.ContinuityError, match="history_limit"):
         continuity.review(*journal)
+
+
+def test_missing_shm_is_reconstructed_only_in_private_copy(wal_journal):
+    root = wal_journal[0]
+    (root / "journal.sqlite3-shm").unlink()
+    before = snapshot(root)
+    assert continuity.review(*wal_journal)["expected_proofs_matched"] == 1
+    assert snapshot(root) == before
+
+
+def test_partial_wal_transaction_blocks_without_recovering_or_truncating(wal_journal, tmp_path):
+    root, identity, expected = wal_journal
+    target = tmp_path / "uncommitted-copy"
+    target.mkdir(mode=0o700)
+    with closing(sqlite3.connect(root / "journal.sqlite3")) as db:
+        db.execute("PRAGMA cache_size=1")
+        db.execute("PRAGMA cache_spill=ON")
+        db.execute("BEGIN IMMEDIATE")
+        db.execute("UPDATE jobs SET reason=?", ("x" * 131072,))
+        data = (root / "journal.sqlite3-wal").read_bytes()
+        page = int.from_bytes(data[8:12])
+        last = 32 + ((len(data) - 32) // (24 + page) - 1) * (24 + page)
+        assert data[last + 4 : last + 8] == b"\0" * 4
+        for file in root.iterdir():
+            (target / file.name).write_bytes(file.read_bytes())
+            (target / file.name).chmod(stat.S_IMODE(file.stat().st_mode))
+        db.rollback()
+    before = snapshot(target)
+    with pytest.raises(continuity.ContinuityError, match="wal_uncommitted_tail"):
+        continuity.review(target, identity, expected)
+    assert snapshot(target) == before
+
+
+def test_logical_inventory_is_independent_of_wal_checkpoint_layout(wal_journal, tmp_path):
+    root, identity, expected = wal_journal
+    before = continuity.review(*wal_journal)
+    target = tmp_path / "checkpoint-copy"
+    target.mkdir(mode=0o700)
+    (target / "instance.lock").touch(mode=0o600)
+    with (
+        closing(sqlite3.connect(root / "journal.sqlite3")) as source,
+        closing(sqlite3.connect(target / "journal.sqlite3")) as output,
+    ):
+        source.backup(output)
+    after = continuity.review(target, identity, expected)
+    assert before == after
+
+
+def test_sqlite_small_snapshot_cannot_succeed_after_time_budget(journal, monkeypatch):
+    times = iter((0, 6))
+    monkeypatch.setattr(continuity.time, "monotonic", lambda: next(times))
+    with pytest.raises(continuity.ContinuityError, match="time_limit"):
+        continuity.review(*journal)
+
+
+def test_scratch_cleanup_failure_never_publishes_success(journal, monkeypatch):
+    original = continuity.tempfile.TemporaryDirectory
+
+    class InterruptedCleanup:
+        def __init__(self, *args, **kwargs):
+            self.scratch = original(*args, **kwargs)
+
+        def __enter__(self):
+            return self.scratch.__enter__()
+
+        def __exit__(self, *args):
+            self.scratch.__exit__(*args)
+            raise OSError("private-sensitive-sentinel")
+
+    monkeypatch.setattr(continuity.tempfile, "TemporaryDirectory", InterruptedCleanup)
+    before = snapshot(journal[0])
+    with pytest.raises(continuity.ContinuityError, match="journal_review_failed") as error:
+        continuity.review(*journal)
+    assert "private-sensitive-sentinel" not in str(error.value)
+    assert snapshot(journal[0]) == before
+
+
+def test_real_writer_restart_cleanup_failure_and_retry_remains_reviewable(
+    journal, tmp_path, monkeypatch
+):
+    from aegis.lab_runner.engine import Conflict, Runner
+    from aegis.lab_runner.protocol import BoundRequest
+
+    root, identity, expected = journal
+    work = tmp_path / "work"
+    work.mkdir(mode=0o700)
+    spec = next(iter(expected.values())).spec.model_copy(
+        update={"job_id": uuid4(), "marker": "aegis-" + str(uuid4())}
+    )
+    runner = Runner(identity, work, root)
+    try:
+        prepared = runner.prepare(spec)
+        # Crash fixture: durable RUNNING intent only. Never call start/supervise.
+        runner.journal.update(spec.job_id, state="RUNNING")
+    finally:
+        runner.close()
+    restarted = Runner(identity, work, root)
+    request = BoundRequest(spec_hash=prepared.spec_hash, generation=prepared.generation)
+    try:
+        original = restarted.workspace.cleanup
+
+        def failed(job_id):
+            raise ValueError("Fixture cleanup interruption")
+
+        monkeypatch.setattr(restarted.workspace, "cleanup", failed)
+        with pytest.raises(Conflict):
+            restarted.cleanup(spec.job_id, request)
+        monkeypatch.setattr(restarted.workspace, "cleanup", original)
+        assert restarted.cleanup(spec.job_id, request).cleanup_state == "CLEANED"
+    finally:
+        restarted.close()
+    assert list(work.iterdir()) == []
+    before = snapshot(root)
+    assert continuity.review(*journal)["implicit_restart_histories"] == 1
+    assert snapshot(root) == before

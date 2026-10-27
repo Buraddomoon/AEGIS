@@ -227,10 +227,15 @@ def _history(view, rows):
     if len(actions) < 3 or actions[0] != "PREPARED" or actions[-1] != "CLEANED":
         raise ContinuityError("journal_event_history_invalid")
     state = "PREPARED"
+    implicit_restart = False
     terminal = {"SUCCEEDED", "FAILED", "CANCELLED", "TIMED_OUT", "INTERRUPTED"}
     for action in actions[1:-1]:
         if state == "PREPARED" and action in {"RUNNING", "CANCELLED", "TIMED_OUT"}:
             state = action
+        elif state == "RUNNING" and action == "FAILED" and view.state == "INTERRUPTED":
+            # The persisted final outcome disambiguates a cleanup failure after
+            # restart from a FAILED execution (which restart would not change).
+            state, implicit_restart = "INTERRUPTED", True
         elif state == "RUNNING" and action in terminal:
             state = action
         elif state in terminal and action == "FAILED":
@@ -238,7 +243,7 @@ def _history(view, rows):
         else:
             raise ContinuityError("journal_event_transition_invalid")
     # Runner restart historically changed RUNNING to INTERRUPTED without an event.
-    implicit_restart = state == "RUNNING" and view.state == "INTERRUPTED"
+    implicit_restart = implicit_restart or (state == "RUNNING" and view.state == "INTERRUPTED")
     if state != view.state and not implicit_restart:
         raise ContinuityError("journal_event_state_mismatch")
     for row in rows:
@@ -377,6 +382,8 @@ def review(root: Path, identity: RunnerIdentity, expected: dict[UUID, JobView]):
                     db.execute("BEGIN")
                     db.set_authorizer(_authorize)
                     result = _inspect(db, identity, expected)
+                    if time.monotonic() > deadline:
+                        raise ContinuityError("journal_review_time_limit")
             # No success if source changed while SQLite interpreted the private copy.
             if set(os.listdir(root_fd)) != set(opened) or _signature(
                 os.stat(root, follow_symlinks=False)

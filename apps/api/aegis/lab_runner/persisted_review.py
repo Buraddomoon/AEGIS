@@ -1,24 +1,20 @@
 """Host probe building journal expectations from an independent read-only DB snapshot."""
 
+from __future__ import annotations
+
 import re
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Engine, select, text
-from sqlalchemy.orm import Session
-
-from aegis import binding_review
 from aegis.domain.validation import digest
 from aegis.lab_runner.continuity import ContinuityError
 from aegis.lab_runner.protocol import JobView, RunnerIdentity
-from aegis.models import (
-    Asset,
-    CampaignRun,
-    Laboratory,
-    LinuxLabBinding,
-    RunnerCleanup,
-    RunnerDispatch,
-)
-from aegis.models import TestExecution as Execution
+
+if TYPE_CHECKING:
+    from sqlalchemy import Engine
+
+# Wire profile /1 bound; broadening the DB reviewer doesn't silently broaden stdin.
+MAX_PROOFS = 1000
 
 
 def collect(engine: Engine, identity: RunnerIdentity, old_descriptor_sha256: str) -> dict:
@@ -27,6 +23,22 @@ def collect(engine: Engine, identity: RunnerIdentity, old_descriptor_sha256: str
     The caller must prove this engine reaches the original Linux DB volume.
     This function deliberately cannot infer that physical binding from SQL rows.
     """
+    # The fixed journal probe only decodes bundles; don't load app settings/SQL
+    # models or initialize a database stack merely to validate stdin.
+    from sqlalchemy import select, text
+    from sqlalchemy.orm import Session
+
+    from aegis import binding_review
+    from aegis.models import (
+        Asset,
+        CampaignRun,
+        Laboratory,
+        LinuxLabBinding,
+        RunnerCleanup,
+        RunnerDispatch,
+    )
+    from aegis.models import TestExecution as Execution
+
     if (
         not isinstance(identity, RunnerIdentity)
         or not isinstance(old_descriptor_sha256, str)
@@ -144,16 +156,18 @@ def expected_proofs(
         summary = bundle["review"]
         if (
             bundle["laboratory_id"] != str(identity.laboratory_id)
+            or digest(bundle["identity"]) != digest(identity.model_dump(mode="json"))
             or type(bundle["environment_version"]) is not int
             or bundle["environment_version"] < 1
             or summary["format"] != "aegis-linux-binding-review/1"
             or summary["laboratory_id"] != bundle["laboratory_id"]
             or summary["environment_version"] != bundle["environment_version"]
+            or type(summary["environment_version"]) is not int
             or summary["status"] != "persisted_prerequisites_satisfied"
             or summary["blockers"] != []
             or summary["dispatch_history_complete"] is not True
             or any(
-                summary[key] != 0
+                type(summary[key]) is not int or summary[key] != 0
                 for key in ("nonterminal_runs", "nonterminal_tests", "unconfirmed_cleanup_count")
             )
             or any(
@@ -166,8 +180,9 @@ def expected_proofs(
                 )
             )
             or not isinstance(bundle["proofs"], list)
-            or not 1 <= len(bundle["proofs"]) <= binding_review.HISTORY_LIMIT
+            or not 1 <= len(bundle["proofs"]) <= MAX_PROOFS
             or len(bundle["proofs"]) != summary["dispatches_examined"]
+            or type(summary["dispatches_examined"]) is not int
             or digest(bundle["proofs"]) != bundle["proofs_sha256"]
             or not re.fullmatch(r"[a-f0-9]{64}", bundle["old_descriptor_sha256"])
         ):

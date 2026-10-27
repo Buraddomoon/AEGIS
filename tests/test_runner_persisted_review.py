@@ -4,6 +4,7 @@ import copy
 from uuid import UUID, uuid4
 
 import pytest
+from aegis import binding_review
 from aegis.db import session_factory
 from aegis.domain.validation import digest
 from aegis.lab_runner import continuity, persisted_review
@@ -33,7 +34,7 @@ def test_read_only_proofs_match_temporary_original_journal(
 ):
     _, descriptor = binding_lab
     history(descriptor)
-    original = persisted_review.binding_review.review
+    original = binding_review.review
 
     def read_only(db, lab):
         assert db.scalar(text("SHOW transaction_read_only")) == "on"
@@ -41,7 +42,7 @@ def test_read_only_proofs_match_temporary_original_journal(
         assert db.scalar(text("SHOW statement_timeout")) == "15s"
         return original(db, lab)
 
-    monkeypatch.setattr(persisted_review.binding_review, "review", read_only)
+    monkeypatch.setattr(binding_review, "review", read_only)
     with session_factory()() as db:
         before = db.scalar(select(func.count()).select_from(AuditEvent))
         version = db.get(Laboratory, descriptor["laboratory_id"]).environment_version
@@ -101,7 +102,7 @@ def test_db_cannot_write_even_if_review_implementation_regresses(
         db.execute(text("UPDATE laboratories SET authorized=true WHERE id=:id"), {"id": lab.id})
         pytest.fail("PostgreSQL must reject the write")
 
-    monkeypatch.setattr(persisted_review.binding_review, "review", write)
+    monkeypatch.setattr(binding_review, "review", write)
     with pytest.raises(DBAPIError) as error:
         collect(binding_lab, pg_engine)
     assert error.value.orig.sqlstate == "25006"
@@ -152,7 +153,7 @@ def test_original_binding_and_complete_resolved_history_are_required(
                 lab.active_run_id = str(uuid4())
             db.commit()
     elif problem == "limit":
-        monkeypatch.setattr(persisted_review.binding_review, "HISTORY_LIMIT", 0)
+        monkeypatch.setattr(binding_review, "HISTORY_LIMIT", 0)
     with pytest.raises(continuity.ContinuityError):
         persisted_review.collect(pg_engine, identity, old_hash)
 
