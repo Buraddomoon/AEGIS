@@ -1,7 +1,8 @@
 # ADR 0023 — Runtime fixo e encerramento do probe de continuidade
 
 Data: 2026-10-27. Status: receita, revisão, resultados, start intent e cleanup
-interno implementados; coordenador/create/start pendentes. Não autoriza ensaio.
+interno implementados, incluindo lifecycle fixo create/start do probe. Coordenador
+real de gates/ativação e ensaio pendentes. Não autoriza ensaio.
 
 O primeiro componente de lifecycle será restrito a journal-before/journal-after.
 Não iniciar o servidor Runner para inspecionar seu diário. Compilar argumentos
@@ -53,6 +54,24 @@ Este componente não prova origem do banco, proveniência da imagem, autorizaç�
 humana ou mTLS/registro do novo binding. O coordenador completo ainda precisa ligar
 esses gates ao plano atual e ao escopo específico. Sem CLI apply/Make lifecycle,
 sem início implícito em testes/CI, sem marcador ou autorização reutilizada.
+
+O lifecycle interno agora conecta recipe/image/runtime/resultado/intents/cleanup
+apenas para os dois probes. Transporte compartilha o executor Unix local saneado,
+stdin4MiB/saída total64KiB/prazo20s, sem log de conteúdo ou deadlock entre pipes.
+Não reutilizar stdin para consultas read-only nem aceitar argumentos CLI livres.
+
+Antes de cada novo efeito, callback interno obrigatório deve verificar autorização,
+plano/proveniência/DB/histórico/volume/consumidores/worker. O componente vincula a
+declaração ao hash do scope/receita/bundle/identidade/descritor e exige timestamps
+UTC, duração<=30s e idade<=10s, rechecados depois de intent/runtime. Esses booleans
+não são uma autorização externa: o coordenador real ainda precisa computá-los.
+Não oferecer rota/CLI que aceite gates fornecidos livremente pelo usuário.
+
+Create falho pode ter criado recurso: reconciliar por nome/labels/ID e cleanup,
+sem repetir create/start. Colisão detectada antes da tentativa de create não é
+adotada: CONFLICT durável impede cleanup ou adoção posterior, inclusive no resume.
+Cleanup do probe deixa o intent pai aberto para os próximos gates; término integral
+continua explícito. Erro/interrupt aciona cleanup próprio, sem engolir interrupção.
 
 Fontes oficiais consultadas:
 

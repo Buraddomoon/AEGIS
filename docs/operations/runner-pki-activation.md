@@ -295,7 +295,22 @@ incertas, repete ausência no final e só então encerra o intent. TTL/PKI expir
 não abandonam cleanup próprio. Consulta final não impede alterações posteriores
 por root/daemon; ownership local não é uma assinatura ou trava distribuída.
 
-Ainda faltam coordenador completo, create/start com transporte limitado do bundle,
+O componente interno `runner_activation_probe_lifecycle.py` já conecta create/start
+restritos ao probe, transporte stdin limitado e gates fornecidos por callback
+confiável interno. Não é um comando de ativação nem recebe aprovação JSON pública.
+Cada efeito exige contexto/escopo/receita/bundle/identidade/descritor e checks
+completos, UTC, idade<=10s e validade<=30s, reconferidos depois da intenção/runtime.
+O callback real ainda precisa computar autorização/proveniência/DB/plano/volume.
+Fixtures não autorizam invocar o driver real. O transporte privado drena pipes
+enquanto envia até4MiB; saída64KiB/prazo20s/kill-reap, sem log dos dados recebidos.
+
+Cleanup selecionado remove só o probe e mantém o intent pai aberto. Colisão
+observada antes da tentativa de create fica em CONFLICT durável, sem adoção ou
+cleanup posterior, inclusive após resume. Sem desbloqueio automático ou edição
+do histórico. Start ambíguo não é repetido, e interrupção mantém cleanup próprio.
+
+Ainda faltam coordenador completo e implementação real dos gates/transporte do
+snapshot PostgreSQL,
 vínculo físico do banco original, mTLS novo/recusa do trust anterior, registro
 revogado e escopo específico de um ensaio. Não executar componentes manualmente
 para contornar esses gates. [ADR0023](../architecture/decisions/0023-journal-probe-runtime.md).

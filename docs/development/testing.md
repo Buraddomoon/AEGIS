@@ -334,3 +334,15 @@ permanece visível. Testes não comprovam volume original, mounts Docker ou ativ
 O driver concreto de cleanup nunca é chamado pelos testes; somente o método
 interno `_execute` substituído por fixture. Não há target/CLI de lifecycle novo.
 Contagens/CI finais estão no PROGRESS; testes não autorizam ensaio Linux/Wazuh.
+
+Lifecycle de probes: o target também inclui `test_runner_activation_transport.py`
+e `test_runner_activation_probe_lifecycle.py`. Transporte usa filhos Python locais
+pequenos, entrada até4MiB, leitura/escrita concorrentes, timeout/overflow/EOF e
+kill-reap. Nenhum desses filhos é Docker ou inicia o laboratório. Lifecycle usa
+daemon fixtures e saída real do probe sobre SQLite temporário; valida ordem
+durável, gate ausente/stale/alterado, falha antes/depois de create, start ambíguo,
+resultado inválido, cleanup falho e KeyboardInterrupt. Collisão antes de create
+fica em CONFLICT persistido e não pode ser removida por cleanup posterior.
+Testes de cleanup selecionado provam que o intent pai segue aberto e dependências
+continuam protegidas. A função interna não expõe CLI apply e exige um coordenador
+confiável real para computar gates; JSON de fixture não é autorização de ensaio.

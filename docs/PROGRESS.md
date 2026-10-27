@@ -2421,3 +2421,43 @@ PKIs/planos/volumes/journals/backups/imagens e credenciais preservados. Sem novo
 ensaio, deploy ou alteração de configurações humanas. Próxima unidade continua
 sendo o coordenador fixo de create/start/transporte e gates físicos/mTLS/binding;
 não declarar rotação operacional concluída nem reutilizar autorizações consumidas.
+
+## 2026-10-27 — continuidade sem encerramento entre marcos: lifecycle dos probes
+
+Basee377a4b/333 commits. O usuário reiterou continuidade automática; regra registrada
+em AGENTS. Marcos passam a ser comunicados em commentary, com checkpoint durável e
+sequência imediata de trabalho. /compact é recurso controlado pelo ambiente, sem
+ferramenta para o agente invocá-lo; não foi simulado um comando executado.
+
+Implementado componente interno de create/start para journal-before/after:
+recipe/imagem/ownership/runtime/intents/decoder/cleanup conectados, sem endpoint
+ou CLI apply. Callback confiável obrigatório vincula contexto/escopo/receita/bundle/
+identidade/descritor e checks completos, UTC/idade<=10s/validade<=30s. O coordenador
+real precisa computar os gates; fixtures não são autorização ou prova operacional.
+Start intent e última revisão precedem RPC; ambiguidade não repete create/start.
+
+Transporte compartilhado Unix local saneado agora suporta stdin privado4MiB,
+drain simultâneo stdout/stderr, saída total64KiB e prazo<=20s com kill/reap; consultas
+read-only continuam DEVNULL. Rejeita tipos/prazos indevidos. Testes substituem CLI
+Docker por filhos Python pequenos, sem executar Docker de lifecycle real.
+
+Cleanup selecionado deixa intent pai aberto, respeita dependências e não toca
+outros recursos. CONFLICT persiste colisão vista antes da tentativa de create;
+retomada/cleanup não adotam nem removem o objeto, não há desbloqueio automático.
+KeyboardInterrupt aciona cleanup próprio e é propagado, sem recibo falso de sucesso.
+
+Validação: `make test-runner-activation` **430 passaram/42,75s** no código676f636:
+base367 +21 transporte +6 cleanup selecionado +4 conflito +32 lifecycle. Revisão
+especializada somente leitura não encontrou bloqueador concreto; lembrou atualizar
+estado documental de create/start, corrigido. Nenhum driver real, Linux/Wazuh,
+volume interno, PKI/binding, build/deploy/migração/seed ou credencial foi alterado.
+CI código676f636 em andamento no momento do checkpoint, sem declarar sucesso;
+run40562305626. Redundantes canceladas pela política de concurrency.
+
+Este checkpoint é o **6ºcommit** desdee377a4b, totalizando **339**; cinco anteriores:
+04a26cd/c9f38aa/23d6c97/0d6e494/676f636. main exclusiva e push após cada commit.
+Não encerra o trabalho. Próxima unidade já em desenvolvimento: metadados de operação
+com recursos próprios presentes, consumidor exclusivo do journal, inventário fixado
+e bloqueio de recursos estrangeiros. Código em trabalho separado ainda não deve
+ser apresentado como validado antes de seus testes. Depois: recheck de plano ativo,
+origem física PG, mTLS/binding e coordenador completo antes do escopo de novo ensaio.

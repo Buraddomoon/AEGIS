@@ -25,6 +25,14 @@ Criar commits Conventional Commits pequenos, frequentes e coerentes, incluindo u
 
 CI com cancelamento de execuções redundantes e cache; não habilitar recursos pagos. Em cada marco, informar quantidade de commits, último hash/mensagem, sincronização, funcionalidades, testes e próximas tarefas. Essa política foi explicitamente autorizada pelo usuário nesta sessão.
 
+Continuidade explícita pedida pelo usuário: informar marcos em commentary, salvar
+checkpoint no PROGRESS e seguir automaticamente pelo trabalho autorizado; não
+encerrar o turno apenas porque uma etapa ou CI terminou. Interromper trabalho
+dependente somente diante de bloqueio real/decisão ou autorização necessária,
+continuando tarefas independentes quando possível. O agente não tem ferramenta
+para invocar /compact: não fingir execução desse comando. Manter checkpoint e
+estado Git duráveis para a compactação controlada pelo ambiente.
+
 Leia `docs/PROGRESS.md` e os ADRs antes de alterar o código. Monólito modular Python + React; domínio em `apps/api/aegis/domain`, integrações atrás de Protocols. PostgreSQL é a fonte de verdade e fila durável; Redis atende limites de login e heartbeat. Não implemente shell remoto, execução de comandos de API, acesso ao socket Docker ou download/execução automática de testes Atomic.
 
 Todos os resultados Demo, eventos e relatórios devem indicar `synthetic=true`. Ausência de alerta nunca prova ausência de telemetria. Evidências devem casar execução, marcador, ativo, laboratório, tipo de comportamento e tempo. Não modificar evidências históricas ao editar regras.
@@ -284,3 +292,15 @@ impede close/sucesso. Retomada exige begin hash/plano/imagens originais; expira�
 não bloqueia cleanup próprio, mas nunca permite novo start. Coordenador completo,
 create/start/transport de bundle e ensaio real ainda pendentes. Nenhum volume
 Linux original aberto/serviço iniciado decorre destes componentes internos.
+
+Lifecycle interno do probe: runner_activation_probe_lifecycle exige callback
+confiável de gates com contexto/receita/bundle/escopo/plano/imagem/DB/volume/
+consumidores e validade curta antes de create/start. Não receber esse JSON como
+aprovação via API/CLI. O coordenador real ainda precisa computar os gates; fixtures
+não autorizam executar driver real. _execute privado suporta stdin4MiB e prazo
+até20s, saída somada64KiB, leitura/escrita concorrentes e kill/reap; consultas
+somente leitura continuam sem stdin. Callback não dispensa inspeção runtime.
+Start intent precede última revisão e RPC, sem retry ambíguo. Cleanup selecionado
+não fecha intent pai, não remove outros recursos e respeita dependências. CONFLICT
+persiste colisão antes da tentativa de create e recusa adoção/cleanup/replay até
+após resume; não editar/excluir histórico para liberar. Sem novo CLI apply/ensaio.

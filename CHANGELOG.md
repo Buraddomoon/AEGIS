@@ -1,5 +1,14 @@
 # Changelog
 
+## Continuidade 2026-10-27 — lifecycle interno dos probes
+
+- Create/start restritos ao probe com transporte stdin4MiB/saída64KiB/prazo20s,
+  gates internos frescos, intent durável e revisão real de configuração antes do start.
+- Cleanup selecionado preserva intent pai; CONFLICT durável bloqueia adoção/remoção
+  de colisões observadas antes da tentativa de create, inclusive após retomada.
+- Testes com filhos Python/SQLite temporários e daemon fixtures. Sem driver real
+  invocado, novo ensaio ou CLI apply; coordenador real de gates ainda em preparação.
+
 ## Continuidade 2026-10-27 — runtime e encerramento controlado dos probes
 
 - Receita fixa para journal-before/after e revisão somente leitura de imagem,
