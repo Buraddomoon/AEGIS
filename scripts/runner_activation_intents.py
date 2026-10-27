@@ -338,9 +338,7 @@ class ActivationIntents:
         if self.folder is None or len(self.events) >= MAX_EVENTS:
             raise ActivationError("intent_session_or_limit_invalid")
         if self.events:
-            events, state = _load(self.folder)
-            if events != self.events or digest(state) != digest(self.state):
-                raise ActivationError("intent_history_changed")
+            self.review()
         event = {
             "format": FORMAT,
             "id": self.folder.name,
@@ -371,6 +369,16 @@ class ActivationIntents:
         self.events.append(event)
         self.state = state
         return {"event_sha256": digest(event), **self.summary()}
+
+    def review(self):
+        """Recheck durable ownership before an external effect, without appending."""
+        self._check()
+        if self.folder is None or not self.events:
+            raise ActivationError("intent_header_required")
+        events, state = _load(self.folder)
+        if events != self.events or digest(state) != digest(self.state):
+            raise ActivationError("intent_history_changed")
+        return json.loads(json.dumps(state))
 
     def request(self, role):
         self._check()
