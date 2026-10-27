@@ -127,6 +127,34 @@ def history(identity, *, parent="COMPLETED", child="COMPLETED", dispatch=True, c
         return run.id, item.id
 
 
+def test_root_scope_is_internal_and_default_review_still_includes_inherited_pending_runs(
+    binding_lab, pg_engine
+):
+    _, identity = binding_lab
+    run_id, _ = history(identity)
+    with pg_engine.begin() as setup:
+        namespace = setup.scalar(text("SELECT current_schema()"))
+        assert namespace.startswith("aegis_test_") and namespace.isidentifier()
+        child = f'"{namespace}".binding_scope_child'
+        parent = f'"{namespace}".campaign_runs'
+        setup.exec_driver_sql(f"CREATE TABLE {child} (LIKE {parent} INCLUDING ALL)")
+        setup.execute(
+            text(f"INSERT INTO {child} SELECT * FROM ONLY {parent} WHERE id=:id"), {"id": run_id}
+        )
+        setup.exec_driver_sql(f"UPDATE {child} SET state='QUEUED'")
+        setup.exec_driver_sql(f"ALTER TABLE {child} INHERIT {parent}")
+    try:
+        with session_factory()() as db:
+            lab = db.get(Laboratory, identity["laboratory_id"])
+            normal = binding_review.review(db, lab)
+            roots = binding_review.review(db, lab, only_roots=True)
+        assert normal["nonterminal_runs"] == 1 and "nonterminal_runs" in normal["blockers"]
+        assert roots["nonterminal_runs"] == 0 and roots["dispatches_examined"] == 1
+    finally:
+        with pg_engine.begin() as cleanup:
+            cleanup.exec_driver_sql(f"DROP TABLE IF EXISTS {child}")
+
+
 def read_review(identity):
     with session_factory()() as db:
         lab = db.get(Laboratory, identity["laboratory_id"])

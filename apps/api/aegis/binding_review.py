@@ -76,32 +76,43 @@ def cleanup_confirmed(
         return False
 
 
-def review(db: Session, lab: Laboratory) -> dict:
+def review(db: Session, lab: Laboratory, *, only_roots: bool = False) -> dict:
     """Diagnostic snapshot; mutations must repeat this under the laboratory lock."""
     asset_ids = select(Asset.id).where(Asset.laboratory_id == lab.id)
+    if only_roots:
+        asset_ids = asset_ids.with_hint(Asset, "ONLY", "postgresql")
     belongs = or_(CampaignRun.laboratory_id == lab.id, TestExecution.asset_id.in_(asset_ids))
+    runs_query = (
+        select(func.count())
+        .select_from(CampaignRun)
+        .where(CampaignRun.laboratory_id == lab.id, CampaignRun.state.not_in(TERMINAL))
+    )
+    tests_query = (
+        select(func.count())
+        .select_from(TestExecution)
+        .join(CampaignRun, TestExecution.run_id == CampaignRun.id)
+        .where(belongs, TestExecution.state.not_in(TERMINAL))
+    )
+    history_query = (
+        select(CampaignRun, TestExecution, RunnerDispatch, RunnerCleanup)
+        .select_from(CampaignRun)
+        .join(TestExecution, TestExecution.run_id == CampaignRun.id)
+        .join(RunnerDispatch, RunnerDispatch.execution_id == TestExecution.id)
+        .outerjoin(RunnerCleanup, RunnerCleanup.execution_id == TestExecution.id)
+        .where(belongs)
+        .order_by(RunnerDispatch.id)
+        .limit(HISTORY_LIMIT + 1)
+    )
+    if only_roots:
+        runs_query = runs_query.with_hint(CampaignRun, "ONLY", "postgresql")
+        for model in (CampaignRun, TestExecution):
+            tests_query = tests_query.with_hint(model, "ONLY", "postgresql")
+        for model in (CampaignRun, TestExecution, RunnerDispatch, RunnerCleanup):
+            history_query = history_query.with_hint(model, "ONLY", "postgresql")
     with db.no_autoflush:
-        pending_runs = db.scalar(
-            select(func.count())
-            .select_from(CampaignRun)
-            .where(CampaignRun.laboratory_id == lab.id, CampaignRun.state.not_in(TERMINAL))
-        )
-        pending_tests = db.scalar(
-            select(func.count())
-            .select_from(TestExecution)
-            .join(CampaignRun, TestExecution.run_id == CampaignRun.id)
-            .where(belongs, TestExecution.state.not_in(TERMINAL))
-        )
-        rows = db.execute(
-            select(CampaignRun, TestExecution, RunnerDispatch, RunnerCleanup)
-            .select_from(CampaignRun)
-            .join(TestExecution, TestExecution.run_id == CampaignRun.id)
-            .join(RunnerDispatch, RunnerDispatch.execution_id == TestExecution.id)
-            .outerjoin(RunnerCleanup, RunnerCleanup.execution_id == TestExecution.id)
-            .where(belongs)
-            .order_by(RunnerDispatch.id)
-            .limit(HISTORY_LIMIT + 1)
-        ).all()
+        pending_runs = db.scalar(runs_query)
+        pending_tests = db.scalar(tests_query)
+        rows = db.execute(history_query).all()
     blockers = []
     if lab.kind != "linux":
         blockers.append("not_linux")
