@@ -324,3 +324,63 @@ assert 'aegis.models' not in sys.modules
         timeout=5,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_selected_probe_cleanup_retains_other_owned_resources_and_keeps_operation_open(tmp_path):
+    with ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        world = World(store, ["db", "journal-before"], running=True)
+        result = cleanup.cleanup(
+            store,
+            images(),
+            roles={"journal-before"},
+            close_operation=False,
+            docker=world,
+            ownership_docker=world,
+        )
+        assert (
+            result["selected_resources_absence_verified"]
+            and not result["managed_resources_absence_verified"]
+        )
+        assert result["status"] == "selected_owned_resources_absence_verified"
+        assert not result["operation_closed"] and not store.review()["closed"]
+        assert all(role == "journal-before" for role, _, _ in world.effects)
+        store.request("runner")
+
+
+def test_single_probe_cleanup_can_leave_a_durable_open_operation_for_later_stages(tmp_path):
+    with ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        world = World(store, ["journal-before"])
+        result = cleanup.cleanup(
+            store,
+            images(),
+            roles={"journal-before"},
+            close_operation=False,
+            docker=world,
+            ownership_docker=world,
+        )
+        assert result["managed_resources_absence_verified"] and not result["operation_closed"]
+        assert not store.review()["closed"]
+        store.request("runner")
+
+
+@pytest.mark.parametrize(
+    "roles,close", [({"worker"}, False), ({"runner"}, False), ({"journal-before"}, True), (None, 1)]
+)
+def test_invalid_selection_or_premature_whole_operation_close_causes_no_effect(
+    tmp_path, roles, close
+):
+    with ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        world = World(store, ["db", "journal-before"])
+        with pytest.raises(cleanup.ActivationError, match="selection_or_closure"):
+            cleanup.cleanup(
+                store,
+                images(),
+                roles=roles,
+                close_operation=close,
+                docker=world,
+                ownership_docker=world,
+            )
+        assert world.effects == []

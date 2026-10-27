@@ -48,7 +48,7 @@ class CleanupDocker:
             raise ActivationError("activation_cleanup_command_failed") from None
 
 
-def cleanup(store, images, *, docker=None, ownership_docker=None):
+def cleanup(store, images, *, roles=None, close_operation=True, docker=None, ownership_docker=None):
     """Reconcile only an independently resumed, locked intent's exact resources.
 
     A caller must pin the original plan/images and the intent's begin hash.
@@ -64,6 +64,15 @@ def cleanup(store, images, *, docker=None, ownership_docker=None):
     state = store.review()
     if not set(state["resources"]) <= ROLES:
         raise ActivationError("cleanup_resource_catalog_mismatch")
+    if roles is not None and (not isinstance(roles, (set, frozenset)) or not roles):
+        raise ActivationError("cleanup_selection_or_closure_invalid")
+    selected = set(state["resources"]) if roles is None else set(roles)
+    if (
+        not selected <= set(state["resources"])
+        or type(close_operation) is not bool
+        or (close_operation and selected != set(state["resources"]))
+    ):
+        raise ActivationError("cleanup_selection_or_closure_invalid")
     operation = store.summary()["id"]
     plan = state["header"]["plan_sha256"]
     docker = docker or CleanupDocker()
@@ -101,7 +110,7 @@ def cleanup(store, images, *, docker=None, ownership_docker=None):
         return after
 
     for role in ORDER:
-        if role not in state["resources"]:
+        if role not in selected:
             continue
         try:
             current = store.review()["resources"][role]
@@ -142,7 +151,8 @@ def cleanup(store, images, *, docker=None, ownership_docker=None):
             samples[role] = found
         except (ActivationError, OSError, subprocess.SubprocessError):
             blockers[role] = "owned_resource_cleanup_unconfirmed"
-    complete = not blockers and set(samples) == set(state["resources"])
+    complete = not blockers and set(samples) == selected
+    all_reviewed = selected == set(state["resources"])
     evidence = {
         "operation_id": operation,
         "plan_sha256": plan,
@@ -150,17 +160,25 @@ def cleanup(store, images, *, docker=None, ownership_docker=None):
         "blockers": blockers,
         "command_errors_reconciled": reconciled,
     }
-    if complete and not store.review()["closed"]:
+    if complete and close_operation and not store.review()["closed"]:
         store.append("closed", {"evidence_sha256": digest(evidence)})
     return {
         "format": "aegis-activation-cleanup-review/1",
         "operation_id": operation,
-        "status": "owned_resources_absence_verified" if complete else "cleanup_incomplete",
+        "status": (
+            "owned_resources_absence_verified"
+            if all_reviewed
+            else "selected_owned_resources_absence_verified"
+        )
+        if complete
+        else "cleanup_incomplete",
         "evidence_sha256": digest(evidence),
         "resources_reviewed": len(samples),
         "blockers": blockers,
         "command_errors_reconciled": reconciled,
-        "managed_resources_absence_verified": complete,
+        "selected_resources_absence_verified": complete,
+        "managed_resources_absence_verified": complete and all_reviewed,
+        "operation_closed": store.review()["closed"] if not store.poisoned else False,
         "volumes_removed": False,
         "authorization_verified": False,
         "activation_verified": False,
