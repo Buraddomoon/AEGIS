@@ -192,7 +192,8 @@ class ReadOnlyDocker:
             raise ActivationError("docker_query_failed") from None
 
 
-def metadata(images, *, docker=None):
+def inventory(images, *, docker=None):
+    """Identity/image/volume inventory only; does not assert project quiescence."""
     if not isinstance(images, dict) or set(images) != set(IMAGES):
         raise ActivationError("four_explicit_images_required")
     for value in images.values():
@@ -213,15 +214,6 @@ def metadata(images, *, docker=None):
     architecture = {"x86_64": "amd64", "aarch64": "arm64"}.get(
         daemon["architecture"], daemon["architecture"]
     )
-    # Include stopped/created containers and consumers from other projects too.
-    for kind, value in [
-        ("containers", None),
-        ("networks", None),
-        *(("network_name", name) for name in NETWORKS),
-        *(("consumers", name) for name in VOLUMES),
-    ]:
-        if docker.query(kind, value).strip():
-            raise ActivationError("project_or_volume_not_quiescent")
     volumes = {}
     for name in VOLUMES:
         item = document(docker.query("volume", name))
@@ -265,3 +257,18 @@ def metadata(images, *, docker=None):
             raise ActivationError("image_metadata_mismatch")
         inspected[role] = item
     return {"daemon": daemon, "volumes": volumes, "images": inspected}
+
+
+def metadata(images, *, docker=None):
+    docker = docker or ReadOnlyDocker()
+    result = inventory(images, docker=docker)
+    # Include stopped/created containers and consumers from other projects too.
+    for kind, value in [
+        ("containers", None),
+        ("networks", None),
+        *(("network_name", name) for name in NETWORKS),
+        *(("consumers", name) for name in VOLUMES),
+    ]:
+        if docker.query(kind, value).strip():
+            raise ActivationError("project_or_volume_not_quiescent")
+    return result
