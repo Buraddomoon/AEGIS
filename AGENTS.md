@@ -180,3 +180,19 @@ UI rejeita contexto/flags divergentes e sucesso cacheado depois de erro. Testes
 test_sigma_mapping/test_sigma_mapping_api, sigma-mapping.test.tsx e E2E Demo.
 Revisar imports upstream: registrar classes externas não autoriza instanciá-las;
 guard em processo novo impede cache/backend/rede/processo/gravação e loaders.
+
+PKI do runner (ADR0018): scripts/runner_pki.py é host-only inspect/prepare/verify,
+sem apply, Docker, banco, rede ou efeitos. Ler apenas cinco arquivos públicos da
+origem, nunca chaves/ids.env/journal; candidato exclusivo privado preserva IDs,
+endpoint e nomes de secrets, com duas CAs/quatro chaves novas e distintas. Hashes
+canônicos revisados; validar material real, pares, tempo atual e >=24h nas folhas.
+Ignorar tempo somente para inventário explícito de origem expirada. OpenSSL fixo
+/usr/bin/openssl, ambiente mínimo sem overrides de usuário, preservando política
+padrão do sistema. fsync de arquivos, publicação e ancestrais privados, inclusive
+em retry após erro; falha não produz recibo de sucesso nem apaga resíduos. Chaves
+folha0444 só sob pai0700 para secrets UID10001, CAs0600; .key fora de Git/build.
+Comandos make runner-pki-inspect/prepare/verify e make test-runner-pki. TLS dos
+testes só echo loopback, sem runner/marcador. Preparação não prova volume/journal,
+não rotaciona PKI Wazuh, ativa lab ou renova aprovação. Troca altera descritor;
+jobs ambíguos continuam em quarentena, sem replay/liberação de reserva. Ativação
+e novo preflight/revisão exigem escopo próprio. Ver docs/operations/runner-pki.md.

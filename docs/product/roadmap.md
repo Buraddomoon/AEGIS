@@ -105,3 +105,10 @@ oficial do core2.0.1, API/UI por versão e antes/depois em memória. Essa etapa
 independente não reduz o parser nem instala backends incompatíveis; a consulta
 atual confirmou que OpenSearch2.0.3/Elasticsearch2.1.1 ainda exigem core<2. Conversão
 real de consultas, mapping físico do índice e implantação permanecem pendentes.
+
+Preparação da rotação do runner entregue: inventário público e candidato separado,
+duas CAs/quatro pares novos, mesmos IDs e verificação offline de cadeia/pares/
+validade, com hashes revisados. Echo TLS em loopback valida confiança nova/recusa
+antiga; não inicia runner. Ativação coordenada, binding/preflight e recuperação
+de jobs sob vínculo alterado continuam pendentes. PKI dos serviços Wazuh não é
+abrangida. [Procedimento e limites](../operations/runner-pki.md).

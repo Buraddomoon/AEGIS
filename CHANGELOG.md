@@ -1,5 +1,16 @@
 # Changelog
 
+## Continuidade 2026-10-27 — candidato PKI offline do runner
+
+- Inventário público, preparação separada e verificação por hashes revisados,
+  mantendo identidades e origem intactas, com duas CAs/quatro pares novos.
+- Cadeia, SAN/EKU, chaves, validade, modos de arquivo, drift e durabilidade/retry
+  verificados; OpenSSL com política padrão do sistema e sem overrides de usuário.
+- Echo TLS loopback aceita novo par e recusa confiança/cliente antigos; .key fora
+  do Git/build e scanner. Nenhum novo serviço, dependência ou migração.
+- Sem ativação, banco, diário, marcador ou laboratório. Ativação e PKI dos serviços
+  Wazuh continuam pendentes; autorização histórica não é renovada.
+
 ## Continuidade 2026-10-26 — prévia Sigma de campos
 
 - Pipeline oficial pySigma2.0.1 com um rename fixo, antes/depois em memória e

@@ -225,3 +225,14 @@ Redis indisponível, perfil/SHA/version drift e erro sem echo. Nenhum SIEM consu
 incompatíveis, refetch com erro e resposta atrasada. E2E Firefox acrescenta a prévia
 ao ciclo Demo, confere os dois objetos de detection e relatório antigo idêntico.
 Contagens finais, CI e evidência em PROGRESS; não confundir teste com conversão SIEM.
+
+## Preparação offline da PKI do runner
+
+`make test-runner-pki` executa 52 casos de geração, inspeção, preparação,
+integridade, limites, drift, tempo, SAN/EKU, pares e fsync/retry. Três desses
+casos usam TLS real de echo em loopback, aceitando o novo par e recusando
+confiança/cliente antigos. Processo novo com audit hook recusa rede, arquivos
+privados da origem e importações de banco/worker/runner. Não representa sandbox
+contra root nem ensaio de laboratório; não inicia API, runner, marcador ou Wazuh.
+Scanner do repositório também recusa arquivos .key. Consulte
+[operação PKI](../operations/runner-pki.md).

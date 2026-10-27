@@ -1,6 +1,6 @@
 # ADR 0018 — Candidato offline para rotação mTLS do runner
 
-Data: 2026-10-26. Status: implementação em andamento.
+Data: 2026-10-26. Status: implementado e validado offline em 2026-10-27.
 
 Escopo: inspecionar somente certificados públicos/configuração do runner e preparar
 um conjunto candidato separado, com duas CAs novas e novos pares de chave/certificado.
@@ -13,11 +13,13 @@ CLI host-only inspect → prepare → verify, com hashes revisados. Ler somente 
 cinco arquivos públicos fixos da origem, sem chaves/ids.env/diário. Diretório próprio
 0700, arquivos regulares limitados, sem symlinks/hardlinks/FIFO. Prepare exige hash
 do snapshot público e cria destino exclusivo em área privada; nunca sobrescrever
-ou limpar origem/candidato anterior. Falha retém pasta privada incompleta sem
-manifesto de sucesso. Verificar novamente a origem antes de publicar o manifesto.
+ou limpar origem/candidato anterior. Falha não emite recibo de sucesso e pode
+reter material incompleto, inclusive manifesto após erro final de durabilidade.
+Presença do arquivo não comprova prontidão: reverificar explicitamente. Verificar novamente a origem antes de publicar o manifesto.
 
 Sem nova dependência: OpenSSL3 já usado pelo laboratório. Comandos fixos sem shell,
 ambiente saneado/sem OPENSSL_CONF de usuário/proxies/providers personalizados,
+preservando configuração e política padrão do OpenSSL do sistema,
 entrada/saída limitada e timeout. Inspeção valida estrutura/cadeia/purpose/SAN/CN
 com material público copiado em temporários privados; pode ignorar tempo **só**
 para inspecionar a cadeia expirada, mostrando validade/expiração separadas. Esse

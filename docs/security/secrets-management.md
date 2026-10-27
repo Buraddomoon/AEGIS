@@ -17,3 +17,12 @@ recusados pelo scanner staged. Gerar identidade nova não recripta cópias antig
 que precisam da original. Custódia independente e destino externo permanecem
 escolhas operacionais; chave e cópia locais não protegem da perda do host.
 [Operação](../operations/encrypted-backups.md).
+
+PKI do runner: `.key` é ignorado pelo Git/contexto Docker e recusado no scanner,
+mesmo sem assinatura PEM. Preparação offline só lê os cinco arquivos públicos da
+origem; quatro chaves novas ficam em candidato privado0700. CAs0600; folhas0444
+para leitura de secrets individuais pelo UID10001, protegidas pelo diretório pai.
+Não montar CAs privadas nem a pasta inteira. OpenSSL usa caminho/comandos fixos,
+sem overrides de usuário; política padrão do sistema preservada. Manifesto/hash
+não é assinatura, custódia externa ou autorização de ativação. Certificados têm
+validade curta e exigem nova verificação no uso. [Procedimento](../operations/runner-pki.md).

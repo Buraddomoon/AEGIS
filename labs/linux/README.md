@@ -90,6 +90,13 @@ O overlay usa `!override` para substituir a porta 18780 por 18785, requer Compos
 
 Após crash real, `CLEANUP_FAILED` mantém reserva. Administrador usa a ação de recuperação para consultar/cancelar/limpar somente o UUID/spec/geração originais; nunca prepara ou inicia outro job. `404` remoto após RPC ambígua **não** autoriza liberação. Sem dispatch persistido, nenhum RPC foi permitido. Resposta perdida de cleanup pode ser confirmada por consulta e cleanup idempotente; journal deve ser preservado para recusar start atrasado.
 
-Se identidade, endpoint ou certificados do binding mudaram/expiraram, recuperação automatizada recusa a configuração nova. Restaure o vínculo original válido ou faça inspeção/cleanup offline do runner original, documentando a intervenção; não apague journal nem altere reserva manualmente para contornar a quarentena. Renovação/rotação automatizada permanece pendente. Reiniciar/renovar certificado não concede nova autorização de execução.
+Se identidade, endpoint ou certificados do binding mudaram/expiraram, recuperação automatizada recusa a configuração nova. Restaure o vínculo original válido ou faça inspeção/cleanup offline do runner original, documentando a intervenção; não apague journal nem altere reserva manualmente para contornar a quarentena. Reiniciar/renovar certificado não concede nova autorização de execução.
 
 Resultado do ensaio integrado: uma campanha COMPLETED, marcador de 43 bytes, cleanup CLEANED e workspace vazio, INCONCLUSIVE sem eventos/alertas defensivos. Captura opcional falhou inicialmente por esperar pouco o login; corrigida e validada por consulta do histórico, sem outro efeito. Banco confirmou uma única campanha real. Admin, operador e visualizador temporário foram desativados; laboratório revogado/sem reserva; containers/redes encerrados e volumes preservados. Comando de captura não foi apresentado como execução integral com exit 0; passos de negócio, persistência e UI têm verificações separadas registradas no PROGRESS.
+
+[Preparação PKI offline](../../docs/operations/runner-pki.md) disponível: inspect,
+prepare e verify criam um candidato separado com novos pares, preservando IDs.
+Não leem chaves/diário originais nem ativam a troca. Certificados candidatos têm
+validade curta e precisam ser reverificados antes de qualquer uso. Ativação
+coordenada, novo binding/preflight e recuperação sob vínculo alterado continuam
+pendentes e exigem escopo próprio; os ensaios anteriores não os autorizam.

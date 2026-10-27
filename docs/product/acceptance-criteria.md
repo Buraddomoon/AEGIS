@@ -83,3 +83,11 @@ loading/erro e recusa de contexto divergente. Não aceita pipeline/YAML/vars/plu
 externos e não altera regra histórica, relatório ou classificação. Can_convert,
 query_generated, siem_queried, deployment_performed e mapping físico continuam false.
 Backend compatível e pipeline completo para consultas não estão aceitos.
+
+PKI do runner: inspect/prepare/verify host-only aceitos para inventário público e
+candidato separado, preservando origem/IDs, com hashes, validação criptográfica,
+limites de arquivos, validade atual e recusa de drift. Testes incluem TLS loopback
+e falhas de durabilidade/retry. Candidato real verificado sem chaves antigas,
+diário, banco ou laboratório. Ativação, novo binding/preflight, recuperação sob
+confiança alterada e PKI dos serviços Wazuh não estão aceitos.
+[Operação](../operations/runner-pki.md).
