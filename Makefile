@@ -43,7 +43,7 @@ format:
 test-unit:
 	$(VENV)/pytest tests/test_domain.py -q
 test-integration:
-	$(VENV)/pytest tests/test_flow.py tests/test_security.py tests/test_integrations.py tests/test_migrations.py tests/test_cleanup.py tests/test_transactions.py tests/test_scheduling.py tests/test_linux_campaigns.py tests/test_wazuh_campaigns.py tests/test_rule_links.py tests/test_coverage_comparison.py tests/test_sigma_analysis.py tests/test_sigma_readiness.py -q
+	$(VENV)/pytest tests/test_flow.py tests/test_security.py tests/test_integrations.py tests/test_migrations.py tests/test_cleanup.py tests/test_transactions.py tests/test_scheduling.py tests/test_linux_campaigns.py tests/test_binding_review.py tests/test_wazuh_campaigns.py tests/test_rule_links.py tests/test_coverage_comparison.py tests/test_sigma_analysis.py tests/test_sigma_readiness.py -q
 test-web:
 	npm --prefix apps/web test
 test:
@@ -195,3 +195,7 @@ runner-pki-verify:
 	$(VENV)/python scripts/runner_pki.py verify --source "$(PKI_SOURCE)" --candidate "$(PKI_CANDIDATE)" --expected-sha256 "$(PKI_SHA256)"
 test-runner-pki:
 	$(VENV)/pytest tests/test_runner_pki_generation.py tests/test_runner_pki.py tests/test_runner_pki_tls.py -q
+
+.PHONY: test-binding-review
+test-binding-review:
+	$(VENV)/pytest tests/test_binding_review.py -q

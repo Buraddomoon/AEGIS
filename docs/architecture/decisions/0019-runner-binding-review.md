@@ -1,6 +1,6 @@
 # ADR 0019 — Revisão do histórico antes de alterar o vínculo Linux
 
-Data: 2026-10-27. Status: em implementação.
+Data: 2026-10-27. Status: implementado; validação local registrada em PROGRESS.
 
 A rotação offline do ADR0018 não prova que o laboratório pode receber um novo
 binding. `active_run_id` sozinho não cobre filhos pendentes ou um dispatch cujo
@@ -21,7 +21,9 @@ conteúdo de eventos, segredos ou comandos. Consulta não chama runner/SIEM, nã
 renova autorização, não escreve auditoria, não libera reserva e não repara dados.
 
 As mutações continuam sob lock do laboratório, sem adquirir locks de runs depois
-dele. O caminho de início já usa run → laboratório. Um GET é apenas diagnóstico;
+dele. Nova solicitação Linux também usa esse lock/populate_existing antes do
+scope; a revogação concorrente impede criar uma solicitação com leitura antiga.
+O caminho de início já usa run → laboratório. Um GET é apenas diagnóstico;
 a mutação recalcula as condições e não aceita o resultado anterior como grant.
 Não restaurar certificados/binding antigos para contornar jobs ambíguos.
 

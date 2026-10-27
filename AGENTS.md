@@ -196,3 +196,16 @@ testes só echo loopback, sem runner/marcador. Preparação não prova volume/jo
 não rotaciona PKI Wazuh nem ativa lab ou renova aprovação. Troca altera descritor;
 jobs ambíguos continuam em quarentena, sem replay/liberação de reserva. Ativação
 e novo preflight/revisão exigem escopo próprio. Ver docs/operations/runner-pki.md.
+
+Revisão de binding (ADR0019): GET /labs/{id}/binding-review é admin-only,
+snapshot READ ONLY/REPEATABLE READ, sem runner/SIEM/auditoria de escrita. Exigir
+Linux revogado/sem reserva, zero pais/filhos pendentes e confirmação terminal
+CLEANED íntegra por spec/hash/geração/identidades para todo dispatch. Limite1000
+bloqueia, nunca truncar sucesso; amostra25 não representa total completo. Mesmo
+predicado obrigatório sob lab lock em registro Linux e bind/unbind Wazuh. Nova
+solicitação Linux adquire lab lock/populate_existing antes do scope, sem inverter
+run→lab de start/cancel. Cancelar pedidos pendentes explicitamente antes da
+revisão; não editar histórico para passar. UI esconde sucesso cacheado após erro
+ou contexto divergente. Testes make test-binding-review e binding-review.test.tsx.
+Pré-requisito persistido não comprova diário/volume, PKI atual ou autorização.
+Harness de ativação e ensaio real ainda pendentes; ver runner-pki-activation.md.
