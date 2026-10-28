@@ -287,7 +287,7 @@ def review_image(operation_id, plan_sha256, role, image, proof_sha256, *, docker
     return {"image": image, "anonymous_volumes_excluded": True, "image_provenance_verified": False}
 
 
-def validate(spec, item, known_id, phase):
+def _validate_process(spec, item, known_id, phase):
     """Validate a projection, never expose daemon values in errors or the receipt."""
     if phase not in {"created", "exited"}:
         raise ActivationError("journal_probe_phase_invalid")
@@ -330,14 +330,32 @@ def validate(spec, item, known_id, phase):
     ):
         raise ActivationError("journal_probe_config_mismatch")
     _validate_environment(item["environment"])
+    if (
+        item["status"] != phase
+        or type(item["exit_code"]) is not int
+        or item["exit_code"] != 0
+        or any(
+            item[key] is not False
+            for key in ("running", "restarting", "paused", "oom_killed", "error_present")
+        )
+    ):
+        raise ActivationError("journal_probe_state_mismatch")
+
+
+def _validate_host(item, expected):
     host = item["host"]
     if (
         not isinstance(host, dict)
-        or set(host) != {*HOST_EXACT, *HOST_EMPTY}
-        or any(digest(host[key]) != digest(value) for key, value in HOST_EXACT.items())
-        or any(host[key] is not True for key in HOST_EMPTY)
+        or set(host) != set(expected)
+        or any(digest(host[key]) != digest(value) for key, value in expected.items())
     ):
         raise ActivationError("journal_probe_host_mismatch")
+
+
+def validate(spec, item, known_id, phase):
+    """Fixed journal profile; shared helpers do not authorize other recipes."""
+    _validate_process(spec, item, known_id, phase)
+    _validate_host(item, {**HOST_EXACT, **dict.fromkeys(HOST_EMPTY, True)})
     mounts = item["mounts"]
     expected_mount = {
         "type": "volume",
@@ -375,16 +393,6 @@ def validate(spec, item, known_id, phase):
         [None] if phase == "created" else ["none", None],
     ) or item["ports"] not in (None, {}):
         raise ActivationError("journal_probe_network_mismatch")
-    if (
-        item["status"] != phase
-        or type(item["exit_code"]) is not int
-        or item["exit_code"] != 0
-        or any(
-            item[key] is not False
-            for key in ("running", "restarting", "paused", "oom_killed", "error_present")
-        )
-    ):
-        raise ActivationError("journal_probe_state_mismatch")
 
 
 def _validate_environment(items, *, image=False):
