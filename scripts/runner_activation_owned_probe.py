@@ -114,32 +114,14 @@ def run(
     ):
         error = prefix + "_execution_unconfirmed"
     finally:
-        try:
-            current = store.review()
-            found = (
-                None
-                if create_attempted
-                else observe(operation, plan, role, docker=ownership_docker)
-            )
-            if (
-                not create_attempted
-                and found["status"] != "absent_snapshot"
-                and role in current["resources"]
-                and current["resources"][role]["state"] == "REQUESTED"
-            ):
-                store.append("ownership_conflict", {"role": role, "evidence_sha256": digest(found)})
-            may_clean = create_attempted or found["status"] == "absent_snapshot"
-            if role in current["resources"] and may_clean:
-                cleanup = closure.cleanup(
-                    store,
-                    images,
-                    roles={role},
-                    close_operation=False,
-                    docker=cleanup_docker,
-                    ownership_docker=ownership_docker,
-                )
-        except (ValueError, OSError, TypeError, KeyError, subprocess.SubprocessError):
-            cleanup = None
+        cleanup = cleanup_owned_probe(
+            store,
+            images,
+            role,
+            create_attempted,
+            ownership_docker=ownership_docker,
+            cleanup_docker=cleanup_docker,
+        )
     clean = cleanup is not None and cleanup["selected_resources_absence_verified"]
     return {
         "format": "aegis-journal-probe-lifecycle-review/1"
@@ -163,3 +145,35 @@ def run(
         "activation_verified": False,
         "normal_operation_permitted": False,
     }
+
+
+def cleanup_owned_probe(
+    store, images, role, create_attempted, *, ownership_docker=None, cleanup_docker=None
+):
+    """Reconcile only the selected role; pre-create conflicts cannot be adopted."""
+    try:
+        current = store.review()
+        operation, plan = store.summary()["id"], current["header"]["plan_sha256"]
+        found = (
+            None if create_attempted else observe(operation, plan, role, docker=ownership_docker)
+        )
+        if (
+            not create_attempted
+            and found["status"] != "absent_snapshot"
+            and role in current["resources"]
+            and current["resources"][role]["state"] == "REQUESTED"
+        ):
+            store.append("ownership_conflict", {"role": role, "evidence_sha256": digest(found)})
+        may_clean = create_attempted or found["status"] == "absent_snapshot"
+        if role in current["resources"] and may_clean:
+            return closure.cleanup(
+                store,
+                images,
+                roles={role},
+                close_operation=False,
+                docker=cleanup_docker,
+                ownership_docker=ownership_docker,
+            )
+    except (ValueError, OSError, TypeError, KeyError, subprocess.SubprocessError):
+        pass
+    return None
