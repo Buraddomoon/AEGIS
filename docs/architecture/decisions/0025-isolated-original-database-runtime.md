@@ -45,3 +45,23 @@ Fontes oficiais consultadas em2026-10-28:
 - [PostgreSQL17 pg_hba.conf](https://www.postgresql.org/docs/17/auth-pg-hba-conf.html).
 - [PostgreSQL17 conexões e autenticação](https://www.postgresql.org/docs/17/runtime-config-connection.html).
 - [Docker execução de containers](https://docs.docker.com/engine/containers/run/).
+
+## Receita do servidor implementada (compilação apenas)
+
+`runner_activation_database_server` fixa binário postgres, UID/GID70, rootRO,
+networknone/loopback5432, capsALL removidas/PNP,384MiB/1CPU/64PIDs, tmpfs64MiB e
+shm64MiB. Sem stdin/init/healthcheck/publicação/logDocker. Apenas volume original
+PGDATA RW/nocopy e HBA da operação RO/rprivate; recusa delimitadores CSV no path
+antes de compilar mount. Verifica novamente a política e estado durável; comando
+create só pode ser compilado depois de dbREQUESTED, sem ID observado.
+
+Parâmetros fixam data_directory/HBA/loopback/sockettmp/read-only/timeouts e limites
+de memória/conexões. Não sobrescrevem TLS, autovacuum, preload ou logging da fonte
+para fazer passar. Nenhum chown/initdb/migrate/seed, shell ou imagem por tag/pull.
+Se dados/UID/versão/configuração forem incompatíveis, falhar fechado; não reparar.
+
+Compilar uma receita não verifica imagem, volume existente, mounts efetivos ou
+proveniência; inspeção real e lifecycle/coordenador ainda pendentes. Imagem PG pode
+declarar VOLUME: o futuro guard deve exigir somente PGDATA e impedir outros volumes
+anônimos antes de create. Em hosts SELinux, não desabilitar labels para fazer bind
+funcionar; verificar política do arquivo próprio antes do ensaio autorizado.
