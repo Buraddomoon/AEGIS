@@ -71,3 +71,19 @@ Fonte: [Docker networking: container networks](https://docs.docker.com/engine/ne
 e [Docker container run: limites, read-only e tmpfs](https://docs.docker.com/reference/cli/docker/container/run/),
 consultadas em2026-10-28. `container:` tem restrições a publicação/exposição de
 portas e DNS próprios; não usar imagem da API que herda EXPOSE8080 para esse papel.
+
+### Captura privada no host
+
+`runner_activation_database_result` compila request16KiB e valida reply4MiB sem
+ampliar o parser de metadados64KiB. Contexto público exclui senha; decoder confere
+identidade/descritor originais independentemente do hash calculado da resposta.
+Recusa JSON duplicado/profundo, flags falsas alteradas e provas inconsistentes.
+
+Captura requer START_REQUESTED do papel/contexto esperado (ou estado posterior
+preservando esse start), escreve uma vez em diretório por operação0700 fora do
+hashchain de intents, arquivo0600/O_EXCL/O_NOFOLLOW, fsync e releitura segura.
+Falha conserva resíduos e não emite sucesso nem sobrescreve em retry. Reload
+exige SHA canônico de origem independente e recusa symlink/hardlink/modo inseguro.
+Recibo contém somente contexto/hashes/contagens, nunca proofs/marker/senha.
+Hash local não é assinatura; root/daemon/usuário local continuam fronteiras de
+confiança. Captura válida não comprova runtime, volume, autorização ou cleanup.
