@@ -22,9 +22,10 @@ class World:
         self.expected = active.metadata.inventory(images(), docker=self.meta)
         self.meta.calls.clear()
         operation = store.summary()["id"]
-        for index, key in enumerate(("db", "network-backend", role)):
+        keys = ("db", "network-backend", role) if role != "db" else ("network-backend", "db")
+        for index, key in enumerate(keys):
             store.request(key)
-            exists = key != role or phase == "start"
+            exists = key != role or phase in {"start", "running"}
             obj = Owner(operation, key, present=exists)
             obj.details["plan"] = store.review()["header"]["plan_sha256"]
             self.owners[key] = obj
@@ -33,18 +34,35 @@ class World:
             obj.named = obj.labelled = obj.known = (identifier + "\n").encode() if exists else b""
             if key in active.IMAGE_ROLE:
                 obj.details["image"] = images()[active.IMAGE_ROLE[key]]
-                obj.details["running"] = key == "db"
+                obj.details["running"] = key == "db" and (key != role or phase == "running")
             if exists:
                 store.append("observed", {"role": key, "resource_id": identifier})
+        if role == "db" and phase == "running":
+            store.append(
+                "database_start_requested",
+                {
+                    "role": "db",
+                    "recipe_sha256": "1" * 64,
+                    "gates_sha256": "2" * 64,
+                    "policy_sha256": "3" * 64,
+                },
+            )
+            store.append(
+                "database_runtime_observed", {"role": "db", "runtime_evidence_sha256": "4" * 64}
+            )
         self.meta.responses["containers", None] = self.ids(
-            "db", *([role] if phase == "start" else [])
+            *(key for key, obj in self.owners.items() if key in active.IMAGE_ROLE and obj.named)
         )
         self.meta.responses["networks", None] = self.ids("network-backend")
         self.meta.responses["network_name", "backend"] = self.ids("network-backend")
         self.meta.responses["consumers", "journal"] = (
-            self.ids(role) if phase == "start" and role not in active.DATABASE_REVIEW_ROLES else b""
+            self.ids(role)
+            if phase == "start" and role in {"journal-before", "journal-after"}
+            else b""
         )
-        self.meta.responses["consumers", "postgres-data"] = self.ids("db")
+        self.meta.responses["consumers", "postgres-data"] = (
+            self.ids("db") if self.owners["db"].named else b""
+        )
 
     def ids(self, *roles):
         return "".join(self.owners[key].details["id"] + "\n" for key in roles).encode()
@@ -303,3 +321,58 @@ def test_another_unfinished_probe_blocks_all_phases_before_daemon_queries(tmp_pa
         with pytest.raises(active.ActivationError, match="unresolved_or_incompatible"):
             world.review()
         assert world.meta.calls == []
+
+
+@pytest.mark.parametrize("phase", ["create", "start", "running"])
+def test_database_phase_pins_empty_then_owned_volume_consumers_without_claiming_journal_content(
+    tmp_path, phase
+):
+    with ActivationIntents(tmp_path / "intents") as store:
+        store.begin(uuid4().hex, "a" * 64, "b" * 64)
+        world = World(store, "db", phase)
+        result = world.review()
+        assert result["status"] == "owned_metadata_snapshot_consistent"
+        assert result["resources_reviewed"] == 2
+        assert result["role"] == "db" and result["phase"] == phase
+        assert result["journal_contents_verified"] is result["database_binding_verified"] is False
+        assert result["authorization_verified"] is False
+        assert world.meta.responses["consumers", "journal"] == b""
+        assert bool(world.meta.responses["consumers", "postgres-data"]) is (phase != "create")
+
+
+@pytest.mark.parametrize(
+    "scene", ["missing_start", "not_running", "journal_consumer", "foreign_db_consumer"]
+)
+def test_database_startup_and_running_gates_refuse_ambiguous_or_unconfirmed_context(
+    tmp_path, scene
+):
+    with ActivationIntents(tmp_path / "intents") as store:
+        store.begin(uuid4().hex, "a" * 64, "b" * 64)
+        phase = "start" if scene == "missing_start" else "running"
+        world = World(store, "db", phase)
+        if scene == "missing_start":
+            world.phase = "running"
+        elif scene == "not_running":
+            world.owners["db"].details["running"] = False
+        elif scene == "journal_consumer":
+            world.meta.responses["consumers", "journal"] = ("f" * 64 + "\n").encode()
+        else:
+            world.meta.responses["consumers", "postgres-data"] += ("f" * 64 + "\n").encode()
+        with pytest.raises(active.ActivationError):
+            world.review()
+
+
+@pytest.mark.parametrize(
+    "role,phase",
+    [
+        ("journal-before", "running"),
+        ("database-review-before", "running"),
+        ("api", "create"),
+        ("worker", "running"),
+    ],
+)
+def test_running_database_phase_does_not_widen_other_resource_profiles(tmp_path, role, phase):
+    with ActivationIntents(tmp_path / "intents") as store:
+        store.begin(uuid4().hex, "a" * 64, "b" * 64)
+        with pytest.raises(active.ActivationError, match="probe_context_required"):
+            active.review(store, images(), {}, role, phase)

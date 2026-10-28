@@ -77,3 +77,10 @@ Qualquer outro probe nãoABSENT bloqueia todas as fases, mesmo sem mount no jour
 um leitor SQL ambíguo não pode coexistir com a revisão de diário. Membership/IDs/
 labels/imagens/volumes e limites temporais continuam iguais. Recheck não comprova
 SQL, HBA, vínculo físico, proveniência nem autorização.
+
+Recheck interno do DB tem três fases fechadas: create exige volume ainda sem
+consumidor e dbREQUESTED; start exige ID próprio observado e container parado;
+running exige DB OBSERVED com start/evidência duráveis e container em execução.
+O journal deve permanecer sem consumidor em todas essas fases. Só db aceita
+running; isso não amplia fases dos probes/API/worker nem libera runner pendente.
+Runtime físico/HBA/readiness/auth/proveniência continuam verificações independentes.

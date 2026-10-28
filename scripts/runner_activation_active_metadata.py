@@ -11,6 +11,13 @@ from runner_activation_intents import DATABASE_REVIEW_ROLES
 from runner_activation_metadata import ActivationError
 
 PROBE_ROLES = frozenset({"journal-before", "journal-after", *DATABASE_REVIEW_ROLES})
+TARGET_ROLES = PROBE_ROLES | {"db"}
+
+
+def context_allowed(role, phase):
+    return role in TARGET_ROLES and (
+        phase in {"create", "start"} or (role == "db" and phase == "running")
+    )
 
 
 class _Budget:
@@ -46,7 +53,7 @@ def _ids(raw, maximum):
 def review(store, images, expected_inventory, role, phase, *, docker=None, ownership_docker=None):
     """No SQL/PKI/auth/worker/runtime proof is inferred from these metadata gates."""
     deadline = time.monotonic() + 20
-    if role not in PROBE_ROLES or phase not in {"create", "start"}:
+    if not context_allowed(role, phase):
         raise ActivationError("active_metadata_probe_context_required")
     original = store.review()
     images = copy.deepcopy(images)
@@ -65,6 +72,15 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
             and (
                 current["state"] not in {"OBSERVED", "START_REQUESTED"}
                 or current["resource_id"] is None
+            )
+        )
+        or (
+            phase == "running"
+            and (
+                current["state"] != "OBSERVED"
+                or current["resource_id"] is None
+                or "start" not in current
+                or "runtime_evidence_sha256" not in current
             )
         )
         or any(item["state"] in {"CONFLICT", "REMOVAL_REQUESTED"} for item in owned.values())
@@ -98,7 +114,7 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
                 if key in IMAGE_ROLE:
                     if found["details"]["image"] != images[IMAGE_ROLE[key]]:
                         raise ActivationError("active_metadata_owned_image_mismatch")
-                    if key == role and found["details"]["running"] is not False:
+                    if key == role and found["details"]["running"] is not (phase == "running"):
                         raise ActivationError("active_metadata_probe_already_running")
                     containers.add(item["resource_id"])
                 else:
@@ -115,11 +131,15 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
                 raise ActivationError("active_metadata_reserved_network_mismatch")
         journal_ids = (
             {current["resource_id"]}
-            if phase == "start" and role not in DATABASE_REVIEW_ROLES
+            if phase == "start" and role in {"journal-before", "journal-after"}
             else set()
         )
         db = owned.get("db")
-        db_ids = {db["resource_id"]} if db and db["state"] != "ABSENT" else set()
+        db_ids = (
+            {db["resource_id"]}
+            if db and db["state"] != "ABSENT" and not (role == "db" and phase == "create")
+            else set()
+        )
         if (
             _ids(docker.query("consumers", "journal"), 1) != journal_ids
             or _ids(docker.query("consumers", "postgres-data"), 1) != db_ids

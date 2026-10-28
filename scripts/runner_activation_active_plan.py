@@ -10,7 +10,7 @@ from runner_activation_metadata import IMAGES, ActivationError
 
 
 def recheck(path, expected_sha256, store, role, phase, *, docker=None, ownership_docker=None):
-    if role not in active.PROBE_ROLES or phase not in {"create", "start"}:
+    if not active.context_allowed(role, phase):
         raise ActivationError("active_plan_probe_context_required")
     artifact = activation.load_plan(path, expected_sha256)
     state = store.review()

@@ -31,8 +31,15 @@ def review(prepared, store, world):
     )
 
 
-@pytest.mark.parametrize("role", sorted(active_plan.active.PROBE_ROLES))
-@pytest.mark.parametrize("phase", ["create", "start"])
+@pytest.mark.parametrize(
+    "role,phase",
+    [
+        (role, phase)
+        for role in sorted(active_plan.active.PROBE_ROLES)
+        for phase in ("create", "start")
+    ]
+    + [("db", phase) for phase in ("create", "start", "running")],
+)
 def test_same_pinned_plan_can_be_rechecked_only_under_exact_durable_operation(
     material, code, tmp_path, role, phase
 ):

@@ -2659,3 +2659,40 @@ em testes temporários. Próximo trabalho: lifecycle/readiness do DB, imagem atu
 proveniência, coordenador diagnóstico completo. Novo ensaio exige escopo humano
 específico depois de tudo preparado/revisável. Continuar automaticamente entre
 marcos; checkpoint não encerra o trabalho nem finge invocar /compact.
+
+## 2026-10-28 — global aprovada, fonte privada conferida e startup sem replay
+
+Suíte global sobre95648b5: **1.778 Python passaram/424,18s**, um aviso conhecido
+Starlette/httpx. Log privado .local/pki-milestone/database-server-global-tests.log.
+CI dessa base foi cancelada pelo push subsequente conforme concurrency; não alegar
+validação remota completa. Source-review22653f8SUCCESS. Código novo posterior tem
+verificações específicas abaixo; a global não cobre alterações ainda posteriores.
+
+c0ace72 entrega preparação/verificação host-only da fonte, com **24 testes passando/
+1,32s**. Main limpa, blobs rastreados/allowlist, limites, tar determinístico privado,
+manifesto e integridade; nunca workspace/env/chaves locais. Comando Make real foi
+executado e CLI verify confirmou **65 arquivos** do commit
+c0ace72df3031295fd01ee4572e5520e4d0afe25. Artefato local
+.local/pki-image-sources/8ea11e031b3f473caf9b655f8fbc80cf, manifestoSHA
+86c9ec4abe1c087e255e18a03d35fecca84757b4213c7bfec3595d44dcd21adc e sourceTreeSHA
+ ee28a33e512e5e4879821b2a62ef5ee18aaa6e7d8d267ff5d94ed0985c7cd668.
+Recibo privado em .local/pki-milestone/runner-source-receipt.json. Sem build/pull,
+proveniência/autorização falsas. Hash local não é assinatura.
+
+0a9f549 registra database_start_requested antes de RPC e database_runtime_observed
+sem apagar intenção original nem permitir replay após OBSERVED/resume. Dependentes
+abertos impedem start; cleanup preserva volume. **235 testes passaram/3,27s** na
+rodada intents/cleanup/inspeção/lifecycle; rodada adicional com fases de inspeção:
+**170 passaram/1,16s** (sobreposição, não somar como casos únicos).
+
+Este commit estende recheck ativo ao DB em create/start/running, com consumidores
+vazios antes e somente DB próprio depois; running exige start e evidência duráveis.
+**72 testes passaram/25,94s**. Runtime/HBA/auth/SQL/proveniência não são inferidos de
+metadados. Lint/formatação/tipos locais passaram. Total após este commit: **362**,
+15 desde eb39b4e; privado/main/push direto preservados, sem branch/PR/force.
+
+Continuar automaticamente: driver do servidor com gates e readiness de prazo
+limitado, cleanup em falhas e retenção do pai após sucesso; depois build/proveniência
+e coordenador diagnóstico completo antes de pedir ensaio específico. Não houve
+novo Docker lifecycle/build, acesso interno aos volumes Linux/Wazuh, SQL do Lab,
+marcador/campanha, troca PKI/binding, credenciais humanas, grants ou migração.
