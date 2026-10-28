@@ -339,3 +339,24 @@ real para testar o módulo. Startup de PostgreSQL escreve metadados operacionais
 no PGDATA mesmo que as consultas sejam read-only, e deve constar no futuro escopo
 autorizado. Não confundir SQL read-only com volume fisicamente read-only.
 [ADR0024](../architecture/decisions/0024-fixed-postgresql-proof-probe.md).
+
+Componentes do leitor e servidor disponíveis para testes locais (sem novo ensaio):
+
+- `database_runtime` deriva namespace somente do DB próprio observado; sem mount,
+  porta, destino livre ou senha em argv/env.
+- `database_result` cria request privado e captura reply/contexto em arquivo
+  exclusivo0600, fora do hashchain; recibo não contém provas ou credenciais.
+- `database_lifecycle` usa intenção durável, gates frescos e finally cleanup; não
+  fornece CLI/API de efeito. Resposta válida não dispensa remoção confirmada.
+- `database_policy` prepara somente o HBA não secreto da operação,0444 em0700,
+  SCRAM fixo e demais acessos rejeitados, sem alterar HBA/senhas/grants originais.
+- `database_server` compila receita não root/namespace none/volume original
+  RWnocopy/HBA RO. `database_inspection` confere imagem, configuração, mounts e
+  ownership; imagem não pode criar volumes implícitos extras. Ver ADR0025.
+
+Runtime do servidor ainda não iniciado no novo perfil. O template foi consultado
+somente sobre metadados da imagem local e do DB Demo existente, sem SQL/lifecycle.
+Isso não comprova autenticação carregada, proveniência, conteúdo do volume Linux,
+exclusividade, limpeza ou autorização. Permanecem pendentes lifecycle do servidor,
+readiness, imagem atual/proveniência e coordenador diagnóstico completo. Não
+executar os componentes isoladamente como substituto desses gates.

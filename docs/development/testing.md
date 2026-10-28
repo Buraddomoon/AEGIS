@@ -367,3 +367,17 @@ inclui o novo arquivo; não executar junto de outra suíte PG/Redis15.
 Transporte privado também testa cap4MiB para provas, stderr contado e overflow/
 kill-reap; metadata continua com64KiB por padrão e limites arbitrários são recusados.
 Esses filhos são Python local com bytes sintéticos, nunca Docker ou dados reais.
+
+Leitores e servidor PostgreSQL do harness: `make test-runner-activation` inclui
+`test_runner_activation_database_{runtime,result,lifecycle,policy,server,inspection}`.
+Os testes usam intents/arquivos privados/SQLite temporários e daemon/engine fixtures.
+Exercitam gates/contexto/identidade, senha em stdin, cap16KiB/4MiB, captura exclusiva,
+fsync/reload, cleanup/collision/interrupção e retenção do DB. Não somar rodadas
+sobrepostas como casos únicos. A política HBA é só arquivo local, não prova auth.
+
+O teste opcional de inspection consulta somente ps/inspect da imagem e do DB Demo
+já existentes (labels exatas aegis/db); sem objetos, SQL ou startup. Recusa campos
+opcionais inseguros e expõe ambiente apenas como chave/booleano, nunca valor.
+Config.User omitido na imagem é aceito; runtime ainda exige70:70. GOSU_VERSION e
+DOCKER_PG_LLVM_DEPS são metadados oficiais fechados, não prefixos de env liberados.
+Ausência do Demo/daemon significa skip; fixtures e projeção não provam o Lab real.

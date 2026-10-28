@@ -2621,3 +2621,41 @@ PostgreSQL, imagem/proveniência e coordenador diagnóstico completo antes de pe
 nova autorização específica. Nenhum lifecycle Docker/build, leitura de volume
 original, novo ensaio/marker/campanha, alteração de PKI/binding/credenciais humanas
 ou migração foi executado. Demo e fontes Linux/Wazuh preservados.
+
+## 2026-10-28 — receita e inspeção do servidor prontas para composição; global em execução
+
+Base16131ee/356: d5b616c adiciona receita fixa do PostgreSQL não root e 95648b5
+adiciona inspeção projetada de imagem/runtime/mounts. Este checkpoint será o
+**12º commit desde eb39b4e**, total **359**; fonte de código95648b5, main e privado.
+
+Receita não executa entrypoint/initdb/chown/migration/seed e não aceita banco,
+volume, parâmetros ou rede livres. Volume original RW/nocopy e HBA da operação
+RO/rprivate, namespace none e escuta127.0.0.1; sem publicação de portas ou secrets
+em env/argv. Limites384MiB/1CPU/64PIDs; preserva TLS, autovacuum/preload/logging da
+fonte. Create só é compilado depois do intent DBREQUESTED. Não foi invocado.
+
+Inspeção exige mounts/configuração/estado exatos, ownership repetido e HBA/estado
+durável iguais antes/depois. Imagem deve declarar só VOLUME PGDATA/EXPOSE5432;
+Config.User omitido é tratado por index e labels vazias por with. Consulta real
+revelou ausência de User e dois metadados upstream adicionais (GOSU_VERSION e
+DOCKER_PG_LLVM_DEPS); guard agora distingue estes nomes revisados de variáveis
+PG*/loader livres. PATH/LANG/PG_MAJOR/PGDATA continuam fixos, valores não expostos.
+
+**20 testes** receita+política passaram/0,51s; rodada final incluindo inspeção:
+**86 passaram/0,98s**. Inclui consulta real somente de metadados da imagem
+b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24 e do DB Demo
+existente, nunca SQL ou aprovação desse DB como servidor de Lab. Imagem passou no
+perfil de metadados; proveniência/autenticação/conteúdo do volume seguem falsos.
+
+Lint/formatação de187arquivos e tipos locais passaram. Suíte global iniciada sobre
+95648b5 em .local/pki-milestone/database-server-global-tests.log; aguardar resultado,
+sem declarar aprovação ainda. Não executar outra suíte PostgreSQL/Redis15 durante
+a global. CI código95648b5 em andamento; source-review SUCCESS na última consulta.
+
+Nenhum Docker lifecycle/build, leitura interna de volume original, SQL Linux,
+marcador/campanha, PKI/binding, credenciais humanas, grants ou migração alterados.
+Só ps/imageinspect/containerinspect de objetos Demo existentes e artefatos privados
+em testes temporários. Próximo trabalho: lifecycle/readiness do DB, imagem atual e
+proveniência, coordenador diagnóstico completo. Novo ensaio exige escopo humano
+específico depois de tudo preparado/revisável. Continuar automaticamente entre
+marcos; checkpoint não encerra o trabalho nem finge invocar /compact.
