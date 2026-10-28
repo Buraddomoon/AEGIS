@@ -287,7 +287,7 @@ def review_image(operation_id, plan_sha256, role, image, proof_sha256, *, docker
     return {"image": image, "anonymous_volumes_excluded": True, "image_provenance_verified": False}
 
 
-def _validate_process(spec, item, known_id, phase):
+def _validate_process(spec, item, known_id, phase, *, additional_fields=()):
     """Validate a projection, never expose daemon values in errors or the receipt."""
     if phase not in {"created", "exited"}:
         raise ActivationError("journal_probe_phase_invalid")
@@ -309,6 +309,7 @@ def _validate_process(spec, item, known_id, phase):
     }
     fields = {
         *config,
+        *additional_fields,
         "host",
         "mounts",
         "configured_mounts",

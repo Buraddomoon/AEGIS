@@ -53,3 +53,21 @@ Fontes oficiais:
 
 Complementa [ADR0021](0021-runner-journal-continuity.md) e
 [ADR0023](0023-journal-probe-runtime.md).
+
+### Perfil físico do leitor (compilador e inspeção)
+
+`runner_activation_database_runtime` é interno, sem CLI/lifecycle. Deriva o ID do
+DB exclusivamente do intent bloqueado, exigindo OBSERVED. Receita só para os dois
+papéis de leitura; entrypoint/módulo/contexto fixos, UID/GID10001, sem init, rootRO,
+capdropALL/PNP,256MiB/0,5CPU/16PIDs, tmpfs16MiB, sem mounts persistentes/ports/logs.
+`network=container:<ID completo do DB próprio>` compartilha somente o namespace
+revisado; Config.ExposedPorts também deve estar vazio, inclusive na imagem.
+Inspeção exige runtime exato e ownership DB/leitor antes e depois, DB running,
+mesmo estado durável e nenhuma rede própria. Verificação do DB físico/isolamento,
+HBA/SQL, proveniência e autorização continuam gates independentes falsos.
+Fixtures/imports não comprovam templates de daemon nem autorizam operação real.
+
+Fonte: [Docker networking: container networks](https://docs.docker.com/engine/network/)
+e [Docker container run: limites, read-only e tmpfs](https://docs.docker.com/reference/cli/docker/container/run/),
+consultadas em2026-10-28. `container:` tem restrições a publicação/exposição de
+portas e DNS próprios; não usar imagem da API que herda EXPOSE8080 para esse papel.

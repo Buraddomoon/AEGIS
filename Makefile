@@ -207,7 +207,7 @@ runner-activation-plan:
 runner-activation-recheck:
 	$(VENV)/python scripts/runner_activation.py recheck --plan "$(ACTIVATION_PLAN)" --expected-sha256 "$(ACTIVATION_SHA256)"
 test-runner-activation:
-	$(VENV)/pytest tests/test_runner_activation_metadata.py tests/test_runner_activation_plan.py tests/test_runner_activation_intents.py tests/test_runner_activation_ownership.py tests/test_runner_activation_probe_runtime.py tests/test_runner_activation_cleanup.py tests/test_runner_activation_probe_result.py tests/test_runner_activation_transport.py tests/test_runner_activation_probe_lifecycle.py tests/test_runner_activation_active_metadata.py tests/test_runner_activation_active_plan.py -q
+	$(VENV)/pytest tests/test_runner_activation_metadata.py tests/test_runner_activation_plan.py tests/test_runner_activation_intents.py tests/test_runner_activation_ownership.py tests/test_runner_activation_probe_runtime.py tests/test_runner_activation_cleanup.py tests/test_runner_activation_probe_result.py tests/test_runner_activation_transport.py tests/test_runner_activation_probe_lifecycle.py tests/test_runner_activation_active_metadata.py tests/test_runner_activation_active_plan.py tests/test_runner_activation_database_runtime.py -q
 
 # Temporary PostgreSQL schema + SQLite only. Never mount/start a Linux lab.
 .PHONY: test-runner-continuity
