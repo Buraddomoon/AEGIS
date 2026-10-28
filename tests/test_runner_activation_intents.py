@@ -525,3 +525,103 @@ def test_database_reader_start_event_refuses_other_roles(tmp_path, role):
         payload["request_context_sha256"] = payload.pop("proof_bundle_sha256")
         with pytest.raises(intents.ActivationError, match="probe_start_invalid"):
             store.append("database_review_start_requested", payload)
+
+
+def database_start():
+    return {
+        "role": "db",
+        "recipe_sha256": "1" * 64,
+        "gates_sha256": "2" * 64,
+        "policy_sha256": "3" * 64,
+    }
+
+
+@pytest.mark.parametrize("resume", [False, True])
+def test_database_start_is_once_only_and_runtime_observation_preserves_original_start(
+    tmp_path, resume
+):
+    root = tmp_path / "intents"
+    with intents.ActivationIntents(root) as store:
+        origin = begin(store)
+        store.request("db")
+        store.append("observed", {"role": "db", "resource_id": "d" * 64})
+        store.append("database_start_requested", database_start())
+        assert store.state["resources"]["db"]["state"] == "START_REQUESTED"
+        with pytest.raises(intents.ActivationError, match="already_requested"):
+            store.append("database_start_requested", database_start())
+        with pytest.raises(intents.ActivationError, match="observed_database_required"):
+            store.request("database-review-before")
+        if not resume:
+            store.append(
+                "database_runtime_observed", {"role": "db", "runtime_evidence_sha256": "f" * 64}
+            )
+    with intents.ActivationIntents(root) as store:
+        store.resume(origin["id"], origin["begin_sha256"])
+        if resume:
+            store.append(
+                "database_runtime_observed", {"role": "db", "runtime_evidence_sha256": "f" * 64}
+            )
+        item = store.review()["resources"]["db"]
+        assert item["state"] == "OBSERVED"
+        assert item["start"]["policy_sha256"] == "3" * 64
+        assert item["runtime_evidence_sha256"] == "f" * 64
+        with pytest.raises(intents.ActivationError, match="already_requested"):
+            store.append("database_start_requested", database_start())
+        with pytest.raises(intents.ActivationError, match="runtime_observation_invalid"):
+            store.append(
+                "database_runtime_observed", {"role": "db", "runtime_evidence_sha256": "e" * 64}
+            )
+        store.request("database-review-before")
+        absent(store, "database-review-before")
+        absent(store, "db")
+
+
+@pytest.mark.parametrize("role", ["api", "runner", "journal-before", "network-isolated"])
+def test_database_start_and_runtime_events_never_apply_to_other_roles(tmp_path, role):
+    with intents.ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        store.request(role)
+        store.append("observed", {"role": role, "resource_id": "d" * 64})
+        with pytest.raises(intents.ActivationError, match="database_start_invalid"):
+            store.append("database_start_requested", {**database_start(), "role": role})
+        with pytest.raises(intents.ActivationError, match="runtime_observation_invalid"):
+            store.append(
+                "database_runtime_observed", {"role": role, "runtime_evidence_sha256": "f" * 64}
+            )
+
+
+@pytest.mark.parametrize(
+    "scene", ["unobserved", "closing", "recipe", "gates", "policy", "secret", "early_runtime"]
+)
+def test_unpinned_database_start_and_unsupported_observations_fail_closed(tmp_path, scene):
+    with intents.ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        store.request("db")
+        if scene != "unobserved":
+            store.append("observed", {"role": "db", "resource_id": "d" * 64})
+        if scene == "closing":
+            store.append("removal_requested", {"role": "db"})
+        payload = database_start()
+        if scene in {"recipe", "gates", "policy"}:
+            payload[scene + "_sha256"] = "invalid"
+        if scene == "secret":
+            payload["password"] = "private-sensitive-sentinel"
+        with pytest.raises(intents.ActivationError):
+            if scene == "early_runtime":
+                store.append(
+                    "database_runtime_observed", {"role": "db", "runtime_evidence_sha256": "f" * 64}
+                )
+            else:
+                store.append("database_start_requested", payload)
+
+
+@pytest.mark.parametrize("dependent", ["api", "database-review-before", "database-review-after"])
+def test_database_cannot_start_with_a_dependent_already_open(tmp_path, dependent):
+    with intents.ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        store.request("db")
+        store.append("observed", {"role": "db", "resource_id": "d" * 64})
+        store.request(dependent)
+        with pytest.raises(intents.ActivationError, match="dependencies_retained"):
+            store.append("database_start_requested", database_start())
+        assert "start" not in store.review()["resources"]["db"]

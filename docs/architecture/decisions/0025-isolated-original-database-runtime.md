@@ -97,3 +97,18 @@ Teste opcional só consulta metadados do DB Demo já existente e de sua imagem p
 cobrir templates reais; não executa SQL, não inicia objetos e não aceita Demo como
 servidor aprovado. Ausência de Docker/Demo significa skip. O servidor do Lab ainda
 não foi iniciado nem inspecionado neste novo perfil.
+
+## Intenção de inicialização do servidor
+
+Eventos separados `database_start_requested` e `database_runtime_observed`
+permitem registrar start antes da RPC e depois retornar a OBSERVED com evidência
+hash da inspeção. Recipe/gates/policy hashes são obrigatórios. O registro original
+de start permanece: observar runtime não permite repetir inicialização, inclusive
+após resume. Dependentes abertos impedem start; leitores só podem ser solicitados
+quando DB está OBSERVED, nunca no start ambíguo. Cleanup continua aceitando DB em
+START_REQUESTED, preservando suas dependências e volume. Inspeção pode conferir
+created/running durante esse estado, sem reexecutar start ou alterar o intent.
+
+O evento de runtime não é readiness, login válido ou autorização; o driver futuro
+deve obter os hashes de observações reais e verificar os demais gates. Histórico
+local não permite fabricar verdade do daemon. Nenhum startup foi executado.

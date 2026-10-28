@@ -385,3 +385,21 @@ def test_templates_on_existing_demo_database_metadata_only_when_available():
     assert all("source" not in mount for mount in item["configured_mounts"])
     assert all(mount["policy_source_matches"] is False for mount in item["mounts"])
     assert inspection.review_image(item["image"])["image_provenance_verified"] is False
+
+
+@pytest.mark.parametrize("phase", ["created", "running"])
+def test_runtime_can_reconcile_a_durable_database_start_without_replaying_it(prepared, phase):
+    store, root, spec, docker, owner = setup(prepared, phase)
+    store.append(
+        "database_start_requested",
+        {
+            "role": "db",
+            "recipe_sha256": digest(spec),
+            "gates_sha256": "e" * 64,
+            "policy_sha256": inspection.server.policy.CONTENT_SHA256,
+        },
+    )
+    result = review(store, root, docker, owner, phase)
+    assert result["runtime_configuration_verified"]
+    assert store.review()["resources"]["db"]["state"] == "START_REQUESTED"
+    assert store.review()["resources"]["db"]["start"]["recipe_sha256"] == digest(spec)

@@ -322,7 +322,7 @@ def review(
     if (
         current is None
         or current["resource_id"] != identifier(known_id)
-        or current["state"] != "OBSERVED"
+        or current["state"] not in {"OBSERVED", "START_REQUESTED"}
     ):
         raise ActivationError("database_server_owned_resource_required")
     spec = server.recipe(store, image, policy_root=policy_root)

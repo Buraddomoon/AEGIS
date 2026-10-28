@@ -167,6 +167,33 @@ def _apply(state, event, identifier):
         if item["state"] == "REQUESTED":
             item["state"] = "OBSERVED"
         item["resource_id"] = data["resource_id"]
+    elif kind == "database_start_requested":
+        if (
+            set(data) != {"role", "recipe_sha256", "gates_sha256", "policy_sha256"}
+            or role != "db"
+            or item["state"] != "OBSERVED"
+            or item["resource_id"] is None
+            or "start" in item
+        ):
+            raise ActivationError("intent_database_start_invalid_or_already_requested")
+        for key in ("recipe_sha256", "gates_sha256", "policy_sha256"):
+            _hash(data[key])
+        _require_no_dependents(role, owned)
+        item["state"] = "START_REQUESTED"
+        item["start"] = {key: data[key] for key in data if key != "role"}
+    elif kind == "database_runtime_observed":
+        if (
+            set(data) != {"role", "runtime_evidence_sha256"}
+            or role != "db"
+            or item["state"] != "START_REQUESTED"
+            or item["resource_id"] is None
+            or "start" not in item
+            or "runtime_evidence_sha256" in item
+        ):
+            raise ActivationError("intent_database_runtime_observation_invalid")
+        _hash(data["runtime_evidence_sha256"])
+        item["state"] = "OBSERVED"
+        item["runtime_evidence_sha256"] = data["runtime_evidence_sha256"]
     elif kind in {"probe_start_requested", "database_review_start_requested"}:
         database_review = kind == "database_review_start_requested"
         context_field = "request_context_sha256" if database_review else "proof_bundle_sha256"
