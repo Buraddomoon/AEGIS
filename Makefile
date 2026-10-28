@@ -225,4 +225,4 @@ test-runner-image-source:
 
 .PHONY: test-runner-image-build
 test-runner-image-build:
-	$(VENV)/pytest tests/test_runner_image_assert.py -q
+	$(VENV)/pytest tests/test_runner_image_assert.py tests/test_runner_image_registry.py -q

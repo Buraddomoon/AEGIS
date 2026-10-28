@@ -42,3 +42,26 @@ Fontes oficiais:
 - [wheel0.48.0](https://pypi.org/project/wheel/0.48.0/).
 - [pip secure installs](https://pip.pypa.io/en/stable/topics/secure-installs/).
 - [pip install e no-build-isolation](https://pip.pypa.io/en/stable/cli/pip_install/).
+
+## Identificação da base oficial implementada
+
+`runner_image_registry.python_base` consulta somente auth.docker.io e
+registry-1.docker.io/library/python, GET/TLS/trust_envfalse/sem redirects, tag fixa
+3.13-slim, escopo anônimo pull e token apenas em memória. Não recebe usuário,
+registry, URL ou CA livres. Prazo absoluto30s para todo fluxo incluindo corpo,
+timeoutsHTTP10s, metadata<=1MiB/resposta e recusa compressão/JSON duplicado.
+
+Confronta Docker-Content-Digest com bytes recebidos do índice/manifesto selecionado;
+Linux/amd64 deve ser único. Recusa URIs externas em config/layers, digests/media
+incompatíveis, mais de32layers ou256MiB comprimidos. Retorna reference por digest
+da plataforma e imageID esperado do config, nunca token. Não baixa layers, não
+constrói ou inicia container e não verifica assinatura/atestado. Disponibilidade
+local/Python real/proveniência continuam pendentes até pull/conferência/build.
+
+Consulta real somente de metadata em2026-10-28T20:47:47Z identificou43.069.135bytes
+comprimidos; recibo privado .local/pki-milestone/python-base-2efd55f3d063461b817a8a8dd3a78755.json.
+Isso não constitui autorização de laboratório. Testes usam MockTransport e deadline
+real curto; acesso externo somente na consulta explícita host-only registrada.
+
+Fontes oficiais: [Registry token auth](https://docs.docker.com/reference/api/registry/auth/)
+e [Distribution HTTP API V2](https://distribution.github.io/distribution/spec/api/).
