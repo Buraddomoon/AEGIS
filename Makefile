@@ -213,3 +213,12 @@ test-runner-activation:
 .PHONY: test-runner-continuity
 test-runner-continuity:
 	$(VENV)/pytest tests/test_runner_journal_continuity.py tests/test_runner_persisted_review.py tests/test_runner_journal_probe.py tests/test_runner_persisted_probe.py -q
+
+# Committed private source only; never builds, pulls or starts a runner.
+.PHONY: runner-image-source-prepare runner-image-source-verify test-runner-image-source
+runner-image-source-prepare:
+	$(VENV)/python scripts/runner_activation_image_source.py prepare
+runner-image-source-verify:
+	$(VENV)/python scripts/runner_activation_image_source.py verify --source-id "$(RUNNER_SOURCE_ID)" --expected-sha256 "$(RUNNER_SOURCE_SHA256)"
+test-runner-image-source:
+	$(VENV)/pytest tests/test_runner_activation_image_source.py -q
