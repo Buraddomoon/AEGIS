@@ -282,3 +282,18 @@ assert 'aegis.config' not in sys.modules
         timeout=5,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_new_context_material_has_declared_mode_under_a_restrictive_umask(tmp_path):
+    import stat
+
+    previous = os.umask(0o077)
+    try:
+        context = tmp_path / "private-context"
+        build._write(context / "module.py", b"# nonsecret source\n", mode=0o644)
+        build._write(context / "private-control.json", b"{}")
+    finally:
+        os.umask(previous)
+    assert stat.S_IMODE(context.stat().st_mode) == 0o700
+    assert stat.S_IMODE((context / "module.py").stat().st_mode) == 0o644
+    assert stat.S_IMODE((context / "private-control.json").stat().st_mode) == 0o600

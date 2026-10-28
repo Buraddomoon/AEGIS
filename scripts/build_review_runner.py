@@ -53,6 +53,7 @@ def _write(path, content, *, mode=0o600):
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, mode)
     with os.fdopen(fd, "wb") as output:
+        os.fchmod(output.fileno(), mode)
         output.write(content)
         output.flush()
         os.fsync(output.fileno())
