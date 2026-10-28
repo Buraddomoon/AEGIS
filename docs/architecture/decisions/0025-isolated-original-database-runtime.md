@@ -65,3 +65,35 @@ proveniência; inspeção real e lifecycle/coordenador ainda pendentes. Imagem P
 declarar VOLUME: o futuro guard deve exigir somente PGDATA e impedir outros volumes
 anônimos antes de create. Em hosts SELinux, não desabilitar labels para fazer bind
 funcionar; verificar política do arquivo próprio antes do ensaio autorizado.
+
+## Inspeção projetada implementada
+
+`database_inspection` só faz image/containerinspect, por ID local e templates
+fechados. Imagem deve declarar apenas VOLUME PGDATA/EXPOSE5432, sem ONBUILD ou
+labels herdadas; User ausente normaliza root somente na imagem, sobrescrito70:70
+na receita. Go template usa index/with em campos opcionais, sem Config.Env bruto.
+
+Ambiente projetado só como chave/booleano: PATH/LANG/PG_MAJOR17/PGDATA fixos e quatro
+metadados oficiais PG_VERSION/PG_SHA256/GOSU_VERSION/DOCKER_PG_LLVM_DEPS. Estes dois
+últimos pertencem ao build/entrypoint upstream, que o perfil não executa; não
+aceitar PGOPTIONS/LD_PRELOAD ou prefixos genéricos. A leitura do Dockerfile upstream
+não é proveniência da imagem local. Guard de versão SQL continua independente.
+[Dockerfile oficial PostgreSQL17 Alpine](https://github.com/docker-library/postgres/blob/master/17/alpine3.23/Dockerfile).
+
+Runtime exige configuração/host/estado exatos em created/running, imagem por ID,
+DB observado próprio e ownership antes/depois. Montagens precisam ser exatamente
+PGDATA RW/nocopy e bind HBA RO/rprivate com origem igual ao arquivo da operação;
+um tmpfs/tmp efetivo é opcional na projeção. Nomes de volumes são preservados;
+caminhos físicos do daemon e origem de binds não saem do template, somente
+booleano de igualdade para o HBA. Ordem de mounts não importa, duplicatas/extras
+falham. Política é relida antes/depois; estado durável deve permanecer igual.
+
+Namespace none e ausência de publicação de5432 são distintos de EXPOSE5432 na
+imagem. Guard não afirma conteúdo do volume, autenticação carregada, proveniência
+ou autorização. Consumidores/inventário do volume continuam gates externos do
+coordenador; inspeção isolada não confirma exclusividade.
+
+Teste opcional só consulta metadados do DB Demo já existente e de sua imagem para
+cobrir templates reais; não executa SQL, não inicia objetos e não aceita Demo como
+servidor aprovado. Ausência de Docker/Demo significa skip. O servidor do Lab ainda
+não foi iniciado nem inspecionado neste novo perfil.
