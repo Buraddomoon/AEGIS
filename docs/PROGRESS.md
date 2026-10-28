@@ -2593,3 +2593,31 @@ em falhas; depois runtime DB físico/proveniência/harness diagnóstico completo
 Somente quando concreto/revisável pedir autorização específica para novo ensaio;
 startupPGescreve metadados noPGDATA,SQLreadonly não implica volumeRO. Não encerrar
 pelo marco/CI,não simular /compact; checkpointsduráveis e compactação do ambiente.
+
+## 2026-10-28 — lifecycle do leitor concluído em testes locais; servidor continua
+
+Sobre ecab15e/353, 023358c compartilha somente o mecanismo interno de intents,
+quarentena de colisão e cleanup entre perfis fechados. c685b74 entrega o driver
+fixo do leitor, gates antes de create/start, transporte privado e captura após
+exit/configuração conferidos. A captura não transforma cleanup incerto em sucesso;
+DB é retido e nenhuma inicialização é repetida após resultado ambíguo. Sem CLI/API
+para efeitos. Os gates SQL não alegam conhecer a história antes de consultá-la.
+
+Rodada após refatoração: **156 passaram/2,33s**. Leitor, diário, runtime e captura:
+**157 passaram/2,02s**. Suíte completa `make test-runner-activation` sobre c685b74:
+**647 passaram/72,09s**; log privado em
+.local/pki-milestone/database-reader-lifecycle-suite.log. Um aviso Starlette/httpx
+permanece. SQL do fluxo lifecycle é fixture; testes não alcançam o PostgreSQL do Lab.
+
+Este commit adiciona política HBA fixa por operação e ADR0025: **11 testes passaram/
+0,29s**, sem DB/Docker. Arquivo0444 em pais0700, escrita exclusiva/fsync/verificação
+sem sobrescrita, alteração do original, credenciais ou grants. Apenas SCRAM da
+conta/banco/loopback fixos, demais acessos rejeitados; runtime ainda não comprovado.
+Total previsto após este commit: **356**, nove desde eb39b4e; main/GitHub privado e
+push após cada commit. Lint/format/tipos locais aprovados; CI final ainda a confirmar.
+
+Continuar sem encerrar pelo checkpoint: receita/inspeção e ownership do servidor
+PostgreSQL, imagem/proveniência e coordenador diagnóstico completo antes de pedir
+nova autorização específica. Nenhum lifecycle Docker/build, leitura de volume
+original, novo ensaio/marker/campanha, alteração de PKI/binding/credenciais humanas
+ou migração foi executado. Demo e fontes Linux/Wazuh preservados.
