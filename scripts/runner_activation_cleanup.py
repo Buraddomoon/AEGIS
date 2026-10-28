@@ -9,6 +9,8 @@ from runner_activation_ownership import identifier, observe
 
 ORDER = (
     "api",
+    "database-review-after",
+    "database-review-before",
     "journal-after",
     "journal-before",
     "runner",
@@ -23,6 +25,8 @@ IMAGE_ROLE = {
     "runner": "runner",
     "journal-before": "runner",
     "journal-after": "runner",
+    "database-review-before": "runner",
+    "database-review-after": "runner",
     "redis": "redis",
     "db": "postgres",
 }

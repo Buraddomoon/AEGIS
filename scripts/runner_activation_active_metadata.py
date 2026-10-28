@@ -99,7 +99,7 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
                     network_names[key.removeprefix("network-")] = {item["resource_id"]}
             reports[key] = found
         if (
-            _ids(docker.query("containers"), 6) != containers
+            _ids(docker.query("containers"), len(IMAGE_ROLE)) != containers
             or _ids(docker.query("networks"), 3) != networks
         ):
             raise ActivationError("active_metadata_project_membership_mismatch")

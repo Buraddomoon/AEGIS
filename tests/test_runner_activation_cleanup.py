@@ -24,7 +24,10 @@ class World:
         self.mutate_before_effect = None
         self.id = store.summary()["id"]
         self.objects = {}
-        for index, role in enumerate(roles):
+        # Namespace-sharing readers can only be requested after a known DB ID.
+        requested = sorted(roles, key=lambda role: role != "db")
+        for role in requested:
+            index = list(roles).index(role)
             store.request(role)
             obj = FakeDocker(self.id, role, present=not absent)
             self.objects[role] = obj
@@ -71,7 +74,8 @@ def test_all_owned_resources_close_in_dependency_order_with_repeated_absence_che
         world = World(store, cleanup.ORDER, running=True)
         result = cleanup.cleanup(store, images(), docker=world, ownership_docker=world)
         assert result["status"] == "owned_resources_absence_verified"
-        assert result["resources_reviewed"] == 9 and result["managed_resources_absence_verified"]
+        assert result["resources_reviewed"] == len(cleanup.ORDER)
+        assert result["managed_resources_absence_verified"]
         assert store.review()["closed"] and result["volumes_removed"] is False
         assert result["authorization_verified"] is result["normal_operation_permitted"] is False
         removed = [role for role, kind, _ in world.effects if kind == "remove"]
@@ -384,3 +388,17 @@ def test_invalid_selection_or_premature_whole_operation_close_causes_no_effect(
                 ownership_docker=world,
             )
         assert world.effects == []
+
+
+@pytest.mark.parametrize("role", ["database-review-before", "database-review-after"])
+@pytest.mark.parametrize("failure", ["stop", "remove"])
+def test_uncertain_database_reader_retains_its_namespace_and_networks(tmp_path, role, failure):
+    with ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        world = World(store, [role, "db", "network-backend"], running=True)
+        world.fail = (role, failure)
+        result = cleanup.cleanup(store, images(), docker=world, ownership_docker=world)
+        assert set(result["blockers"]) == {role, "db", "network-backend"}
+        assert not result["managed_resources_absence_verified"]
+        assert all(effect_role == role for effect_role, _, _ in world.effects)
+        assert not store.review()["closed"]

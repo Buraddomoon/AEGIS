@@ -14,6 +14,7 @@ from aegis.domain.validation import digest
 from runner_activation_metadata import PROJECT, ActivationError, document
 
 FORMAT = "aegis-activation-resource-event/1"
+DATABASE_REVIEW_ROLES = frozenset({"database-review-before", "database-review-after"})
 ROLES = frozenset(
     (
         "db",
@@ -22,6 +23,7 @@ ROLES = frozenset(
         "runner",
         "journal-before",
         "journal-after",
+        *DATABASE_REVIEW_ROLES,
         "network-backend",
         "network-ingress",
         "network-isolated",
@@ -78,7 +80,9 @@ def resource(identifier, plan_sha256, role):
 def _dependents(role, owned):
     if role.startswith("network-"):
         return {key for key in owned if not key.startswith("network-")}
-    return {"api"} if role in {"db", "redis", "runner"} else set()
+    if role == "db":
+        return {"api", *DATABASE_REVIEW_ROLES}
+    return {"api"} if role in {"redis", "runner"} else set()
 
 
 def _require_no_dependents(role, owned):
@@ -118,6 +122,15 @@ def _apply(state, event, identifier):
         # New work must not resurrect dependents during/after their dependency's
         # cleanup. Journal probes are network=none in the future fixed profile.
         parents = {"db", "redis", "runner"} if role == "api" else set()
+        if role in DATABASE_REVIEW_ROLES:
+            database = owned.get("db")
+            if (
+                database is None
+                or database["state"] != "OBSERVED"
+                or database["resource_id"] is None
+            ):
+                raise ActivationError("intent_observed_database_required")
+            parents.add("db")
         if role in {"db", "redis", "api", "runner"}:
             parents |= {key for key in owned if key.startswith("network-")}
         if any(
@@ -154,15 +167,22 @@ def _apply(state, event, identifier):
         if item["state"] == "REQUESTED":
             item["state"] = "OBSERVED"
         item["resource_id"] = data["resource_id"]
-    elif kind == "probe_start_requested":
+    elif kind in {"probe_start_requested", "database_review_start_requested"}:
+        database_review = kind == "database_review_start_requested"
+        context_field = "request_context_sha256" if database_review else "proof_bundle_sha256"
+        allowed_roles = (
+            DATABASE_REVIEW_ROLES if database_review else {"journal-before", "journal-after"}
+        )
         if (
-            set(data) != {"role", "recipe_sha256", "gates_sha256", "proof_bundle_sha256"}
-            or role not in {"journal-before", "journal-after"}
+            set(data) != {"role", "recipe_sha256", "gates_sha256", context_field}
+            or role not in allowed_roles
             or item["state"] != "OBSERVED"
             or item["resource_id"] is None
         ):
             raise ActivationError("intent_probe_start_invalid_or_already_requested")
-        for key in ("recipe_sha256", "gates_sha256", "proof_bundle_sha256"):
+        if database_review and owned["db"]["state"] != "OBSERVED":
+            raise ActivationError("intent_observed_database_required")
+        for key in ("recipe_sha256", "gates_sha256", context_field):
             _hash(data[key])
         # Durable intent is deliberately not a success record. A resumed
         # START_REQUESTED may have had an effect; only reconciliation/cleanup

@@ -466,3 +466,62 @@ def test_conflicted_ownership_cannot_be_adopted_removed_replayed_or_closed_after
         if role != "journal-before":
             with pytest.raises(intents.ActivationError, match="dependency_is_closing"):
                 store.request("api")
+
+
+@pytest.mark.parametrize("role", sorted(intents.DATABASE_REVIEW_ROLES))
+@pytest.mark.parametrize(
+    "state", ["missing", "REQUESTED", "REMOVAL_REQUESTED", "ABSENT", "CONFLICT"]
+)
+def test_database_reader_requires_known_open_database(tmp_path, role, state):
+    with intents.ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        if state != "missing":
+            store.request("db")
+            if state == "CONFLICT":
+                store.append("ownership_conflict", {"role": "db", "evidence_sha256": "f" * 64})
+            elif state in {"REMOVAL_REQUESTED", "ABSENT"}:
+                store.append("removal_requested", {"role": "db"})
+                if state == "ABSENT":
+                    store.append("absence_recorded", {"role": "db", "evidence_sha256": "f" * 64})
+        with pytest.raises(intents.ActivationError, match="observed_database_required"):
+            store.request(role)
+
+
+@pytest.mark.parametrize("role", sorted(intents.DATABASE_REVIEW_ROLES))
+def test_database_reader_start_is_private_context_bound_and_not_replayed(tmp_path, role):
+    root = tmp_path / "intents"
+    with intents.ActivationIntents(root) as store:
+        origin = begin(store)
+        store.request("db")
+        store.append("observed", {"role": "db", "resource_id": "d" * 64})
+        store.request(role)
+        store.append("observed", {"role": role, "resource_id": "e" * 64})
+        payload = {**start_payload(role)}
+        payload["request_context_sha256"] = payload.pop("proof_bundle_sha256")
+        with pytest.raises(intents.ActivationError, match="probe_start_invalid"):
+            store.append("probe_start_requested", payload)
+        store.append("database_review_start_requested", payload)
+        assert store.state["resources"][role]["start"] == {
+            key: value for key, value in payload.items() if key != "role"
+        }
+        with pytest.raises(intents.ActivationError, match="dependencies_retained"):
+            absent(store, "db")
+    with intents.ActivationIntents(root) as store:
+        store.resume(origin["id"], origin["begin_sha256"])
+        with pytest.raises(intents.ActivationError, match="already_requested"):
+            store.append("database_review_start_requested", payload)
+        absent(store, role)
+        absent(store, "db")
+        store.append("closed", {"evidence_sha256": "f" * 64})
+
+
+@pytest.mark.parametrize("role", ["journal-before", "runner", "api", "db", "network-isolated"])
+def test_database_reader_start_event_refuses_other_roles(tmp_path, role):
+    with intents.ActivationIntents(tmp_path / "intents") as store:
+        begin(store)
+        store.request(role)
+        store.append("observed", {"role": role, "resource_id": "d" * 64})
+        payload = start_payload(role)
+        payload["request_context_sha256"] = payload.pop("proof_bundle_sha256")
+        with pytest.raises(intents.ActivationError, match="probe_start_invalid"):
+            store.append("database_review_start_requested", payload)

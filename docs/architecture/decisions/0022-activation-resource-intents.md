@@ -74,3 +74,16 @@ Fontes oficiais consultadas:
 - [Docker container ls](https://docs.docker.com/reference/cli/docker/container/ls/).
 - [Docker network ls](https://docs.docker.com/reference/cli/docker/network/ls/).
 - [Docker container inspect](https://docs.docker.com/reference/cli/docker/container/inspect/).
+
+### Leitores do namespace PostgreSQL
+
+Papéis fechados `database-review-before` e `database-review-after` dependem de
+`db` previamente OBSERVED com ID completo. Não podem ser solicitados quando o
+banco está ausente, ambíguo, em conflito ou remoção. O evento separado
+`database_review_start_requested` fixa receita, gates e hash do contexto público
+sem senha; não usa `proof_bundle_sha256`, pois as provas ainda serão produzidas.
+START_REQUESTED não pode ser repetido nem após retomada. Nenhum campo de senha,
+URL, comando ou payload privado é aceito pelo evento. Cleanup remove os leitores
+antes de DB; incerteza mantém DB e redes. Catálogo agora tem11recursos,8containers.
+Não há novo CLI/efeito real/autorização implícita; runtime e coordenador completos
+continuam necessários.
