@@ -147,7 +147,10 @@ def test_review_checks_namespace_and_repeats_reader_and_database_ownership(store
     docker = Docker(store, role, phase)
     before = store.summary()
     receipt = review(store, docker, role, phase)
-    assert receipt["owned_database_namespace_verified"] and receipt["persistent_mounts_absent_verified"]
+    assert (
+        receipt["owned_database_namespace_verified"]
+        and receipt["persistent_mounts_absent_verified"]
+    )
     assert receipt["runtime_configuration_verified"]
     assert receipt["database_resource_id"] == DATABASE
     assert all(
