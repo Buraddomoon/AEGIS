@@ -89,3 +89,29 @@ Testes usam bytes sintéticos com nome de wheel para provar o contrato de hash,
 sem afirmar que constituem pacote instalável. Child real local cobre transporte/
 deadline/overflow/reap, nunca pip/rede no pytest. CLI é exercitada com repo Git
 main descartável e fonte/locks próprios. Build/imports reais ainda separados.
+
+## IDs nativos e config digest são contratos separados
+
+Consulta/build de desenvolvimento local identificou Docker29.8.1/API1.56 com store
+containerd: imageinspect.Id referencia manifesto/índice. Não confundir com digest
+do config OCI. Registry receipt passa a /2 com `config_digest`; a antiga /1 e seus
+recibos permanecem intactos, sem serem aceitos como contrato /2 por conversão cega.
+
+`runner_image_base` só inspeciona a referência oficial fixa por digest. Exige
+RepoDigests correspondente, Linux/amd64, root base e ausência de VOLUME/EXPOSE/
+ONBUILD/labels. Perfil containerd exige Id e Descriptor.digest iguais ao manifesto
+da plataforma e mediaType correto; perfil legacy separado aceita Id=config_digest
+somente sem Descriptor. Não aceitar mistura arbitrária, tag ou terceiro digest.
+Checker/runtime/imports continuam separados e todos os flags de build/proveniência/
+autorização permanecem falsos. Campos extras de receipt, inclusive tokens, recusam.
+
+Pull explícito somente da base Python43MB foi feito como preparação de build de
+desenvolvimento, sem create/start/exec de containers. A primeira comparação falhou
+por assumir configID; falha e intent preservados. Nova consulta /2 e inspeção nativa
+conferiram o manifesto aaf08c5490d52cd92bc27142a5215b1e47355a5eaf9adfad2a0fbc022d0b5490
+separadamente do config bdfc738a8a869292ec1b01f1b8e620db533e09d1fe68fe980a7118b22dae9cec.
+Isso não é dispensa de verificação nem ensaio autorizado.
+
+Fontes: [Docker containerd store](https://docs.docker.com/engine/storage/containerd/),
+[Moby imageinspect](https://github.com/moby/moby/blob/master/daemon/containerd/image_inspect.go)
+e [Engine29 release notes](https://docs.docker.com/engine/release-notes/29/).

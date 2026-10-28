@@ -153,14 +153,14 @@ async def _python_base(transport):
             if total > 256 * 1024**2:
                 raise ActivationError("python_registry_image_limit")
             return {
-                "format": "aegis-python-registry-base/1",
+                "format": "aegis-python-registry-base/2",
                 "checked_at": datetime.now(UTC).isoformat(),
                 "repository": "docker.io/library/python",
                 "tag_reviewed": "3.13-slim",
                 "reference": "docker.io/library/python@" + actual_digest,
                 "index_digest": index_digest,
                 "platform_manifest_digest": actual_digest,
-                "expected_image_id": _sha(config.get("digest")),
+                "config_digest": _sha(config.get("digest")),
                 "os": "linux",
                 "architecture": "amd64",
                 "compressed_layer_bytes": total,

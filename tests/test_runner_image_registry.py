@@ -144,7 +144,7 @@ def test_only_anonymous_official_pull_scope_and_exact_linux_amd64_manifest_are_r
     fixture = Registry()
     result = registry.python_base(transport=httpx.MockTransport(fixture.handle))
     assert result["reference"] == "docker.io/library/python@" + fixture.manifest_sha
-    assert result["expected_image_id"] == "sha256:" + "a" * 64
+    assert result["config_digest"] == "sha256:" + "a" * 64
     assert result["architecture"] == "amd64" and result["os"] == "linux"
     assert result["registry_manifest_verified"]
     assert all(

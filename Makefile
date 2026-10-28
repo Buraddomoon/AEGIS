@@ -225,7 +225,7 @@ test-runner-image-source:
 
 .PHONY: test-runner-image-build
 test-runner-image-build:
-	$(VENV)/pytest tests/test_runner_image_assert.py tests/test_runner_image_registry.py tests/test_runner_image_wheels.py -q
+	$(VENV)/pytest tests/test_runner_image_assert.py tests/test_runner_image_registry.py tests/test_runner_image_wheels.py tests/test_runner_image_base.py -q
 
 # Download verified wheels only; does not install, pull images or start a lab.
 .PHONY: runner-image-wheels-prepare runner-image-wheels-verify
