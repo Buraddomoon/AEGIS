@@ -112,3 +112,34 @@ created/running durante esse estado, sem reexecutar start ou alterar o intent.
 O evento de runtime não é readiness, login válido ou autorização; o driver futuro
 deve obter os hashes de observações reais e verificar os demais gates. Histórico
 local não permite fabricar verdade do daemon. Nenhum startup foi executado.
+
+## Lifecycle interno do servidor implementado, sem ensaio real
+
+`database_server_lifecycle.start_server` exige callback interno confiável antes de
+create, start e de cada readiness; não recebe aprovação JSON por API/CLI. Gates
+fixam escopo/plano/operação/receita/HBA/volume e ID conhecido (null só no create),
+validade<=30s/idade<=10s. Callback precisa comprovar autorização específica, plano,
+proveniência, volume original, política local, consumidor exclusivo, journal
+quiescente e worker parado. Drivers de fixtures não autorizam efeitos reais.
+
+Imagem é revisada antes do intent/create. Intenção precede efeito e start é único;
+ID retornado, ownership e runtime são conferidos antes/depois. Ambiguidade/falha/
+interrupção limpa somente o DB próprio com o mecanismo compartilhado dos probes,
+sem remover volume ou fechar operação pai. Colisão pré-create vira CONFLICT sem
+adoção/exclusão. Retomada não permite repetir start. Cleanup incerto não é sucesso.
+
+Após running/evidência durável, única operação exec permitida é pg_isready direto,
+UID70,quiet,127.0.0.1:5432/aegis/aegis_app/timeout1s. Sem shell, senha, endpoint ou
+comando livre. CLI Docker até2s por consulta, oito tentativas no máximo e prazo
+absoluto15s incluindo gates/inspeções/revisão final; só readiness pode repetir.
+Não há retry de criação ou inicialização do servidor. Sucesso mantém DB running
+para os leitores; coordenador deve sempre encerrar depois, mesmo se outro estágio
+falhar. Registro pai e start original continuam duráveis.
+
+[pg_isready17](https://www.postgresql.org/docs/17/app-pg-isready.html) comprova apenas
+que o servidor aceita conexões. Não exige senha válida e pode gerar logs de tentativa
+de conexão; isso deverá constar do escopo do ensaio. Não declarar autenticação,
+identidade SQL ou conteúdo do volume com esse sinal. Provas vêm do leitor separado.
+Recibos mantêm esses flags falsos, assim como autorização/proveniência/ativação.
+PGDATA permanece RW e pode receber escritas operacionais; nenhum runtime foi iniciado
+para validar esta implementação. Coordenador e imagem atual continuam pendentes.
