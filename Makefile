@@ -222,3 +222,7 @@ runner-image-source-verify:
 	$(VENV)/python scripts/runner_activation_image_source.py verify --source-id "$(RUNNER_SOURCE_ID)" --expected-sha256 "$(RUNNER_SOURCE_SHA256)"
 test-runner-image-source:
 	$(VENV)/pytest tests/test_runner_activation_image_source.py -q
+
+.PHONY: test-runner-image-build
+test-runner-image-build:
+	$(VENV)/pytest tests/test_runner_image_assert.py -q
