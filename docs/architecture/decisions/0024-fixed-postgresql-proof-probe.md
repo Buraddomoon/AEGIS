@@ -87,3 +87,27 @@ exige SHA canônico de origem independente e recusa symlink/hardlink/modo insegu
 Recibo contém somente contexto/hashes/contagens, nunca proofs/marker/senha.
 Hash local não é assinatura; root/daemon/usuário local continuam fronteiras de
 confiança. Captura válida não comprova runtime, volume, autorização ou cleanup.
+
+### Lifecycle interno do leitor
+
+`database_lifecycle.execute_reader` combina receita, transporte privado e captura;
+não expõe CLI/API nem aceita aprovação JSON externa. Usa o mecanismo interno
+`owned_probe` também utilizado pelo diário para intenção antes de create/start,
+reconciliação, CONFLICT sem adoção, proteção contra replay e finally cleanup.
+Comandos são somente receita fixa e start attach/interativo do ID próprio, com
+stdin16KiB/saída4MiB/prazo20s, nenhum segredo em argv/env/logs.
+
+Callback confiável antes de cada efeito precisa comprovar autorização específica,
+plano vigente, proveniência, volume DB original, runtime isolado, política de
+autenticação, consumidor exclusivo e worker parado. Contexto inclui DBid e hash
+da receita/identidade/descritor/request/escopo/plano, validade<=30s/idade<=10s,
+conferidos novamente antes da RPC. Não exigir história persistida antes de ler o
+banco: esse resultado só pode vir depois da consulta. SQL não se autorreferenda.
+
+Antes e depois do start exigir runtime/ownership exatos. Capturar somente após
+exit0/configuração conferida; falha na captura ainda limpa o leitor. Cleanup
+incerto mantém DB e impede status de sucesso mesmo que o arquivo tenha sido
+capturado. Interrupt limpa e propaga; pai não é fechado. Não iniciar esse driver
+manualmente: runtime físico do DB/proveniência/coordenador completo e novo escopo
+humano continuam pendentes. Testes do transporte completo usam fixture do engine/
+SQL e entrypoint real de serialização; não comprovam PostgreSQL original.
