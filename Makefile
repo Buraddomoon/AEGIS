@@ -225,7 +225,7 @@ test-runner-image-source:
 
 .PHONY: test-runner-image-build
 test-runner-image-build:
-	$(VENV)/pytest tests/test_runner_image_assert.py tests/test_runner_image_registry.py tests/test_runner_image_wheels.py tests/test_runner_image_base.py -q
+	$(VENV)/pytest tests/test_runner_image_assert.py tests/test_runner_image_registry.py tests/test_runner_image_wheels.py tests/test_runner_image_base.py tests/test_build_review_runner.py -q
 
 # Download verified wheels only; does not install, pull images or start a lab.
 .PHONY: runner-image-wheels-prepare runner-image-wheels-verify
@@ -233,3 +233,10 @@ runner-image-wheels-prepare:
 	$(VENV)/python scripts/runner_image_wheels.py prepare --source-id "$(RUNNER_SOURCE_ID)" --expected-sha256 "$(RUNNER_SOURCE_SHA256)"
 runner-image-wheels-verify:
 	$(VENV)/python scripts/runner_image_wheels.py verify --cache-id "$(RUNNER_WHEEL_CACHE_ID)" --expected-sha256 "$(RUNNER_WHEEL_CACHE_SHA256)"
+
+# Development image build only: no Compose, lab volume or runner launch.
+.PHONY: runner-image-build-prepare runner-image-build
+runner-image-build-prepare:
+	$(VENV)/python scripts/build_review_runner.py prepare --source-id "$(RUNNER_SOURCE_ID)" --source-sha256 "$(RUNNER_SOURCE_SHA256)" --cache-id "$(RUNNER_WHEEL_CACHE_ID)" --cache-sha256 "$(RUNNER_WHEEL_CACHE_SHA256)" --base-metadata "$(RUNNER_BASE_METADATA)" --base-sha256 "$(RUNNER_BASE_SHA256)"
+runner-image-build:
+	$(VENV)/python scripts/build_review_runner.py build --build-id "$(RUNNER_BUILD_ID)" --expected-sha256 "$(RUNNER_BUILD_SHA256)"

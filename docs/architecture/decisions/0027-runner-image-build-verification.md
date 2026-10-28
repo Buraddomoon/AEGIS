@@ -115,3 +115,41 @@ Isso não é dispensa de verificação nem ensaio autorizado.
 Fontes: [Docker containerd store](https://docs.docker.com/engine/storage/containerd/),
 [Moby imageinspect](https://github.com/moby/moby/blob/master/daemon/containerd/image_inspect.go)
 e [Engine29 release notes](https://docs.docker.com/engine/release-notes/29/).
+
+## Preparação e driver de build de desenvolvimento implementados
+
+`build_review_runner prepare` confronta fonte selada, cache de wheels e registry
+receipt /2 por SHAs independentes, base nativa e locks/checker obtidos do Git/main
+limpo. Contexto privado novo contém somente código/pyproject, wheels verificadas,
+locks, manifesto/checker fixos e Dockerfile gerado. Paths/links/extras recusam antes
+de leitura/envio; nenhuma .env/key/journal/credencial/arquivo do workspace entra.
+Conteúdo não secreto é0644 sob pais0700, apropriado ao COPY/pacote; artefatos de
+controle e logs são0600. Arquivos/diretórios sincronizados antes de publicar plano.
+
+Dockerfile parte exclusivamente de referência oficial por digest e não herda
+labels Compose. Pip instala wheels com hashes/sem índice e projeto próprio sem
+build isolation/compilação de bytecode. USER10001 executa checker de fonte/versões/
+imports. build-id exclusivo invalida cache só do check final: CACHED sem evidência
+nova não produz sucesso. Sem LABEL/VOLUME/EXPOSE, shell/URLs fornecidos por API ou
+mount/porta/credencial de Lab. Receita usa comandos fixos de build do próprio projeto.
+
+`build` revalida contexto/base, recusa tag de saída existente e registra intenção
+exclusiva antes da RPC. Default builder/daemon Unix local/configDocker vazia/env
+mínimo, networknone nos RUNs, pullfalse, sem push/proveniência/SBOM remotos, load
+apenas local. Cliente de build tem prazo180s/log4MiB e kill/reap próprio. Não inicia
+Compose, serve runner ou acessa os volumes originais. Preparação/build não são
+permissão de ensaio. Resposta ambígua conserva intent/artefatos, sem repetir build
+com o mesmo ID nem remover imagens históricas. Builder pode ainda concluir após
+perda do cliente: não inferir sucesso daí, preservar para revisão.
+
+Recibo exige código de saída0, metadata/config/result digests/IID e ID/descriptor
+nativos coerentes; imagem final UID10001, sem labels/volumes/ports e env permitido;
+check novo único/contextual de fonte/versões/imports, e contexto relido no final.
+`local_build_inputs_verified` significa confronto local sob confiança no host/
+daemon/builder; `publisher_signature_verified=false` continua explícito. Não é
+atestado remoto, proteção contra root hostil ou autorização de laboratório.
+
+Testes usam contextos Git/cache/fontes sintéticos, FakeBuildKit e filhos Python
+locais para deadline/overflow/reap. Não confundir seus receipts com build real.
+O build efetivo só será relatado como validado após executar o driver e conferir
+saída/ID/imports na imagem realmente exportada.
