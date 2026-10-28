@@ -141,7 +141,7 @@ def _read(path, maximum):
 
 def main():
     try:
-        if sys.version_info[:2] != (3, 13):
+        if sys.version_info[:2] != (3, 13) or os.getuid() != 10001 or os.getgid() != 10001:
             raise ImageCheckError("image_python_profile_invalid")
         expected = json.loads(_read(SOURCE, 256 * 1024))
         root = Path(sysconfig.get_path("purelib")) / "aegis"
