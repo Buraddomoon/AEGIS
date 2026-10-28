@@ -65,3 +65,27 @@ real curto; acesso externo somente na consulta explícita host-only registrada.
 
 Fontes oficiais: [Registry token auth](https://docs.docker.com/reference/api/registry/auth/)
 e [Distribution HTTP API V2](https://distribution.github.io/distribution/spec/api/).
+
+## Cache de wheels implementado
+
+`runner_image_wheels` vincula source-ID/SHA conferido ao runtime.lock do tar e ao
+build.lock obtido do Git HEAD/main limpo. CLI não recebe URL, path, comando ou
+versão livres. Inputs precisam de pins/hashes exatos e perfis sem sobreposição.
+
+Downloader é apenas python-I-mpipdownload do venv, PyPI fixo, onlybinary/requirehashes/
+nodeps/isolated/nocache/noinput/keyringdisabled. Ambiente mínimo, configurações pip e
+.netrc apontam para /dev/null; não herda proxies, tokens ou credenciais. Não instala
+pacotes nem executa sdists. Deadline120s/log4MiB e kill/reap do filho próprio,
+umask077 e diretório0700 por operação. Resíduos de falha não são apagados/reutilizados.
+
+Depois do download, validar arquivos regulares0600/link único, nomes/versões de
+wheel e SHA dos locks; limites por arquivo32MiB e total128MiB são verificados no
+cache após o pip, não cota de disco durante transferência. Contagem precisa ser
+exata. Artefatos/plan/receipt são exclusivos com fsync; reload exige SHA independente,
+relê locks e hashes de todas as wheels e recusa extras/alterações/links. Recibos
+não afirmam instalação/build/proveniência de imagem ou autorização de Lab.
+
+Testes usam bytes sintéticos com nome de wheel para provar o contrato de hash,
+sem afirmar que constituem pacote instalável. Child real local cobre transporte/
+deadline/overflow/reap, nunca pip/rede no pytest. CLI é exercitada com repo Git
+main descartável e fonte/locks próprios. Build/imports reais ainda separados.

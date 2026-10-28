@@ -225,4 +225,11 @@ test-runner-image-source:
 
 .PHONY: test-runner-image-build
 test-runner-image-build:
-	$(VENV)/pytest tests/test_runner_image_assert.py tests/test_runner_image_registry.py -q
+	$(VENV)/pytest tests/test_runner_image_assert.py tests/test_runner_image_registry.py tests/test_runner_image_wheels.py -q
+
+# Download verified wheels only; does not install, pull images or start a lab.
+.PHONY: runner-image-wheels-prepare runner-image-wheels-verify
+runner-image-wheels-prepare:
+	$(VENV)/python scripts/runner_image_wheels.py prepare --source-id "$(RUNNER_SOURCE_ID)" --expected-sha256 "$(RUNNER_SOURCE_SHA256)"
+runner-image-wheels-verify:
+	$(VENV)/python scripts/runner_image_wheels.py verify --cache-id "$(RUNNER_WHEEL_CACHE_ID)" --expected-sha256 "$(RUNNER_WHEEL_CACHE_SHA256)"
