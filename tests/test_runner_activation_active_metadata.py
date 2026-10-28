@@ -41,7 +41,9 @@ class World:
         )
         self.meta.responses["networks", None] = self.ids("network-backend")
         self.meta.responses["network_name", "backend"] = self.ids("network-backend")
-        self.meta.responses["consumers", "journal"] = self.ids(role) if phase == "start" else b""
+        self.meta.responses["consumers", "journal"] = (
+            self.ids(role) if phase == "start" and role not in active.DATABASE_REVIEW_ROLES else b""
+        )
         self.meta.responses["consumers", "postgres-data"] = self.ids("db")
 
     def ids(self, *roles):
@@ -62,7 +64,7 @@ class World:
         )
 
 
-@pytest.mark.parametrize("role", ["journal-before", "journal-after"])
+@pytest.mark.parametrize("role", sorted(active.PROBE_ROLES))
 @pytest.mark.parametrize("phase", ["create", "start"])
 def test_owned_inventory_allows_only_durable_exact_project_and_volume_members(
     role, phase, tmp_path
@@ -285,5 +287,19 @@ def test_final_durable_review_and_initial_review_are_included_in_absolute_deadli
         monkeypatch.setattr(store, "review", slow_initial)
         world.meta.calls.clear()
         with pytest.raises(active.ActivationError, match="time_limit"):
+            world.review()
+        assert world.meta.calls == []
+
+
+@pytest.mark.parametrize("role", sorted(active.PROBE_ROLES))
+@pytest.mark.parametrize("phase", ["create", "start"])
+def test_another_unfinished_probe_blocks_all_phases_before_daemon_queries(tmp_path, role, phase):
+    with ActivationIntents(tmp_path / "intents") as store:
+        store.begin(uuid4().hex, "a" * 64, "b" * 64)
+        world = World(store, role, phase)
+        other = next(key for key in sorted(active.PROBE_ROLES) if key != role)
+        store.request(other)
+        store.append("observed", {"role": other, "resource_id": "f" * 64})
+        with pytest.raises(active.ActivationError, match="unresolved_or_incompatible"):
             world.review()
         assert world.meta.calls == []

@@ -69,3 +69,11 @@ O helper `inventory` não prova quiescência. Esses componentes não conferem da
 internos/identidade física do PostgreSQL, conteúdo do journal, origem da imagem,
 isolamento real ou autorização humana. Flags operacionais continuam falsas e o
 perfil público mantém executor_implemented=false até existir coordenador completo.
+
+Recheck interno também aceita os dois papéis fechados `database-review-before`/
+`database-review-after`, mantendo o CLI público quiescente. Para esses leitores,
+nenhum consumidor do journal é permitido, inclusive o leitor atual (sem mount).
+Qualquer outro probe nãoABSENT bloqueia todas as fases, mesmo sem mount no journal;
+um leitor SQL ambíguo não pode coexistir com a revisão de diário. Membership/IDs/
+labels/imagens/volumes e limites temporais continuam iguais. Recheck não comprova
+SQL, HBA, vínculo físico, proveniência nem autorização.

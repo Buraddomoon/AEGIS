@@ -2549,3 +2549,47 @@ simulação antes de solicitar nova autorização. PGSQL read-only não torna PG
 read-only: startup escreve metadados operacionais e precisa de escopo explícito.
 Sem iniciar o lab para resolver implementação incompleta nem reaproveitar aprovação.
 PKI/mTLS/registro revogado da rotação continuarão separados do primeiro diagnóstico.
+
+## 2026-10-28 — runtime e captura privada dos leitores PostgreSQL; continuação automática
+
+Baseeb39b4e/347confirmada privada e sincronizada. Suíte global daquele código:
+**1.526 Python passaram/372,42s**, um aviso Starlette/httpx conhecido. Não é ensaio
+real; log privado .local/pki-milestone/persisted-probe-global-tests.log.
+
+Desde o checkpoint:ca8bdc4 acrescenta dois papéis de leitura com dependência durável
+do DB, start contextual sem senha/sem replay e cleanup antes do namespace pai;
+f1c9b12 extrai inspeção de processo;d8c1459 implementa perfil físico/inspeção;
+82302cf corrige formatação de assertion após rename;97c0e0d captura provas privadas.
+Este commit estende recheck ativo aos leitores e bloqueia probes simultâneos;
+será o **6ºcommit** desdeeb39b4e, total **353**. main/pushdireto/repoPRIVATE mantidos.
+
+Leitor deriva namespace do DB OBSERVED próprio; não recebe IDdestino/endereço
+livre, mount ou segredo em argv. Configexata:PID1/UIDGID10001/rootRO/capdropALL/PNP,
+256MiB/0,5CPU/16PIDs/tmpfs16MiB,semports/init/logs;imagem semVOLUME/EXPOSE/PG*.
+Ownership DBrunning/leitor repetido antes/depois e durável inalterado. Gates de
+volume físico/isolamento DB/HBA/SQL/proveniência/autorização ainda separados falsos.
+
+Captura host fixa identidade+descritor, request16KiB/passwordstdin,reply4MiB sem
+ampliar64KiB dos metadados. Parser recusa duplicatas/contexto/flags inconsistentes.
+Artefato fora dos intents,0700/0600/O_EXCL/O_NOFOLLOW/fsync/releitura;falha preserva
+resíduos,sem sobrescrita/retry automático. Recibo só hashes/contagens, nuncaprovas.
+Reload exigeSHAindependente e recusa links/permissões inseguras.
+
+Verificação: **166 testes** intents/cleanup/rechecks passaram22,74s; **130 testes**
+regressão runtime/lifecycle de diário passaram0,96s; **195 testes** leitor+diário
+passaram1,41s; **96 testes** captura+runtime passaram0,76s; **89 testes** rechecks+
+captura passaram26,56s. Rondas parcialmente sobrepostas, não somar como testes únicos.
+Lint/formatação/tipos locais passaram. CI d8c1459falhou só no formatter da assertion
+renomeada; corrigido em82302cf, sem alegar sucesso remoto antes da execução final.
+Source-review97c0e0dSUCCESS; CI código97c0e0d ainda pendente na última consulta.
+
+Sem Docker lifecycle/build/deploy,leitura interna dos volumesoriginais,SQLdoLab,
+Linux/Wazuh/marcador/campanha,PKI/binding/migração/seed ou credencialhumana alterada.
+Testes somente fixtures/filhosPython/SQLite temporário; globals anteriores usaram
+schemasPGdescartáveis. DB runtime e seus templates ainda não foram ensaiados.
+
+Continuação imediata: driver fechado do leitor com gates frescos, captura e cleanup
+em falhas; depois runtime DB físico/proveniência/harness diagnóstico completo.
+Somente quando concreto/revisável pedir autorização específica para novo ensaio;
+startupPGescreve metadados noPGDATA,SQLreadonly não implica volumeRO. Não encerrar
+pelo marco/CI,não simular /compact; checkpointsduráveis e compactação do ambiente.

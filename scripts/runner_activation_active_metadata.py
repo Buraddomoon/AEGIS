@@ -7,7 +7,10 @@ import runner_activation_metadata as metadata
 import runner_activation_ownership as ownership
 from aegis.domain.validation import digest
 from runner_activation_cleanup import IMAGE_ROLE
+from runner_activation_intents import DATABASE_REVIEW_ROLES
 from runner_activation_metadata import ActivationError
+
+PROBE_ROLES = frozenset({"journal-before", "journal-after", *DATABASE_REVIEW_ROLES})
 
 
 class _Budget:
@@ -43,7 +46,7 @@ def _ids(raw, maximum):
 def review(store, images, expected_inventory, role, phase, *, docker=None, ownership_docker=None):
     """No SQL/PKI/auth/worker/runtime proof is inferred from these metadata gates."""
     deadline = time.monotonic() + 20
-    if role not in {"journal-before", "journal-after"} or phase not in {"create", "start"}:
+    if role not in PROBE_ROLES or phase not in {"create", "start"}:
         raise ActivationError("active_metadata_probe_context_required")
     original = store.review()
     images = copy.deepcopy(images)
@@ -67,6 +70,10 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
         or any(item["state"] in {"CONFLICT", "REMOVAL_REQUESTED"} for item in owned.values())
         or any(item["state"] == "REQUESTED" and key != role for key, item in owned.items())
         or ("runner" in owned and owned["runner"]["state"] != "ABSENT")
+        or any(
+            key in PROBE_ROLES and key != role and item["state"] != "ABSENT"
+            for key, item in owned.items()
+        )
     ):
         raise ActivationError("active_metadata_unresolved_or_incompatible_ownership")
     operation = store.summary()["id"]
@@ -106,7 +113,11 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
         for name in metadata.NETWORKS:
             if _ids(docker.query("network_name", name), 1) != network_names.get(name, set()):
                 raise ActivationError("active_metadata_reserved_network_mismatch")
-        journal_ids = {current["resource_id"]} if phase == "start" else set()
+        journal_ids = (
+            {current["resource_id"]}
+            if phase == "start" and role not in DATABASE_REVIEW_ROLES
+            else set()
+        )
         db = owned.get("db")
         db_ids = {db["resource_id"]} if db and db["state"] != "ABSENT" else set()
         if (
