@@ -357,6 +357,6 @@ Componentes do leitor e servidor disponíveis para testes locais (sem novo ensai
 Runtime do servidor ainda não iniciado no novo perfil. O template foi consultado
 somente sobre metadados da imagem local e do DB Demo existente, sem SQL/lifecycle.
 Isso não comprova autenticação carregada, proveniência, conteúdo do volume Linux,
-exclusividade, limpeza ou autorização. Permanecem pendentes lifecycle do servidor,
-readiness, imagem atual/proveniência e coordenador diagnóstico completo. Não
+exclusividade, limpeza ou autorização. Lifecycle e readiness do servidor já estão implementados/testados com fixtures.
+Permanecem pendentes imagem atual/proveniência e coordenador diagnóstico completo. Não
 executar os componentes isoladamente como substituto desses gates.

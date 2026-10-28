@@ -326,3 +326,19 @@ não usa only_roots. Bundle até4MiB incluindo newline, emitido só apósdispose
 capturar0600/0700, nunca ecoar/logar. Namespace físico/proveniência/harness reais
 ainda separados: import/PID1 não autorizam operação. Transporte mantém consultas
 64KiB e só adapter fechado pode selecionar cap4MiB de provas. Sem invocação real.
+
+Estado de implementação em2026-10-28: DBserver lifecycle interno já registra
+start antes da RPC, não repete após resume e faz readiness com pg_isready fixo
+até15s/oito tentativas; sucesso mantém pai para leitores, falha limpa só ownership
+próprio, cleanup incerto não é sucesso. Health não comprova autenticação/SQL.
+Nenhuma invocação real desse startup ocorreu; controlador completo/escopo novo
+continuam pendentes. Recheck ativo aceita dbcreate/start/running de forma fechada,
+sem ampliar fases de outros papéis ou recheck público. Ver ADR0025.
+
+Fonte da nova imagem: make runner-image-source-prepare/verify só exporta blobs
+versionados de main limpa em tar privado determinístico, sem Docker/build/pull;
+ID/hash e limites conforme ADR0026. Hash local não é assinatura/proveniência.
+Imagem antiga do runner75059996 herda três labels Compose; não alterar essa imagem,
+relaxar label_count5 ou adotar como imagem aprovada. Preparar imagem limpa com fonte
+conferida e base oficial identificada. Build de desenvolvimento não é autorização
+para subir Lab, acessar seus volumes, alterar PKI/binding ou executar marcador.

@@ -2696,3 +2696,43 @@ limitado, cleanup em falhas e retenção do pai após sucesso; depois build/prov
 e coordenador diagnóstico completo antes de pedir ensaio específico. Não houve
 novo Docker lifecycle/build, acesso interno aos volumes Linux/Wazuh, SQL do Lab,
 marcador/campanha, troca PKI/binding, credenciais humanas, grants ou migração.
+
+## 2026-10-28 — startup/readiness testados e CI completa aprovada; seguir imagem
+
+296679a compartilha cleanup sem adoção em colisões; **99 testes passaram/2,75s**.
+4223e34 implementa driver interno do servidor: create/start únicos com intents,
+gates frescos incluindo ID conhecido e recipe/HBA/escopo/plano, runtime antes/
+depois e readiness fixo de15s/oito tentativas. Só health pode repetir; não é prova
+de autenticação. Sucesso mantém pai, falha/interrupção limpa ownership próprio;
+colisão mantém CONFLICT, falha de cleanup retém ID/volume. **127 testes passaram/
+3,90s** na rodada com probes/cleanup; **96 passaram/1,89s** com inspeção. Rodadas
+sobrepostas. Nenhum desses drivers foi executado contra um container real.
+
+Suíte completa sobre4223e34: **793 testes passaram/83,10s**, log privado
+.local/pki-milestone/database-server-lifecycle-suite.log. Lint/formatação191arquivos
+e tipos passaram. CI de4223e34 **SUCCESS**, [run40762985073](https://github.com/Buraddomoon/AEGIS/actions/runs/40762985073):
+**1.856 Python passaram/seis projeções opcionais puladas/379,79s**,
+**79 React passaram/12arquivos**, build439ms e advisory review. DiskCache5.6.3/
+PYSEC-2026-2447 continua explicitamente revisado, não zero vulnerabilidades. Log
+completo privado em .local/pki-milestone/database-server-final-code-ci.log.
+
+Leitura adicional somente de imageinspect revelou runner antigo75059996 com três
+labels herdadas do Compose. Não serve como base do novo perfil de cinco labels
+exatas; não remover/alterar a imagem histórica nem relaxar o guard. Tag local
+python:3.13-slim não estava disponível na leitura de metadados. Próxima etapa é
+preparar nova imagem com base oficial identificada e fonte já conferida, mantendo
+Docker/run/lab separados. Recursos lidos: MemAvailable5.611.160KiB e espaço do
+workspace431.655.960.576bytes; não houve parada de serviços ou mudança de sistema.
+
+Ferramentas de build consultadas no PyPI oficial: pip26.2.2/setuptools84.2.1/
+wheel0.48.0, hashes das wheels públicas e compatibilidade de Python/MIT. Ainda
+não instalado/baixado nenhum desses artefatos nesta etapa; pesquisa/metadata HTTP
+somente, sem tokens/credenciais. Fixar/verificar inputs antes do próximo build.
+
+Este checkpoint é o **18ºcommit desde eb39b4e**, total **365** após commit;
+main/privado/push direto. Continuar automaticamente com imagem/proveniência e
+coordenador diagnóstico revisável. Não houve novo Docker lifecycle/build/pull,
+SQL ou leitura interna de volumes Linux/Wazuh, marcador/campanha, troca PKI/binding,
+credenciais humanas, grants ou migração. Fonte/volumes/imagens históricos intactos.
+Nova autorização só quando houver harness completo e escopo concreto; não repetir
+ensaio antigo ou encerrar por marco/CI. O agente não possui invocador de /compact.
