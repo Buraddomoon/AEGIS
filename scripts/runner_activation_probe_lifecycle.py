@@ -3,17 +3,15 @@
 import copy
 import json
 import subprocess
-from datetime import datetime, timedelta
 
-import runner_activation_cleanup as closure
+import runner_activation_owned_probe as owned_probe
 import runner_activation_probe_runtime as runtime
-import runner_pki as pki
 from aegis.domain.validation import digest
 from aegis.lab_runner.journal_probe import MAX_INPUT
 from aegis.lab_runner.persisted_review import expected_proofs
 from runner_activation_intents import _hash
 from runner_activation_metadata import IMAGES, ActivationError, _execute, image_id
-from runner_activation_ownership import identifier, observe
+from runner_activation_ownership import identifier
 from runner_activation_probe_result import decode
 
 CHECKS = frozenset(
@@ -58,22 +56,6 @@ class ProbeDocker:
             raise ActivationError("journal_probe_start_outcome_unconfirmed") from None
 
 
-def _fresh(gate):
-    checked, expires = (
-        datetime.fromisoformat(gate["checked_at"]),
-        datetime.fromisoformat(gate["expires_at"]),
-    )
-    now = pki.clock()
-    if (
-        checked.utcoffset() != timedelta(0)
-        or expires.utcoffset() != timedelta(0)
-        or not timedelta(0) < expires - checked <= timedelta(seconds=30)
-        or not checked <= now < expires
-        or now - checked > timedelta(seconds=10)
-    ):
-        raise ActivationError("journal_probe_gate_stale")
-
-
 def _gate(callback, phase, spec, state, operation_id, identity, bundle, proof_sha256):
     # This is a trusted internal callback, never an approval JSON accepted by an
     # API/CLI. The complete coordinator must compute the checks from real gates.
@@ -98,7 +80,7 @@ def _gate(callback, phase, spec, state, operation_id, identity, bundle, proof_sh
         or any(value is not True for value in gate["checks"].values())
     ):
         raise ActivationError("journal_probe_gate_mismatch")
-    _fresh(gate)
+    owned_probe.fresh(gate)
     return gate
 
 
@@ -139,11 +121,6 @@ def execute_probe(
     if state["closed"] or role in state["resources"]:
         raise ActivationError("journal_probe_new_role_required_no_replay")
     lifecycle = lifecycle or ProbeDocker()
-    result = None
-    error = None
-    cleanup = None
-    gates = {}
-    create_attempted = False
 
     def review(phase, known_id):
         return runtime.review(
@@ -158,118 +135,26 @@ def execute_probe(
             ownership_docker=ownership_docker,
         )
 
-    runtime.review_image(
-        operation_id, plan_sha256, role, images["runner"], proof_sha256, docker=runtime_docker
-    )
-    if (
-        observe(operation_id, plan_sha256, role, docker=ownership_docker)["status"]
-        != "absent_snapshot"
-    ):
-        raise ActivationError("journal_probe_prior_resource_present")
-    try:
-        store.request(role)
-        gate = _gate(
-            before_effect, "create", spec, state, operation_id, identity, bundle, proof_sha256
-        )
-        gates["create"] = digest(gate)
-        if store.review()["resources"][role]["state"] != "REQUESTED":
-            raise ActivationError("journal_probe_create_intent_changed")
-        if (
-            observe(operation_id, plan_sha256, role, docker=ownership_docker)["status"]
-            != "absent_snapshot"
-        ):
-            raise ActivationError("journal_probe_resource_appeared_before_create")
-        _fresh(gate)
-        create_attempted = True
-        created_id = lifecycle.create(
+    return owned_probe.run(
+        store,
+        images,
+        role,
+        spec,
+        proof_sha256,
+        review_image=lambda: runtime.review_image(
+            operation_id, plan_sha256, role, images["runner"], proof_sha256, docker=runtime_docker
+        ),
+        gate=lambda phase: _gate(
+            before_effect, phase, spec, state, operation_id, identity, bundle, proof_sha256
+        ),
+        review_runtime=review,
+        create=lambda: lifecycle.create(
             operation_id, plan_sha256, role, images["runner"], proof_sha256
-        )
-        identifier(created_id)
-        present = observe(operation_id, plan_sha256, role, docker=ownership_docker)
-        if present["status"] != "present_owned_snapshot" or present["resource_id"] != created_id:
-            raise ActivationError("journal_probe_created_id_unconfirmed")
-        store.append("observed", {"role": role, "resource_id": created_id})
-        review("created", created_id)
-        gate = _gate(
-            before_effect, "start", spec, state, operation_id, identity, bundle, proof_sha256
-        )
-        gates["start"] = digest(gate)
-        store.append(
-            "probe_start_requested",
-            {
-                "role": role,
-                "recipe_sha256": digest(spec),
-                "gates_sha256": digest(gate),
-                "proof_bundle_sha256": proof_sha256,
-            },
-        )
-        # Intention must be durable BEFORE the final runtime/ownership recheck.
-        if store.review()["resources"][role]["state"] != "START_REQUESTED":
-            raise ActivationError("journal_probe_start_intent_changed")
-        review("created", created_id)
-        _fresh(gate)
-        raw = lifecycle.start(
-            operation_id, plan_sha256, role, images["runner"], proof_sha256, created_id, payload
-        )
-        review("exited", created_id)
-        result = decode(raw, bundle, proof_sha256)
-    except (
-        ValueError,
-        OSError,
-        TypeError,
-        KeyError,
-        AttributeError,
-        RecursionError,
-        subprocess.SubprocessError,
-    ):
-        error = "journal_probe_execution_unconfirmed"
-    finally:
-        try:
-            current = store.review()
-            # A collision detected before attempting create is not permission to
-            # delete a pre-existing resource. Keep the intent for investigation.
-            found = (
-                None
-                if create_attempted
-                else observe(operation_id, plan_sha256, role, docker=ownership_docker)
-            )
-            if (
-                not create_attempted
-                and found["status"] != "absent_snapshot"
-                and role in current["resources"]
-                and current["resources"][role]["state"] == "REQUESTED"
-            ):
-                store.append("ownership_conflict", {"role": role, "evidence_sha256": digest(found)})
-            may_clean = create_attempted or found["status"] == "absent_snapshot"
-            if role in current["resources"] and may_clean:
-                cleanup = closure.cleanup(
-                    store,
-                    images,
-                    roles={role},
-                    close_operation=False,
-                    docker=cleanup_docker,
-                    ownership_docker=ownership_docker,
-                )
-        except (ValueError, OSError, TypeError, KeyError, subprocess.SubprocessError):
-            cleanup = None
-    clean = cleanup is not None and cleanup["selected_resources_absence_verified"]
-    return {
-        "format": "aegis-journal-probe-lifecycle-review/1",
-        "operation_id": operation_id,
-        "role": role,
-        "recipe_sha256": digest(spec),
-        "gate_sha256": gates,
-        "status": "probe_completed_and_removed"
-        if result is not None and clean
-        else "probe_execution_unconfirmed"
-        if clean
-        else "probe_cleanup_unconfirmed",
-        "error": error,
-        "result": result,
-        "cleanup": cleanup,
-        "probe_removed": clean,
-        "probe_result_verified": result is not None,
-        "authorization_verified": False,
-        "activation_verified": False,
-        "normal_operation_permitted": False,
-    }
+        ),
+        start=lambda known_id: lifecycle.start(
+            operation_id, plan_sha256, role, images["runner"], proof_sha256, known_id, payload
+        ),
+        validate_reply=lambda raw: decode(raw, bundle, proof_sha256),
+        ownership_docker=ownership_docker,
+        cleanup_docker=cleanup_docker,
+    )
