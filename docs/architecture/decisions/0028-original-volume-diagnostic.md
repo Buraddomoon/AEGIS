@@ -1,6 +1,6 @@
 # ADR 0028 — Diagnóstico dos volumes originais separado da ativação PKI
 
-Estado: planejamento implementado e testado; coordenador/ensaio pendentes.
+Estado: planejamento, gates, coordenador e entrada host-only implementados; ensaio nativo pendente.
 
 ## Decisão
 
@@ -152,3 +152,13 @@ volumes. KeyboardInterrupt é propagado depois de tentativa de cleanup e recibo.
 privado real. Cobrem sucesso, falha de startup/output/compare, prazo, interrupção,
 cleanup retido, falha antes de start e replay. Nenhuma RPC Docker real/SQL Linux.
 Entrada pública/recuperação e revisão do procedimento completo ainda separadas.
+
+
+## Entrada host-only /3 e cleanup após expiração
+
+CLI run exige confirmação booleana explícita e SHA do escopo, main limpa, lock
+compartilhado e recheck antes de ler a única credencial fixa. Plano /3 anuncia
+executor implementado; preparações /1 e /2 não são adotadas implicitamente. Isso
+não afirma ensaio nativo concluído. Cleanup verifica plano/intent/pedido originais,
+aceita prazo expirado e nunca lê senha, inicia recursos ou repete execução.
+Procedimento completo: [diagnóstico Linux](../../../labs/linux/DIAGNOSTIC.md).

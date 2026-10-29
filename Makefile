@@ -246,7 +246,7 @@ runner-image-build-review:
 
 .PHONY: test-runner-diagnostic runner-diagnostic-plan runner-diagnostic-recheck
 test-runner-diagnostic:
-	$(VENV)/pytest tests/test_runner_diagnostic_plan.py tests/test_runner_diagnostic_recheck.py tests/test_runner_postgres_origin.py tests/test_runner_diagnostic_gates.py -q
+	$(VENV)/pytest tests/test_runner_diagnostic_plan.py tests/test_runner_diagnostic_recheck.py tests/test_runner_postgres_origin.py tests/test_runner_diagnostic_gates.py tests/test_runner_diagnostic_coordinator.py tests/test_runner_diagnostic_cli.py -q
 runner-diagnostic-plan:
 	$(VENV)/python scripts/runner_diagnostic_plan.py prepare --application-image "$(APPLICATION_IMAGE_ID)" --runner-image "$(RUNNER_IMAGE_ID)" --postgres-image "$(POSTGRES_IMAGE_ID)" --redis-image "$(REDIS_IMAGE_ID)" --build-id "$(RUNNER_BUILD_ID)" --build-plan-sha256 "$(RUNNER_BUILD_SHA256)" --build-receipt-sha256 "$(RUNNER_BUILD_RECEIPT_SHA256)" --postgres-origin "$(POSTGRES_ORIGIN_RECEIPT)" --postgres-origin-sha256 "$(POSTGRES_ORIGIN_SHA256)"
 runner-diagnostic-recheck:
@@ -255,3 +255,10 @@ runner-diagnostic-recheck:
 .PHONY: runner-postgres-origin
 runner-postgres-origin:
 	$(VENV)/python scripts/runner_postgres_origin.py --image-id "$(POSTGRES_IMAGE_ID)"
+
+.PHONY: runner-diagnostic-run runner-diagnostic-cleanup
+runner-diagnostic-run:
+	@test "$(DIAGNOSTIC_CONFIRM_START)" = yes
+	$(VENV)/python scripts/runner_diagnostic.py run --plan-id "$(DIAGNOSTIC_PLAN_ID)" --expected-sha256 "$(DIAGNOSTIC_PLAN_SHA256)" --authorized-scope-sha256 "$(DIAGNOSTIC_AUTHORIZED_SCOPE_SHA256)" --confirm-original-database-start
+runner-diagnostic-cleanup:
+	$(VENV)/python scripts/runner_diagnostic.py cleanup --plan-id "$(DIAGNOSTIC_PLAN_ID)" --expected-sha256 "$(DIAGNOSTIC_PLAN_SHA256)" --operation-id "$(DIAGNOSTIC_OPERATION_ID)" --begin-sha256 "$(DIAGNOSTIC_BEGIN_SHA256)"

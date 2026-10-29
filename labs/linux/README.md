@@ -107,3 +107,5 @@ verificam pais/filhos pendentes e cleanup íntegro, além da reserva. Solicitaç
 pendente precisa de cancelamento explícito antes da revisão, preservando scopes.
 O [plano coordenado](../../docs/operations/runner-pki-activation.md) ainda depende
 de harness e autorização específica; consulta positiva não prova o diário real.
+
+[Diagnóstico único dos volumes preservados](DIAGNOSTIC.md): planejamento/recheck de metadados e executor opt-in, com novo escopo autorizado antes de qualquer startup original. Preparação não autoriza execução.

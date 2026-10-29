@@ -75,7 +75,7 @@ def test_plan_pins_actual_reviewed_inputs_but_does_not_authorize_or_run(diagnost
     assert artifact["scope"]["profile"]["database_volume_access"].startswith("read-write")
     assert artifact["scope"]["profile"]["journal_volume_access"] == "read-only"
     assert artifact["scope"]["profile"]["maximum_simultaneous_containers"] == 2
-    assert not artifact["scope"]["profile"]["executor_implemented"]
+    assert artifact["scope"]["profile"]["executor_implemented"] is True
     assert all(artifact[key] is False for key in plan.FLAGS)
     assert stat.S_IMODE(folder.stat().st_mode) == 0o700
     assert stat.S_IMODE((folder / "plan.json").stat().st_mode) == 0o600

@@ -355,3 +355,20 @@ build-completed anterior, build_client_exit_verified permanece false. Não apaga
 intents, retaggear imagem histórica ou inferir autorização a partir desses flags.
 Diagnóstico futuro deve ter plano próprio, sem renovar candidato PKI para contornar
 expiração; startup original exige autorização mesmo se apenas SQL READONLY.
+
+Diagnóstico Linux separado da ativação: ADR0028 e labs/linux/DIAGNOSTIC.md. Plano /3
+fixa escopo/commit/source/build e receipt oficial PG por hashes independentes; /1 e
+/2 eram preparação e não podem virar autorização implicitamente. Run host-only
+exige confirmação explícita do startup original e scopeSHA exato; isso é afirmação
+do operador local, não assinatura humana. Não fornecer esses flags em recursos
+reais sem nova autorização específica do usuário. `.env` só é lida no run, somente
+APP_DB_PASSWORD no perfil gerado, sem interpolation/fallback/reset. Worker/API/
+Redis/Wazuh/runner servidor/marcador/migração/grants/PKI/binding não são iniciados.
+Startup PG modifica metadados/WAL no volume original RW, consultas são READONLY;
+diário sempre RO. Limite300s para novos efeitos, pedido exclusivo por plano e lock
+compartilhado, no replay. Cleanup por planSHA/opID/beginSHA aceita prazo expirado,
+não exige senha/PKI atual e não remove volumes. Incerteza de leitor retém DB.
+Fixtures completas não comprovam ensaio nativo: nenhum desses novos comandos run/
+cleanup foi invocado contra os volumes originais. Metadados oficiais PostgreSQL
+já foram consultados por TLS/sem pull; vínculo local não é assinatura nem hash de
+todos os layers. Testes: make test-runner-diagnostic; scripts não entram na API.

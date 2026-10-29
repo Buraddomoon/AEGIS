@@ -19,7 +19,7 @@ from runner_activation_metadata import ActivationError
 ROOT = source.ROOT
 OUTPUT = ROOT / ".local/runner-diagnostic-plans"
 TTL = timedelta(hours=24)
-FORMAT = "aegis-runner-diagnostic-plan/2"
+FORMAT = "aegis-runner-diagnostic-plan/3"
 FLAGS = {
     "authorization_verified": False,
     "lab_started": False,
@@ -57,7 +57,7 @@ def profile():
         "credential_or_grant_changes_permitted": False,
         "pki_or_binding_changes_permitted": False,
         "volume_creation_or_removal_permitted": False,
-        "executor_implemented": False,
+        "executor_implemented": True,
     }
 
 
@@ -142,7 +142,7 @@ def snapshot(
 
 def scope(snapshot):
     return {
-        "format": "aegis-runner-diagnostic-scope/2",
+        "format": "aegis-runner-diagnostic-scope/3",
         "profile": profile(),
         "tool_commit": snapshot["tool_commit"],
         "identity": snapshot["identity"],
@@ -179,7 +179,7 @@ def prepare(
         "id": uuid4().hex,
         "created_at": created.isoformat(),
         "expires_at": (created + TTL).isoformat(),
-        "status": "diagnostic_plan_requires_specific_authorization_and_executor",
+        "status": "diagnostic_plan_requires_specific_authorization",
         "scope": scope_doc,
         "scope_sha256": digest(scope_doc),
         "snapshot": current,
@@ -201,7 +201,7 @@ def prepare(
     }
 
 
-def load(folder, expected_sha256):
+def _load(folder, expected_sha256, *, current):
     _hash(expected_sha256)
     _identifier(folder.name)
     artifact = image_build._json(folder / "plan.json")
@@ -222,7 +222,7 @@ def load(folder, expected_sha256):
         }
         or artifact.get("format") != FORMAT
         or artifact.get("id") != folder.name
-        or artifact.get("status") != "diagnostic_plan_requires_specific_authorization_and_executor"
+        or artifact.get("status") != "diagnostic_plan_requires_specific_authorization"
         or any(artifact.get(key) is not False for key in FLAGS)
         or digest(artifact["scope"]) != artifact["scope_sha256"]
         or digest(artifact["scope"]) != digest(scope(artifact["snapshot"]))
@@ -235,10 +235,19 @@ def load(folder, expected_sha256):
         created.utcoffset() != timedelta(0)
         or expires.utcoffset() != timedelta(0)
         or expires - created != TTL
-        or not created <= pki.clock() < expires
+        or (current and not created <= pki.clock() < expires)
     ):
         raise ActivationError("diagnostic_plan_expired_or_invalid_time")
     return artifact
+
+
+def load(folder, expected_sha256):
+    return _load(folder, expected_sha256, current=True)
+
+
+def load_for_cleanup(folder, expected_sha256):
+    """Integrity/policy only; expired approval must never prevent owned cleanup."""
+    return _load(folder, expected_sha256, current=False)
 
 
 def recheck(folder, expected_sha256, *, repo=ROOT, docker=None):
