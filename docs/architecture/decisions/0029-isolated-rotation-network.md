@@ -117,6 +117,6 @@ Inventário, IDs/labels, consumidores e ownership são reconferidos duas vezes.
 
 O plano ainda revalida PKI, Compose, metadata e prazo após IO. Os retornos mantêm
 authorization_granted/activation_performed/network_isolation_verified falsos.
-Essa extensão não calcula todos os gates nem cria recurso: falta fixar a versão
-do executor no plano autorizado e compor fatos de subnet/perfil/aprovação. O
+Essa extensão não calcula todos os gates nem cria recurso: o plano /2 já fixa a
+versão do executor e escopo único, mas falta compor fatos de subnet/perfil/aprovação. O
 formato público atual continua não operacional; nenhum v1 vira permissão implícita.

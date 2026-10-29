@@ -10,6 +10,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from test_runner_activation_image_source import git
 from test_runner_activation_metadata import FakeDocker, images
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
@@ -34,6 +35,10 @@ def code(tmp_path, monkeypatch):
         target.write_bytes((activation.ROOT / name).read_bytes())
     # Never parse .env, even when it contains sensitive/invalid configuration.
     (root / ".env").write_text("private-sensitive-sentinel")
+    (root / ".gitignore").write_text(".env\n")
+    git(root, "init", "-b", "main")
+    git(root, "add", ".gitignore", *activation.COMPOSE)
+    git(root, "commit", "-m", "fixture: pin synthetic executor inputs")
     monkeypatch.setattr(activation, "ROOT", root)
     return root
 
@@ -49,6 +54,101 @@ def rewrite(path, change):
     change(record)
     path.write_text(json.dumps(record))
     return activation.digest(record)
+
+
+def test_clean_commit_changed_during_metadata_is_rejected_before_plan_publication(
+    material, code, tmp_path
+):
+    docker = FakeDocker()
+    original, changed = docker.query, [False]
+
+    def query(kind, value=None):
+        raw = original(kind, value)
+        if kind == "daemon" and not changed[0]:
+            changed[0] = True
+            (code / "executor.py").write_text("# changed during fixture metadata IO\n")
+            git(code, "add", "executor.py")
+            git(code, "commit", "-m", "fixture: change source during review")
+        return raw
+
+    docker.query = query
+    with pytest.raises(activation.ActivationError, match="inputs_changed_during_review"):
+        activation.plan(*material, images(), tmp_path / "plans", docker=docker)
+    assert not (tmp_path / "plans").exists()
+
+
+def test_scope_pins_exact_clean_main_commit_and_ignores_untracked_secret_configuration(
+    material, code, tmp_path
+):
+    prepared, docker = prepare(material, tmp_path)
+    path = Path(prepared["plan_path"])
+    artifact = activation.load_plan(path, prepared["plan_sha256"])
+    assert artifact["tool_commit"] == git(code, "rev-parse", "HEAD").decode().strip()
+    assert artifact["scope_sha256"] == prepared["scope_sha256"] == activation.scope_digest(artifact)
+    (code / ".env").write_text("different-private-sensitive-sentinel")
+    assert (
+        activation.recheck(path, prepared["plan_sha256"], docker=docker)["scope_sha256"]
+        == prepared["scope_sha256"]
+    )
+
+
+def test_dirty_executor_source_blocks_plan_before_pki_or_daemon_reads(
+    material, code, tmp_path, monkeypatch
+):
+    (code / "executor.py").write_text("# unreviewed fixture change\n")
+    docker = FakeDocker()
+    monkeypatch.setattr(
+        activation.pki, "verify", lambda *a: pytest.fail("PKI not permitted before source review")
+    )
+    with pytest.raises(activation.ActivationError, match="executor_source_unreviewed"):
+        activation.plan(*material, images(), tmp_path / "plans", docker=docker)
+    assert docker.calls == []
+
+
+def test_new_clean_commit_invalidates_old_plan_without_rewriting_it(material, code, tmp_path):
+    prepared, docker = prepare(material, tmp_path)
+    path = Path(prepared["plan_path"])
+    before = path.read_bytes()
+    (code / "executor.py").write_text("# changed fixture source\n")
+    git(code, "add", "executor.py")
+    git(code, "commit", "-m", "fixture: change reviewed tool version")
+    with pytest.raises(activation.ActivationError, match="activation_plan_drift"):
+        activation.recheck(path, prepared["plan_sha256"], docker=docker)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("scene", ["legacy", "scope"])
+def test_recomputed_outer_hash_cannot_upgrade_legacy_plan_or_replace_scope(
+    material, code, tmp_path, scene
+):
+    prepared, _ = prepare(material, tmp_path)
+    path = Path(prepared["plan_path"])
+    expected = rewrite(
+        path,
+        lambda doc: doc.update(
+            {"format": "aegis-runner-activation-plan/1"}
+            if scene == "legacy"
+            else {"scope_sha256": "0" * 64}
+        ),
+    )
+    with pytest.raises(activation.ActivationError, match="policy_mismatch"):
+        activation.load_plan(path, expected)
+
+
+def test_same_inputs_in_another_plan_have_a_distinct_nonce_bound_scope(material, code, tmp_path):
+    first, _ = prepare(material, tmp_path)
+    second, _ = prepare(material, tmp_path)
+    assert first["id"] != second["id"] and first["scope_sha256"] != second["scope_sha256"]
+
+
+def test_partial_snapshot_cannot_silently_omit_executor_pin(material, code, tmp_path, monkeypatch):
+    prepared, docker = prepare(material, tmp_path)
+    path = Path(prepared["plan_path"])
+    artifact = activation.load_plan(path, prepared["plan_sha256"])
+    current = {key: artifact[key] for key in activation.SNAPSHOT_FIELDS if key != "tool_commit"}
+    monkeypatch.setattr(activation, "snapshot", lambda *a, **kw: current)
+    with pytest.raises(activation.ActivationError, match="activation_plan_drift"):
+        activation.recheck(path, prepared["plan_sha256"], docker=docker)
 
 
 def test_plan_and_recheck_pin_inputs_preserve_source_and_never_claim_activation(
@@ -189,17 +289,7 @@ def test_expiration_during_recheck_does_not_produce_success(material, code, tmp_
     instant = activation.datetime.fromisoformat(record["created_at"])
     times = iter([instant + timedelta(seconds=1), instant + activation.TTL])
     monkeypatch.setattr(pki, "clock", lambda: next(times))
-    current = {
-        name: record[name]
-        for name in (
-            "source_path",
-            "candidate_path",
-            "pki",
-            "compose_sha256",
-            "expected_mount_sources",
-            "metadata",
-        )
-    }
+    current = {name: record[name] for name in activation.SNAPSHOT_FIELDS}
     monkeypatch.setattr(activation, "snapshot", lambda *a, **kw: copy.deepcopy(current))
     with pytest.raises(activation.ActivationError, match="expired_or_invalid_time"):
         activation.recheck(path, result["plan_sha256"], docker=docker)

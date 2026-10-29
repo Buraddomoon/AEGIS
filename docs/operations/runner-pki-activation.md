@@ -15,13 +15,14 @@ Não iniciar simultaneamente standalone/integrado com os mesmos IDs/volume.
 Demo18780 e Wazuh ficam fora da intervenção. Primeiro ensaio deve verificar
 confiança/identidade/diário **sem criar marcador**, sem nova campanha/start.
 
-Origem pública existente: `.local/linux-lab`. Candidato offline atualmente
-preparado: `.local/pki-candidates/90204499ca2144aca175fe809538b7e7`;
+Origem pública existente: `.local/linux-lab`. Candidato offline **histórico,
+expirado e não utilizável**: `.local/pki-candidates/90204499ca2144aca175fe809538b7e7`;
 manifestoSHA256 `24179f34ad0a2c708496e9b0b3798a18d547c4648975c95893330458f0ed8d5f`.
 Descritor candidato `d1b616e115fecdf115652472656b4a82e6cd1c65f45b778f0239a2b4afbd566f`.
 Esses hashes identificam uma preparação; sua validade não é permanente. Reverificar
 material/tempo real imediatamente antes da revisão/uso. Se não houver>=24h nas
-folhas, preparar outro candidato e atualizar o escopo/hash; não reutilizar recibo.
+folhas, preparar outro candidato quando o executor estiver pronto para revisão e
+atualizar o escopo/hash; não reutilizar recibo ou renovar TTL de artefato antigo.
 
 Volumes esperados: `aegis-linux-lab_journal` e
 `aegis-linux-lab_postgres-data`, observados presentes sem containers em2026-10-27.
@@ -99,9 +100,11 @@ Indexer/manager/agente/Filebeat, não migrar host nem trocar credenciais humanas
 Uma campanha posterior exige outro escopo/solicitação/aprovação separada. Prova
 de handshake/diário não é evidência de detecção, ingestão SIEM ou retomada segura.
 
-Estado atual: guardas do backend, harness de planejamento/rechecagem e componentes
-de revisão do banco/diário disponíveis. A integração desses componentes ao executor,
-a inspeção autorizada dos volumes Linux originais e o ensaio continuam pendentes.
+Estado atual: diagnóstico separado dos volumes originais foi **verificado e
+encerrado em2026-10-29**, conforme [evidência](../evidence/diagnostic-2026-10-29/README.md).
+É uma revisão histórica, não uma licença permanente para ativar PKI. Contratos de
+rede/lifecycle/preflight estão implementados, sem create nativo; integração do
+executor completo, gates e ensaio de rotação continuam pendentes.
 
 ## Harness de metadados executável
 
@@ -133,13 +136,21 @@ Substitua os placeholders por hashes reais distintos. Alternativa direta:
 separado da origem/candidato, padrão `.local/pki-activation-plans`; sem exclusões.
 Make sem variáveis completas é recusado, sem tentar descobrir/baixar imagens.
 
-O formato `aegis-runner-activation-plan/1` fixa manifesto/descritores/IDs PKI,
+O formato `aegis-runner-activation-plan/2` fixa manifesto/descritores/IDs PKI,
 hashes dos três Compose, origens esperadas dos secrets individuais, daemon,
 imagens e os dois volumes. Exige ausência de containers **inclusive parados**,
 redes do projeto/nome reservado e consumidores dos volumes de qualquer projeto.
 Volumes precisam existir com labels/local/sem opções externas e data com timezone.
 Uma ausência/ocupação bloqueia sem criar substitutos ou parar o consumidor.
 Não desmontar recursos de terceiros para fazer a revisão passar.
+
+Também exige Git/main limpa e fixa tool_commit antes/depois dos IO. scope_sha256
+vincula formato, ID único, criação/expiração, perfil e snapshot completo (incluindo
+commit/PKI/Compose/imagens/daemon/volumes/mounts). Planos iguais com outro ID têm
+escopo diferente. Código alterado/commit novo ou escopo diferente no intent bloqueiam
+recheck; `.env` ignorada não é lida/hasheada pelo planejamento. Campos faltantes no
+snapshot não podem omitir verificações. /1 permanece histórico e não é convertido
+ou reaproveitado como autorização /2, mesmo se alguém recalcular hash externo.
 
 Cada consulta tem10s e64KiB somados stdout/stderr; excesso/falha mata e recolhe
 somente o filho CLI. Projeções nunca retornam Config.Env, Mountpoint ou inspect

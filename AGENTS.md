@@ -450,3 +450,10 @@ negados; API/Redis ativos ou endpoint na rede bloqueiam antes de efeito. Metadat
 continua sem autorização/isolation proof. Nenhuma ampliação do perfil de diagnóstico
 /3: ele ainda aceita só os cinco papéis próprios. Plano de rotação público ainda
 não é operacional; gates finais exigem vínculo da versão do executor e escopo atual.
+
+Plano de rotação /2 exige main limpa/tool_commit antes/depois de IO e scopeSHA
+que inclui formato/ID/criação/expiração/perfil/snapshot completo. Recheck ativo
+exige header.scope_sha256 igual ao plano; snapshots parciais não omitem campos.
+Janela15min/flagsfalse mantidas, sem CLI apply. /1 permanece preservado e recusado,
+sem conversão ou reuso de aprovação. Ignorar .env para Git não autoriza ler/hashear
+segredos. Fixtures agora são repositórios main temporários, nunca a branch real.

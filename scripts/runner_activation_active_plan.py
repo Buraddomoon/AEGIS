@@ -17,6 +17,7 @@ def recheck(path, expected_sha256, store, role, phase, *, docker=None, ownership
     if (
         state["header"]["plan_id"] != artifact["id"]
         or state["header"]["plan_sha256"] != expected_sha256
+        or state["header"]["scope_sha256"] != artifact["scope_sha256"]
         or state["closed"]
     ):
         raise ActivationError("active_plan_intent_mismatch")
@@ -43,7 +44,7 @@ def recheck(path, expected_sha256, store, role, phase, *, docker=None, ownership
         images,
         inventory_reader=collect,
     )
-    if any(digest(artifact[key]) != digest(value) for key, value in current.items()):
+    if not activation.snapshot_matches(artifact, current):
         raise ActivationError("active_plan_input_drift")
     checked_at = activation.pki.clock()
     if (

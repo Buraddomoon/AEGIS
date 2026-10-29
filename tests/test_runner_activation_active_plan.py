@@ -46,12 +46,13 @@ def test_same_pinned_plan_can_be_rechecked_only_under_exact_durable_operation(
 ):
     prepared, _ = prepare(material, tmp_path)
     with ActivationIntents(tmp_path / "intents") as store:
-        store.begin(prepared["id"], prepared["plan_sha256"], "b" * 64)
+        store.begin(prepared["id"], prepared["plan_sha256"], prepared["scope_sha256"])
         world = World(store, role, phase)
         result = review(prepared, store, world)
         assert result["status"] == "active_plan_revalidated_not_activated"
         assert (
-            result["plan_sha256"] == prepared["plan_sha256"] and result["scope_sha256"] == "b" * 64
+            result["plan_sha256"] == prepared["plan_sha256"]
+            and result["scope_sha256"] == prepared["scope_sha256"]
         )
         assert result["owned_metadata"]["journal_consumer_set_verified"]
         assert all(result[key] is False for key in activation.FLAGS)
@@ -63,7 +64,7 @@ def test_normal_public_recheck_still_refuses_active_project_even_when_owned(
 ):
     prepared, _ = prepare(material, tmp_path)
     with ActivationIntents(tmp_path / "intents") as store:
-        store.begin(prepared["id"], prepared["plan_sha256"], "b" * 64)
+        store.begin(prepared["id"], prepared["plan_sha256"], prepared["scope_sha256"])
         world = World(store)
         with pytest.raises(activation.ActivationError, match="not_quiescent"):
             activation.recheck(
@@ -72,7 +73,7 @@ def test_normal_public_recheck_still_refuses_active_project_even_when_owned(
         assert review(prepared, store, world)["status"] == "active_plan_revalidated_not_activated"
 
 
-@pytest.mark.parametrize("mismatch", ["id", "hash"])
+@pytest.mark.parametrize("mismatch", ["id", "hash", "scope"])
 def test_other_plan_or_unpinned_intent_is_refused_before_runtime(
     material, code, tmp_path, monkeypatch, mismatch
 ):
@@ -81,7 +82,7 @@ def test_other_plan_or_unpinned_intent_is_refused_before_runtime(
         store.begin(
             uuid4().hex if mismatch == "id" else prepared["id"],
             "f" * 64 if mismatch == "hash" else prepared["plan_sha256"],
-            "b" * 64,
+            "f" * 64 if mismatch == "scope" else prepared["scope_sha256"],
         )
         monkeypatch.setattr(
             activation, "snapshot", lambda *a, **k: pytest.fail("No runtime query permitted")
@@ -101,7 +102,7 @@ def test_wrong_hash_and_expired_plan_fail_before_pki_or_daemon(
 ):
     prepared, _ = prepare(material, tmp_path)
     with ActivationIntents(tmp_path / "intents") as store:
-        store.begin(prepared["id"], prepared["plan_sha256"], "b" * 64)
+        store.begin(prepared["id"], prepared["plan_sha256"], prepared["scope_sha256"])
         monkeypatch.setattr(
             activation, "snapshot", lambda *a, **k: pytest.fail("No runtime query permitted")
         )
@@ -125,9 +126,11 @@ def test_compose_drift_cannot_be_accepted_by_the_active_path(material, code, tmp
     prepared, _ = prepare(material, tmp_path)
     (code / activation.COMPOSE[-1]).write_text("altered")
     with ActivationIntents(tmp_path / "intents") as store:
-        store.begin(prepared["id"], prepared["plan_sha256"], "b" * 64)
+        store.begin(prepared["id"], prepared["plan_sha256"], prepared["scope_sha256"])
         world = World(store)
-        with pytest.raises(activation.ActivationError, match="input_drift"):
+        # The clean-main guard now refuses the changed tracked Compose before
+        # even reading PKI/metadata, rather than reaching the later hash compare.
+        with pytest.raises(activation.ActivationError, match="executor_source_unreviewed"):
             review(prepared, store, world)
 
 
@@ -136,7 +139,7 @@ def test_expiration_during_daemon_queries_cannot_publish_success(
 ):
     prepared, _ = prepare(material, tmp_path)
     with ActivationIntents(tmp_path / "intents") as store:
-        store.begin(prepared["id"], prepared["plan_sha256"], "b" * 64)
+        store.begin(prepared["id"], prepared["plan_sha256"], prepared["scope_sha256"])
         world = World(store)
         original = world.meta.query
         expired = datetime.fromisoformat(prepared["expires_at"]) + timedelta(seconds=1)
@@ -156,7 +159,7 @@ def test_expiration_during_last_durable_review_cannot_publish_success(
 ):
     prepared, _ = prepare(material, tmp_path)
     with ActivationIntents(tmp_path / "intents") as store:
-        store.begin(prepared["id"], prepared["plan_sha256"], "b" * 64)
+        store.begin(prepared["id"], prepared["plan_sha256"], prepared["scope_sha256"])
         world = World(store)
         original = store.review
         count = 0
@@ -178,7 +181,7 @@ def test_expiration_during_last_durable_review_cannot_publish_success(
 def test_changed_ownership_after_metadata_is_not_accepted(material, code, tmp_path, monkeypatch):
     prepared, _ = prepare(material, tmp_path)
     with ActivationIntents(tmp_path / "intents") as store:
-        store.begin(prepared["id"], prepared["plan_sha256"], "b" * 64)
+        store.begin(prepared["id"], prepared["plan_sha256"], prepared["scope_sha256"])
         world = World(store)
         original = store.review
         count = 0

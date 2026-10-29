@@ -84,3 +84,23 @@ running exige DB OBSERVED com start/evidência duráveis e container em execuç�
 O journal deve permanecer sem consumidor em todas essas fases. Só db aceita
 running; isso não amplia fases dos probes/API/worker nem libera runner pendente.
 Runtime físico/HBA/readiness/auth/proveniência continuam verificações independentes.
+
+## Plano /2: executor e escopo imutáveis
+
+Planejamento agora exige main limpa antes/depois da PKI/Compose/metadata e inclui
+tool_commit no snapshot. Estado Git usa o leitor fechado do ADR0026 (ambiente
+mínimo, hooks/fsmonitor desabilitados somente nesses comandos). Não lê .env ou
+chaves antigas para identificar a versão do executor; fixtures usam main temporária.
+Novo commit, dirty source ou alteração durante IO bloqueiam sem publicar sucesso.
+
+scope_sha256 deriva formato/ID único/created_at/expires_at/perfil e snapshot completo.
+Uma preparação nova com os mesmos inputs tem escopo diferente; refresh de prazo
+ou clone de ID exige outro escopo, sem reaproveitar confirmação anterior. Recheck
+ativo exige esse escopo no header do intent e valida o conjunto inteiro de campos
+do snapshot: resposta parcial não pode omitir o commit ou um gate silenciosamente.
+
+Formato sobe para /2. Arquivos /1 permanecem intactos; loader não os atualiza nem
+interpreta como permissão executável por troca de format/hash. Janela15min, políticas
+de PKI, quiescência e flags operacionais falsas continuam. Source hash não é
+assinatura, aprovação humana ou proveniência dos bytes das imagens. CLI continua
+somente plan/recheck; gates concretos/coordenador ainda pendentes.

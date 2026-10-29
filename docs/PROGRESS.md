@@ -3219,3 +3219,25 @@ passaram. Este commit será405º,13desde ea2c61d, main privada/push direto.
 Próximo: plano da rotação deve fixar a versão exata do executor e escopo antes de
 compor gates concretos de autorização/subnet/runtime. Formato público atual ainda
 não é operacional, sem CLI apply ou permissão de usar planos antigos como aprovação.
+
+## 2026-10-29 — plano /2 fixa executor main e escopo único com validade
+
+runner_activation plan/snapshot agora conferem main limpa antes/depois de PKI/
+Compose/metadata e fixam tool_commit. scope_sha256 inclui formato/ID único/criação/
+expiração/perfil e snapshot completo; mesmo input com nova preparação tem outro
+escopo. Active_plan exige escopo exato do intent e snapshots com todos os campos,
+sem omitir source pin. /1 permanece intacto/recusado, sem conversão por rehash.
+Janela15min e perfil executor_implemented=false mantidos, sem novo CLI de efeito.
+
+**65 testes de planejamento/active_plan passaram/86,24s**, após a última mudança
+de nonce/validade; **uma regressão adicional passou/2,19s** para commit limpo trocado
+durante metadata, antes de publicar plano. Ruff/formatação220arquivos e mypy4passaram.
+Testes usam Git main temporária e PKI descartável. A expectativa antiga de Compose
+drift foi atualizada para o bloqueio mais cedo por dirty source; nenhum guard foi
+relaxado. Ignorar/alterar `.env` fixture não permite ler ou publicar seu conteúdo.
+
+Este commit será406º,14desde ea2c61d, main privada/push direto. Documentação de
+operação identifica candidato antigo expirado e diagnóstico original já encerrado;
+não gerar certificado curto só para renovar artefato antes do executor reviewable.
+Próximo: compor gates concretos de rede com plano /2/fatos de subnet/ownership e
+orçamento da confirmação local. Nenhuma rede Linux/PKI/binding foi alterada.

@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
 
+import runner_activation_image_source as tool_source
 import runner_pki as pki
 from aegis.domain.validation import digest
 from runner_activation_metadata import (
@@ -22,7 +23,7 @@ from runner_activation_metadata import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-FORMAT = "aegis-runner-activation-plan/1"
+FORMAT = "aegis-runner-activation-plan/2"
 COMPOSE = ("docker-compose.yml", "labs/linux/compose.yml", "labs/linux/platform.yml")
 TTL = timedelta(minutes=15)
 FLAGS = {
@@ -46,6 +47,42 @@ PENDING = [
     "explicit_revoked_binding_registration",
     "verified_resource_closure",
 ]
+SNAPSHOT_FIELDS = (
+    "tool_commit",
+    "source_path",
+    "candidate_path",
+    "pki",
+    "compose_sha256",
+    "expected_mount_sources",
+    "metadata",
+)
+
+
+def tool_state():
+    try:
+        return tool_source._state(ROOT)
+    except (ValueError, OSError, subprocess.SubprocessError):
+        raise ActivationError("activation_executor_source_unreviewed") from None
+
+
+def scope_digest(artifact):
+    return digest(
+        {
+            **{
+                key: artifact[key]
+                for key in ("format", "id", "created_at", "expires_at", "profile")
+            },
+            "inputs": {key: artifact[key] for key in SNAPSHOT_FIELDS},
+        }
+    )
+
+
+def snapshot_matches(artifact, current):
+    return (
+        isinstance(current, dict)
+        and set(current) == set(SNAPSHOT_FIELDS)
+        and all(digest(artifact[key]) == digest(current[key]) for key in SNAPSHOT_FIELDS)
+    )
 
 
 def profile():
@@ -89,6 +126,7 @@ def sha256(value):
 
 
 def snapshot(source, candidate, manifest_sha256, images, *, docker=None, inventory_reader=None):
+    original_tool = tool_state()
     sha256(manifest_sha256)
     source, candidate = pki.private_directory(source), pki.private_directory(candidate)
     verified = pki.verify(source, candidate, manifest_sha256)
@@ -110,7 +148,13 @@ def snapshot(source, candidate, manifest_sha256, images, *, docker=None, invento
         name: hashlib.sha256(pki.read(ROOT / name, maximum=262144)).hexdigest() for name in COMPOSE
     }:
         raise ActivationError("inputs_changed_during_review")
+    try:
+        if tool_state() != original_tool:
+            raise ActivationError("inputs_changed_during_review")
+    except ActivationError:
+        raise ActivationError("inputs_changed_during_review") from None
     return {
+        "tool_commit": original_tool,
         "source_path": str(source),
         "candidate_path": str(candidate),
         "pki": {
@@ -153,6 +197,7 @@ def plan(source, candidate, manifest_sha256, images, output_root, *, docker=None
         **FLAGS,
         **reviewed,
     }
+    artifact["scope_sha256"] = scope_digest(artifact)
     folder = root / identifier
     folder.mkdir(mode=0o700)
     fd = os.open(folder / "plan.json", os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
@@ -167,6 +212,7 @@ def plan(source, candidate, manifest_sha256, images, output_root, *, docker=None
         "id": identifier,
         "plan_path": str(folder / "plan.json"),
         "plan_sha256": digest(artifact),
+        "scope_sha256": artifact["scope_sha256"],
         "status": artifact["status"],
         "expires_at": artifact["expires_at"],
         **FLAGS,
@@ -199,6 +245,8 @@ def load_plan(path, expected_sha256):
             "compose_sha256",
             "expected_mount_sources",
             "metadata",
+            "tool_commit",
+            "scope_sha256",
             *FLAGS,
         }
         or artifact["format"] != FORMAT
@@ -208,6 +256,9 @@ def load_plan(path, expected_sha256):
         or artifact["status"] != "metadata_plan_requires_authorized_runtime_review"
         or artifact["pending_gates"] != PENDING
         or any(artifact[name] is not False for name in FLAGS)
+        or not isinstance(artifact["tool_commit"], str)
+        or not re.fullmatch("[a-f0-9]{40}", artifact["tool_commit"])
+        or artifact["scope_sha256"] != scope_digest(artifact)
     ):
         raise ActivationError("plan_policy_mismatch")
     created = datetime.fromisoformat(artifact["created_at"])
@@ -234,7 +285,7 @@ def recheck(path, expected_sha256, *, docker=None):
         images,
         docker=docker,
     )
-    if any(digest(artifact[name]) != digest(value) for name, value in current.items()):
+    if not snapshot_matches(artifact, current):
         raise ActivationError("activation_plan_drift")
     checked_at = pki.clock()
     if not created <= checked_at < expires:
@@ -243,6 +294,7 @@ def recheck(path, expected_sha256, *, docker=None):
         "format": FORMAT,
         "id": artifact["id"],
         "plan_sha256": expected_sha256,
+        "scope_sha256": artifact["scope_sha256"],
         "status": "metadata_plan_revalidated_not_activated",
         "checked_at": checked_at.isoformat(),
         "pending_gates": list(PENDING),
