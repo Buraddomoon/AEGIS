@@ -250,6 +250,28 @@ def test_only_fixed_readiness_checks_can_repeat_and_budget_does_not_reset(prepar
     assert result["authentication_verified"] is False
 
 
+@pytest.mark.parametrize("code", ["docker_query_failed", "database_server_mount_mismatch", SECRET])
+def test_failed_created_inspection_records_only_static_reason_and_never_starts(
+    prepared, monkeypatch, code
+):
+    world = World(prepared, monkeypatch)
+    original_query = world.query
+
+    def query(kind, *args, **kwargs):
+        if kind == "container":
+            raise life.ActivationError(code)
+        return original_query(kind, *args, **kwargs)
+
+    world.query = query
+    result = invoke(world)
+    assert result["failure_phase"] == "inspect_created"
+    assert result["failure_code"] == (code if code in life.FAILURE_CODES else None)
+    assert result["error"] == "database_server_startup_unconfirmed"
+    assert result["database_absence_verified"]
+    assert world.effects == ["create", "remove"]
+    assert SECRET not in json.dumps(result)
+
+
 def test_foreign_collision_before_create_is_quarantined_without_delete(prepared, monkeypatch):
     world = World(prepared, monkeypatch, "collision")
     result = invoke(world)

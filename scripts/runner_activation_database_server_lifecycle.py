@@ -23,6 +23,26 @@ CHECKS = frozenset(
         "worker_stopped",
     }
 )
+# Only reviewed, static codes may enter a receipt. Exception messages from
+# adapters, daemon responses or files must never be copied into diagnostics.
+FAILURE_CODES = frozenset(
+    {
+        "docker_query_failed",
+        "docker_query_timed_out",
+        "docker_response_too_large",
+        "database_server_query_failed",
+        "database_server_config_mismatch",
+        "database_server_environment_mismatch",
+        "database_server_network_mismatch",
+        "database_server_mount_mismatch",
+        "database_server_runtime_changed",
+        "database_server_create_outcome_unconfirmed",
+        "database_server_start_outcome_unconfirmed",
+        "database_server_readiness_deadline",
+        "database_server_readiness_unconfirmed",
+        "database_server_gate_mismatch",
+    }
+)
 
 
 def command(kind, store, image, *, policy_root=server.policy.DEFAULT_ROOT, known_id=None):
@@ -155,6 +175,7 @@ def start_server(
     create_attempted, success, cleanup = False, False, None
     error, object_id, runtime = None, None, None
     gates, attempts = {}, 0
+    phase, failure_phase, failure_code = "create_gate", None, None
 
     def review(phase):
         return inspection.review(
@@ -186,13 +207,16 @@ def start_server(
         ):
             raise ActivationError("database_server_create_context_changed")
         owned.fresh(approved)
+        phase = "create"
         create_attempted = True
         object_id = identifier(lifecycle.create(store, images["postgres"], policy_root=policy_root))
         found = observe(operation, plan, "db", docker=ownership_docker)
         if found["status"] != "present_owned_snapshot" or found["resource_id"] != object_id:
             raise ActivationError("database_server_created_id_unconfirmed")
         store.append("observed", {"role": "db", "resource_id": object_id})
+        phase = "inspect_created"
         review("created")
+        phase = "start_gate"
         approved = gate("start")
         gates["start"] = digest(approved)
         store.append(
@@ -204,9 +228,12 @@ def start_server(
                 "policy_sha256": spec["policy_sha256"],
             },
         )
+        phase = "inspect_before_start"
         review("created")
         owned.fresh(approved)
+        phase = "start"
         lifecycle.start(store, images["postgres"], object_id, policy_root=policy_root)
+        phase = "inspect_running"
         runtime = review("running")
         store.append(
             "database_runtime_observed", {"role": "db", "runtime_evidence_sha256": digest(runtime)}
@@ -215,13 +242,16 @@ def start_server(
         # gate/runtime IO and final recheck; timeout is not extended by retries.
         deadline = time.monotonic() + 15
         for _ in range(8):
+            phase = "readiness_gate"
             approved = gate("ready")
+            phase = "inspect_before_readiness"
             review("running")
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise ActivationError("database_server_readiness_deadline")
             owned.fresh(approved)
             attempts += 1
+            phase = "readiness"
             ready = lifecycle.ready(
                 store,
                 images["postgres"],
@@ -230,6 +260,7 @@ def start_server(
                 timeout=min(2, remaining),
             )
             if ready is True:
+                phase = "inspect_after_readiness"
                 runtime = review("running")
                 if time.monotonic() >= deadline:
                     raise ActivationError("database_server_readiness_deadline")
@@ -250,8 +281,16 @@ def start_server(
         AttributeError,
         RecursionError,
         subprocess.SubprocessError,
-    ):
+    ) as caught:
         error = "database_server_startup_unconfirmed"
+        failure_phase = phase
+        if (
+            isinstance(caught, ActivationError)
+            and len(caught.args) == 1
+            and type(caught.args[0]) is str
+            and caught.args[0] in FAILURE_CODES
+        ):
+            failure_code = caught.args[0]
     except BaseException:
         success = False
         raise
@@ -278,6 +317,8 @@ def start_server(
         if removed
         else "database_cleanup_unconfirmed",
         "error": error,
+        "failure_phase": failure_phase,
+        "failure_code": failure_code,
         "runtime": runtime if success else None,
         "cleanup": cleanup,
         "readiness_attempts": attempts,
