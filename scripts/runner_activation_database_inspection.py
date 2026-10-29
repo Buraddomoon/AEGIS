@@ -105,14 +105,27 @@ def container_format(spec):
     )
 
 
+def _mount_options(*, effective):
+    if effective:
+        return '"writable":{{json $m.RW}},"propagation":{{json $m.Propagation}},"no_copy":null'
+    # The Docker mount API omits false ReadOnly and irrelevant option structs.
+    # Direct map selectors fail in CLI templates; validators still require the
+    # fixed RW volume / RO bind / nocopy policy after these explicit defaults.
+    return (
+        '"writable":{{json (not (index $m "ReadOnly"))}},'
+        '"propagation":{{with (index $m "BindOptions")}}'
+        '{{json (or (index . "Propagation") "")}}{{else}}""{{end}},'
+        '"no_copy":{{with (index $m "VolumeOptions")}}'
+        '{{json (or (index . "NoCopy") false)}}{{else}}false{{end}}'
+    )
+
+
 def _mounts(spec, *, effective):
     collection = ".Mounts" if effective else '(index .HostConfig "Mounts")'
     fields = {
         "type": "$m.Type",
         "name": '(index $m "Name")' if effective else "$m.Source",
         "target": "$m.Destination" if effective else "$m.Target",
-        "writable": "$m.RW" if effective else "(not $m.ReadOnly)",
-        "propagation": "$m.Propagation" if effective else '(index $m.BindOptions "Propagation")',
     }
     # Source is returned only for a named volume, never for a host bind path.
     source_match = "(eq $m.Source " + json.dumps(spec["policy_path"]) + ")"
@@ -128,21 +141,11 @@ def _mounts(spec, *, effective):
         + "}}{{else}}null{{end}},"
         + '"target":{{json '
         + fields["target"]
-        + '}},"writable":{{json '
-        + fields["writable"]
         + "}},"
         + '"policy_source_matches":{{if eq $m.Type "bind"}}{{json '
         + source_match
         + "}}{{else}}false{{end}},"
-        + '"propagation":'
-    )
-    if effective:
-        result += "{{json " + fields["propagation"] + "}}"
-    else:
-        result += '{{with $m.BindOptions}}{{json .Propagation}}{{else}}""{{end}}'
-    result += ',"no_copy":'
-    result += (
-        "null" if effective else "{{with $m.VolumeOptions}}{{json .NoCopy}}{{else}}false{{end}}"
+        + _mount_options(effective=effective)
     )
     return result + "}{{end}}]"
 
