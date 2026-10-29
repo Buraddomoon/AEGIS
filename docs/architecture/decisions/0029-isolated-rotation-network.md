@@ -1,7 +1,8 @@
 # ADR 0029 — Contrato da rede isolada da rotação
 
-Estado: compilador, inspeção, lifecycle interno e preflight de subnet implementados;
-gates do coordenador e criação/validação nativa ainda pendentes. Não é ativação.
+Estado: compilador, inspeção, lifecycle interno, preflight de subnet e composição
+de gates implementados. Coordenador completo e criação/validação nativa ainda
+pendentes. Não é ativação.
 
 ## Decisão
 
@@ -120,3 +121,33 @@ authorization_granted/activation_performed/network_isolation_verified falsos.
 Essa extensão não calcula todos os gates nem cria recurso: o plano /2 já fixa a
 versão do executor e escopo único, mas falta compor fatos de subnet/perfil/aprovação. O
 formato público atual continua não operacional; nenhum v1 vira permissão implícita.
+
+## Composição concreta do gate anterior ao create
+
+`runner_activation_network_gates.NetworkGates` combina o plano /2 com a confirmação
+local do operador de seu scopeSHA exato e validade UTC de até300s, vinculada ao ID
+da operação. Essa afirmação local não é assinatura humana nem aprovação por API.
+Não instanciar contra recursos reais sem o escopo especificamente autorizado.
+Expiração, relógio anterior à confirmação e orçamento monotônico vencido bloqueiam.
+
+O callback aceita somente create e a receita fixa. Faz recheck ativo de PKI,
+Compose, main limpa, imagens, volumes e ownership antes e depois do preflight de
+subnet, que é invocado novamente, sem cache ou JSON salvo. Mudanças no inventário,
+intent ou receita bloqueiam. Membership inclui todos os containers do projeto;
+worker nunca é papel permitido. Não é atestado de ausência de processos arbitrários
+com acesso de root ao daemon, prova de conteúdo das imagens ou eficácia do firewall.
+
+checked_at é o início das observações; terminar IO lento não renova a idade dos
+fatos. Revisão acima de20s é recusada; o consumidor exige idade<=10s e reconfere
+validade imediatamente antes da RPC. Validade do gate é limitada também pela
+confirmação e pelo plano. Os leitores internos mantêm seus próprios limites de IO;
+o limite composto recusa o resultado, sem prometer interrupção de todo código
+Python exatamente no vigésimo segundo. Cleanup não depende de lease válido.
+
+Evidência em memória contém só hashes do gate e das duas revisões/contagem de subnet;
+o futuro coordenador deverá persistir esses vínculos. Nenhuma flag pública de
+autorização/ativação é ligada; candidato válido não autoriza instalar certificados.
+Sem CLI, chamada nativa de create, PKI nova ou binding alterado nesta unidade.
+Testes usam PKI/Git temporários e daemon fixtures, incluindo consumo pelo lifecycle
+de criação única, colisão após review antigo, fonte/intent/metadata alterados durante
+IO, budget/clock e bloqueio de worker/consumidor inesperados. Não provam rede real.

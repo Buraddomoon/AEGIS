@@ -3241,3 +3241,26 @@ operação identifica candidato antigo expirado e diagnóstico original já ence
 não gerar certificado curto só para renovar artefato antes do executor reviewable.
 Próximo: compor gates concretos de rede com plano /2/fatos de subnet/ownership e
 orçamento da confirmação local. Nenhuma rede Linux/PKI/binding foi alterada.
+
+## 2026-10-29 — gate concreto da rede derivado de verificações atuais
+
+NetworkGates compõe confirmação local do scopeSHA exato/plano/operação, validade
+UTC<=300s/orçamento monotônico, duas revisões ativas de PKI/main/Compose/inventário/
+ownership e preflight de subnet novamente observado. Callback create-only com
+receita fixa, sem aprovação JSON, CLI ou efeito nativo. Fatos são datados no início
+do IO; idade<=10s/validade<=20s limitadas pelo plano/confirmação. Nenhum certificado,
+binding, recurso Linux ou configuração do host foi alterado.
+
+**115 testes de gates/lifecycle/rede/subnet passaram/48,34s**, incluindo PKI/Git
+temporários e consumo do gate pelo lifecycle sobre daemon fixture. Revisão anterior
+encontrou uma chamada inexistente no teste de histórico encerrado; corrigida usando
+o evento closed verdadeiro, suíte combinada reexecutada. Ruff/check,222arquivos
+formatados e mypy4passaram. Aviso Starlette/httpx conhecido permanece. Hashes de
+evidência só em memória; coordenador deverá persistir. Não é assinatura humana,
+atestado de tráfego ou autorização para invocar Docker create em recursos reais.
+
+Este commit será407º,15desde ea2c61d; main privada/push direto. CI do406º ainda em
+andamento ao conferir, sem alegar aprovação do delta novo. Próximo: preparar uma
+superfície de identidade mTLS sem rotas de jobs para a futura conferência PKI,
+sem abrir diário/workspace ou executar marcador. Ensaio nativo segue pendente de
+procedimento completo/revisão/autorização própria.

@@ -457,3 +457,12 @@ exige header.scope_sha256 igual ao plano; snapshots parciais não omitem campos.
 Janela15min/flagsfalse mantidas, sem CLI apply. /1 permanece preservado e recusado,
 sem conversão ou reuso de aprovação. Ignorar .env para Git não autoriza ler/hashear
 segredos. Fixtures agora são repositórios main temporários, nunca a branch real.
+
+Gates internos de rede: NetworkGates vincula confirmação local de scopeSHA/plano/
+operação, UTC<=300s e prazo monotônico; não é assinatura humana nem autorização
+implícita. Callback create-only recompõe active_plan antes/depois de subnet.review
+fresco; receita/intent/metadata imutáveis, worker não admitido. checked_at é início
+do IO, gate<=20s limitado por plano/confirmação e idade<=10s no consumidor. Revisão
+composta lenta é recusada, leitores mantêm seus próprios timeouts. Sem CLI/create
+nativo/PKI/binding; testes só Git/PKI temporários/daemon fixture. Futuro coordenador
+deve persistir hashes de evidence e obter novo escopo antes de efeitos reais.
