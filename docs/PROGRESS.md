@@ -2885,3 +2885,45 @@ preparar/revalidar plano /3 atual e pedir autorização do escopo pronto, confor
 labs/linux/DIAGNOSTIC.md. Se CI falhar, corrigir primeiro. Não encerrar por marco;
 continuar automaticamente. /compact não pode ser invocado pelas ferramentas desta
 sessão; o checkpoint não substitui nem finge execução desse comando.
+
+## 2026-10-29 — CI final aprovada; próximo efeito depende de autorização específica
+
+CI a7d7597 **SUCCESS**, [run40880305312](https://github.com/Buraddomoon/AEGIS/actions/runs/40880305312),
+job15min45s: **2.133 Python passaram/sete inspeções nativas opcionais puladas/844,95s**,
+**79 React passaram/12arquivos**, build/lint/tipos/advisory review aprovados. Aviso
+Starlette/httpx e advisory DiskCache previamente revisado permanecem explícitos.
+Log privado .local/pki-milestone/diagnostic-ci-final-success.log. A execução anterior
+cancelada não foi tratada como sucesso. O teto18min permitiu a suíte terminar sem
+remover checks; concurrency continua cancelando trabalhos redundantes.
+
+Durações observadas: chamadas do coordenador13,61s/13,58s/11,04s e outros gates até
+5,54s; não foi registrado um teste individual travado por minutos. O custo agregado
+de Git/PKI/rechecks e demais testes no runner explica o teto antigo insuficiente.
+Otimizar custo de fixtures pode ser evolução posterior, preservando cenários e
+sem usar esta aprovação como prova de runtime no laboratório original.
+
+Validações locais complementares já registradas: global2.139passaram, rodada
+final143diagnóstico passaram,95runtime+lifecycle com imageinspect real passaram;
+rodadas sobrepostas, não somar. SG/release-check de419arquivos passaram. Sem novo
+startup/SQL/diário original, marcador/campanha, PKI/binding, migração, grants,
+credenciais humanas ou serviços do host alterados. Demo preservado/saudável.
+
+Após este checkpoint: **387commits**,15desde d83d38e; último código a7d7597
+chore(ci): bound the expanded suite at eighteen minutes and record slow tests.
+Privado/main/push direto, sem branch/PR/force. Gerar/revalidar novo plano /3 em main
+limpa APÓS este checkpoint; planos anteriores fixavam commits antigos e não podem
+ser usados. Guardar retorno independente em .local/pki-milestone, sem editar plano
+ou apagar intenções para liberar. Hash canônico/recibo local não é assinatura.
+
+Procedimento concreto pronto em labs/linux/DIAGNOSTIC.md: um diagnóstico local,
+cinco papéis sequenciais/dois simultâneos, novos efeitos até300s, PG17 original RW
+para metadados/WAL, SQL fixo READONLY, diário RO duas vezes, comparações e cleanup
+próprio preservando volumes. Sem worker/runner servidor/API/Redis/Wazuh/marcador,
+PKI/binding/grants/migração. **Ainda não executado nem autorizado para esta rodada**.
+Pedir confirmação específica sobre esse escopo antes de fornecer flags run. A
+confirmação é necessária porque os ensaios anteriores eram de uso único e foram
+encerrados; “continuar desenvolvimento” não é licença para repetir runtime antigo.
+
+Continuar trabalho já autorizado automaticamente; somente o efeito novo sobre os
+volumes originais depende dessa decisão. Checkpoint não aciona /compact nem encerra
+por conta própria a tarefa. Testes/CI e preparação não substituem evidência nativa.
