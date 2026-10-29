@@ -1,6 +1,7 @@
 """Fixed DB-probe profiles and real disposable-schema readers; no Linux namespace."""
 
 import io
+import ipaddress
 import json
 import os
 import subprocess
@@ -250,6 +251,28 @@ def test_failure_decoder_rejects_unreviewed_or_unbound_reports(scene):
     elif scene == "oversize":
         encoded = b" " * 4096 + encoded
     assert probe.decode_failure(encoded, "a" * 64) is None
+
+
+def test_real_profile_query_returns_host_address_without_an_inet_netmask(pg_engine):
+    captured = []
+
+    class Captured(Exception):
+        pass
+
+    with pg_engine.connect() as connection:
+        connection.execute(text("SET TRANSACTION READ ONLY"))
+
+        class RecordingConnection:
+            def execute(self, statement):
+                # Execute the production SELECT, not a mocked profile tuple.
+                # The test DB has its own role/schema and is not the Lab source.
+                captured.append(connection.execute(statement).one())
+                raise Captured
+
+        with pytest.raises(Captured):
+            probe._require_fixed_database(RecordingConnection())
+    assert len(captured) == 1 and type(captured[0][5]) is str
+    ipaddress.ip_address(captured[0][5])  # inet::text includes /32 and fails here.
 
 
 class Result:

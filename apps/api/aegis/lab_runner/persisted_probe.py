@@ -220,7 +220,7 @@ def _require_fixed_database(connection):
             SELECT pg_catalog.current_database(), current_user, pg_catalog.current_schema(),
                    pg_catalog.current_setting('transaction_read_only'),
                    pg_catalog.current_setting('server_version_num'),
-                   pg_catalog.inet_server_addr()::text, pg_catalog.inet_server_port(),
+                   pg_catalog.host(pg_catalog.inet_server_addr()), pg_catalog.inet_server_port(),
                    pg_catalog.current_setting('search_path'),
                    pg_catalog.current_setting('transaction_isolation'),
                    pg_catalog.pg_my_temp_schema()
