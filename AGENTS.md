@@ -368,7 +368,11 @@ Startup PG modifica metadados/WAL no volume original RW, consultas são READONLY
 diário sempre RO. Limite300s para novos efeitos, pedido exclusivo por plano e lock
 compartilhado, no replay. Cleanup por planSHA/opID/beginSHA aceita prazo expirado,
 não exige senha/PKI atual e não remove volumes. Incerteza de leitor retém DB.
-Fixtures completas não comprovam ensaio nativo: nenhum desses novos comandos run/
-cleanup foi invocado contra os volumes originais. Metadados oficiais PostgreSQL
+Fixtures completas não comprovam ensaio nativo. Em2026-10-29, o usuário aprovou
+um diagnóstico único: operação de7aabdff5b04c5da116a86bb2d10496 interrompida antes
+do start, container PG criado/removido e operação encerrada, volumes preservados.
+Nenhum SQL ou diário foi lido; autorização consumida e plano faea59ae... não pode
+ser repetido. Não editar/remover intent ou pedido para liberar replay. Ver evidência
+docs/evidence/diagnostic-2026-10-29 e labs/linux/DIAGNOSTIC.md. Metadados oficiais PostgreSQL
 já foram consultados por TLS/sem pull; vínculo local não é assinatura nem hash de
 todos os layers. Testes: make test-runner-diagnostic; scripts não entram na API.

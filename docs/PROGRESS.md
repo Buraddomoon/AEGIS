@@ -2927,3 +2927,25 @@ encerrados; “continuar desenvolvimento” não é licença para repetir runtim
 Continuar trabalho já autorizado automaticamente; somente o efeito novo sobre os
 volumes originais depende dessa decisão. Checkpoint não aciona /compact nem encerra
 por conta própria a tarefa. Testes/CI e preparação não substituem evidência nativa.
+
+## 2026-10-29 — diagnóstico autorizado interrompido antes do start, cleanup confirmado
+
+Usuário respondeu “aprovado” ao escopo concreto de300s. Main limpa7ce1c7d,
+plano faea59ae780747cbb2cb3b1dcceeb72a/SHAd1ed508b... e escopo b3067435...
+revalidados. Host tinha4285MiB disponíveis e402GiB de disco; nenhum serviço alheio
+parado. Um único run executado, operação de7aabdff5b04c5da116a86bb2d10496.
+Container PG criado, inspeção anterior ao start falhou, container removido e
+operação fechada. Resultado diagnostic_failed_and_closed; start_requested=false,
+readiness_attempts=0. Nenhum SQL/probe/diário/marcador/worker/Wazuh/PKI/binding.
+
+Reconferência de metadados: nenhum container/rede Linux, zero consumidores dos dois
+volumes existentes; ambos preservados. SHA256 dos bytes do recibo privado:
+efdab22c39de406d17de24d073004b55e0b7c3c13cab46becaea488c742f08d7.
+Detalhes e limites em docs/evidence/diagnostic-2026-10-29/README.md. Autorização
+consumida, pedido/intent preservados, não repetir esse plano. Main privada confirmada.
+
+Investigação posterior sem lifecycle reproduziu erro de template Docker quando
+campos opcionais de mount são omitidos. Demo existente não cobria esse caminho,
+pois seus configured_mounts são vazios. A falha exata original não foi preservada
+pelo erro genérico; não afirmar causalidade conclusiva. Continuar correção offline,
+regressões e diagnóstico seguro da etapa antes de preparar novo ensaio específico.

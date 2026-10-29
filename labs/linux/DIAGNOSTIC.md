@@ -1,8 +1,13 @@
 # Diagnóstico único dos volumes Linux preservados
 
-Estado: ferramenta preparada; **nenhuma execução nativa deste diagnóstico foi
-realizada**. Os ensaios Linux/Wazuh anteriores foram encerrados e suas autorizações
-consumidas. Antes de `run`, obter autorização específica para este escopo concreto.
+Estado em2026-10-29: primeiro diagnóstico autorizado **interrompido e encerrado**,
+operação `de7aabdff5b04c5da116a86bb2d10496`. Somente o container PG foi criado;
+falhou a conferência anterior ao start e o container foi removido. Nenhum start,
+SQL ou probe de diário foi solicitado. Volumes preservados e sem consumidores,
+ausência de containers/redes reconferida. A autorização única foi consumida;
+não repetir o plano nem apagar seu pedido. A continuidade ainda não foi provada.
+Ver [evidência](../../docs/evidence/diagnostic-2026-10-29/README.md).
+Antes de novo `run`, obter autorização específica para o novo plano concreto.
 `prepare`, `recheck`, testes e builds não concedem essa autorização.
 
 ## Objetivo e efeito exato
@@ -116,4 +121,4 @@ permanece visível; não limpar globalmente ou adotar recurso parecido.
 
 Testes: `make test-runner-diagnostic`. Daemon fixtures, Git/PKI temporários e
 SQLite/decodificadores reais; não comprovam runtime nos volumes originais. O ensaio
-nativo e qualquer ativação posterior continuam sendo marcos separados.
+nativo bem-sucedido e qualquer ativação posterior continuam sendo marcos separados.
