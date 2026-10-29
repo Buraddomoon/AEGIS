@@ -243,3 +243,11 @@ runner-image-build:
 
 runner-image-build-review:
 	$(VENV)/python scripts/build_review_runner.py review --build-id "$(RUNNER_BUILD_ID)" --expected-sha256 "$(RUNNER_BUILD_SHA256)"
+
+.PHONY: test-runner-diagnostic runner-diagnostic-plan runner-diagnostic-recheck
+test-runner-diagnostic:
+	$(VENV)/pytest tests/test_runner_diagnostic_plan.py -q
+runner-diagnostic-plan:
+	$(VENV)/python scripts/runner_diagnostic_plan.py prepare --application-image "$(APPLICATION_IMAGE_ID)" --runner-image "$(RUNNER_IMAGE_ID)" --postgres-image "$(POSTGRES_IMAGE_ID)" --redis-image "$(REDIS_IMAGE_ID)" --build-id "$(RUNNER_BUILD_ID)" --build-plan-sha256 "$(RUNNER_BUILD_SHA256)" --build-receipt-sha256 "$(RUNNER_BUILD_RECEIPT_SHA256)"
+runner-diagnostic-recheck:
+	$(VENV)/python scripts/runner_diagnostic_plan.py recheck --plan-id "$(DIAGNOSTIC_PLAN_ID)" --expected-sha256 "$(DIAGNOSTIC_PLAN_SHA256)"
