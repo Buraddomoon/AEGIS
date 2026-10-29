@@ -128,3 +128,27 @@ de autorização específica real do usuário. Este módulo não possui CLI/life
 captura privada/decoder reais, incluindo volume errado, rede host, HBA adulterado,
 receita livre, consumidor extra, fonte alterada, escopo e orçamento inválidos.
 Nenhum PostgreSQL/diário original foi aberto por esses testes.
+
+## Coordenador interno de uso único
+
+`runner_diagnostic_coordinator.execute` exige contexto confiável e operação nova;
+publica diagnostic-requested.json exclusivo no plano antes do primeiro efeito.
+Mesmo plano não pode executar novamente após fechamento. Sequência fixa: DB único,
+SQL antes, diário antes/depois, SQL depois, comparações e cleanup de todos os IDs
+próprios. Artefatos por etapa/recibo são0600 em pasta0700; senha segue só na memória
+para stdin do leitor, sem hash/credencial nos registros.
+
+Compara todo o bundle persistido, exceto review.reviewed_at explicitamente volátil
+e UTC quando presente em ambos. Não ignora alterações de versão, contadores,
+identidade ou conteúdo de provas. Isso compara somente binding/histórico analisados,
+não todas as tabelas do banco. Diários precisam ter inventário lógico igual.
+
+Falha, prazo ou interrupção impedem novas etapas e tentam cleanup próprio mesmo
+após expiração; incerteza de leitor retém DB por dependência. Sucesso exige provas,
+comparações e fechamento/ausência reconferidos. Não reescreve journal ou remove
+volumes. KeyboardInterrupt é propagado depois de tentativa de cleanup e recibo.
+
+15 testes passam sobre gates/lifecycles/cleanup reais com daemon fixtures e SQLite
+privado real. Cobrem sucesso, falha de startup/output/compare, prazo, interrupção,
+cleanup retido, falha antes de start e replay. Nenhuma RPC Docker real/SQL Linux.
+Entrada pública/recuperação e revisão do procedimento completo ainda separadas.
