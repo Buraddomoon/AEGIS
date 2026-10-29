@@ -11,11 +11,13 @@ from runner_activation_ownership import identifier, observe
 
 TMPFS = "rw,noexec,nosuid,nodev,size=16m,mode=0700,uid=10001,gid=10001"
 MEMORY = 256 * 1024**2
-IMAGE_FORMAT = journal.IMAGE_FORMAT[:-1] + ',"exposed_ports":{{json .Config.ExposedPorts}}}'
+IMAGE_FORMAT = (
+    journal.IMAGE_FORMAT[:-1] + ',"exposed_ports":{{json (index .Config "ExposedPorts")}}}'
+)
 CONTAINER_FORMAT = (
     journal.CONTAINER_FORMAT[:-1]
     + ',"init":{{json (index .HostConfig "Init")}},'
-    + '"exposed_ports":{{json .Config.ExposedPorts}}}'
+    + '"exposed_ports":{{json (index .Config "ExposedPorts")}}}'
 )
 
 

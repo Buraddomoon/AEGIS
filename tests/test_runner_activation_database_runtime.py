@@ -1,6 +1,7 @@
 """Private durable journals + adversarial Docker fixtures, never a real lab."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -334,3 +335,14 @@ assert 'aegis.settings' not in sys.modules
         timeout=5,
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.skipif(
+    not os.environ.get("AEGIS_TEST_RUNNER_IMAGE_ID"),
+    reason="Opt-in image metadata projection only",
+)
+def test_native_projection_of_explicit_existing_unexposed_runner_image(store):
+    image = runtime.image_id(os.environ["AEGIS_TEST_RUNNER_IMAGE_ID"])
+    result = runtime.review_image(store, "database-review-before", image, CONTEXT)
+    assert result["anonymous_volumes_excluded"] and result["exposed_ports_excluded"]
+    assert result["image_provenance_verified"] is False
