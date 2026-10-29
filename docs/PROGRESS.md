@@ -3135,3 +3135,25 @@ histórica agora demonstrada, sem licença permanente de ativação. Continuar p
 preparação offline da PKI e dos contratos faltantes de ativação, sem efeitos reais
 adicionais. Candidato anterior expirado não pode ser ativado nem ter TTL burlado;
 novo material/escopo precisa de revisão própria conforme o procedimento de rotação.
+
+## 2026-10-29 — contrato da rede isolada da rotação implementado
+
+Novo runner_activation_isolated_network compila somente network-isolated com
+bridge/local/internal, IPv4/defaultIPAM172.30.88.0/29/gateway reservado.1 e
+gateway_mode=isolated; sem opções de usuário, IPv6/Swarm/attachable/config-from.
+Exige intent REQUESTED para compilar e ID OBSERVED para network inspect concreto.
+Ownership antes/depois, flags/IPAM/membros/labels exatos e intent inalterado.
+Conferir configuração não prova alcance de tráfego/host ou concede autorização.
+Sem CLI/create/start/lifecycle; active_metadata não foi ampliado nesta unidade.
+
+**130 testes de rede/ownership/cleanup passaram/1,85s**, incluindo formatter sobre
+network Demo já existente, somente ls/inspect; nenhum recurso criado ou adotado.
+Fixtures recusam driver externo, gateway/range/subnet/aux/opções extras, membros,
+tipos/labels errados, drift no intent e segredos em erros. Fresh import inerte.
+Rodadas anteriores35e90casos se sobrepõem. Ruff/formatação216arquivos e mypy4passaram.
+Decisão e limites no ADR0029; make test-runner-activation inclui a nova suíte.
+
+Este commit será402º,10desde ea2c61d; main privada/push direto. Nenhum novo efeito
+Linux após diagnóstico4c28e0bf... encerrado. Próximo: lifecycle interno de criação
+única/ownership/cleanup e gates concretos antes de expor executor de rotação.
+Não gerar candidato curto só para renovar TTL antes do procedimento reviewable.

@@ -419,3 +419,11 @@ marcador, worker, Wazuh, PKI/binding ou operação normal liberada. A continuida
 comprovada é histórica/escopo exato, não lease permanente para ativação. Preparação
 offline pode prosseguir; qualquer intervenção de ativação exige procedimento novo,
 gates atuais e autorização própria. Ver evidência diagnostic-2026-10-29.
+
+Rede da rotação (ADR0029): runner_activation_isolated_network só compila receita
+fixa e consulta network inspect de ID já OBSERVED; sem CLI/create/lifecycle. Papel
+network-isolated, bridge/internal/IPv4/defaultIPAM172.30.88.0/29 e gateway_mode=isolated,
+sem membros/opções extras/IPv6/Swarm. Conferir ownership antes/depois e estado do
+intent. Metadados não provam tráfego ou acesso ao host. Teste opcional só consulta
+Demo existente, não cria/adota rede. Não ampliar active_metadata ou gerar candidato
+PKI curto para contornar TTL antes de o executor estar pronto para revisão.
