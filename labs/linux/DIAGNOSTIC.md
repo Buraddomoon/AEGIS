@@ -7,8 +7,9 @@ na coleta. Nenhum bundle válido/probe do diário. Recursos removidos, volumes
 preservados/sem consumidores; essa autorização também foi consumida.
 Regressão posterior em PostgreSQL de testes confirmou que inet::text acrescenta
 netmask, incompatível com o IP puro exigido. Código corrigido para host(inet),
-mantendo a exigência exata127.0.0.1; imagem nova e validação nativa continuam
-necessárias. A correção local não é diagnóstico completo bem-sucedido.
+mantendo a exigência exata127.0.0.1. Imagem nova6b9033b9... construída/conferida;
+validação nativa continua necessária. A correção local não é diagnóstico completo
+bem-sucedido.
 
 Segunda tentativa autorizada também **interrompida e encerrada**,
 operação `e6566b9db97d47e88f9e8197a0f85c15`, plano `ef77bb4c...`. PostgreSQL iniciou

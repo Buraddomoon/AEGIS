@@ -402,3 +402,9 @@ inet::text com /32; a0591af usa pg_catalog.host(inet_server_addr()), mantendo
 comparação EXATA com127.0.0.1. Não ampliar endereço/rede, migrar ou mudar grants
 para contornar o erro. Imagem8673e8d9 anterior não contém essa correção; precisa
 nova imagem selada/conferida e autorização específica antes de outro ensaio.
+
+Imagem da correção inet construída e conferida:6b9033b966eb33b9c2be6d98a3be1d1d8276617e091a39a8e851bac57f4860f0,
+build02204960dac2472d9f19da40bddf853b, fonte a15b7f6. Source/imports/versões
+conferidos como10001 e cliente terminou0, sem Lab/volumes originais. Último ensaio
+original continua sendo9bb5b084... encerrado/rejeitado; imagem nova não foi
+executada contra os dados originais. Ver PROGRESS e recibos privados inet-fix-*.

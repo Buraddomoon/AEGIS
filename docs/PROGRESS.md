@@ -3079,3 +3079,29 @@ Continuar: nova fonte/imagem conferidas para essa alteração, checks e CI, plan
 novo em main limpa e autorização específica antes de qualquer outro startup.
 Imagens anteriores e recibos preservados. Este checkpoint será399ºcommit,
 sétimo desde ea2c61d; último código a0591af. Sem branches/PR/force ou reset de dados.
+
+## 2026-10-29 — imagem com endereço SQL corrigido construída e conferida
+
+Fonte a15b7f6/SHA1f60a73ebb6730be6a2fcefb65bedf36507491e4094dc2f84828f8af90ad4edd,
+62arquivos de pacote. Build novo02204960dac2472d9f19da40bddf853b,
+planSHA4019c3adeceaec6dee31df212658948fe51f727c12a063a27a12a681ca41f622,
+imagemsha256:6b9033b966eb33b9c2be6d98a3be1d1d8276617e091a39a8e851bac57f4860f0,
+config8b8f3782..., receiptSHA2db00cdd11bb9bcc1b1e632c6fe5613ba732cc4460476e8d19a4cbcc1451975b.
+Cliente0 persistido, checker novo como10001 confirmou fonte instalada,43versões
+de runtime/3ferramentas/imports. Base oficial fixada já presente, RUNs sem rede;
+46wheels conferidas, sem instalar no host ou puxar base de novo. Imagens/recibos
+antigos preservados; sem assinatura de publicador ou autorização de Lab.
+Artefatos privados .local/pki-milestone/inet-fix-{source,wheels,build-plan,build-result}.json.
+
+Depois do build, **teste nativo opcional de imageinspect passou**, sem criar/iniciar
+container ou abrir volumes; Ruff/formatação214arquivos e mypy4arquivos passaram.
+Teste de regressão de SQL real e suíte do probe:67passaram/4,20s, conforme marco
+anterior. Nenhum novo efeito original após9bb5b084..., cuja autorização foi consumida.
+
+CI a0591af [40922479654](https://github.com/Buraddomoon/AEGIS/actions/runs/40922479654)
+ainda em andamento nesta escrita; não declarar aprovada. Source-review a15b7f6
+passou. Após este checkpoint:400commits,8desde ea2c61d. Último código a0591af
+fix(labs): compare PostgreSQL loopback addresses without inet netmasks. Main privada,
+push direto. Preparar/revalidar plano novo em main limpa com imagem6b9033b9...;
+novo startup só após CI e autorização específica, sem reuso de plano consumido.
+Pendência real: verificar SQL/diário completos e só depois preparar ativação PKI.
