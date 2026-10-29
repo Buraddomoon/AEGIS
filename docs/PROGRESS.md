@@ -2736,3 +2736,45 @@ SQL ou leitura interna de volumes Linux/Wazuh, marcador/campanha, troca PKI/bind
 credenciais humanas, grants ou migração. Fonte/volumes/imagens históricos intactos.
 Nova autorização só quando houver harness completo e escopo concreto; não repetir
 ensaio antigo ou encerrar por marco/CI. O agente não possui invocador de /compact.
+
+## 2026-10-29 — imagem efetiva construída e revisão sem replay concluída
+
+Commits484128e..1080bb4 implementam checker, consulta registry, cache hash-verificado,
+conferência nativa da base, contexto/build offline e revisão sem repetir efeitos.
+Foram baixadas46wheels/21.223.287bytes em cache privado; nenhum pacote instalado no
+host pelo downloader. Base oficial Python3.13-slim foi baixada por digest como
+preparação de desenvolvimento (43.069.135bytes comprimidos), sem subir Lab.
+Docker29.8.1/containerd usa manifesto como imageID, distinto do config digest;
+primeira conferência recusou essa diferença e foi corrigida com perfis explícitos.
+Tentativas/artefatos antigos preservados, sem afrouxar guards históricos.
+
+Build real8d455299e9d845799fc917699d1962a9 executou RUNs networknone, somente inputs
+selados/wheels conferidas, sem .env/keys/workspace/volumes de Lab. Checker real
+Python3.13/UID10001 confirmou62arquivos,43versões runtime/três ferramentas e imports
+dos probes. Não iniciou Compose/runner/SIEM/worker nem executou marcador/SQL Linux.
+Saída exportou imagem local; pós-validação inicialmente recusou config digest
+ausente no metadata-file. 1080bb4 suporta annotation do descritor nativo com
+coerência estrita, e review usa só imageinspect, sem repetir build.
+
+Revisão real passou em .local/pki-milestone/runner-image-readonly-review.json:
+- native_image_id/result: sha256:b0a4879a0d89b98b3184c579566612d0ddf5837a0508a4a8125a4e1a4a0eaa17;
+- config: sha256:0c4413aee64bcbbc91f58b2d98f48cc49844852a9337ee0c1bfb0f7ef73ae457;
+- receiptSHA: 587b1c698adc6207e09fdf362535d621785ebe5c5895d7901ff2a7ca663d3091;
+- local_build_inputs_verified=true, publisher_signature_verified=false,
+  build_client_exit_verified=false (artefato durável de exit0 não existia na versão
+  que construiu; não inventar essa prova). Nenhuma autorização de Lab decorre disso.
+
+make test-runner-image-build: **134 passaram/3,35s**, um aviso Starlette/httpx.
+CI d83d38e **SUCCESS**, [run40773965241](https://github.com/Buraddomoon/AEGIS/actions/runs/40773965241):
+**1.974 Python passaram/seis projeções opcionais puladas/424,47s**, **79React/12arquivos**,
+lint/tipos/build/advisory review. Essa CI não cobre1080bb4; este tem37testes diretos
+mais a rodada134 acima. Logs privados image-review-tests.log e runner-image-build-code-ci.log.
+
+Após este checkpoint: **374commits**, main e privado, push direto; último código
+1080bb4 fix(build): reconcile exported runner images without replaying builds.
+Continuar com plano diagnóstico separado do candidato PKI expirado, gates concretos
+e coordenador/cleanup testados. Não acessar interior dos volumes Linux, iniciar
+PostgreSQL original ou rodar probes antes de novo escopo específico autorizado.
+Startup original escreve metadados/WAL mesmo com SQL de análise somente leitura.
+Demo/credenciais humanas/PKI/binding/migrações/grants preservados. Checkpoint não
+encerra a tarefa e não representa execução de /compact pelo agente.

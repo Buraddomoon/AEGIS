@@ -342,3 +342,16 @@ Imagem antiga do runner75059996 herda três labels Compose; não alterar essa im
 relaxar label_count5 ou adotar como imagem aprovada. Preparar imagem limpa com fonte
 conferida e base oficial identificada. Build de desenvolvimento não é autorização
 para subir Lab, acessar seus volumes, alterar PKI/binding ou executar marcador.
+
+Imagem de preparação efetivamente construída em2026-10-28 e revisada em2026-10-29:
+runner imageID b0a4879a0d89b98b3184c579566612d0ddf5837a0508a4a8125a4e1a4a0eaa17,
+sourceSHA86c9ec4abe1c087e255e18a03d35fecca84757b4213c7bfec3595d44dcd21adc.
+Recibo privado SHA587b1c698adc6207e09fdf362535d621785ebe5c5895d7901ff2a7ca663d3091.
+Build offline verificou fonte/versões/imports comoUID10001; não é assinatura nem
+permissão de Lab. make runner-image-build-review só inspeciona imagem e publica
+recibo privado; não repetir build após intenção. Config digest pode vir do
+Descriptor nativo; todas as fontes presentes precisam concordar. Sem artefato
+build-completed anterior, build_client_exit_verified permanece false. Não apagar
+intents, retaggear imagem histórica ou inferir autorização a partir desses flags.
+Diagnóstico futuro deve ter plano próprio, sem renovar candidato PKI para contornar
+expiração; startup original exige autorização mesmo se apenas SQL READONLY.
