@@ -466,3 +466,12 @@ do IO, gate<=20s limitado por plano/confirmação e idade<=10s no consumidor. Re
 composta lenta é recusada, leitores mantêm seus próprios timeouts. Sem CLI/create
 nativo/PKI/binding; testes só Git/PKI temporários/daemon fixture. Futuro coordenador
 deve persistir hashes de evidence e obter novo escopo antes de efeitos reais.
+
+Servidor identity-only (ADR0030): AEGIS_RUNNER_IDENTITY_ONLY=true seleciona app
+somente GET /v1/identity, tests=[] e header de modo explícito; demais métodos503,
+sem Runner/Workspace/Journal ou diretórios state/work abertos. TLS do entrypoint
+continua obrigatório. Cliente operacional recusa allowlist vazia. Default mantém
+modo anterior, Compose/Demo não foram alterados/reiniciados. Testes loopback e
+boot não provam container/mount/rede reais. Imagem6b9033b9 histórica não contém o
+recurso: novo build selado necessário antes do uso nativo; autorização do diagnóstico
+segue consumida. Identidade não prova continuidade, binding ou capacidade de jobs.

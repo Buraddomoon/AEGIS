@@ -3264,3 +3264,26 @@ andamento ao conferir, sem alegar aprovação do delta novo. Próximo: preparar 
 superfície de identidade mTLS sem rotas de jobs para a futura conferência PKI,
 sem abrir diário/workspace ou executar marcador. Ensaio nativo segue pendente de
 procedimento completo/revisão/autorização própria.
+
+## 2026-10-29 — identidade mTLS sem superfície de execução
+
+Servidor agora oferece opt-in de implantação identity_only, sem instanciar Runner,
+Workspace ou Journal: apenas GET /v1/identity, tests=[]/header explícito, demais
+métodos503 e nenhum acesso a /state ou /work. Cliente operacional recusa allowlist
+vazia antes de preparar job. Modo padrão anterior preservado, sem alterar Compose,
+reiniciar Demo ou invocar containers/volumes Linux. Configuração inválida impede
+boot. Mesmo entrypoint continua exigindo cliente TLS e proxy_headers=false.
+
+**48 testes identity/transport/engine/protocol passaram/2,19s**, incluindo mTLS real
+somente em loopback com certificados temporários, recusa sem certificado, ASGI,
+entrypoint sem diretórios/Runner e compatibilidade do modo anterior. Primeira
+rodada27pass mostrou warnings do helper de fixture exportando campos não usados;
+helper corrigido para exportar só os três IDs, suíte combinada executada novamente.
+Permanece apenas aviso conhecido Starlette/httpx. Ruff/check,223arquivos formatados
+e mypy4passaram. ADR0030 descreve limites. Imagem6b9033b9 preservada não inclui este
+recurso, novo build selado será necessário; nenhum ensaio nativo novo foi feito.
+
+Este commit será408º,16desde ea2c61d; main privada/push direto. Commit407º1725645
+sincronizado; CI remota em andamento, redundante406º cancelada automaticamente.
+Próximo: compilar perfil fechado do container de identidade com secrets folha RO,
+sem journal, portas publicadas ou parâmetros livres; ainda sem driver/CLI de start.

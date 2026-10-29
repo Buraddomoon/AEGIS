@@ -7,6 +7,12 @@ Este plano não é um executor e não recebe uma aprovação pelo simples merge/
 O novo harness `runner_activation.py` acrescenta **plan/recheck somente de
 metadados**, descritos abaixo; ainda não oferece apply ou lifecycle.
 
+Para a conferência mTLS inicial, o servidor agora oferece um modo de identidade
+sem Runner/Journal/Workspace, sem rotas de jobs e com allowlist vazia. Ainda não
+foi implantado nem validado em container próprio; requer imagem nova e executor
+revisado. Não confundir identidade verificada com prontidão de execução ou
+continuidade do volume. Ver [ADR0030](../architecture/decisions/0030-runner-identity-only.md).
+
 ## Perfil inicial delimitado
 
 Priorizar o Linux integrado, projeto **aegis-linux-lab**, API loopback18785,

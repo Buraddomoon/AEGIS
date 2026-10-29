@@ -26,15 +26,28 @@ class RunnerConfig(BaseSettings):
     server_cert: Path = Path("/run/secrets/runner_server_cert")
     server_key: Path = Path("/run/secrets/runner_server_key")
     client_ca: Path = Path("/run/secrets/runner_client_ca")
+    identity_only: bool = False
 
 
 def create_app(runner: Runner) -> FastAPI:
+    return _application(runner.identity, runner=runner)
+
+
+def create_identity_app(identity: RunnerIdentity) -> FastAPI:
+    """TLS identity review only; never instantiate Runner, Workspace or Journal."""
+    # Advertise no executable tests. The normal client's preflight must refuse
+    # this surface even when the identity and TLS trust match its configuration.
+    return _application(identity.model_copy(update={"tests": ()}))
+
+
+def _application(identity: RunnerIdentity, *, runner: Runner | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app):
         try:
             yield
         finally:
-            runner.close()
+            if runner is not None:
+                runner.close()
 
     app = FastAPI(
         title="AEGIS Linux Runner",
@@ -49,6 +62,16 @@ def create_app(runner: Runner) -> FastAPI:
     async def protect(request: Request, call_next):
         if request.url.scheme != "https":
             return JSONResponse({"error": "HTTPS com mTLS obrigatório."}, status_code=403)
+        if runner is None and request.method != "GET":
+            return JSONResponse(
+                {"error": "Modo de conferência de identidade; operações de jobs indisponíveis."},
+                status_code=503,
+                headers={
+                    "Cache-Control": "no-store",
+                    "X-Content-Type-Options": "nosniff",
+                    "X-AEGIS-Runner-Mode": "identity-only",
+                },
+            )
         if request.method == "POST":
             if request.headers.get("x-aegis-runner-protocol") != PROTOCOL:
                 return JSONResponse({"error": "Protocolo explícito obrigatório."}, status_code=403)
@@ -69,6 +92,8 @@ def create_app(runner: Runner) -> FastAPI:
             )
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
+        if runner is None:
+            response.headers["X-AEGIS-Runner-Mode"] = "identity-only"
         return response
 
     @app.exception_handler(Conflict)
@@ -87,8 +112,11 @@ def create_app(runner: Runner) -> FastAPI:
         )
 
     @app.get("/v1/identity")
-    def identity():
-        return runner.identity
+    def get_identity():
+        return identity
+
+    if runner is None:
+        return app
 
     @app.post("/v1/jobs", status_code=201)
     def prepare(spec: JobSpec):
@@ -125,9 +153,15 @@ def main():
         laboratory_id=configuration.laboratory_id,
         asset_id=configuration.asset_id,
     )
-    runner = Runner(identity, configuration.work_dir, configuration.state_dir)
+    # Identity review does not open state/work paths or recover interrupted jobs.
+    # The normal runner retains its existing explicit startup/recovery behavior.
+    app = (
+        create_identity_app(identity)
+        if configuration.identity_only
+        else create_app(Runner(identity, configuration.work_dir, configuration.state_dir))
+    )
     uvicorn.run(
-        create_app(runner),
+        app,
         host="0.0.0.0",
         port=8443,
         workers=1,
