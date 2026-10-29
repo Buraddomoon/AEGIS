@@ -382,3 +382,13 @@ Não editar/remover intent ou pedido para liberar replay. Ver evidência
 docs/evidence/diagnostic-2026-10-29 e labs/linux/DIAGNOSTIC.md. Metadados oficiais PostgreSQL
 já foram consultados por TLS/sem pull; vínculo local não é assinatura nem hash de
 todos os layers. Testes: make test-runner-diagnostic; scripts não entram na API.
+
+Rejeição do leitor (ADR0024): envelope fechado até4096bytes/contextSHA exato, sem
+mensagens de driver/SQL/segredos. Motivos/etapas em allowlists; flags falsos estritos.
+Transporte com failure_decoder é interno ao perfil de payload privado/saída4MiB,
+não retorna stdout não zero nem stderr. Driver rejeita envelope também com exit0;
+owned_probe só registra código/etapa revisados e sempre tenta cleanup. Não usar
+rejeição como provas, causa retroativa da falha anterior ou permissão de retry.
+Imagem nova8673e8d9... foi construída/conferida com fonte3e12c0b em2026-10-29;
+imagem antiga b0a4879a... permanece preservada e não contém este recurso. Nenhum
+diagnóstico original adicional foi executado para validar a nova imagem.

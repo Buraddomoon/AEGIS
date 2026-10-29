@@ -122,3 +122,38 @@ Teste nativo opcional AEGIS_TEST_RUNNER_IMAGE_ID exige ID explícito e só consu
 imageinspect. Usa intent/DBid sintéticos em temporários apenas para compilar receita;
 não registra ownership real nem cria/inicia/inspeciona o DB fictício. Não comprova
 Lab/SQL/proveniência. Rodada runtime+lifecycle95passou incluindo essa consulta real.
+
+## Rejeição contextual sem mensagens do driver — 2026-10-29
+
+A segunda tentativa autorizada confirmou startup/isolamento do PostgreSQL, mas
+falhou no leitor sem bundle validado. Seu erro genérico não identifica a causa
+exata. Não atribuir retrospectivamente senha, schema ou transporte como causa;
+não conceder grants, migrar ou resetar o banco original para fazer o teste passar.
+Ver [evidência](../../evidence/diagnostic-2026-10-29/README.md).
+
+Novo envelope aegis-persisted-probe-rejection/1 mantém status=rejected e todos os
+flags de prova/ativação falsos. Traz somente context_sha256, failure_phase de um
+vocabulário fechado e failure_reason revisado. Erros ContinuityError só preservam
+argumento exato em allowlist; DBAPIError só mapeia SQLSTATE conhecido para categoria
+estática. SQLSTATE desconhecido vira database_driver_rejected; demais exceções,
+unexpected_error. Nunca str(error), statement, parameters, URL, senha ou traceback.
+Rejeição de input/processo não importa o stack de banco apenas para classificar.
+
+Decoder limita4096bytes, recusa duplicatas/campos extras, contexto diferente,
+motivos/etapas desconhecidos e flags inteiros ou verdadeiros. Contexto não é
+assinatura; o fluxo continua dependendo de imagem fixada e isolamento/ownership.
+Formato antigo ou resposta arbitrária não é reinterpretado como diagnóstico novo.
+
+Transporte privado mantém timeout/cap integral e stderr descartado. Somente no
+perfil de payload privado/saída4MiB um callback interno confiável pode examinar
+stdout de uma saída não zero e levantar rejeição estática. Não retorna bytes de
+falha, ignora env/proxy/config Docker externos e sempre reap. Consulta de metadados
+e callback não chamável não podem selecionar esse caminho. O driver também rejeita
+envelope válido se o cliente retornar0: status rejected nunca vira prova.
+
+Lifecycle registra failure_phase do host e somente failure_code/reported_failure_phase
+validados. Cleanup e quarentena continuam independentes; não há retry de start,
+novo endpoint, comando livre ou enfraquecimento das inspeções. Sucesso ainda exige
+runtime correto, bundle válido, comparação e ausência/fechamento confirmados.
+Regressões usam erros sentinela, DB/schema descartável e filhos Python locais;
+não demonstram correção da causa desconhecida no laboratório original.

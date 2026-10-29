@@ -3005,3 +3005,49 @@ atualizada em docs/evidence/diagnostic-2026-10-29/README.md.
 Continuar investigação offline e tornar a falha do leitor diagnosticável sem
 mensagens brutas/segredos. Não migrar nem relaxar privilégios do banco original
 para passar no teste. Este checkpoint será393ºcommit (primeiro desde ea2c61d).
+
+## 2026-10-29 — rejeições do leitor rastreáveis; nova imagem construída sem Lab
+
+279315d implementa envelope de rejeição fechado/contextual até4096bytes, com
+categorias revisadas de ContinuityError/SQLSTATE e etapa, sem mensagens do driver,
+SQL, senha ou traceback. Descarte de respostas desconhecidas/duplicadas/adulteradas
+e flags falsos estritos. **66 testes do probe passaram/4,55s**, incluindo PostgreSQL
+em schema próprio descartável; nenhuma consulta adicional ao banco Linux original.
+
+3e12c0b preserva rejeição estática pelo transporte não zero, somente callback
+interno no perfil privado4MiB, sem retornar stderr/bytes brutos de falha. Driver
+também recusa envelope de rejeição com saída0. c41ff43 preserva a etapa informada
+pelo probe após validar o vocabulário, além da etapa do host. **104 testes de
+transporte/lifecycles passaram/2,16s**; rodada intermediária100passou/2,20s.
+**183 testes de diagnóstico/review/probe passaram/114,95s**, antes do pequeno ajuste
+final de etapa. Após esse ajuste, **16 coordinator+imageinspect passaram/33,00s**,
+incluindo inspeção da nova imagem real, sem criar/iniciar container nesse teste.
+Rodadas se sobrepõem. Ruff/formatação214arquivos e mypy4arquivos passaram.
+
+Build de desenvolvimento novo, sem Lab, usa a mesma base oficial fixada e já
+presente; nenhum pull adicional. Cache46wheels/21.223.287bytes conferidos, sem
+instalação no host. Fonte3e12c0b selada/SHA
+bf5ffb976cf0ce77570d20e8e5c6f46b2757decaa763f61cc50b3928af995945.
+BuildID5993245cd7e9432e920043e70ade74be, planSHA
+7bef6bb79315ee68fc3a0d48e3bec6196d5365a2da1b0dc21bd122fdbc4295ec.
+Imagem local sha256:8673e8d9ccb06f2e7e9d2d57655e4ad9c1293fb54a5e18c9dc56ae781b023ecd;
+config3e69a165...; receiptSHA21754bacf6f97b1e8c8469d2f981e1411695dcbdf75102ceab263c96caae039a.
+Cliente de build terminou0 e isso foi persistido: build_client_exit_verified=true.
+Checker executado como10001 conferiu62arquivos do pacote,43versões de runtime,
+3ferramentas de build e imports reais. RUNs sem rede, contexto sem .env/keys/volumes.
+Sem assinatura de publicador, push de imagem, PKI/binding ou permissão de Lab.
+Imagem histórica preservada. Artefatos privados reader-diagnostics-{source,wheels,
+build-plan,build-result}.json em .local/pki-milestone; não publicar conteúdos brutos.
+
+A causa exata da segunda falha original permanece desconhecida; a melhoria permite
+diagnosticar uma tentativa futura, não prova que corrigiu aquela causa. Consulta
+histórica fechada de eventos Docker do leitor retornou vazia; não prova exitcode
+ou ausência de erro. Não reiniciar/retomar o plano consumido para coletar detalhes.
+
+CI c41ff43 [40902712786](https://github.com/Buraddomoon/AEGIS/actions/runs/40902712786)
+ainda em andamento; não declarar aprovada. CI5379c63 anterior passou conforme
+marco acima, mas não valida estes novos deltas. Este checkpoint será397ºcommit,
+quinto desde ea2c61d; main privada/push direto. Próximo: preparar/revalidar plano
+novo em main limpa usando a imagem8673e8d9..., aguardar CI e solicitar autorização
+específica antes de qualquer novo startup original. Não encerrar por marco; continuar
+o que não depende dessa autorização. Nenhum /compact foi acionado pela ferramenta.

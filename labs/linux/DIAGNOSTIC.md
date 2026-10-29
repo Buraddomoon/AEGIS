@@ -112,6 +112,13 @@ Falha de cleanup mantém dependências; leitor incerto retém DB. Não apagar vo
 O relatório privado db-lifecycle inclui failure_phase e failure_code limitado a
 códigos estáticos revisados; não publica mensagens brutas de exceções. Recibos
 históricos anteriores podem não conter esses campos e não devem ser reescritos.
+O leitor atualizado também emite um envelope de rejeição de até4096bytes, vinculado
+ao hash do contexto, com etapa e motivo em vocabulários fechados. O lifecycle
+preserva failure_phase do host, failure_code e reported_failure_phase do probe
+somente quando validados. Não copia mensagens do driver, SQL ou credenciais.
+Rejeição nunca vira prova, e nenhuma dessas informações permite retry automático.
+Essa alteração exige imagem nova conferida; não executar a imagem histórica como
+se contivesse o novo diagnóstico.
 
 Se interrompido, consultar diagnostic-requested.json no plano para operation_id e
 begin_sha256, e executar somente cleanup desses IDs:
