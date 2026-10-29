@@ -1,6 +1,6 @@
 # ADR 0029 — Contrato da rede isolada da rotação
 
-Estado: compilador fechado e inspeção somente leitura implementados; lifecycle,
+Estado: compilador, inspeção, lifecycle interno e preflight de subnet implementados;
 gates do coordenador e criação/validação nativa ainda pendentes. Não é ativação.
 
 ## Decisão
@@ -72,3 +72,37 @@ Testes usam daemon fixtures/intents temporários e cobrem gates negados/expirado
 contexto mutado, RPC ambígua, ID errado, configuração insegura, interrupção e retenção.
 Driver concreto compilado/testado com transporte falso; nenhuma RPC real de create
 ou alteração de rede do host foi feita por esse incremento.
+
+## Preflight de colisões, somente leitura
+
+`runner_activation_subnet_review.review` observa duas vezes as subnets locais do
+Docker e as rotas IPv4 de todas as tabelas do kernel. Destino é somente a constante
+172.30.88.0/29. Não recebe rede/interface/URL/comando do usuário, não exclui redes
+por labels de ownership e não cria/altera/remove rede ou rota. Uma rede existente
+com o mesmo pool bloqueia, inclusive se alegar ser própria; esta verificação é
+anterior ao create, sem autorização implícita para etapas posteriores.
+
+Docker usa transporte fechado/config vazia existente, somente ls/inspect com
+ID completo e projeção sem nomes de redes. Drivers bridge/local/IPAM default,
+host e null sem pools são reconhecidos; configuração/plugin/escopo incompletos
+ou desconhecidos bloqueiam. IPv6 é lido como pool distinto, não ampliando IPv4.
+Máximo128redes/16pools por rede. Mudança de membros/pools entre snapshots bloqueia.
+
+Rotas usam somente `/usr/bin/ip -json -4 route show table all`, ambiente mínimo,
+sem shell/DNS/overrides e sem modificar o kernel. stdout+stderr64KiB, até5s por
+filho e20s no review integral; timeout/excesso/falha mata e recolhe só o próprio
+filho. Até2048rotas, sem truncar sucesso. Ferramenta ausente gera erro explícito,
+sem instalar ou procurar fallback arbitrário.
+
+Somente default /0 é ignorado para colisão; qualquer prefixo/host específico
+sobreposto, em qualquer tabela, bloqueia conservadoramente. Snapshot normaliza
+destino/tabela/tipo; expiry/cache contadores voláteis não representam mudança de
+CIDR. Isso não verifica integralmente roteamento, conectividade, firewall ou todos
+os meios de acesso ao host. Saída só contagens/hash e subnet constante, sem nomes,
+interfaces, gateways ou endereços de outras redes/rotas. Flags de autorização,
+ativação e alcance permanecem falsos; resultado não é lease nem gate pronto.
+
+Review nativo somente leitura de2026-10-29 examinou15redes/46rotas, ignorando um
+default, sem sobreposição observada; recibo privado rotation-subnet-readonly-preflight.json.
+Não foi criado recurso nem emitido tráfego de teste. Testes com fixtures e filhos
+Python reais cobrem colisões, drift, limites, tool ausente, deadline/reap e sigilo.

@@ -239,7 +239,12 @@ def test_review_rechecks_ownership_and_durable_state_after_daemon_query(store, s
 
 
 @pytest.mark.parametrize(
-    "module", ["runner_activation_isolated_network", "runner_activation_network_lifecycle"]
+    "module",
+    [
+        "runner_activation_isolated_network",
+        "runner_activation_network_lifecycle",
+        "runner_activation_subnet_review",
+    ],
 )
 def test_fresh_import_has_no_network_process_or_secret_effect(module):
     result = subprocess.run(

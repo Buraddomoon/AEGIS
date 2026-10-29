@@ -434,3 +434,12 @@ retém rede vazia; falha/interrupt tenta cleanup selecionado, CONFLICT/endpoint
 estrangeiro/dependente pendente impedem sucesso. Sem replay, CLI ou gates concretos
 do coordenador nesta unidade. Testes só daemon fixtures; nenhuma rede real criada.
 Não interpretar callback sintético ou status de configuração como autorização.
+
+Preflight subnet (ADR0029): runner_activation_subnet_review só ls/inspect Docker
+e /usr/bin/ip -json -4 route show table all, dois snapshots/20s, por query<=5s e
+stdout+stderr64KiB. Recusa colisão de172.30.88.0/29, plugin/perfil incompleto, drift
+ou excesso; não excluir pool por labels próprias. Ignora só default /0, compara
+destino/tabela/tipo (não expiry/cache). Saída só counts/hash/subnet fixo, sem outras
+redes/rotas/interfaces/gateways. Ausência de ferramenta é erro, sem install/fallback.
+Não muda rede/rota nem prova alcance/host/firewall ou autoriza create. Gate concreto
+precisa chamar review fresco; JSON salvo não substitui observação atual.

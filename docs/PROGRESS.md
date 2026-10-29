@@ -3177,3 +3177,27 @@ Este commit será403º,11desde ea2c61d; main privada/push direto. ADR0029 e AGEN
 atualizados. Próximo: gates derivados do plano/inventário em operação, e depois
 runtime mTLS sem marcador; aprovação real continua necessária antes de qualquer
 novo ensaio. O sucesso original4c28e0bf... não é lease ou permissão de criação de rede.
+
+## 2026-10-29 — preflight local de subnet sem alterações de rede
+
+runner_activation_subnet_review compara dois snapshots de subnets Docker e rotas
+IPv4 de todas as tabelas via iproute2 fixo. Subnet única172.30.88.0/29, sem URLs/
+nomes/comandos do usuário, plugin desconhecido ou exclusão por labels próprias.
+Colisão, metadata incompleta, mudança durante IO ou prazo bloqueiam. Prazos20s/
+query5s/saída64KiB incluindo stderr, limite128redes/16pools/2048rotas. Kill/reap
+somente do filho próprio, ferramenta ausente explicitamente desconectada.
+
+Review nativo somente leitura: **15redes e46rotas,1default ignorado, nenhuma
+sobreposição observada**. Não criou recurso, mudou rota/sysctl ou enviou probe de
+tráfego. Saída privada só counts/subnet fixa/hash, não IPs/interfaces/gateways de
+outras redes. Comparação normaliza destino/tabela/tipo, não expiry/cache; não é
+prova de reachability/firewall nem lease para criação. Native SHA do snapshot
+33a8b9bb914a255b0f3b181ada300ff68e607f3c55698db375fc0a61e67bc519.
+
+**30 testes preflight passaram/0,35s;86 testes combinados de preflight/rede/lifecycle
+passaram/1,35s**, rodadas sobrepostas. Ruff/formatação220arquivos e mypy4passaram.
+Cobrem colisões Docker/host, plugins/malformed/IPv6,
+inventário mutado, clock expirada, EOF sem exit, tool ausente, limites/stderr/reap.
+Não repetir ensaio Linux para validar esse preflight. make test-runner-activation
+inclui módulo novo. Próximo: ligar fatos atuais aos gates do ciclo de rede; ainda
+sem CLI ou autorização de create. Este commit será404º,12desde ea2c61d; main privada.
