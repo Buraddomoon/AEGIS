@@ -1,8 +1,15 @@
 # Diagnóstico único dos volumes Linux preservados
 
-Estado em2026-10-29: primeiro diagnóstico autorizado **interrompido e encerrado**,
+Estado em2026-10-29: segunda tentativa autorizada também **interrompida e encerrada**,
+operação `e6566b9db97d47e88f9e8197a0f85c15`, plano `ef77bb4c...`. PostgreSQL iniciou
+e passou nas inspeções físicas/readiness; primeiro leitor não produziu prova
+validada. Ambos os containers foram removidos, volumes preservados/sem consumidores.
+Sem probe do diário, marcador ou mudança de PKI/binding. Não há conclusão sobre
+continuidade. Essa autorização também foi consumida; não repetir o plano.
+
+Primeiro diagnóstico autorizado **interrompido e encerrado**,
 operação `de7aabdff5b04c5da116a86bb2d10496`. Somente o container PG foi criado;
-falhou a conferência anterior ao start e o container foi removido. Nenhum start,
+falhou a conferência anterior ao start e o container foi removido. Nessa tentativa, nenhum start,
 SQL ou probe de diário foi solicitado. Volumes preservados e sem consumidores,
 ausência de containers/redes reconferida. A autorização única foi consumida;
 não repetir o plano nem apagar seu pedido. A continuidade ainda não foi provada.

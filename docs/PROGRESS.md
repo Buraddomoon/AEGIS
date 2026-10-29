@@ -2979,3 +2979,29 @@ anterior7ce/a7d está registrada, não valida esses deltas. Nenhum replay do dia
 de7aabd... ou novo efeito original. Próximo: testes finais específicos, preparar
 plano novo em main limpa, verificar CI e pedir nova autorização sobre o mesmo
 procedimento delimitado. Não usar aprovação consumida como licença para repetir.
+
+## 2026-10-29 — segunda autorização executada; PG validado, leitor ainda inconclusivo
+
+CI5379c63 SUCCESS, run40896470899: **2.148 Python passaram/7 inspeções opcionais
+puladas/828,37s**, **79 React passaram**, lint/tipos/build/advisory review passaram.
+Log privado diagnostic-followup-ci-success.log. Usuário aprovou nova tentativa
+única condicionada a essa CI. Main limpa ea2c61d, plano ef77bb4c21b04bc6af696c46d2730024,
+SHA49269adc.../scope6397d9fe... revalidado antes do efeito. Host3.892MiB disponíveis,
+402GiB livres, sem parar serviço alheio ou mudar host/rede.
+
+Operação e6566b9db97d47e88f9e8197a0f85c15, 15:12:24–15:12:51UTC: PG criado/iniciado
+uma vez, inspeções físicas e readiness na primeira tentativa confirmadas. Leitor
+inicial criado/start solicitado, mas não produziu prova validada. Sem captura SQL
+ou leitura de diário; não inferir causa exata, autenticação ou continuidade a partir
+do erro genérico. Nenhum grant/migração/reset/PKI/binding/marcador/SIEM.
+
+Cleanup removeu ambos os recursos, operação fechada; reconferência independente
+de metadados confirmou ausência de containers/redes Linux e consumidores dos dois
+volumes, ambos preservados. Startup PG escreve metadados/WAL conforme o escopo.
+Recibo privado SHAae9df81d79228f47c2420f60fc77bd657951b796b720d2885d93f72ba33f3eef.
+Segunda autorização consumida, não repetir plano nem apagar intent. Evidência
+atualizada em docs/evidence/diagnostic-2026-10-29/README.md.
+
+Continuar investigação offline e tornar a falha do leitor diagnosticável sem
+mensagens brutas/segredos. Não migrar nem relaxar privilégios do banco original
+para passar no teste. Este checkpoint será393ºcommit (primeiro desde ea2c61d).

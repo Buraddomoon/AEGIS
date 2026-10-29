@@ -372,7 +372,13 @@ Fixtures completas não comprovam ensaio nativo. Em2026-10-29, o usuário aprovo
 um diagnóstico único: operação de7aabdff5b04c5da116a86bb2d10496 interrompida antes
 do start, container PG criado/removido e operação encerrada, volumes preservados.
 Nenhum SQL ou diário foi lido; autorização consumida e plano faea59ae... não pode
-ser repetido. Não editar/remover intent ou pedido para liberar replay. Ver evidência
+ser repetido. Segunda tentativa especificamente aprovada após CI SUCCESS: operação
+e6566b9db97d47e88f9e8197a0f85c15, plano ef77bb4c..., PG iniciou com inspeções e
+readiness confirmadas; primeiro leitor falhou sem produzir prova validada. Dois
+containers próprios removidos, operação fechada, volumes preservados/sem consumidores.
+Sem diário/marcador/PKI/binding; essa autorização também está consumida. Não supor
+autenticação, consulta SQL ou continuidade verificadas pelo readiness do PG.
+Não editar/remover intent ou pedido para liberar replay. Ver evidência
 docs/evidence/diagnostic-2026-10-29 e labs/linux/DIAGNOSTIC.md. Metadados oficiais PostgreSQL
 já foram consultados por TLS/sem pull; vínculo local não é assinatura nem hash de
 todos os layers. Testes: make test-runner-diagnostic; scripts não entram na API.
