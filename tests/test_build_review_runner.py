@@ -141,7 +141,9 @@ def simulate_build(prepared, monkeypatch, scene=None):
             {
                 "id": result_id,
                 "descriptor": {
-                    "digest": "sha256:" + "d" * 64 if scene == "descriptor" else result_id
+                    "digest": "sha256:" + "d" * 64 if scene == "descriptor" else result_id,
+                    "mediaType": "application/vnd.oci.image.manifest.v1+json",
+                    "annotations": {"config.digest": config_id},
                 },
             }
         ).encode()
@@ -181,7 +183,14 @@ def simulate_build(prepared, monkeypatch, scene=None):
         build._write(
             folder / "build-metadata.json",
             json.dumps(
-                {"containerimage.digest": result_id, "containerimage.config.digest": config_id}
+                {
+                    "containerimage.digest": result_id,
+                    **(
+                        {}
+                        if scene == "native_annotation_only"
+                        else {"containerimage.config.digest": config_id}
+                    ),
+                }
             ).encode(),
         )
 
@@ -297,3 +306,112 @@ def test_new_context_material_has_declared_mode_under_a_restrictive_umask(tmp_pa
     assert stat.S_IMODE(context.stat().st_mode) == 0o700
     assert stat.S_IMODE((context / "module.py").stat().st_mode) == 0o644
     assert stat.S_IMODE((context / "private-control.json").stat().st_mode) == 0o600
+
+
+@pytest.mark.parametrize("scene", [None, "native_annotation_only"])
+def test_review_existing_export_uses_only_image_inspection_and_does_not_replay(
+    prepared, monkeypatch, scene
+):
+    simulate_build(prepared, monkeypatch, scene)
+    plan = build.verify(prepared.folder, prepared.report["plan_sha256"])
+    build._write(
+        prepared.folder / "build-requested.json",
+        json.dumps({"plan_sha256": prepared.report["plan_sha256"], "tag": plan["tag"]}).encode(),
+    )
+    build._run(prepared.folder, plan)  # FakeBuildKit fixture, no Docker invocation.
+    monkeypatch.setattr(build, "_run", lambda *a: pytest.fail("Build replay forbidden"))
+    queries = []
+    original = build._execute
+
+    def inspect_only(args, **kwargs):
+        assert args[:2] == ("image", "inspect")
+        queries.append(args)
+        return original(args, **kwargs)
+
+    monkeypatch.setattr(build, "_execute", inspect_only)
+    result = build.review(prepared.folder, prepared.report["plan_sha256"])
+    assert result["image_built"] and result["local_build_inputs_verified"]
+    assert not result["build_client_exit_verified"]
+    assert not result["lab_started"] and not result["lab_authorization_verified"]
+    assert len(queries) == 3
+    assert build.review(prepared.folder, prepared.report["plan_sha256"]) == result
+    assert not (prepared.folder / "build-completed.json").exists()
+
+
+def test_review_does_not_adopt_outputs_without_the_original_request(prepared, monkeypatch):
+    simulate_build(prepared, monkeypatch)
+    monkeypatch.setattr(build, "_run", lambda *a: pytest.fail("Build replay forbidden"))
+    monkeypatch.setattr(build, "_execute", lambda *a: pytest.fail("No Docker query expected"))
+    with pytest.raises(FileNotFoundError):
+        build.review(prepared.folder, prepared.report["plan_sha256"])
+
+
+@pytest.mark.parametrize("scene", ["completion", "receipt", "tag"])
+def test_review_refuses_conflicting_completion_receipt_or_retargeted_tag(
+    prepared, monkeypatch, scene
+):
+    simulate_build(prepared, monkeypatch)
+    report = build.build(prepared.folder, prepared.report["plan_sha256"])
+    assert report["build_client_exit_verified"]
+    if scene == "tag":
+        original = build._execute
+        calls = []
+
+        def replaced(args, **kwargs):
+            calls.append(args)
+            if len(calls) == 3:
+                return json.dumps({"id": "sha256:" + "0" * 64}).encode()
+            return original(args, **kwargs)
+
+        monkeypatch.setattr(build, "_execute", replaced)
+    else:
+        path = prepared.folder / (
+            "build-completed.json" if scene == "completion" else "receipt.json"
+        )
+        path.write_text("{}")
+    monkeypatch.setattr(build, "_run", lambda *a: pytest.fail("Build replay forbidden"))
+    with pytest.raises(ValueError):
+        build.review(prepared.folder, prepared.report["plan_sha256"])
+
+
+@pytest.mark.parametrize(
+    "scene",
+    [
+        "native_only",
+        "metadata_only",
+        "top_level",
+        "all",
+        "legacy",
+        "conflict",
+        "invalid",
+        "missing",
+        "mixed",
+        "descriptor",
+    ],
+)
+def test_result_identity_has_explicit_native_and_legacy_digest_profiles(scene):
+    result, config, other = ("sha256:" + value * 64 for value in ("e", "f", "d"))
+    descriptor = {"digest": result, "mediaType": "application/vnd.oci.image.manifest.v1+json"}
+    metadata = {"containerimage.digest": result, "containerimage.descriptor": dict(descriptor)}
+    item = {"id": result, "descriptor": dict(descriptor)}
+    if scene in {"native_only", "all", "conflict", "invalid", "mixed", "descriptor"}:
+        item["descriptor"]["annotations"] = {"config.digest": config}
+    if scene in {"metadata_only", "all"}:
+        metadata["containerimage.descriptor"]["annotations"] = {"config.digest": config}
+    if scene in {"top_level", "all", "legacy"}:
+        metadata["containerimage.config.digest"] = config
+    if scene == "conflict":
+        metadata["containerimage.config.digest"] = other
+    elif scene == "invalid":
+        item["descriptor"]["annotations"]["config.digest"] = "invalid"
+    elif scene == "descriptor":
+        metadata["containerimage.descriptor"]["digest"] = other
+    elif scene == "mixed":
+        item["id"] = config
+    elif scene == "legacy":
+        item = {"id": config, "descriptor": None}
+    if scene in {"conflict", "invalid", "missing", "mixed", "descriptor"}:
+        with pytest.raises(ValueError):
+            build._result_identity(metadata, item)
+    else:
+        assert build._result_identity(metadata, item) == (config, result)

@@ -153,3 +153,32 @@ Testes usam contextos Git/cache/fontes sintéticos, FakeBuildKit e filhos Python
 locais para deadline/overflow/reap. Não confundir seus receipts com build real.
 O build efetivo só será relatado como validado após executar o driver e conferir
 saída/ID/imports na imagem realmente exportada.
+
+## Revisão de exportação existente sem replay
+
+`runner-image-build-review` revalida plano/contexto, intenção original, base local,
+outputs de build, check fresco e imagem por inspeções somente leitura do Docker.
+Não executa build/create/start/exec nem altera tag. Recibo existente precisa ser
+idêntico ao resultado revalidado; conflito não é sobrescrito. Uma tag que muda
+durante a revisão impede sucesso. Nenhuma autorização de Lab decorre dessa revisão.
+
+Docker29/containerd pode omitir config.digest no metadata-file mesmo depois de
+exportar a imagem. Config digest pode vir do campo containerimage.config.digest,
+da annotation config.digest do descritor exportado ou da annotation do descritor
+nativo; ao menos uma fonte válida é obrigatória e todas as presentes precisam
+concordar. Descritores precisam apontar para o mesmo manifesto e mediaType revisto.
+Id nativo containerd precisa ser o manifesto; perfil legacy separado exige ausência
+de Descriptor e Id=config digest. Não aceitar um terceiro ID ou misturar os perfis.
+A conferência dos artefatos continua separada de assinatura do publicador.
+
+Novos builds persistem build-completed.json apenas após retorno0 do cliente.
+Revisão de exportação anterior sem esse artefato pode confirmar inputs/imagem,
+mas registra build_client_exit_verified=false: não inventa prova do código de
+saída perdido. Intenção/metadata/IID/check fresco/imagem coerentes continuam
+obrigatórios. Ausência de conclusão não permite repetir o build com o mesmo ID.
+
+Testes cobrem os dois perfis de identidade, annotations isoladas/conflitantes,
+review sem pedido original, recibos/conclusões divergentes, tag retargeted e a
+revisão repetida por inspeção somente leitura. Referências primárias:
+[Buildx metadata-file](https://docs.docker.com/reference/cli/docker/buildx/build/#metadata-file)
+e [Moby containerd image inspection](https://github.com/moby/moby/blob/master/daemon/containerd/image_inspect.go).

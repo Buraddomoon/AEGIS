@@ -354,6 +354,39 @@ def _output(path, maximum):
         return stream.read(maximum + 1)
 
 
+def _result_identity(metadata, item):
+    """Bind exported manifest to native identity, with explicit legacy/containerd forms."""
+    result = metadata.get("containerimage.digest")
+    descriptors = [metadata.get("containerimage.descriptor"), item.get("descriptor")]
+    configs = [metadata.get("containerimage.config.digest")]
+    for descriptor in descriptors:
+        if descriptor is None:
+            continue
+        if (
+            not isinstance(descriptor, dict)
+            or descriptor.get("digest") != result
+            or descriptor.get("mediaType") not in base_review.MANIFEST_TYPES
+            or not isinstance(descriptor.get("annotations", {}), dict)
+        ):
+            raise ActivationError("runner_build_native_descriptor_mismatch")
+        configs.append(descriptor.get("annotations", {}).get("config.digest"))
+    configs = [value for value in configs if value is not None]
+    if not configs or any(
+        not isinstance(value, str) or not re.fullmatch(r"sha256:[a-f0-9]{64}", value)
+        for value in [result, *configs]
+    ):
+        raise ActivationError("runner_build_result_digest_invalid")
+    config = configs[0]
+    if any(value != config for value in configs):
+        raise ActivationError("runner_build_config_digest_conflict")
+    if item.get("descriptor") is not None:
+        if item.get("id") != result:
+            raise ActivationError("runner_build_native_identity_mismatch")
+    elif item.get("id") != config:
+        raise ActivationError("runner_build_native_identity_mismatch")
+    return config, result
+
+
 def build(folder, expected_sha):
     plan = verify(folder, expected_sha)
     # Do not overwrite/adopt a pre-existing tag, even if its current ID looks useful.
@@ -371,17 +404,42 @@ def build(folder, expected_sha):
     if verify(folder, expected_sha) != plan:
         raise ActivationError("runner_build_context_changed_before_effect")
     _run(folder, plan)
+    _write(
+        folder / "build-completed.json",
+        json.dumps({"plan_sha256": expected_sha, "client_exit_code": 0}, sort_keys=True).encode(),
+    )
+    return review(folder, expected_sha)
+
+
+def review(folder, expected_sha):
+    """Reconcile existing build outputs using image inspection only, never replay the build."""
+    plan = verify(folder, expected_sha)
+    if _json(folder / "build-requested.json") != {
+        "plan_sha256": expected_sha,
+        "tag": plan["tag"],
+    }:
+        raise ActivationError("runner_build_request_mismatch")
+    if digest(base_review.review(plan["base"])) != digest(plan["base_native"]):
+        raise ActivationError("runner_build_base_changed")
+    completed = folder / "build-completed.json"
+    exit_verified = False
+    try:
+        completed.lstat()
+    except FileNotFoundError:
+        pass
+    else:
+        completion = _json(completed)
+        if (
+            completion != {"plan_sha256": expected_sha, "client_exit_code": 0}
+            or type(completion.get("client_exit_code")) is not int
+        ):
+            raise ActivationError("runner_build_completion_mismatch")
+        exit_verified = True
     metadata = json.loads(
         _output(folder / "build-metadata.json", 256 * 1024), object_pairs_hook=_unique
     )
-    config_digest = metadata.get("containerimage.config.digest")
-    result_digest = metadata.get("containerimage.digest")
-    for value in (config_digest, result_digest):
-        if not isinstance(value, str) or not re.fullmatch(r"sha256:[a-f0-9]{64}", value):
-            raise ActivationError("runner_build_result_digest_invalid")
-    iid = _output(folder / "iid", 256).decode("ascii").strip()
-    if iid not in {config_digest, result_digest}:
-        raise ActivationError("runner_build_iid_unconfirmed")
+    if not isinstance(metadata, dict):
+        raise ActivationError("runner_build_metadata_invalid")
     item = document(
         _execute(
             (
@@ -393,14 +451,10 @@ def build(folder, expected_sha):
             )
         )
     )
-    if item["id"] == result_digest:
-        if (
-            not isinstance(item["descriptor"], dict)
-            or item["descriptor"].get("digest") != result_digest
-        ):
-            raise ActivationError("runner_build_native_descriptor_mismatch")
-    elif item["id"] != config_digest or item["descriptor"] is not None:
-        raise ActivationError("runner_build_native_identity_mismatch")
+    config_digest, result_digest = _result_identity(metadata, item)
+    iid = _output(folder / "iid", 256).decode("ascii").strip()
+    if iid not in {config_digest, result_digest}:
+        raise ActivationError("runner_build_iid_unconfirmed")
     # Review final image without creating/running it. Exactly five ownership labels
     # will be supplied by the future authorized executor; image inherits none.
     # Avoid inventing a real activation intent: the image check itself is the same
@@ -487,6 +541,9 @@ def build(folder, expected_sha):
     ):
         raise ActivationError("runner_build_source_check_mismatch")
     verify(folder, expected_sha)
+    final = document(_execute(("image", "inspect", "--format", '{"id":{{json .Id}}}', plan["tag"])))
+    if final.get("id") != item["id"]:
+        raise ActivationError("runner_build_tag_changed_during_review")
     receipt = {
         "format": "aegis-reviewed-runner-image/1",
         "build_id": folder.name,
@@ -497,15 +554,21 @@ def build(folder, expected_sha):
         "config_digest": config_digest,
         "result_digest": result_digest,
         "build_metadata_sha256": digest(metadata),
+        "build_client_exit_verified": exit_verified,
         "source_check": check,
         "image_built": True,
         "local_build_inputs_verified": True,
         "publisher_signature_verified": False,
         **FLAGS,
     }
-    _write(
-        folder / "receipt.json", json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode()
-    )
+    try:
+        _write(
+            folder / "receipt.json",
+            json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode(),
+        )
+    except FileExistsError:
+        if _json(folder / "receipt.json") != receipt:
+            raise ActivationError("runner_build_receipt_conflict") from None
     return {
         "status": "runner_image_built_and_locally_verified",
         "receipt_sha256": digest(receipt),
@@ -526,9 +589,10 @@ def main(argv=None):
         "base-sha256",
     ):
         create.add_argument("--" + name, required=True)
-    execute = commands.add_parser("build")
-    execute.add_argument("--build-id", required=True)
-    execute.add_argument("--expected-sha256", required=True)
+    for name in ("build", "review"):
+        execute = commands.add_parser(name)
+        execute.add_argument("--build-id", required=True)
+        execute.add_argument("--expected-sha256", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare":
@@ -541,7 +605,8 @@ def main(argv=None):
                 args.base_sha256,
             )
         else:
-            report = build(ROOT / _id(args.build_id), args.expected_sha256)
+            action = build if args.command == "build" else review
+            report = action(ROOT / _id(args.build_id), args.expected_sha256)
         print(json.dumps(report, sort_keys=True))
         return 0
     except (
