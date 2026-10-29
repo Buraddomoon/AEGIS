@@ -1,5 +1,9 @@
 # Diagnóstico Linux autorizado — 2026-10-29
 
+Resultado mais recente: **diagnóstico completo verificado e encerrado**, quarta
+tentativa especificamente autorizada, descrita ao final. As três tentativas
+anteriores e seus limites permanecem abaixo, sem reescrever recibos históricos.
+
 Resultado: **interrompido antes do start e encerrado**, sem conclusão sobre
 continuidade SQL/diário. Autorização específica recebida como “aprovado” em resposta
 ao escopo de [DIAGNOSTIC.md](../../../labs/linux/DIAGNOSTIC.md), uma única execução
@@ -92,3 +96,43 @@ o endereço com ipaddress: falhou antes, passou após a0591af trocar o cast por 
 schema/transação exatos; outros endereços não foram liberados. O defeito corrigido
 explica uma rejeição inevitável do perfil, mas só outro ensaio autorizado poderá
 validar o fluxo completo e revelar eventuais bloqueios posteriores.
+
+## Confirmação completa após a correção
+
+Autorização: “Autorizar essa confirmação após a CI passar”, para plano
+`54f5b12d062f48b49df361efb9650f1a`, planSHA
+`b52ce2a33a0669d98d40e0bddc0972b0bc968cf0050ebcedb263b2f837bb5150`, scopeSHA
+`325cccbfe897d4d65b13871c72b5817c6efd967e1381f781fda5e7818985729b`.
+[CI40922479654](https://github.com/Buraddomoon/AEGIS/actions/runs/40922479654) SUCCESS:
+**2.176 Python passaram/sete opcionais pulados/847,90s, 79 React passaram**;
+lint/tipos/build/advisory review passaram. Aviso e advisory conhecido permanecem.
+Código funcional a0591af, main limpa a283b6a e plano revalidado antes do efeito.
+Host com3.743MiB disponíveis/402GiB livres, sem mudar host ou parar serviços alheios.
+
+Operação `4c28e0bfdb2a4d5f9d88076e55628b86`, 17:50:17–17:51:47UTC, dentro de300s.
+PG iniciou uma vez e passou nas inspeções físicas/readiness. Os quatro probes
+completaram e foram removidos; nenhuma falha reportada. Fonte/imagem da correção
+conferidas conforme PROGRESS/build02204960...; sem afirmar assinatura de publicador.
+
+- SQL: **uma prova conhecida**, binding/histórico/provas iguais antes/depois.
+  Somente review.reviewed_at UTC foi ignorado como volátil; não é dump ou comparação
+  de todas as tabelas. comparisonSHA248be2b947683b9af012d91244fa69554354857b5cc4a7aa5c221f62613aa0b8.
+- Diário: **dois jobs/oito eventos**, incluindo um job adicional revisado;
+  uma prova conhecida correspondeu. Inventários lógicos iguais nas duas leituras,
+  implicit_restart_histories=0 neste volume. inventorySHA
+  0597294eae36dff8f4920483976834260b4973621e415e75afbb9c8a5ff25f12.
+- Cleanup: **cinco recursos próprios removidos**, operação fechada e ausência
+  reconferida. Nova consulta externa confirmou nenhum container/rede Linux,
+  nenhum consumidor dos dois volumes e ambos os volumes ainda existentes.
+
+Resultado final diagnostic_verified_and_closed, diagnostic_verified=true,
+managed_resources_absence_verified=true. Startup PG escreveu metadados/WAL conforme
+o escopo; SQL e diário foram lidos pelo fluxo fixo. Sem marcador, worker, Wazuh,
+migração, alteração de grants/senhas, ativação PKI/binding ou remoção de volumes.
+normal_operation_permitted=false. Isso não é detecção SIEM nem autorização de
+ativação; continuidade só comprovada nesse escopo/instante.
+
+SHA256 dos bytes do recibo final privado:
+`0be41f1dfedd58c23222a7e96538150bc43fbe851cccccf0553f07b63d343a88`.
+SQL/capturas/recibos completos permanecem privados. A autorização única está
+consumida; não repetir o plano, remover pedidos ou reutilizar o sucesso como lease.

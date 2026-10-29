@@ -1,6 +1,15 @@
 # Diagnóstico único dos volumes Linux preservados
 
-Estado em2026-10-29: terceira tentativa autorizada **interrompida e encerrada**,
+Estado em2026-10-29: **diagnóstico completo verificado e encerrado**, operação
+`4c28e0bfdb2a4d5f9d88076e55628b86`, plano `54f5b12d...`. Uma prova SQL conferida
+antes/depois, dois jobs/oito eventos do diário conferidos nas duas leituras,
+inventários iguais. Cinco recursos próprios removidos, volumes preservados e sem
+consumidores, ausência de containers/redes reconferida. Sem marcador ou ativação
+PKI/binding. Autorização consumida; não repetir esse plano. Revisão bem-sucedida
+não é autorização permanente nem liberação de operação normal. Ver
+[evidência](../../docs/evidence/diagnostic-2026-10-29/README.md).
+
+Histórico: terceira tentativa autorizada **interrompida e encerrada**,
 operação `9bb5b0847b8543548cd0db8373128b4d`, plano `0388cd1e...`. PG passou nas
 inspeções/readiness; leitor informou persisted_probe_database_profile_mismatch
 na coleta. Nenhum bundle válido/probe do diário. Recursos removidos, volumes

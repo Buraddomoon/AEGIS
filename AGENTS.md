@@ -408,3 +408,14 @@ build02204960dac2472d9f19da40bddf853b, fonte a15b7f6. Source/imports/versões
 conferidos como10001 e cliente terminou0, sem Lab/volumes originais. Último ensaio
 original continua sendo9bb5b084... encerrado/rejeitado; imagem nova não foi
 executada contra os dados originais. Ver PROGRESS e recibos privados inet-fix-*.
+
+Estado mais recente: usuário autorizou especificamente a confirmação54f5b12d...
+após CI SUCCESS40922479654. Operação4c28e0bfdb2a4d5f9d88076e55628b86 executada/
+encerrada em2026-10-29: diagnostic_verified_and_closed, uma prova SQL antes/depois,
+dois jobs/oito eventos do diário iguais, cinco recursos removidos/volumes preservados.
+Hash dos bytes do recibo0be41f1dfedd58c23222a7e96538150bc43fbe851cccccf0553f07b63d343a88.
+Essa autorização está consumida; não repetir ou apagar pedido/intent. Não houve
+marcador, worker, Wazuh, PKI/binding ou operação normal liberada. A continuidade
+comprovada é histórica/escopo exato, não lease permanente para ativação. Preparação
+offline pode prosseguir; qualquer intervenção de ativação exige procedimento novo,
+gates atuais e autorização própria. Ver evidência diagnostic-2026-10-29.

@@ -4,8 +4,8 @@
 
 - Coordenador host-only de uso único, prazo de300s, PostgreSQL original isolado,
   leitores SQL fixos, probes de diário RO, capturas privadas e cleanup por ownership.
-- Três tentativas especificamente autorizadas e encerradas: startup/isolamento PG
-  validados; continuidade completa SQL/diário ainda pendente, sem ativação PKI.
+- Quatro tentativas especificamente autorizadas e encerradas; a última validou
+  startup/isolamento PG, prova SQL e continuidade do diário, sem ativação PKI.
 - Rejeições do leitor com contexto/etapa/categoria revisados, sem mensagens SQL,
   credenciais ou transformação de erro em prova. Registros históricos preservados.
 - Projeções de mounts Docker opcionais corrigidas e testadas com CLI real sobre

@@ -3105,3 +3105,33 @@ fix(labs): compare PostgreSQL loopback addresses without inet netmasks. Main pri
 push direto. Preparar/revalidar plano novo em main limpa com imagem6b9033b9...;
 novo startup só após CI e autorização específica, sem reuso de plano consumido.
 Pendência real: verificar SQL/diário completos e só depois preparar ativação PKI.
+
+## 2026-10-29 — diagnóstico nativo completo verificado e encerrado
+
+Usuário confirmou “Autorizar essa confirmação após a CI passar” para54f5b12d.
+CI40922479654 SUCCESS sobrea0591af: **2.176 Python passaram/7 opcionais pulados/
+847,90s;79 React passaram**, lint/tipos/build/advisory review passaram. Log privado
+inet-fix-ci-success.log. Main limpa a283b6a, recheck passou,3.743MiB/402GiB livres.
+Sem mudança de host, serviços alheios, segredo humano ou ambiente Demo.
+
+Operação **4c28e0bfdb2a4d5f9d88076e55628b86**,17:50:17–17:51:47UTC, resultado
+**diagnostic_verified_and_closed**. PG criado/iniciado uma vez, quatro probes
+completos/removidos. Uma prova SQL/binding/histórico iguais antes/depois; só
+review.reviewed_at UTC ignorado. Dois jobs/oito eventos do diário, um adicional,
+uma prova conhecida casada; inventários lógicos iguais nas duas leituras.
+implicit_restart_histories=0, não inventar restart implícito neste volume.
+
+Cleanup confirmou cinco recursos removidos/fechamento; consulta externa repetiu
+ausência de containers/redes Linux e consumidores dos dois volumes, ambos intactos
+quanto à existência. PG pode escrever WAL/metadados conforme escopo; não dizer
+que todo o diagnóstico foi RO ou que todas as tabelas do DB foram comparadas.
+Recibo privadoSHA0be41f1dfedd58c23222a7e96538150bc43fbe851cccccf0553f07b63d343a88.
+Detalhes e limites em docs/evidence/diagnostic-2026-10-29/README.md. Sem marcador,
+worker/Wazuh/migração/grants/PKI/binding; normal_operation_permitted=false.
+
+Autorização consumida; preservar pedidos/intents/capturas/imagens e não repetir.
+Este checkpoint será401ºcommit,9desde ea2c61d; main privada/push direto. Continuidade
+histórica agora demonstrada, sem licença permanente de ativação. Continuar para
+preparação offline da PKI e dos contratos faltantes de ativação, sem efeitos reais
+adicionais. Candidato anterior expirado não pode ser ativado nem ter TTL burlado;
+novo material/escopo precisa de revisão própria conforme o procedimento de rotação.
