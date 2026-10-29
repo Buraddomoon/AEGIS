@@ -100,3 +100,31 @@ em cada gate nem aceitar token, assinatura inventada ou ID diferente no registro
 Formato do plano/escopo sobe para /2; planos /1 permanecem preservados e não são
 convertidos/adotados implicitamente. A verificação de bytes dos layers/assinatura
 do publicador continua explicitamente false, conforme o modelo de confiança local.
+
+## Gates concretos internos
+
+`DiagnosticGates` calcula os três contratos dos lifecycles a partir do plano /2,
+recheck ativo, fonte/imagem e política física do DB. Não recebe dicionários de
+checks fornecidos por API. Create do servidor identifica volume/política; start e
+readiness também precisam passar inspeção física de mounts/config/rede. Leitores
+exigem DB networknone/portas ausentes/HBA fixo e namespace derivado do ID próprio.
+Probes do diário só aceitam bundle privado capturado e conferido, leitor inicial
+removido, identidade/descritor originais e hash de receita correspondente.
+
+Gate `image_provenance_verified` legado significa aqui vínculo local de fonte/
+inputs do runner e manifesto oficial do PostgreSQL sob confiança no host/daemon;
+não é assinatura de publicador ou verificação dos bytes de todos os layers. Esses
+limites continuam explícitos nos receipts de origem. Nenhum resultado é detecção
+SIEM ou autorização de operação normal.
+
+A confirmação do escopo pelo operador host-only deve coincidir exatamente com o
+plano/intent e expirar em no máximo300s; prazo monotônico impede estender a operação
+com ajustes do relógio. Gates são emitidos por até20s, depois de todas as consultas,
+e passam de novo nos validadores dos lifecycles. A confirmação local não é uma
+assinatura/autenticação de aprovação humana; o agente só poderá fornecê-la depois
+de autorização específica real do usuário. Este módulo não possui CLI/lifecycle.
+
+22 testes exercitam os gates reais sobre daemon fixtures, PKI/Git temporários e
+captura privada/decoder reais, incluindo volume errado, rede host, HBA adulterado,
+receita livre, consumidor extra, fonte alterada, escopo e orçamento inválidos.
+Nenhum PostgreSQL/diário original foi aberto por esses testes.
