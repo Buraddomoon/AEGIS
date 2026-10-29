@@ -2847,3 +2847,41 @@ Pedido do usuário sobre /compact respondido com franqueza: as ferramentas desta
 sessão não oferecem invocador do comando. OpenAI Docs confirma que é comando da
 interface; não fingir execução. Estado durável/checkpoints preservam continuidade,
 mas não equivalem à compactação. Continuar automaticamente entre marcos.
+
+## 2026-10-29 — global/diagnóstico finais passaram; CI interrompida pelo teto antigo
+
+Global local sobre db59492: **2.139 passaram/520,20s**, um aviso Starlette/httpx,
+em .local/pki-milestone/diagnostic-final-global-tests.log. A correção de projeção
+posterior edcd8b8 tem95testes runtime+lifecycle passando, incluindo imageinspect real.
+Rodada completa mais recente do diagnóstico sobre9a53ae1: **143 passaram/104,42s**,
+em diagnostic-current-final-tests.log; cobre /3, gates, coordenador e CLI atuais.
+Sem pytest/PG local ainda ativo deste marco. Não somar rodadas sobrepostas como
+casos únicos. Revisão integral do índice419arquivos e release-check passaram.
+
+Plano /3 real foi preparado/revalidado em main limpa9a53ae1, ID5ef5e00968b04923948a215557954399,
+planSHA5ef34dbdcd9fbb85eedd4c65d611d294a65f1648e9cc313ee8999df837d5ca39,
+sem abrir volumes/SQL; artefatos privados diagnostic-v3-preflight/recheck.json.
+**Esse plano já ficou desatualizado após o novo commit da CI**; preservá-lo e gerar
+outro em main limpa quando as verificações finais terminarem. Não fornecer flags
+de execução até nova autorização humana específica. Nenhum run/cleanup real ocorreu.
+
+CI edcd8b8 [40877894805](https://github.com/Buraddomoon/AEGIS/actions/runs/40877894805)
+terminou **CANCELLED por timeout**, não aprovada: annotation “The job has exceeded
+the maximum execution time of12m0s”. Pytest chegou a77%, sem falha registrada antes
+da interrupção; frontend/build/advisory dessa execução não foram concluídos.
+Log privado diagnostic-ci-timeout.log. Aumentar apenas a duração não prova testes.
+
+a7d7597 ajusta teto finito do job para18min e adiciona durações dos15testes mais
+lentos e faulthandler_timeout60 para diagnóstico, mantendo concurrency/cancelamento
+redundante, cache e runner padrão. YAML/flags do pytest instalado foram verificados;
+nenhum recurso pago habilitado. Nova CI **em andamento** no run40880305312:
+https://github.com/Buraddomoon/AEGIS/actions/runs/40880305312 . Aguardar resultado,
+investigar falhas/durações, não declarar sucesso enquanto estiver pendente.
+
+Após este checkpoint: **386commits**,14desde d83d38e; último código a7d7597
+chore(ci): bound the expanded suite at eighteen minutes and record slow tests.
+Main privada e sincronizada. Próximo trabalho: concluir CI, registrar evidência,
+preparar/revalidar plano /3 atual e pedir autorização do escopo pronto, conforme
+labs/linux/DIAGNOSTIC.md. Se CI falhar, corrigir primeiro. Não encerrar por marco;
+continuar automaticamente. /compact não pode ser invocado pelas ferramentas desta
+sessão; o checkpoint não substitui nem finge execução desse comando.
