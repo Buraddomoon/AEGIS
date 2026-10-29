@@ -45,3 +45,27 @@ A imagem6b9033b9 do diagnóstico histórico não contém esse recurso: é necess
 novo build selado/revisado antes de uso nativo. Preservar imagem/recibo anteriores;
 não declarar um build velho como atualizado nem reutilizar a autorização consumida.
 O coordenador deve comparar explicitamente o modo/allowlist e os IDs esperados.
+
+## Compilador interno do container
+
+runner_activation_identity_runtime aceita somente plano /2 íntegro/válido, header
+de intent correspondente e network-isolated já OBSERVED por ID completo. Não faz
+RPC ou leitura de chaves. Criação compilada exige runner REQUESTED sem ID, sem
+reutilizar papel observado ou mudar intent. Conferência física ainda é separada.
+
+Receita fixa Python-I/-B/módulo server, UID10001, readonly rootfs, caps removidas,
+no-new-privileges,192MiB/0,5CPU/16PIDs/tmpfs16MiB, sem stdin/TTY/healthcheck/logs/
+restart/ports. Rede somente pelo ID próprio fixado, IP172.30.88.2 e três bind
+mounts folha/CA cliente RO/rprivate do candidato. Nenhum volume nomeado/anônimo é
+pedido; imagem com VOLUME implícito precisará ser recusada pela revisão futura.
+Não montar /state, /work ou Docker socket. CSV de mounts recusa vírgula/newline/NUL.
+ENV fixa identity-only e três UUIDs; não há arquivo .env, senha ou comando livre.
+
+Compilar não prova disponibilidade da imagem/secret, conteúdo atual, ambiente
+herdado, configuração do daemon ou tráfego. Driver/gates/create/start e revisão
+física ainda pendentes. Não fornecer argumentos compilados ao daemon real sem
+coordenador/procedimento e autorização específica. Testes usam somente temporários.
+Perfil público permanece executor_implemented=false e não amplia o diagnóstico /3.
+
+Referências oficiais revisadas: [container create](https://docs.docker.com/reference/cli/docker/container/create/)
+e [gateway modes](https://docs.docker.com/engine/network/port-publishing/#gateway-modes).

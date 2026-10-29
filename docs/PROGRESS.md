@@ -3287,3 +3287,24 @@ Este commit será408º,16desde ea2c61d; main privada/push direto. Commit407º172
 sincronizado; CI remota em andamento, redundante406º cancelada automaticamente.
 Próximo: compilar perfil fechado do container de identidade com secrets folha RO,
 sem journal, portas publicadas ou parâmetros livres; ainda sem driver/CLI de start.
+
+## 2026-10-29 — receita fechada do container de identidade, sem lifecycle
+
+runner_activation_identity_runtime compila somente plano /2/intent correspondente
+e network-isolated OBSERVED/ID completo, IP172.30.88.2. Python-I/-B/server, env
+identity-only/trêsUUIDs, três secrets RO/rprivate do candidato, nenhum journal/
+workspace/porta/stdin/comando livre. Caps ALL removidas, rootfs RO,192MiB/0,5CPU/
+16PIDs/tmpfs16MiB, sem restart/log/healthcheck. Compilador não lê chaves ou faz RPC.
+Create exige runner REQUESTED novo; não reutiliza estado OBSERVED nem modifica
+o histórico. Revisão física/conteúdo/env herdado/imagem sem VOLUME ainda pendentes.
+
+**15 testes passaram/16,59s**, planos/PKI/Git temporários: argumentos/mounts fixos,
+rede ausente/em cleanup, scope/ID/hash errados, plano expirado, CSV injection e
+fontes de secret divergentes; import sem efeitos. Ruff do delta passou. Referências
+oficiais Docker create/gateway modes conferidas; não executar argumentos no daemon
+real para validar preparação. Nenhum recurso Linux, PKI/binding ou Demo alterado.
+
+Este commit será409º,17desde ea2c61d; main privada/push direto. Commit408ºb73f8f9
+sincronizado. Próximo: inspeção fechada do container/imagem/environment/mounts e
+endpoint de rede, antes de driver/gates/coordenador. A imagem histórica6b9033b9
+continua preservada e não foi atualizada implicitamente pelo código novo.

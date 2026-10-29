@@ -475,3 +475,11 @@ modo anterior, Compose/Demo não foram alterados/reiniciados. Testes loopback e
 boot não provam container/mount/rede reais. Imagem6b9033b9 histórica não contém o
 recurso: novo build selado necessário antes do uso nativo; autorização do diagnóstico
 segue consumida. Identidade não prova continuidade, binding ou capacidade de jobs.
+
+Compiler identity_runtime só plano /2/header exatos e network-isolated OBSERVED;
+create_arguments exige runner REQUESTED novo. IP fixo/ID completo, Python-I/-B,
+env identity-only/UUID, três secrets RO e nenhum volume/journal/workspace/porta.
+Sem RPC/leitura de chaves; não executar argumentos como atalho de autorização.
+Imagem com VOLUME/env herdado e runtime/mounts precisam de revisão futura. Testes
+test_runner_activation_identity_runtime não iniciam containers; perfil público
+continua não operacional e diagnóstico /3 não recebe papéis/contextos novos.
