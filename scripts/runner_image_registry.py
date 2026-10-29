@@ -58,9 +58,16 @@ async def _read(client, url, *, headers=None, params=None):
         return data, bytes(content), response.headers
 
 
-async def _manifest(client, reference, token):
+async def _manifest(client, reference, token, *, repository="python"):
+    if repository not in {"python", "postgres"}:
+        raise ActivationError("official_registry_repository_required")
+    endpoint = (
+        REGISTRY
+        if repository == "python"
+        else "https://registry-1.docker.io/v2/library/postgres/manifests/"
+    )
     data, raw, headers = await _read(
-        client, REGISTRY + reference, headers={"Authorization": "Bearer " + token, "Accept": ACCEPT}
+        client, endpoint + reference, headers={"Authorization": "Bearer " + token, "Accept": ACCEPT}
     )
     expected = _sha(headers.get("Docker-Content-Digest"))
     if "sha256:" + hashlib.sha256(raw).hexdigest() != expected:

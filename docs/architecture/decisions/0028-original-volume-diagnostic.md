@@ -63,3 +63,29 @@ diário, grants, autenticação ou isolamento físico. Esses gates permanecem se
 Planejamento público continua exigindo quiescência; não adota recursos só porque
 um intent diz que pertencem à operação. Testes das11combinações role/phase, contexto
 errado, consumidor extra e mutações/expiração durante IO usam somente fixtures.
+
+## Origem PostgreSQL por digest
+
+`runner_postgres_origin` inspeciona somente a imagem local já existente e exige
+perfil Linux/amd64/PG17 e referência oficial postgres@digest. Perfil desta ferramenta
+é explicitamente containerd/index: ID nativo e Descriptor.digest precisam ser o
+mesmo índice, com mediaType conhecido; não converter um config digest por palpite.
+Consulta TLS anônima apenas auth.docker.io e library/postgres no registry oficial,
+por aquele digest fixado, nunca tag/URL/credencial do usuário. SHA dos bytes de
+índice/manifesto filho e headers é conferido, plataforma precisa ser única, schema2,
+config/layers limitados e sem URLs alternativas. Não baixa blobs/layers.
+
+Timeout absoluto30s inclui as três chamadas, corpo até1MiB/sem compressão, sem
+proxies/redirects; token fica só na memória. Inspeção local é repetida ao final.
+Recibo público sem token distingue registry_manifest_verified e referência nativa
+conferida de publisher_signature_verified/local_layer_bytes_verified, que ficam
+false. Confia no host/daemon para vincular o conteúdo local ao digest; não equivale
+a assinatura/atestado ou à verificação criptográfica de todos os layers locais.
+
+A ferramenta tem somente captura de metadados e review offline, sem pull/build,
+containers, SQL ou volume. Cache de recibo para o plano e ligação aos gates ainda
+pendentes nesta unidade. Testes nativos/HTTP fixtures cobrem hash/redirect/schema/
+limites/plataformas, receipt adulterado, deadline absoluto e import sem efeitos.
+Fontes: [Registry API](https://distribution.github.io/distribution/spec/api/),
+[token authentication](https://docs.docker.com/reference/api/registry/auth/) e
+[Docker image inspect](https://docs.docker.com/reference/cli/docker/image/inspect/).
