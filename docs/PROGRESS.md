@@ -2778,3 +2778,72 @@ PostgreSQL original ou rodar probes antes de novo escopo específico autorizado.
 Startup original escreve metadados/WAL mesmo com SQL de análise somente leitura.
 Demo/credenciais humanas/PKI/binding/migrações/grants preservados. Checkpoint não
 encerra a tarefa e não representa execução de /compact pelo agente.
+
+## 2026-10-29 — diagnóstico composto preparado; ensaio original ainda não autorizado
+
+498f9ac/d2d571f separam plano diagnóstico e recheck ativo da ativação PKI. Plano
+fixa origem pública/identidade/descritor, daemon/volumes/imagens e main limpa; não
+renova candidato expirado. Gate ativo só admite cinco papéis próprios, sem outros
+consumidores/worker/rede. **24 testes** iniciais do plano/20,90s e **20 rechecks**/
+22,82s passaram. Preflight real de metadados /1 preparou plano5cba6be... e não abriu
+volumes; esse formato foi superado, preservado e não é executável implicitamente.
+
+6fc4132 verifica índice/manifesto oficiais da imagem PostgreSQL já existente, por
+TLS anônimo/headers+SHA, sem blobs/layers/pull. **60 testes PG+Python registry**/
+0,62s passaram. Consulta real confirmou imagem
+sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24,
+receiptSHA1e14ced28accd9c0e62e18d077f046e73f540c3ce4863fc40530e3160d5d601a,
+em .local/pki-milestone/postgres-official-origin.json. Assinatura do publicador e
+hash dos bytes de layers locais permanecem false; vínculo local confia no daemon.
+8388163 fixa receipt/hash no plano, sem refetch no recheck; **29 testes/21,64s**.
+
+1ccfc4f calcula gates de runtime/política/identidade a partir de evidências, sem
+JSON de aprovação externo; **22 testes/24,25s**. 45e4a5a compõe DB→SQL antes→diário
+antes/depois→SQL depois→comparações→cleanup. Pedido exclusivo por plano, sem replay;
+compara todas as provas exceto timestamp UTC explícito da revisão, sem afirmar
+comparação de todo o banco. Falha/interrupção limpa ownership próprio; dependente
+incerto retém DB. **15 testes/34,35s** exercitam fluxo e falhas com daemon fixtures,
+SQLite privado/decoders/capturas reais, sem Docker lifecycle ou SQL Linux real.
+
+db59492 expõe run opt-in e cleanup por planSHA/opID/beginSHA. Formato /3 anuncia
+executor preparado; /1 e /2 continuam recusados. Confirmação explícita do startup
+original+scopeSHA exato, lock compartilhado e recheck antes de ler somente o segredo
+runtime gerado no .env. Não resetar credenciais/ler segredo via argv ou ambiente.
+Cleanup aceita expiração, não abre senha nem reativa etapas. Procedimento concreto
+em labs/linux/DIAGNOSTIC.md, ADR0028 e AGENTS. Ainda exige nova autorização humana
+específica antes de qualquer run sobre dados originais. Startup PG escreve WAL/
+metadados operacionais; SQL é READONLY e diário é RO. Sem marcador/API/worker/Redis/
+Wazuh/runner servidor, PKI/binding/grants/migração ou remoção/criação de volumes.
+
+Suíte conjunta: **143 passaram/103,58s**, um aviso Starlette/httpx; log privado
+.local/pki-milestone/diagnostic-complete-fixture-tests.log. Ajustes finais de entrada
+/plano /3: **48 passaram/26,78s**, diagnostic-cli-final-tests.log. Lint/formatação213
+arquivos e mypy4arquivos passaram. Suíte global iniciada sobre db59492 e ainda em
+andamento no último acompanhamento: .local/pki-milestone/diagnostic-final-global-tests.log.
+Não rodar outra suíte PostgreSQL/Redis15 enquanto essa global estiver ativa.
+
+Revisão nativa só de metadados encontrou ExposedPorts ausente na imagem limpa;
+template do leitor falhava, diário passava. edcd8b8 usa index para campo opcional
+de imagem/container, sem aceitar portas expostas. **95 testes runtime+lifecycle**/
+1,63s passaram, incluindo consulta real da imagem b0a4879a... (imageinspect somente).
+Fixtures de intent/DBid são temporárias/sintéticas, não ownership real. Documento
+desse achado foi anexado ao ADR0024 existente em40a052e, corrigindo um arquivo ADR
+criado com nome duplicado no commit anterior; histórico publicado preservado.
+
+Recursos lidos:16CPUs, MemAvailable5.139.324KiB e431.163.277.312bytes livres no
+filesystem Docker/workspace. Demo API/DB/Redis saudáveis e worker ativo, sem restart.
+Docker informa seccomp builtin/cgroupns. Não alterado host/swap/sysctl/rede/serviços.
+Nenhum novo diagnóstico run/cleanup foi executado sobre os volumes originais.
+
+Este checkpoint é o **12ºcommit desde d83d38e**, total **384** após commit; último
+código edcd8b8 fix(labs): handle absent exposed ports in native reader image projections,
+e documentação40a052e. Main/privado/push direto preservados. CI edcd8b8 em andamento
+na última consulta (run40877894805); source-review40a052eSUCCESS. Não declarar CI
+final aprovada antes de observar resultado. Continuar: revisar saída global/CI,
+corrigir achados, preparar plano /3 em main limpa e apresentar autorização somente
+quando todo procedimento/preflight estiver concreto. Checkpoint não encerra tarefa.
+
+Pedido do usuário sobre /compact respondido com franqueza: as ferramentas desta
+sessão não oferecem invocador do comando. OpenAI Docs confirma que é comando da
+interface; não fingir execução. Estado durável/checkpoints preservam continuidade,
+mas não equivalem à compactação. Continuar automaticamente entre marcos.
