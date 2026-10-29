@@ -56,8 +56,12 @@ def render():
             thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.05})
             thread.start()
 
-            def invoke(template, mounts, *, expect_success=True):
-                documents.append({"Id": OBJECT, "HostConfig": {"Mounts": mounts}})
+            def invoke(template, mounts=None, *, expect_success=True, document=None):
+                documents.append(
+                    document
+                    if document is not None
+                    else {"Id": OBJECT, "HostConfig": {"Mounts": mounts}}
+                )
                 result = subprocess.run(
                     [
                         "/usr/bin/docker",
@@ -162,3 +166,66 @@ def test_cli_defaults_do_not_accept_unsafe_mounts(prepared, render, scene):
     item["configured_mounts"] = render(inspection._mounts(spec, effective=False), raw)
     with pytest.raises(inspection.ActivationError, match="mount_mismatch"):
         inspection.validate(spec, item, OBJECT, "created")
+
+
+@pytest.mark.parametrize("phase", ["created", "running"])
+def test_complete_database_projection_uses_real_cli_with_synthetic_metadata(
+    prepared, render, phase
+):
+    store, root = prepared
+    spec = inspection.server.recipe(store, IMAGE, policy_root=root)
+    expected = projection(spec, phase)
+    effective = []
+    for mount in mounts(spec):
+        effective.append(
+            {
+                "Type": mount["Type"],
+                "Name": mount["Source"] if mount["Type"] == "volume" else "",
+                "Source": mount["Source"],
+                "Destination": mount["Target"],
+                "RW": not mount.get("ReadOnly", False),
+                "Propagation": mount.get("BindOptions", {}).get("Propagation", ""),
+            }
+        )
+    raw = {
+        "Id": OBJECT,
+        "Name": expected["name"],
+        "Image": IMAGE,
+        "Config": {
+            "Image": IMAGE,
+            "User": "70:70",
+            "Entrypoint": spec["entrypoint"],
+            "Cmd": spec["arguments"],
+            "WorkingDir": "/",
+            "OpenStdin": False,
+            "Tty": False,
+            "Healthcheck": {"Test": ["NONE"]},
+            "StopTimeout": 5,
+            "StopSignal": "SIGTERM",
+            "ExposedPorts": {"5432/tcp": {}},
+            "Volumes": {inspection.server.DATA: {}},
+            "Labels": spec["labels"],
+            "Env": [key + "=" + values[0] for key, values in inspection.ENV_FIXED.items()],
+        },
+        "HostConfig": {
+            **spec["host"],
+            **dict.fromkeys(inspection.probe.HOST_EMPTY),
+            "Mounts": mounts(spec),
+        },
+        "State": {
+            "Status": phase,
+            "Running": phase == "running",
+            "Restarting": False,
+            "Paused": False,
+            "OOMKilled": False,
+            "ExitCode": 0,
+            "Error": "",
+        },
+        "Mounts": effective,
+        "NetworkSettings": {"Ports": None, "Networks": {"none": {}}},
+    }
+    item = render(inspection.container_format(spec), document=raw)
+    expected["ports"] = None
+    assert item == expected
+    inspection.validate(spec, item, OBJECT, phase)
+    assert spec["policy_path"] not in json.dumps(item)
