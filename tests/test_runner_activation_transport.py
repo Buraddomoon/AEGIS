@@ -89,6 +89,51 @@ def test_nonzero_exit_does_not_expose_stderr_after_consuming_input(monkeypatch):
     assert processes[0][0].returncode == 3
 
 
+@pytest.mark.parametrize("recognized", [False, True])
+def test_nonzero_private_probe_has_only_a_trusted_bounded_rejection_decoder(
+    monkeypatch, recognized
+):
+    processes = child(
+        monkeypatch,
+        "import sys;sys.stdin.buffer.read();sys.stdout.write('bounded-envelope');sys.stderr.write('private-sensitive-sentinel');sys.exit(1)",
+    )
+
+    def decoder(raw):
+        assert raw == b"bounded-envelope"
+        if recognized:
+            raise transport.ActivationError("reviewed-static-rejection")
+
+    with pytest.raises(
+        transport.ActivationError,
+        match="reviewed-static-rejection" if recognized else "query_failed",
+    ) as error:
+        transport._execute(
+            ("closed-fixture-only",),
+            payload=b"request",
+            timeout=5,
+            output_limit=4 * 1024**2,
+            failure_decoder=decoder,
+        )
+    assert "private-sensitive-sentinel" not in str(error.value)
+    assert processes[0][0].returncode == 1 and processes[0][0].stdin.closed
+
+
+@pytest.mark.parametrize(
+    "payload,limit,decoder",
+    [(None, 4 * 1024**2, lambda _: None), (b"x", 65536, lambda _: None), (b"x", 4 * 1024**2, True)],
+)
+def test_metadata_or_invalid_callbacks_cannot_select_failure_decoding(
+    monkeypatch, payload, limit, decoder
+):
+    monkeypatch.setattr(
+        transport.subprocess, "Popen", lambda *a, **k: pytest.fail("No child permitted")
+    )
+    with pytest.raises(transport.ActivationError, match="failure_decoder_profile"):
+        transport._execute(
+            ("closed-fixture-only",), payload=payload, output_limit=limit, failure_decoder=decoder
+        )
+
+
 @pytest.mark.parametrize("payload", ["not-bytes", bytearray(b"proof"), b"x" * (4 * 1024**2 + 1)])
 def test_unbounded_or_nonbytes_stdin_is_rejected_before_spawning(monkeypatch, payload):
     monkeypatch.setattr(

@@ -339,11 +339,72 @@ def test_concrete_driver_pins_stdin_and_output_budget_without_echoing_password(
         driver.start(store, ROLE, images()["runner"], context_sha, READER, payload)
         == b"private-reply"
     )
+    callback = calls[-1][1].pop("failure_decoder")
+    assert callable(callback)
     assert calls[-1] == (
         ("container", "start", "--attach", "--interactive", READER),
         {"payload": payload, "timeout": 20, "output_limit": 4 * 1024**2},
     )
     assert all(SECRET not in str(args) for args, _ in calls)
+
+
+@pytest.mark.parametrize("exit_failed", [False, True])
+def test_driver_retains_only_a_context_bound_static_rejection(
+    store, bundle, monkeypatch, exit_failed
+):
+    identity = RunnerIdentity.model_validate(bundle["identity"])
+    payload, context_sha = life.results.request(identity, bundle["old_descriptor_sha256"], SECRET)
+    spec = life.runtime.recipe(store, ROLE, images()["runner"], context_sha)
+    store.request(ROLE)
+    store.append("observed", {"role": ROLE, "resource_id": READER})
+    store.append(
+        "database_review_start_requested",
+        {
+            "role": ROLE,
+            "recipe_sha256": digest(spec),
+            "gates_sha256": "f" * 64,
+            "request_context_sha256": context_sha,
+        },
+    )
+    report = {
+        "format": probe.FAILURE_FORMAT,
+        "status": "rejected",
+        "code": "persisted_probe_rejected",
+        "context_sha256": context_sha,
+        "failure_phase": "collect",
+        "failure_reason": "persisted_probe_schema_unsupported",
+        **probe.FLAGS,
+    }
+
+    def execute(*_args, **kwargs):
+        raw = json.dumps(report).encode()
+        if exit_failed:
+            kwargs["failure_decoder"](raw)
+            pytest.fail("Nonzero rejection must raise")
+        return raw
+
+    monkeypatch.setattr(life, "_execute", execute)
+    with pytest.raises(life.ActivationError, match="^persisted_probe_schema_unsupported$"):
+        life.DatabaseProbeDocker().start(
+            store, ROLE, images()["runner"], context_sha, READER, payload
+        )
+
+
+@pytest.mark.parametrize("code", ["persisted_probe_schema_unsupported", SECRET])
+def test_lifecycle_records_static_rejection_or_hides_unknown_reason(
+    store, bundle, monkeypatch, tmp_path, code
+):
+    world = World(store, bundle, monkeypatch)
+
+    def start(*_args):
+        raise life.ActivationError(code)
+
+    world.start = start
+    result = invoke(store, world, tmp_path)
+    assert result["failure_phase"] == "start"
+    assert result["failure_code"] == (code if code in probe.FAILURE_REASONS else None)
+    assert result["probe_removed"] and not result["probe_result_verified"]
+    assert SECRET not in json.dumps(result)
 
 
 def test_fresh_import_does_not_access_network_process_or_secrets():

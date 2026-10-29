@@ -7,7 +7,7 @@ import runner_activation_database_result as results
 import runner_activation_database_runtime as runtime
 import runner_activation_owned_probe as owned_probe
 from aegis.domain.validation import digest
-from aegis.lab_runner.persisted_probe import MAX_OUTPUT, decode
+from aegis.lab_runner.persisted_probe import FAILURE_REASONS, MAX_OUTPUT, decode, decode_failure
 from runner_activation_metadata import IMAGES, ActivationError, _execute, image_id
 from runner_activation_ownership import identifier
 
@@ -58,14 +58,31 @@ class DatabaseProbeDocker:
             raise ActivationError("database_reader_create_outcome_unconfirmed") from None
 
     def start(self, store, role, image, context_sha256, known_id, payload):
+        def reject(raw):
+            report = decode_failure(raw, context_sha256)
+            if report is not None:
+                raise ActivationError(report["failure_reason"])
+
         try:
             decode(payload, context_sha256)
-            return _execute(
+            raw = _execute(
                 command("start", store, role, image, context_sha256, known_id),
                 payload=payload,
                 timeout=20,
                 output_limit=MAX_OUTPUT,
+                failure_decoder=reject,
             )
+            # Docker client success also cannot turn a rejection into proofs.
+            reject(raw)
+            return raw
+        except ActivationError as error:
+            if (
+                len(error.args) == 1
+                and type(error.args[0]) is str
+                and error.args[0] in FAILURE_REASONS
+            ):
+                raise
+            raise ActivationError("database_reader_start_outcome_unconfirmed") from None
         except (OSError, ValueError, TypeError, subprocess.SubprocessError):
             raise ActivationError("database_reader_start_outcome_unconfirmed") from None
 

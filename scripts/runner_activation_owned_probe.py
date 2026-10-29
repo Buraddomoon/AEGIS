@@ -6,9 +6,29 @@ from datetime import datetime, timedelta
 import runner_activation_cleanup as closure
 import runner_pki as pki
 from aegis.domain.validation import digest
+from aegis.lab_runner.persisted_probe import FAILURE_REASONS
 from runner_activation_intents import DATABASE_REVIEW_ROLES
 from runner_activation_metadata import ActivationError
 from runner_activation_ownership import identifier, observe
+
+FAILURE_CODES = frozenset(
+    {
+        "docker_query_failed",
+        "docker_query_timed_out",
+        "docker_response_too_large",
+        "database_reader_start_outcome_unconfirmed",
+        "database_reader_runtime_changed",
+        "journal_probe_config_mismatch",
+        "journal_probe_state_mismatch",
+        "journal_probe_network_mismatch",
+        "journal_probe_mount_mismatch",
+        "journal_probe_mount_options_mismatch",
+        "journal_probe_environment_mismatch",
+        "journal_probe_host_mismatch",
+        "database_reader_network_mismatch",
+        "database_reader_mount_mismatch",
+    }
+)
 
 
 def fresh(gate):
@@ -66,6 +86,7 @@ def run(
         raise ActivationError(prefix + "_new_role_required_no_replay")
     result, error, cleanup = None, None, None
     gates, create_attempted = {}, False
+    phase, failure_phase, failure_code = "create_gate", None, None
     review_image()
     if observe(operation, plan, role, docker=ownership_docker)["status"] != "absent_snapshot":
         raise ActivationError(prefix + "_prior_resource_present")
@@ -78,13 +99,16 @@ def run(
         if observe(operation, plan, role, docker=ownership_docker)["status"] != "absent_snapshot":
             raise ActivationError(prefix + "_resource_appeared_before_create")
         fresh(approved)
+        phase = "create"
         create_attempted = True
         created_id = identifier(create())
         present = observe(operation, plan, role, docker=ownership_docker)
         if present["status"] != "present_owned_snapshot" or present["resource_id"] != created_id:
             raise ActivationError(prefix + "_created_id_unconfirmed")
         store.append("observed", {"role": role, "resource_id": created_id})
+        phase = "inspect_created"
         review_runtime("created", created_id)
+        phase = "start_gate"
         approved = gate("start")
         gates["start"] = digest(approved)
         store.append(
@@ -98,10 +122,14 @@ def run(
         )
         if store.review()["resources"][role]["state"] != "START_REQUESTED":
             raise ActivationError(prefix + "_start_intent_changed")
+        phase = "inspect_before_start"
         review_runtime("created", created_id)
         fresh(approved)
+        phase = "start"
         raw = start(created_id)
+        phase = "inspect_exited"
         review_runtime("exited", created_id)
+        phase = "validate_reply"
         result = validate_reply(raw)
     except (
         ValueError,
@@ -111,8 +139,17 @@ def run(
         AttributeError,
         RecursionError,
         subprocess.SubprocessError,
-    ):
+    ) as caught:
         error = prefix + "_execution_unconfirmed"
+        failure_phase = phase
+        codes = FAILURE_CODES | (FAILURE_REASONS if role in DATABASE_REVIEW_ROLES else frozenset())
+        if (
+            isinstance(caught, ActivationError)
+            and len(caught.args) == 1
+            and type(caught.args[0]) is str
+            and caught.args[0] in codes
+        ):
+            failure_code = caught.args[0]
     finally:
         cleanup = cleanup_owned_probe(
             store,
@@ -137,6 +174,8 @@ def run(
         if clean
         else "probe_cleanup_unconfirmed",
         "error": error,
+        "failure_phase": failure_phase,
+        "failure_code": failure_code,
         "result": result,
         "cleanup": cleanup,
         "probe_removed": clean,

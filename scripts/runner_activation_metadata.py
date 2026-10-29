@@ -86,7 +86,7 @@ def command(kind, value=None):
     raise ActivationError("docker_query_not_allowed")
 
 
-def _execute(arguments, *, payload=None, timeout=None, output_limit=None):
+def _execute(arguments, *, payload=None, timeout=None, output_limit=None, failure_decoder=None):
     # Private shared transport. Public read-only query adapters never supply stdin.
     # Only closed probe adapters supply private payloads or select the proof cap.
     if payload is not None and (type(payload) is not bytes or len(payload) > 4 * 1024**2):
@@ -97,6 +97,10 @@ def _execute(arguments, *, payload=None, timeout=None, output_limit=None):
     limit = MAX_OUTPUT if output_limit is None else output_limit
     if type(limit) is not int or limit not in {MAX_OUTPUT, 4 * 1024**2}:
         raise ActivationError("docker_output_profile_invalid")
+    if failure_decoder is not None and (
+        not callable(failure_decoder) or payload is None or limit != 4 * 1024**2
+    ):
+        raise ActivationError("docker_failure_decoder_profile_invalid")
     # Never inherit contexts, DOCKER_HOST, plugins, proxies or CLI credentials.
     with tempfile.TemporaryDirectory(prefix="aegis-activation-docker-") as config:
         process = subprocess.Popen(
@@ -155,6 +159,10 @@ def _execute(arguments, *, payload=None, timeout=None, output_limit=None):
                 if remaining <= 0:
                     raise ActivationError("docker_query_timed_out")
                 if process.wait(timeout=remaining):
+                    # Internal closed probe decoder may raise a reviewed static
+                    # rejection; neither stderr nor raw nonzero output is returned.
+                    if failure_decoder is not None:
+                        failure_decoder(bytes(output))
                     raise ActivationError("docker_query_failed")
             return bytes(output)
         finally:
