@@ -4,12 +4,14 @@ import argparse
 import json
 import subprocess
 from datetime import datetime, timedelta
+from pathlib import Path
 from uuid import uuid4
 
 import build_review_runner as image_build
 import runner_activation_image_source as source
 import runner_activation_metadata as metadata
 import runner_pki as pki
+import runner_postgres_origin as pg_origin
 from aegis.domain.validation import digest
 from runner_activation_intents import _hash, _identifier
 from runner_activation_metadata import ActivationError
@@ -17,7 +19,7 @@ from runner_activation_metadata import ActivationError
 ROOT = source.ROOT
 OUTPUT = ROOT / ".local/runner-diagnostic-plans"
 TTL = timedelta(hours=24)
-FORMAT = "aegis-runner-diagnostic-plan/1"
+FORMAT = "aegis-runner-diagnostic-plan/2"
 FLAGS = {
     "authorization_verified": False,
     "lab_started": False,
@@ -94,7 +96,9 @@ def _current_source(repo, build_plan):
     return commit
 
 
-def snapshot(images, build_inputs, *, repo=ROOT, docker=None):
+def snapshot(
+    images, build_inputs, *, postgres_origin, postgres_origin_sha256, repo=ROOT, docker=None
+):
     """Only public certificates, committed code and native metadata; no secrets/SQL/mounts."""
     if not isinstance(images, dict) or set(images) != set(metadata.IMAGES):
         raise ActivationError("diagnostic_explicit_images_required")
@@ -103,6 +107,11 @@ def snapshot(images, build_inputs, *, repo=ROOT, docker=None):
         metadata.image_id(value)
     if len(set(images.values())) != len(metadata.IMAGES):
         raise ActivationError("diagnostic_distinct_images_required")
+    _hash(postgres_origin_sha256)
+    if digest(postgres_origin) != postgres_origin_sha256:
+        raise ActivationError("diagnostic_postgres_origin_integrity_mismatch")
+    pg_origin.review(images["postgres"], postgres_origin)
+    pg_origin.inspection.review_image(images["postgres"])
     reviewed = _runner(build_inputs, images)
     commit = _current_source(repo, reviewed)
     origin = repo / ".local/linux-lab"
@@ -125,25 +134,44 @@ def snapshot(images, build_inputs, *, repo=ROOT, docker=None):
         "old_descriptor_sha256": public["descriptor_sha256"],
         "runner_build": dict(build_inputs),
         "runner_source_sha256": reviewed["source_sha256"],
+        "postgres_origin": json.loads(json.dumps(postgres_origin)),
+        "postgres_origin_sha256": postgres_origin_sha256,
         "metadata": before,
     }
 
 
 def scope(snapshot):
     return {
-        "format": "aegis-runner-diagnostic-scope/1",
+        "format": "aegis-runner-diagnostic-scope/2",
         "profile": profile(),
         "tool_commit": snapshot["tool_commit"],
         "identity": snapshot["identity"],
         "old_descriptor_sha256": snapshot["old_descriptor_sha256"],
         "runner_build": snapshot["runner_build"],
         "inventory_sha256": digest(snapshot["metadata"]),
+        "postgres_origin_sha256": digest(snapshot["postgres_origin"]),
         "public_source_sha256": snapshot["public_source_sha256"],
     }
 
 
-def prepare(images, build_inputs, *, repo=ROOT, output=OUTPUT, docker=None):
-    current = snapshot(images, build_inputs, repo=repo, docker=docker)
+def prepare(
+    images,
+    build_inputs,
+    *,
+    postgres_origin,
+    postgres_origin_sha256,
+    repo=ROOT,
+    output=OUTPUT,
+    docker=None,
+):
+    current = snapshot(
+        images,
+        build_inputs,
+        postgres_origin=postgres_origin,
+        postgres_origin_sha256=postgres_origin_sha256,
+        repo=repo,
+        docker=docker,
+    )
     created = pki.clock()
     scope_doc = scope(current)
     artifact = {
@@ -217,7 +245,14 @@ def recheck(folder, expected_sha256, *, repo=ROOT, docker=None):
     artifact = load(folder, expected_sha256)
     original = artifact["snapshot"]
     images = {key: original["metadata"]["images"][key]["id"] for key in metadata.IMAGES}
-    current = snapshot(images, original["runner_build"], repo=repo, docker=docker)
+    current = snapshot(
+        images,
+        original["runner_build"],
+        postgres_origin=original["postgres_origin"],
+        postgres_origin_sha256=original["postgres_origin_sha256"],
+        repo=repo,
+        docker=docker,
+    )
     if digest(current) != digest(original) or load(folder, expected_sha256) != artifact:
         raise ActivationError("diagnostic_plan_drift")
     return {
@@ -238,6 +273,8 @@ def main(argv=None):
         create.add_argument("--" + role + "-image", required=True)
     for key in ("build-id", "build-plan-sha256", "build-receipt-sha256"):
         create.add_argument("--" + key, required=True)
+    create.add_argument("--postgres-origin", required=True)
+    create.add_argument("--postgres-origin-sha256", required=True)
     check = commands.add_parser("recheck")
     check.add_argument("--plan-id", required=True)
     check.add_argument("--expected-sha256", required=True)
@@ -250,6 +287,8 @@ def main(argv=None):
                     key: getattr(args, key)
                     for key in ("build_id", "build_plan_sha256", "build_receipt_sha256")
                 },
+                postgres_origin=image_build._json(Path(args.postgres_origin)),
+                postgres_origin_sha256=args.postgres_origin_sha256,
             )
         else:
             report = recheck(OUTPUT / _identifier(args.plan_id), args.expected_sha256)

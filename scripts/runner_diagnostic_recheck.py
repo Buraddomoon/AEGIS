@@ -23,6 +23,10 @@ def inputs(expected, *, repo=plan.ROOT):
     if plan.source._state(repo) != expected["tool_commit"]:
         raise ActivationError("diagnostic_tool_commit_drift")
     images = {key: expected["metadata"]["images"][key]["id"] for key in plan.metadata.IMAGES}
+    if digest(expected["postgres_origin"]) != expected["postgres_origin_sha256"]:
+        raise ActivationError("diagnostic_postgres_origin_integrity_mismatch")
+    plan.pg_origin.review(images["postgres"], expected["postgres_origin"])
+    plan.pg_origin.inspection.review_image(images["postgres"])
     build = plan._runner(expected["runner_build"], images)
     if (
         plan._current_source(repo, build) != expected["tool_commit"]

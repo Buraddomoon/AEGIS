@@ -89,3 +89,14 @@ limites/plataformas, receipt adulterado, deadline absoluto e import sem efeitos.
 Fontes: [Registry API](https://distribution.github.io/distribution/spec/api/),
 [token authentication](https://docs.docker.com/reference/api/registry/auth/) e
 [Docker image inspect](https://docs.docker.com/reference/cli/docker/image/inspect/).
+
+## Plano /2 vincula recibo independente de origem PostgreSQL
+
+prepare agora exige postgres-origin (arquivo privado0600 com schema fechado) e seu
+SHA canônico independente. O recibo completo e SHA ficam no snapshot/escopo; o
+recheck público e o ativo validam novamente esse receipt e os metadados da imagem
+PG17 por inspeções locais, sem outra consulta ao registry/pull. Não renovar receipt
+em cada gate nem aceitar token, assinatura inventada ou ID diferente no registro.
+Formato do plano/escopo sobe para /2; planos /1 permanecem preservados e não são
+convertidos/adotados implicitamente. A verificação de bytes dos layers/assinatura
+do publicador continua explicitamente false, conforme o modelo de confiança local.

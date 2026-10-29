@@ -13,6 +13,7 @@ from test_build_review_runner import simulate_build
 from test_runner_activation_image_source import git
 from test_runner_activation_image_source import repository as repository
 from test_runner_activation_metadata import FakeDocker, images
+from test_runner_postgres_origin import Fixture as Origin
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import runner_diagnostic_plan as plan  # noqa: E402
@@ -42,7 +43,24 @@ def diagnostic(prepared, repository, tmp_path, monkeypatch):
         "build_plan_sha256": built.report["plan_sha256"],
         "build_receipt_sha256": image["receipt_sha256"],
     }
-    options = {"repo": repository, "output": tmp_path / "plans", "docker": docker}
+    pg = Origin()
+    pg_receipt = pg.capture()
+    previous = selected["postgres"]
+    selected["postgres"] = pg.image
+    pg_metadata = docker.responses.pop(("image", previous))
+    pg_metadata["id"] = pg.image
+    docker.responses["image", pg.image] = pg_metadata
+    monkeypatch.setattr(plan.pg_origin, "_execute", pg.native)
+    monkeypatch.setattr(
+        plan.pg_origin.inspection, "_execute", lambda args: pg.query("image", args[-1])
+    )
+    options = {
+        "repo": repository,
+        "output": tmp_path / "plans",
+        "docker": docker,
+        "postgres_origin": pg_receipt,
+        "postgres_origin_sha256": plan.digest(pg_receipt),
+    }
     report = plan.prepare(selected, inputs, **options)
     folder = options["output"] / report["plan_id"]
     return folder, report, selected, inputs, options
@@ -165,7 +183,14 @@ def test_public_expired_certificate_identity_is_not_tls_renewal(diagnostic, monk
     public, _ = plan.pki.inventory(options["repo"] / ".local/linux-lab")
     future = plan.pki.clock() + timedelta(days=10)
     monkeypatch.setattr(plan.pki, "clock", lambda: future)
-    observed = plan.snapshot(selected, inputs, repo=options["repo"], docker=options["docker"])
+    observed = plan.snapshot(
+        selected,
+        inputs,
+        repo=options["repo"],
+        docker=options["docker"],
+        postgres_origin=options["postgres_origin"],
+        postgres_origin_sha256=options["postgres_origin_sha256"],
+    )
     assert observed["old_descriptor_sha256"] == public["descriptor_sha256"]
     with pytest.raises(ValueError):
         plan.load(folder, report["plan_sha256"])
@@ -181,3 +206,35 @@ def test_plan_requires_independently_pinned_build_and_image(diagnostic, kind):
         inputs[kind] = "0" * (32 if kind == "build_id" else 64)
     with pytest.raises((ValueError, OSError)):
         plan.prepare(selected, inputs, **options)
+
+
+@pytest.mark.parametrize("scene", ["hash", "image", "signature", "extra_token"])
+def test_plan_rejects_inconsistent_or_invented_postgres_origin(diagnostic, scene):
+    _, _, selected, inputs, original_options = diagnostic
+    options = dict(original_options)
+    options["postgres_origin"] = copy.deepcopy(options["postgres_origin"])
+    if scene == "hash":
+        options["postgres_origin_sha256"] = "0" * 64
+    else:
+        if scene == "image":
+            options["postgres_origin"]["image_id"] = "sha256:" + "0" * 64
+        elif scene == "signature":
+            options["postgres_origin"]["publisher_signature_verified"] = True
+        else:
+            options["postgres_origin"]["token"] = "private-sensitive-sentinel"
+        options["postgres_origin_sha256"] = plan.digest(options["postgres_origin"])
+    with pytest.raises(ValueError):
+        plan.prepare(selected, inputs, **options)
+
+
+def test_recheck_uses_pinned_registry_receipt_without_refetching_or_pulling(
+    diagnostic, monkeypatch
+):
+    folder, report, _, _, options = diagnostic
+    monkeypatch.setattr(
+        plan.pg_origin, "_capture", lambda *a: pytest.fail("Network lookup forbidden")
+    )
+    result = plan.recheck(
+        folder, report["plan_sha256"], repo=options["repo"], docker=options["docker"]
+    )
+    assert result["authorization_verified"] is False
