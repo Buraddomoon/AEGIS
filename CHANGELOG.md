@@ -1,5 +1,17 @@
 # Changelog
 
+## Continuidade 2026-10-29 — diagnóstico Linux sem ativação
+
+- Coordenador host-only de uso único, prazo de300s, PostgreSQL original isolado,
+  leitores SQL fixos, probes de diário RO, capturas privadas e cleanup por ownership.
+- Três tentativas especificamente autorizadas e encerradas: startup/isolamento PG
+  validados; continuidade completa SQL/diário ainda pendente, sem ativação PKI.
+- Rejeições do leitor com contexto/etapa/categoria revisados, sem mensagens SQL,
+  credenciais ou transformação de erro em prova. Registros históricos preservados.
+- Projeções de mounts Docker opcionais corrigidas e testadas com CLI real sobre
+  HTTP fixture local; endereço SQL corrigido de inet::text para host(inet), com
+  regressão que falhou antes e passou depois em PostgreSQL real de testes.
+
 ## Continuidade 2026-10-27 — lifecycle interno dos probes
 
 - Create/start restritos ao probe com transporte stdin4MiB/saída64KiB/prazo20s,

@@ -392,3 +392,13 @@ rejeição como provas, causa retroativa da falha anterior ou permissão de retr
 Imagem nova8673e8d9... foi construída/conferida com fonte3e12c0b em2026-10-29;
 imagem antiga b0a4879a... permanece preservada e não contém este recurso. Nenhum
 diagnóstico original adicional foi executado para validar a nova imagem.
+
+Atualização2026-10-29: em resposta ao escopo único0388cd1e..., usuário instruiu
+“continuar”, explicitamente tratado como autorização condicional à CI SUCCESS.
+Condição atendida/run40902712786; operação9bb5b0847b8543548cd0db8373128b4d foi
+executada/encerrada, PG validado, leitor rejeitou perfil SQL, volumes preservados.
+Autorização consumida, não repetir plano. Regressão em PG de testes comprovou
+inet::text com /32; a0591af usa pg_catalog.host(inet_server_addr()), mantendo
+comparação EXATA com127.0.0.1. Não ampliar endereço/rede, migrar ou mudar grants
+para contornar o erro. Imagem8673e8d9 anterior não contém essa correção; precisa
+nova imagem selada/conferida e autorização específica antes de outro ensaio.

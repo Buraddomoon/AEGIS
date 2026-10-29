@@ -3051,3 +3051,31 @@ quinto desde ea2c61d; main privada/push direto. Próximo: preparar/revalidar pla
 novo em main limpa usando a imagem8673e8d9..., aguardar CI e solicitar autorização
 específica antes de qualquer novo startup original. Não encerrar por marco; continuar
 o que não depende dessa autorização. Nenhum /compact foi acionado pela ferramenta.
+
+## 2026-10-29 — terceiro diagnóstico revelou rejeição de perfil; cast inet corrigido
+
+Usuário respondeu “continuar” à pergunta específica0388cd1e; interpretação como
+autorização única condicionada à CI foi explicitada antes do efeito. CI40902712786
+SUCCESS: **2.175 Python passaram/7 opcionais pulados/688,45s**, **79 React passaram**,
+lint/tipos/build/advisory review passaram. Log privado reader-diagnostics-ci-success.log.
+Main limpa fccc6b9/plano853141b3.../scope8d10d4e2... revalidados,3.632MiB/402GiB livres.
+
+Operação9bb5b0847b8543548cd0db8373128b4d,17:30:25–17:30:49UTC: PG validado,
+leitor rejeitou persisted_probe_database_profile_mismatch/reported_phase=collect.
+Sem prova SQL validada/diário; cleanup/fechamento e ausência externa de recursos/
+consumidores confirmados, volumes preservados. Autorização consumida, sem replay.
+SHA dos bytes do recibo9c8519db15e75a71e62c735eaf407612dfd9b3c9eeab5b3386b7fe06d78723c4.
+Evidência atualizada, sem mensagens brutas/credenciais ou mudança PKI/binding/grants.
+
+Investigação no PG de desenvolvimento reproduziu inet '127.0.0.1'::text =
+127.0.0.1/32, host() =127.0.0.1. Teste novo executa SELECT real do probe em conexão
+de schema pytest próprio, parando antes de interpretar esse banco como Lab, e usa
+ipaddress para exigir IP sem máscara. **Falhou antes da correção**; a0591af troca
+somente expressão por pg_catalog.host(inet_server_addr()), guarda exata preservada.
+**67 testes do probe passaram/4,20s**, Ruff/formatação dos dois arquivos passaram.
+Não atribuir sucesso ao diagnóstico nativo: ele terminou antes desse código.
+
+Continuar: nova fonte/imagem conferidas para essa alteração, checks e CI, plano
+novo em main limpa e autorização específica antes de qualquer outro startup.
+Imagens anteriores e recibos preservados. Este checkpoint será399ºcommit,
+sétimo desde ea2c61d; último código a0591af. Sem branches/PR/force ou reset de dados.

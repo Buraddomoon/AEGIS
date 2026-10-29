@@ -62,3 +62,33 @@ SHA256 dos bytes do segundo recibo privado:
 Preservar todos os pedidos/intents/recibos; a segunda autorização foi consumida.
 Continuidade SQL/diário e ativação continuam pendentes. Investigações posteriores
 são offline até outro procedimento concreto e autorização específica.
+
+## Terceira tentativa: rejeição SQL identificada, regressão reproduzida
+
+Usuário respondeu “continuar” diretamente à autorização única do plano
+`0388cd1e43bb4b50bec287130cd86326`, condicionado à CI aprovada; essa interpretação
+foi explicitada antes do efeito. [CI40902712786](https://github.com/Buraddomoon/AEGIS/actions/runs/40902712786)
+SUCCESS sobrec41ff43: 2.175 Python passaram/sete opcionais pulados/688,45s,
+79 React passaram e lint/tipos/build/advisory review passaram. Main limpafccc6b9,
+recheck passou e host com3.632MiB disponíveis/402GiB livres, sem alterar host.
+
+Operação `9bb5b0847b8543548cd0db8373128b4d`, 17:30:25–17:30:49UTC. PG passou
+inspeções/readiness. Novo leitor informou failure_code=
+persisted_probe_database_profile_mismatch, failure_phase=start,
+reported_failure_phase=collect. Não houve prova SQL validada nem diário.
+Recibo diagnostic_failed_and_closed, ambos os recursos removidos; leitura externa
+reconferiu nenhum container/rede Linux ou consumidor e os dois volumes existentes.
+Nenhuma migração/grant/reset/marcador/PKI/binding/SIEM. Autorização consumida.
+SHA256 dos bytes do terceiro recibo privado:
+`9c8519db15e75a71e62c735eaf407612dfd9b3c9eeab5b3386b7fe06d78723c4`.
+
+Investigação posterior somente no PostgreSQL de desenvolvimento, sem reabrir Lab,
+reproduziu um erro determinístico da consulta: inet::text inclui a máscara (/32
+em IPv4), enquanto a guarda exigia127.0.0.1 sem máscara. Confirmado pela função
+[host(inet) do PostgreSQL17](https://www.postgresql.org/docs/17/functions-net.html).
+Teste novo executa o SELECT de produção em conexão de schema descartável e valida
+o endereço com ipaddress: falhou antes, passou após a0591af trocar o cast por host().
+**67 testes do probe passaram/4,20s**. Guarda continua exigindo endereço/porta/papel/
+schema/transação exatos; outros endereços não foram liberados. O defeito corrigido
+explica uma rejeição inevitável do perfil, mas só outro ensaio autorizado poderá
+validar o fluxo completo e revelar eventuais bloqueios posteriores.

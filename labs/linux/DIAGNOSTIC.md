@@ -1,6 +1,16 @@
 # Diagnóstico único dos volumes Linux preservados
 
-Estado em2026-10-29: segunda tentativa autorizada também **interrompida e encerrada**,
+Estado em2026-10-29: terceira tentativa autorizada **interrompida e encerrada**,
+operação `9bb5b0847b8543548cd0db8373128b4d`, plano `0388cd1e...`. PG passou nas
+inspeções/readiness; leitor informou persisted_probe_database_profile_mismatch
+na coleta. Nenhum bundle válido/probe do diário. Recursos removidos, volumes
+preservados/sem consumidores; essa autorização também foi consumida.
+Regressão posterior em PostgreSQL de testes confirmou que inet::text acrescenta
+netmask, incompatível com o IP puro exigido. Código corrigido para host(inet),
+mantendo a exigência exata127.0.0.1; imagem nova e validação nativa continuam
+necessárias. A correção local não é diagnóstico completo bem-sucedido.
+
+Segunda tentativa autorizada também **interrompida e encerrada**,
 operação `e6566b9db97d47e88f9e8197a0f85c15`, plano `ef77bb4c...`. PostgreSQL iniciou
 e passou nas inspeções físicas/readiness; primeiro leitor não produziu prova
 validada. Ambos os containers foram removidos, volumes preservados/sem consumidores.

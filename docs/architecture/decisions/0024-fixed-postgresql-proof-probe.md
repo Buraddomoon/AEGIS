@@ -157,3 +157,18 @@ novo endpoint, comando livre ou enfraquecimento das inspeções. Sucesso ainda e
 runtime correto, bundle válido, comparação e ausência/fechamento confirmados.
 Regressões usam erros sentinela, DB/schema descartável e filhos Python locais;
 não demonstram correção da causa desconhecida no laboratório original.
+
+## Endereço SQL sem netmask — regressão real
+
+Terceiro diagnóstico autorizado retornou persisted_probe_database_profile_mismatch
+na coleta e fechou seus recursos. A consulta usava inet_server_addr()::text: o
+[cast inet→text](https://www.postgresql.org/docs/17/functions-net.html) conserva a
+netmask (/32), embora a guarda exigisse127.0.0.1. Regressão executou o SELECT real
+do probe em PG/schema descartável e o confrontou com ipaddress; falhou antes da
+correção, expondo lacuna dos antigos testes de perfil com tuplas mockadas.
+
+a0591af usa pg_catalog.host(pg_catalog.inet_server_addr()). Continua comparando
+exatamente127.0.0.1, porta5432, papel/database/schema/isolamento e demais campos.
+Não aceitar CIDRs arbitrários ou outros peers para fazer o teste passar. Nova
+imagem/conferência são obrigatórias; recibos/planos/imagens anteriores permanecem
+intactos, sem alegação de sucesso nativo após a correção apenas por teste local.
