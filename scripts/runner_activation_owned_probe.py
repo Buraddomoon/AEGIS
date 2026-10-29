@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import runner_activation_cleanup as closure
 import runner_pki as pki
 from aegis.domain.validation import digest
-from aegis.lab_runner.persisted_probe import FAILURE_REASONS
+from aegis.lab_runner.persisted_probe import FAILURE_PHASES, FAILURE_REASONS
 from runner_activation_intents import DATABASE_REVIEW_ROLES
 from runner_activation_metadata import ActivationError
 from runner_activation_ownership import identifier, observe
@@ -87,6 +87,7 @@ def run(
     result, error, cleanup = None, None, None
     gates, create_attempted = {}, False
     phase, failure_phase, failure_code = "create_gate", None, None
+    reported_failure_phase = None
     review_image()
     if observe(operation, plan, role, docker=ownership_docker)["status"] != "absent_snapshot":
         raise ActivationError(prefix + "_prior_resource_present")
@@ -145,11 +146,19 @@ def run(
         codes = FAILURE_CODES | (FAILURE_REASONS if role in DATABASE_REVIEW_ROLES else frozenset())
         if (
             isinstance(caught, ActivationError)
-            and len(caught.args) == 1
+            and len(caught.args) in {1, 2}
             and type(caught.args[0]) is str
             and caught.args[0] in codes
         ):
             failure_code = caught.args[0]
+            if (
+                role in DATABASE_REVIEW_ROLES
+                and failure_code in FAILURE_REASONS
+                and len(caught.args) == 2
+                and type(caught.args[1]) is str
+                and caught.args[1] in FAILURE_PHASES
+            ):
+                reported_failure_phase = caught.args[1]
     finally:
         cleanup = cleanup_owned_probe(
             store,
@@ -176,6 +185,7 @@ def run(
         "error": error,
         "failure_phase": failure_phase,
         "failure_code": failure_code,
+        "reported_failure_phase": reported_failure_phase,
         "result": result,
         "cleanup": cleanup,
         "probe_removed": clean,

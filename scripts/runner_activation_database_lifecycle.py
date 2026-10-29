@@ -7,7 +7,13 @@ import runner_activation_database_result as results
 import runner_activation_database_runtime as runtime
 import runner_activation_owned_probe as owned_probe
 from aegis.domain.validation import digest
-from aegis.lab_runner.persisted_probe import FAILURE_REASONS, MAX_OUTPUT, decode, decode_failure
+from aegis.lab_runner.persisted_probe import (
+    FAILURE_PHASES,
+    FAILURE_REASONS,
+    MAX_OUTPUT,
+    decode,
+    decode_failure,
+)
 from runner_activation_metadata import IMAGES, ActivationError, _execute, image_id
 from runner_activation_ownership import identifier
 
@@ -61,7 +67,7 @@ class DatabaseProbeDocker:
         def reject(raw):
             report = decode_failure(raw, context_sha256)
             if report is not None:
-                raise ActivationError(report["failure_reason"])
+                raise ActivationError(report["failure_reason"], report["failure_phase"])
 
         try:
             decode(payload, context_sha256)
@@ -77,9 +83,11 @@ class DatabaseProbeDocker:
             return raw
         except ActivationError as error:
             if (
-                len(error.args) == 1
+                len(error.args) == 2
                 and type(error.args[0]) is str
                 and error.args[0] in FAILURE_REASONS
+                and type(error.args[1]) is str
+                and error.args[1] in FAILURE_PHASES
             ):
                 raise
             raise ActivationError("database_reader_start_outcome_unconfirmed") from None

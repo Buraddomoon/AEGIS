@@ -384,25 +384,32 @@ def test_driver_retains_only_a_context_bound_static_rejection(
         return raw
 
     monkeypatch.setattr(life, "_execute", execute)
-    with pytest.raises(life.ActivationError, match="^persisted_probe_schema_unsupported$"):
+    with pytest.raises(life.ActivationError, match="persisted_probe_schema_unsupported") as caught:
         life.DatabaseProbeDocker().start(
             store, ROLE, images()["runner"], context_sha, READER, payload
         )
+    assert caught.value.args == ("persisted_probe_schema_unsupported", "collect")
 
 
 @pytest.mark.parametrize("code", ["persisted_probe_schema_unsupported", SECRET])
+@pytest.mark.parametrize("reported_phase", [None, "collect", SECRET])
 def test_lifecycle_records_static_rejection_or_hides_unknown_reason(
-    store, bundle, monkeypatch, tmp_path, code
+    store, bundle, monkeypatch, tmp_path, code, reported_phase
 ):
     world = World(store, bundle, monkeypatch)
 
     def start(*_args):
-        raise life.ActivationError(code)
+        raise life.ActivationError(code, reported_phase)
 
     world.start = start
     result = invoke(store, world, tmp_path)
     assert result["failure_phase"] == "start"
     assert result["failure_code"] == (code if code in probe.FAILURE_REASONS else None)
+    assert result["reported_failure_phase"] == (
+        reported_phase
+        if code in probe.FAILURE_REASONS and reported_phase in probe.FAILURE_PHASES
+        else None
+    )
     assert result["probe_removed"] and not result["probe_result_verified"]
     assert SECRET not in json.dumps(result)
 
