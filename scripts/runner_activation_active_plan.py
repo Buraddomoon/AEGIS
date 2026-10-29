@@ -21,6 +21,18 @@ def recheck(path, expected_sha256, store, role, phase, *, docker=None, ownership
         or state["closed"]
     ):
         raise ActivationError("active_plan_intent_mismatch")
+    if role == "runner":
+        from runner_activation_identity_runtime import recipe
+
+        spec = recipe(store, path, expected_sha256)
+        started = state["resources"].get("runner", {}).get("start")
+        if started is not None and (
+            started.get("mode") != "identity-only"
+            or started.get("recipe_sha256") != digest(spec)
+            or started.get("pki_manifest_sha256") != artifact["pki"]["manifest_sha256"]
+            or started.get("network_resource_id") != spec["network_resource_id"]
+        ):
+            raise ActivationError("active_plan_identity_start_binding_mismatch")
     images = {key: artifact["metadata"]["images"][key]["id"] for key in IMAGES}
     observed = None
 

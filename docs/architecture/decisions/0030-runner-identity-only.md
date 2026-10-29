@@ -132,3 +132,24 @@ A revisão antiga da rede vazia continua recusando qualquer membro. Foi extraíd
 apenas a validação privada dos campos não relacionados a endpoints, permitindo
 reusar o perfil exato sem fingir rede vazia ou relaxar o contrato público antigo.
 Testes de rede vazia/lifecycle foram reexecutados junto às novas fixtures.
+
+## Contextos ativos exclusivos para identidade
+
+active_metadata/active_plan aceitam runner apenas nas fases explícitas
+identity-create/identity-start/identity-running. Os nomes create/start/running
+genéricos continuam negados para runner. Outros papéis não ganham fases identity.
+O diagnóstico /3 conserva sua allowlist de cinco papéis e recusa todas essas fases
+antes de consultar inputs/daemon. Isso não disponibiliza lifecycle do runner normal.
+
+Somente network-isolated/runner podem estar nãoABSENT. Membership global inclui
+parados, nomes de redes reservados e consumidores externos de ambos os volumes,
+que precisam permanecer vazios. Runner em running exige start identity-only e
+configuração observada duráveis. Recheck do plano compara os hashes de receita,
+manifesto PKI e rede do start ao perfil atual antes de novas consultas; recibo
+histórico errado permanece preservado e bloqueado, sem reescrita.
+
+Os guards existentes mantêm dois snapshots, prazo integral20s, versão main limpa,
+PKI/Compose/inventário/plan TTL e ownership após IO. Retorno identity_only_ownership_
+context_verified não comprova implementação do modo, mounts físicos ou tráfego:
+gates futuros devem combiná-lo com identity_inspection e identity_network. Sem
+CLI/start ou nova autorização real neste incremento.

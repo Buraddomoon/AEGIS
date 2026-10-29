@@ -92,7 +92,9 @@ class World:
                     "role": "runner",
                     "recipe_sha256": review.digest(spec),
                     "gates_sha256": "1" * 64,
-                    "pki_manifest_sha256": "2" * 64,
+                    "pki_manifest_sha256": review.runtime.plan.load_plan(self.path, self.sha)[
+                        "pki"
+                    ]["manifest_sha256"],
                     "network_resource_id": spec["network_resource_id"],
                     "mode": "identity-only",
                 },

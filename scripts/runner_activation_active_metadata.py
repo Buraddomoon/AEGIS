@@ -13,9 +13,16 @@ from runner_activation_metadata import ActivationError
 
 PROBE_ROLES = frozenset({"journal-before", "journal-after", *DATABASE_REVIEW_ROLES})
 TARGET_ROLES = PROBE_ROLES | {"db", ISOLATED_ROLE}
+IDENTITY_PHASES = {
+    "identity-create": "create",
+    "identity-start": "start",
+    "identity-running": "running",
+}
 
 
 def context_allowed(role, phase):
+    if role == "runner":
+        return phase in IDENTITY_PHASES
     if role == ISOLATED_ROLE:
         return phase in {"create", "created"}
     return role in TARGET_ROLES and (
@@ -58,6 +65,8 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
     deadline = time.monotonic() + 20
     if not context_allowed(role, phase):
         raise ActivationError("active_metadata_probe_context_required")
+    identity_context = role == "runner"
+    stage = IDENTITY_PHASES[phase] if identity_context else phase
     original = store.review()
     images = copy.deepcopy(images)
     expected_inventory_sha256 = digest(expected_inventory)
@@ -67,18 +76,18 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
         original["closed"]
         or current is None
         or (
-            phase == "create"
+            stage == "create"
             and (current["state"] != "REQUESTED" or current["resource_id"] is not None)
         )
         or (
-            phase == "start"
+            stage == "start"
             and (
                 current["state"] not in {"OBSERVED", "START_REQUESTED"}
                 or current["resource_id"] is None
             )
         )
         or (
-            phase == "created"
+            stage == "created"
             and (
                 role != ISOLATED_ROLE
                 or current["state"] != "OBSERVED"
@@ -86,7 +95,7 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
             )
         )
         or (
-            phase == "running"
+            stage == "running"
             and (
                 current["state"] != "OBSERVED"
                 or current["resource_id"] is None
@@ -96,7 +105,19 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
         )
         or any(item["state"] in {"CONFLICT", "REMOVAL_REQUESTED"} for item in owned.values())
         or any(item["state"] == "REQUESTED" and key != role for key, item in owned.items())
-        or ("runner" in owned and owned["runner"]["state"] != "ABSENT")
+        or ("runner" in owned and owned["runner"]["state"] != "ABSENT" and not identity_context)
+        or (
+            identity_context
+            and (
+                owned.get(ISOLATED_ROLE, {}).get("state") != "OBSERVED"
+                or owned.get(ISOLATED_ROLE, {}).get("resource_id") is None
+                or any(
+                    key not in {"runner", ISOLATED_ROLE} and item["state"] != "ABSENT"
+                    for key, item in owned.items()
+                )
+                or ("start" in current and current["start"].get("mode") != "identity-only")
+            )
+        )
         or (
             role == ISOLATED_ROLE
             and any(key in owned and owned[key]["state"] != "ABSENT" for key in ("api", "redis"))
@@ -120,7 +141,7 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
         network_names = {}
         for key, item in owned.items():
             found = ownership.observe(operation, plan, key, item["resource_id"], docker=owners)
-            should_exist = item["state"] != "ABSENT" and not (key == role and phase == "create")
+            should_exist = item["state"] != "ABSENT" and not (key == role and stage == "create")
             if (found["status"] == "present_owned_snapshot") != should_exist:
                 raise ActivationError("active_metadata_resource_presence_mismatch")
             if should_exist:
@@ -129,7 +150,7 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
                 if key in IMAGE_ROLE:
                     if found["details"]["image"] != images[IMAGE_ROLE[key]]:
                         raise ActivationError("active_metadata_owned_image_mismatch")
-                    if key == role and found["details"]["running"] is not (phase == "running"):
+                    if key == role and found["details"]["running"] is not (stage == "running"):
                         raise ActivationError("active_metadata_probe_already_running")
                     containers.add(item["resource_id"])
                 else:
@@ -139,6 +160,16 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
                         and found["details"]["member_count"] != 0
                     ):
                         raise ActivationError("active_metadata_empty_isolated_network_required")
+                    if (
+                        identity_context
+                        and key == ISOLATED_ROLE
+                        and (
+                            found["details"]["member_count"]
+                            not in ({1} if stage == "running" else {0, 1})
+                            or (stage == "create" and found["details"]["member_count"] != 0)
+                        )
+                    ):
+                        raise ActivationError("active_metadata_identity_network_members_mismatch")
                     networks.add(item["resource_id"])
                     network_names[key.removeprefix("network-")] = {item["resource_id"]}
             reports[key] = found
@@ -152,13 +183,13 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
                 raise ActivationError("active_metadata_reserved_network_mismatch")
         journal_ids = (
             {current["resource_id"]}
-            if phase == "start" and role in {"journal-before", "journal-after"}
+            if stage == "start" and role in {"journal-before", "journal-after"}
             else set()
         )
         db = owned.get("db")
         db_ids = (
             {db["resource_id"]}
-            if db and db["state"] != "ABSENT" and not (role == "db" and phase == "create")
+            if db and db["state"] != "ABSENT" and not (role == "db" and stage == "create")
             else set()
         )
         if (
@@ -193,4 +224,6 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
     }
     if time.monotonic() >= deadline:
         raise ActivationError("active_metadata_time_limit")
+    if identity_context:
+        result["identity_only_ownership_context_verified"] = True
     return result

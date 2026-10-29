@@ -3373,3 +3373,26 @@ ser combinado antes do efeito. Nenhum novo recurso Linux/volume/PKI foi alterado
 Este commit será412º,20desde ea2c61d; main privada/push direto. Commit411º5ee0126
 sincronizado. Próximo: contextos ativos identity-only que preservem recusas antigas
 para runner operacional, probes e diagnóstico /3, então gates/lifecycle concretos.
+
+## 2026-10-29 — contextos identity-only sem ampliar execução genérica
+
+active_metadata/active_plan aceitam apenas fases identity-create/identity-start/
+identity-running para runner. Fases genéricas continuam negadas; outros papéis não
+recebem identity. Só runner/rede isolada nãoABSENT, membership global/nomes reservados
+e consumidores dos volumes exatos. Running exige fence de start e configuração
+observada; plano também compara recipe/manifestoPKI/rede do fence ao conteúdo
+atual. Ownership não prova implementação do modo, mounts ou tráfego: inspeções
+físicas continuam necessárias no próximo gate. Diagnóstico /3 não foi ampliado.
+
+Validação após as últimas mudanças: **make test-runner-activation:230passed/72,92s
+e832passed/1skip/93,26s**, skip opt-in de metadata de imagem. **23 testes novos de
+contexto ativo passaram/12,51s**, incluindo fence com hash errado preservado e
+rejeitado antes de metadata. **14 testes de recheck diagnóstico selecionados por
+identity passaram/20,26s,9deselected**, incluindo recusas das três fases novas antes
+de consultar inputs. Rodada anterior128pass/82,95s se sobrepõe e não deve ser somada.
+Ruff/check e mypy4passaram; nenhum ensaio Linux, volume ou material PKI alterado.
+
+Este commit será413º,21desde ea2c61d; main privada/push direto. Commit412º3a231ea
+sincronizado, CI40938992208 em andamento na última consulta. Próximo: compor gate
+identity-only com confirmação exata, fonte/imagem revisadas e inspeções físicas,
+então lifecycle/coordenador; ainda sem CLI/driver de start ou nova autorização.

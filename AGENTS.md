@@ -509,3 +509,11 @@ restante, plano/receita/intent relidos após IO. Não comprova quiescência glob
 tráfego ou mTLS e não inicia nada. _configuration da rede só valida campos sem
 membership; validate/review antigos continuam exigindo vazio. Não usar o helper
 privado para ignorar endpoints. Ver testes test_runner_activation_identity_network.
+
+Contextos ativos de runner só identity-create/identity-start/identity-running;
+create/start/running genéricos ainda negados, outras roles não recebem identity.
+Só runner/network-isolated nãoABSENT e zero consumidores de volumes; running exige
+start identity-only/runtime duráveis. active_plan confere recipe/PKI/rede do fence
+contra plano atual. Não reescrever start incompatível. Diagnóstico /3 ainda recusa
+runner/fases identity antes dos inputs. Fato de ownership não prova modo/mounts/
+tráfego: combinar inspeções físicas e gates antes de efeito. Sem CLI/start reais.

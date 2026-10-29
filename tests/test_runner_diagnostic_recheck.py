@@ -117,7 +117,19 @@ def test_owned_recheck_uses_pinned_build_code_identity_and_exact_consumers(
             )
 
 
-@pytest.mark.parametrize("scene", ["id", "plan", "scope", "extra_role", "wrong_phase"])
+@pytest.mark.parametrize(
+    "scene",
+    [
+        "id",
+        "plan",
+        "scope",
+        "extra_role",
+        "wrong_phase",
+        "identity-create",
+        "identity-start",
+        "identity-running",
+    ],
+)
 def test_wrong_owned_context_fails_before_input_queries(diagnostic, tmp_path, monkeypatch, scene):
     folder, report, _, _, options = diagnostic
     with ActivationIntents(tmp_path / "intents") as store:
@@ -134,8 +146,10 @@ def test_wrong_owned_context_fails_before_input_queries(diagnostic, tmp_path, mo
                 folder,
                 report["plan_sha256"],
                 store,
-                "db",
-                "exited" if scene == "wrong_phase" else "create",
+                "runner" if scene.startswith("identity-") else "db",
+                scene
+                if scene.startswith("identity-")
+                else ("exited" if scene == "wrong_phase" else "create"),
                 repo=options["repo"],
             )
 
