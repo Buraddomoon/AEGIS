@@ -107,7 +107,8 @@ class NetworkDocker:
             raise ActivationError("isolated_network_query_failed") from None
 
 
-def validate(spec, item, known_id):
+def _configuration(spec, item, known_id):
+    """Validate non-membership fields; each caller must separately validate endpoints."""
     expected = {
         "id": identifier(known_id),
         "name": spec["name"],
@@ -128,7 +129,6 @@ def validate(spec, item, known_id):
         or set(item) != {*expected, "config_from", "ipam", "containers"}
         or any(digest(item[key]) != digest(value) for key, value in expected.items())
         or item["config_from"] not in (None, {}, {"Network": ""})
-        or item["containers"] not in (None, {})
     ):
         raise ActivationError("isolated_network_configuration_mismatch")
     ipam = item["ipam"]
@@ -153,6 +153,12 @@ def validate(spec, item, known_id):
         or config.get("AuxiliaryAddresses") not in (None, {})
     ):
         raise ActivationError("isolated_network_ipam_mismatch")
+
+
+def validate(spec, item, known_id):
+    _configuration(spec, item, known_id)
+    if item["containers"] not in (None, {}):
+        raise ActivationError("isolated_network_configuration_mismatch")
 
 
 def review(store, known_id, *, docker=None, ownership_docker=None):

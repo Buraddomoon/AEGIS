@@ -3352,3 +3352,24 @@ teste passou novamente. Sem daemon, startup, arquivos PKI ou volumes originais.
 Este commit será411º,19desde ea2c61d; main privada/push direto. Commit410º0752a5a
 sincronizado, CI40937969087 em andamento. Próximo: contextos ativos fechados para
 o servidor de identidade, sem ampliar contextos de execução normal/diagnóstico /3.
+
+## 2026-10-29 — membros da rede conferidos por ID antes de ampliar contexto ativo
+
+Inspeção do próximo gate identificou que count sozinho não vincula membro à rede.
+Preparado identity_network somente leitura: dois snapshots de configuração e
+endpoints, ownership rede/runner, nome/ID/IP/prefixo exatos e fence identity-only
+para running. Create exige vazio, start aceita vazio/runner próprio parado;
+contagem igual com ID estrangeiro bloqueia. Plano/receita/intent/tempo após IO,
+orçamento20s e queries limitadas pelo restante; nenhuma alteração ou tráfego.
+
+Rede vazia original conserva contrato estrito. Extraída só validação privada de
+campos não membership, usada junto da conferência explícita dos endpoints novos.
+**76 testes de identity_network/rede/lifecycle passaram/11,73s**, incluindo fixtures
+adversariais de endpoint/ownership/count/clock/intent/expiração, sem startup real.
+Ruff/check,230arquivos formatados e mypy4passaram. Não há quiescência global ou
+isolamento de tráfego comprovados por esse retorno; inventário ativo ainda deve
+ser combinado antes do efeito. Nenhum novo recurso Linux/volume/PKI foi alterado.
+
+Este commit será412º,20desde ea2c61d; main privada/push direto. Commit411º5ee0126
+sincronizado. Próximo: contextos ativos identity-only que preservem recusas antigas
+para runner operacional, probes e diagnóstico /3, então gates/lifecycle concretos.

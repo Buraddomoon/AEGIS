@@ -500,3 +500,12 @@ START_REQUESTED. identity_runtime_observed fixa hash sem permitir novo start ap�
 sucesso/resume. Hashchain não comprova efeito, mTLS ou autorização; cleanup próprio
 continua possível e retém rede até runner ABSENT. Sem driver/CLI novo ou expansão
 do diagnóstico;64eventos mantidos. Testes test_runner_identity_intents só temporários.
+
+identity_network é review somente leitura create/start/running: exige rede/runner
+próprios e endpoints por ID/nome/IP/prefixo, não apenas contagem. Create vazio;
+start vazio ou runner próprio parado; running um membro e fence identity-only.
+Outros papéis nãoABSENT bloqueiam. Dois snapshots completos/20s/queries com prazo
+restante, plano/receita/intent relidos após IO. Não comprova quiescência global,
+tráfego ou mTLS e não inicia nada. _configuration da rede só valida campos sem
+membership; validate/review antigos continuam exigindo vazio. Não usar o helper
+privado para ignorar endpoints. Ver testes test_runner_activation_identity_network.

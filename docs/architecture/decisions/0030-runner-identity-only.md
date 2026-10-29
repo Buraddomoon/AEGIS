@@ -112,3 +112,23 @@ a OBSERVED, preservando o fence: mesmo sucesso não permite segundo start. Não
 comprova daemon/mTLS ou autorização. Cleanup aceita estado ambíguo e retém a rede
 até ausência do runner; fechamento depende de ausência de todos os recursos.
 Nenhum start é invocado por essas funções/testes e o limite64eventos é mantido.
+
+## Membros exatos da rede durante a conferência
+
+runner_activation_identity_network revisa configuração do bridge e os IDs dos
+endpoints, além de ownership da rede/runner. Criar exige rede vazia e runner ainda
+REQUESTED/ausente; antes do start aceita rede vazia ou somente o runner próprio
+parado. Running exige start identity-only durável e um membro com ID/nome/IP/prefixo
+esperados, sem IPv6/extra fields. Contagem igual com membro estrangeiro bloqueia.
+
+Repete snapshots completos (incluindo endpoints), compara contagem de ownership,
+reconfere receita/plano/intent e aplica orçamento integral20s com query limitada
+pelo restante. Outros papéis nãoABSENT são incompatíveis. Saída só hashes/counts/
+ID próprio, sem retornar endpoints de terceiros. Não consulta outros alvos ou
+emite tráfego. Não comprova a quiescência global do projeto: inventário ativo ainda
+deve ser combinado pelo gate futuro. Metadados não comprovam mTLS/firewall/alcance.
+
+A revisão antiga da rede vazia continua recusando qualquer membro. Foi extraída
+apenas a validação privada dos campos não relacionados a endpoints, permitindo
+reusar o perfil exato sem fingir rede vazia ou relaxar o contrato público antigo.
+Testes de rede vazia/lifecycle foram reexecutados junto às novas fixtures.
