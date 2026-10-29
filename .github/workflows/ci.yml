@@ -13,7 +13,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 18
     services:
       postgres:
         image: postgres:17-alpine
@@ -57,7 +57,7 @@ jobs:
           npm --prefix apps/web run format:check
       - name: PostgreSQL integration and frontend tests
         run: |
-          pytest -q
+          pytest -q --durations=15 -o faulthandler_timeout=60
           npm --prefix apps/web test
           npm --prefix apps/web run build
       - name: Dependency advisory review
