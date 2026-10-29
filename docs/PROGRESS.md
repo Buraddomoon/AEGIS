@@ -3201,3 +3201,21 @@ inventário mutado, clock expirada, EOF sem exit, tool ausente, limites/stderr/r
 Não repetir ensaio Linux para validar esse preflight. make test-runner-activation
 inclui módulo novo. Próximo: ligar fatos atuais aos gates do ciclo de rede; ainda
 sem CLI ou autorização de create. Este commit será404º,12desde ea2c61d; main privada.
+
+## 2026-10-29 — recheck ativo para preparação da rede isolada
+
+active_metadata/active_plan agora conferem network-isolated/create ou created,
+exigindo REQUESTED/ausente ou OBSERVED/vazia. Sem start/running, outros roles ou
+API/Redis ativos. Network membership global/nomes reservados/ownership/consumidores
+continuam exatos, duas consultas e prazo integral. Plano/PKI/Compose relidos e TTL
+reconferido após IO; retorno ainda sem autorização/ativação/isolation proof.
+
+**106 testes active_metadata/active_plan/diagnostic_recheck passaram/62,84s**,
+incluindo os contextos novos e a preservação do perfil Demo/Linux de diagnóstico
+/3 (rede não foi adicionada aos cinco papéis daquele plano). Fixtures de daemon e
+PKI temporária, sem rede/serviço/volume real criado. Lint/formatação dos arquivos
+passaram. Este commit será405º,13desde ea2c61d, main privada/push direto.
+
+Próximo: plano da rotação deve fixar a versão exata do executor e escopo antes de
+compor gates concretos de autorização/subnet/runtime. Formato público atual ainda
+não é operacional, sem CLI apply ou permissão de usar planos antigos como aprovação.

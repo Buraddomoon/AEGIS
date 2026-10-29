@@ -106,3 +106,17 @@ Review nativo somente leitura de2026-10-29 examinou15redes/46rotas, ignorando um
 default, sem sobreposição observada; recibo privado rotation-subnet-readonly-preflight.json.
 Não foi criado recurso nem emitido tráfego de teste. Testes com fixtures e filhos
 Python reais cobrem colisões, drift, limites, tool ausente, deadline/reap e sigilo.
+
+## Recheck em operação para rede solicitada/vazia
+
+active_metadata/active_plan aceitam network-isolated somente nas fases create
+(REQUESTED/ausente) e created (OBSERVED/vazia). Não existem start/running de rede;
+backend/ingress, runner e API não ganham contextos novos. API/Redis ativos bloqueiam
+esse contexto de preparação; qualquer endpoint na rede atual também bloqueia.
+Inventário, IDs/labels, consumidores e ownership são reconferidos duas vezes.
+
+O plano ainda revalida PKI, Compose, metadata e prazo após IO. Os retornos mantêm
+authorization_granted/activation_performed/network_isolation_verified falsos.
+Essa extensão não calcula todos os gates nem cria recurso: falta fixar a versão
+do executor no plano autorizado e compor fatos de subnet/perfil/aprovação. O
+formato público atual continua não operacional; nenhum v1 vira permissão implícita.

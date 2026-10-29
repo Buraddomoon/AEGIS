@@ -25,7 +25,7 @@ class World:
         keys = ("db", "network-backend", role) if role != "db" else ("network-backend", "db")
         for index, key in enumerate(keys):
             store.request(key)
-            exists = key != role or phase in {"start", "running"}
+            exists = key != role or phase in {"start", "running", "created"}
             obj = Owner(operation, key, present=exists)
             obj.details["plan"] = store.review()["header"]["plan_sha256"]
             self.owners[key] = obj
@@ -53,8 +53,12 @@ class World:
         self.meta.responses["containers", None] = self.ids(
             *(key for key, obj in self.owners.items() if key in active.IMAGE_ROLE and obj.named)
         )
-        self.meta.responses["networks", None] = self.ids("network-backend")
-        self.meta.responses["network_name", "backend"] = self.ids("network-backend")
+        network_roles = [
+            key for key, obj in self.owners.items() if key.startswith("network-") and obj.named
+        ]
+        self.meta.responses["networks", None] = self.ids(*network_roles)
+        for key in network_roles:
+            self.meta.responses["network_name", key.removeprefix("network-")] = self.ids(key)
         self.meta.responses["consumers", "journal"] = (
             self.ids(role)
             if phase == "start" and role in {"journal-before", "journal-after"}
@@ -375,4 +379,53 @@ def test_running_database_phase_does_not_widen_other_resource_profiles(tmp_path,
     with ActivationIntents(tmp_path / "intents") as store:
         store.begin(uuid4().hex, "a" * 64, "b" * 64)
         with pytest.raises(active.ActivationError, match="probe_context_required"):
+            active.review(store, images(), {}, role, phase)
+
+
+@pytest.mark.parametrize("phase", ["create", "created"])
+def test_isolated_network_metadata_requires_exact_membership_without_claiming_runtime_or_permission(
+    tmp_path, phase
+):
+    with ActivationIntents(tmp_path / "intents") as store:
+        store.begin(uuid4().hex, "a" * 64, "b" * 64)
+        world = World(store, "network-isolated", phase)
+        result = world.review()
+        assert result["project_membership_verified"] and result["resources_reviewed"] == 3
+        assert result["phase"] == phase
+        assert result["network_isolation_verified"] is result["authorization_verified"] is False
+
+
+@pytest.mark.parametrize("scene", ["member", "not_observed", "api", "redis"])
+def test_network_context_refuses_endpoints_unobserved_role_or_active_application(tmp_path, scene):
+    with ActivationIntents(tmp_path / "intents") as store:
+        store.begin(uuid4().hex, "a" * 64, "b" * 64)
+        world = World(store, "network-isolated", "create" if scene == "not_observed" else "created")
+        if scene == "member":
+            world.owners["network-isolated"].details["member_count"] = 1
+        elif scene == "not_observed":
+            world.phase = "created"
+        else:
+            store.request(scene)
+            store.append("observed", {"role": scene, "resource_id": "f" * 64})
+        with pytest.raises(active.ActivationError):
+            world.review()
+        if scene != "member":
+            assert world.meta.calls == []
+
+
+@pytest.mark.parametrize(
+    "role,phase",
+    [
+        ("network-isolated", "start"),
+        ("network-isolated", "running"),
+        ("network-backend", "create"),
+        ("network-ingress", "created"),
+        ("runner", "create"),
+        ("api", "created"),
+    ],
+)
+def test_network_preparation_does_not_enable_other_roles_or_start_semantics(tmp_path, role, phase):
+    with ActivationIntents(tmp_path / "intents") as store:
+        store.begin(uuid4().hex, "a" * 64, "b" * 64)
+        with pytest.raises(active.ActivationError, match="context_required"):
             active.review(store, images(), {}, role, phase)

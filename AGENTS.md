@@ -443,3 +443,10 @@ destino/tabela/tipo (não expiry/cache). Saída só counts/hash/subnet fixo, sem
 redes/rotas/interfaces/gateways. Ausência de ferramenta é erro, sem install/fallback.
 Não muda rede/rota nem prova alcance/host/firewall ou autoriza create. Gate concreto
 precisa chamar review fresco; JSON salvo não substitui observação atual.
+
+Recheck ativo da rede permite só network-isolated/create REQUESTED/ausente ou
+created OBSERVED/vazia. Start/running/roles backend/ingress/runner/API continuam
+negados; API/Redis ativos ou endpoint na rede bloqueiam antes de efeito. Metadata
+continua sem autorização/isolation proof. Nenhuma ampliação do perfil de diagnóstico
+/3: ele ainda aceita só os cinco papéis próprios. Plano de rotação público ainda
+não é operacional; gates finais exigem vínculo da versão do executor e escopo atual.

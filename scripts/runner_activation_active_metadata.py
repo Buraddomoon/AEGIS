@@ -8,13 +8,16 @@ import runner_activation_ownership as ownership
 from aegis.domain.validation import digest
 from runner_activation_cleanup import IMAGE_ROLE
 from runner_activation_intents import DATABASE_REVIEW_ROLES
+from runner_activation_isolated_network import ROLE as ISOLATED_ROLE
 from runner_activation_metadata import ActivationError
 
 PROBE_ROLES = frozenset({"journal-before", "journal-after", *DATABASE_REVIEW_ROLES})
-TARGET_ROLES = PROBE_ROLES | {"db"}
+TARGET_ROLES = PROBE_ROLES | {"db", ISOLATED_ROLE}
 
 
 def context_allowed(role, phase):
+    if role == ISOLATED_ROLE:
+        return phase in {"create", "created"}
     return role in TARGET_ROLES and (
         phase in {"create", "start"} or (role == "db" and phase == "running")
     )
@@ -75,6 +78,14 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
             )
         )
         or (
+            phase == "created"
+            and (
+                role != ISOLATED_ROLE
+                or current["state"] != "OBSERVED"
+                or current["resource_id"] is None
+            )
+        )
+        or (
             phase == "running"
             and (
                 current["state"] != "OBSERVED"
@@ -86,6 +97,10 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
         or any(item["state"] in {"CONFLICT", "REMOVAL_REQUESTED"} for item in owned.values())
         or any(item["state"] == "REQUESTED" and key != role for key, item in owned.items())
         or ("runner" in owned and owned["runner"]["state"] != "ABSENT")
+        or (
+            role == ISOLATED_ROLE
+            and any(key in owned and owned[key]["state"] != "ABSENT" for key in ("api", "redis"))
+        )
         or any(
             key in PROBE_ROLES and key != role and item["state"] != "ABSENT"
             for key, item in owned.items()
@@ -118,6 +133,12 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
                         raise ActivationError("active_metadata_probe_already_running")
                     containers.add(item["resource_id"])
                 else:
+                    if (
+                        key == role
+                        and role == ISOLATED_ROLE
+                        and found["details"]["member_count"] != 0
+                    ):
+                        raise ActivationError("active_metadata_empty_isolated_network_required")
                     networks.add(item["resource_id"])
                     network_names[key.removeprefix("network-")] = {item["resource_id"]}
             reports[key] = found

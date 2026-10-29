@@ -38,7 +38,8 @@ def review(prepared, store, world):
         for role in sorted(active_plan.active.PROBE_ROLES)
         for phase in ("create", "start")
     ]
-    + [("db", phase) for phase in ("create", "start", "running")],
+    + [("db", phase) for phase in ("create", "start", "running")]
+    + [("network-isolated", phase) for phase in ("create", "created")],
 )
 def test_same_pinned_plan_can_be_rechecked_only_under_exact_durable_operation(
     material, code, tmp_path, role, phase
