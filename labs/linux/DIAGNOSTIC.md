@@ -102,6 +102,9 @@ Nenhuma credencial ou conteúdo bruto dos bundles deve ser publicado no GitHub.
 Sucesso exige comparação de provas/diário e ausência dos recursos próprios
 reconferida. Não declara DETECTED, ativação PKI ou permissão de operação normal.
 Falha de cleanup mantém dependências; leitor incerto retém DB. Não apagar volumes.
+O relatório privado db-lifecycle inclui failure_phase e failure_code limitado a
+códigos estáticos revisados; não publica mensagens brutas de exceções. Recibos
+históricos anteriores podem não conter esses campos e não devem ser reescritos.
 
 Se interrompido, consultar diagnostic-requested.json no plano para operation_id e
 begin_sha256, e executar somente cleanup desses IDs:

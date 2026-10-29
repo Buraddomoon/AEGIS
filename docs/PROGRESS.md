@@ -2949,3 +2949,33 @@ campos opcionais de mount são omitidos. Demo existente não cobria esse caminho
 pois seus configured_mounts são vazios. A falha exata original não foi preservada
 pelo erro genérico; não afirmar causalidade conclusiva. Continuar correção offline,
 regressões e diagnóstico seguro da etapa antes de preparar novo ensaio específico.
+
+## 2026-10-29 — mounts opcionais corrigidos, regressão com CLI real sem daemon
+
+1418c78 corrige ReadOnly/BindOptions/VolumeOptions opcionais por index/defaults
+explícitos. Docker CLI real, sobre socket Unix HTTP temporário/sintético, reproduz
+falha do formatter legado de mapas brutos. Struct tipado dá valores zero; teste
+precisa usar index .HostConfig como o template real. Guardas de RW/nocopy, HBA RO/
+rprivate e fonte exata continuam recusando adulterações. Nenhum container criado
+por esses testes, nenhum acesso ao daemon real a partir do HTTP fixture.
+
+95817c3 adiciona failure_phase e failure_code em allowlist fechada ao recibo do
+startup. 46 testes lifecycle/coordenador passaram/35,20s, incluindo sentinela secreta
+omitida; após simplificação do filtro, 31 lifecycle passaram/1,41s. Rodada anterior
+mounts+inspeção+lifecycle:106passaram/2,85s. Projeções completas created/running
+adicionadas depois; conjunto final de12testes do CLI passou/1,04s. Rodadas se
+sobrepõem; não somar como casos únicos. Ruff passou. Aviso Starlette/httpx conhecido.
+
+Rodada final make test-runner-diagnostic sobre5379c63: **143 passaram/107,72s**,
+log privado .local/pki-milestone/diagnostic-after-assay-tests.log. Ruff/formatação
+de214arquivos e mypy4arquivos passaram. Não há suíte local ainda em andamento.
+CI5379c63 [40896470899](https://github.com/Buraddomoon/AEGIS/actions/runs/40896470899)
+ainda em andamento nesta escrita; lint/tipos já passaram, sem afirmar suíte total.
+
+Quatro commits desde7ce1c7d até a adição dos testes completos; documentação deste
+checkpoint será o quinto, total392. Main privada/push direto preservados, sem PR.
+CI de código mais recente deve ser acompanhada antes de declarar aprovação; CI
+anterior7ce/a7d está registrada, não valida esses deltas. Nenhum replay do diagnóstico
+de7aabd... ou novo efeito original. Próximo: testes finais específicos, preparar
+plano novo em main limpa, verificar CI e pedir nova autorização sobre o mesmo
+procedimento delimitado. Não usar aprovação consumida como licença para repetir.

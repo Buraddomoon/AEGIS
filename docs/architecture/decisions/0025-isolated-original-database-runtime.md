@@ -143,3 +143,30 @@ identidade SQL ou conteúdo do volume com esse sinal. Provas vêm do leitor sepa
 Recibos mantêm esses flags falsos, assim como autorização/proveniência/ativação.
 PGDATA permanece RW e pode receber escritas operacionais; nenhum runtime foi iniciado
 para validar esta implementação. Coordenador e imagem atual continuam pendentes.
+
+## Diagnóstico de2026-10-29 e projeção de mounts
+
+O primeiro diagnóstico autorizado criou o PG e falhou na revisão anterior ao
+start; cleanup/ausência/fechamento confirmados. Não houve startup/SQL nem leitura
+do diário. [Evidência e limites](../../evidence/diagnostic-2026-10-29/README.md).
+O erro genérico anterior não preservou a exceção exata; não afirmar retrospectivamente
+que o defeito identificado depois foi a única causa dessa tentativa.
+
+O [schema de mount Docker](https://github.com/moby/moby/blob/master/api/types/mount/mount.go)
+omite ReadOnly=false e os structs opcionais BindOptions/VolumeOptions. Templates
+que usam index em HostConfig selecionam o formatter de mapas brutos do CLI; nesse
+caminho, seletores diretos de campos omitidos falham, embora structs tipados
+forneçam valores zero. A projeção agora usa index e defaults explícitos nesses
+campos. Validadores continuam exigindo volume RW/nocopy, bind HBA RO/rprivate e
+fontes/destinos exatos; ausência de NoCopy não vira aprovação.
+
+Regressões usam o binário Docker real ligado exclusivamente a um socket Unix
+temporário de HTTP fixture, com apenas ping e GET de um container sintético.
+Reproduzem falhas dos seletores antigos, conferem a projeção completa created/
+running e recusam montagens inseguras. Não usam daemon real, imagens ou volumes,
+nem criam/iniciam containers; ausência de CLI causa skip explícito.
+
+Recibos de startup registram failure_phase estático e somente códigos de exceção
+em allowlist fechada. Erros arbitrários de adapters/daemon/arquivos continuam
+ocultos, incluindo credenciais sentinelas nos testes. Essa melhoria não modifica
+os recibos históricos nem permite replay do plano consumido.
