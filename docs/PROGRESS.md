@@ -3332,3 +3332,23 @@ sincronizado; CI remota em andamento na última consulta, sem aprovação do del
 novo alegada. Próximo: registrar start do servidor de identidade de forma durável,
 sem replay, antes de conectar gates/lifecycle. Nenhum startup Linux, PKI/binding,
 marcador ou interferência no Demo decorreu desses incrementos.
+
+## 2026-10-29 — fence durável de start apenas para identidade
+
+Intents agora registram identity_start_requested antes da futura RPC: runner
+OBSERVED/sem start anterior, modo identity-only, hashes PKI/receita/gates e rede
+isolada própria/ID. Qualquer outro papel nãoABSENT bloqueia. Estado START_REQUESTED
+nunca pode repetir start após resume; configuração observada preserva esse fence
+mesmo voltando a OBSERVED. Cleanup permanece permitido, rede retida até ausência
+do runner. Flags de autorização/daemon/mTLS/operação não são inferidas do evento.
+
+**155 testes intents/cleanup passaram/1,90s**. Uma expectativa do teste novo usava
+o retorno resumo como se fosse evento; corrigida para ler JSON durável e comparar
+event_sha256, suíte reexecutada. Cobertura inclui resume real do hashchain, perfis
+errados, papéis concorrentes, ordem dos eventos, duplicação e fechamento. Ruff/
+formatação228arquivos/mypy4passaram antes dessa correção pequena de teste; Ruff do
+teste passou novamente. Sem daemon, startup, arquivos PKI ou volumes originais.
+
+Este commit será411º,19desde ea2c61d; main privada/push direto. Commit410º0752a5a
+sincronizado, CI40937969087 em andamento. Próximo: contextos ativos fechados para
+o servidor de identidade, sem ampliar contextos de execução normal/diagnóstico /3.

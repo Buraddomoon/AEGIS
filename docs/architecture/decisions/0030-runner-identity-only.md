@@ -97,3 +97,18 @@ adversariais e PKI/planos temporários. Nenhum container é criado nesses testes
 Inspeção nativa somente da imagem histórica6b9033b9 confirmou o formato básico,
 mantendo identity_mode_implementation_verified=false/image_provenance_verified=false.
 Runtime nativo, nova imagem, gates de start e coordenador continuam pendentes.
+
+## Fence durável anterior ao start
+
+O catálogo fechado de intents admite identity_start_requested apenas para runner
+OBSERVED, sem start anterior, modo literal identity-only e rede isolada própria
+OBSERVED por ID. Vincula recipe/gates/manifesto PKI e ID de rede. Qualquer outro
+papel nãoABSENT, inclusive DB, backend, API ou probe pendente, bloqueia esse perfil.
+Não ampliar isso para runner operacional: são procedimentos distintos.
+
+O evento marca START_REQUESTED antes da RPC futura; retomada nunca repete start.
+identity_runtime_observed só segue esse start, guarda hash da configuração e volta
+a OBSERVED, preservando o fence: mesmo sucesso não permite segundo start. Não
+comprova daemon/mTLS ou autorização. Cleanup aceita estado ambíguo e retém a rede
+até ausência do runner; fechamento depende de ausência de todos os recursos.
+Nenhum start é invocado por essas funções/testes e o limite64eventos é mantido.

@@ -492,3 +492,11 @@ valores. Docker Go template usa index/defaults para campos opcionais. Check de i
 mantém implementação identity-only/proveniência falsos: perfil básico não prova
 bytes novos. Teste CLI real usa daemon Unix falso, não recursos reais. Sem CLI ou
 driver start; gate/coordenador nativos ainda pendentes. Ver ADR0030.
+
+Fence identity_start_requested só runner OBSERVED/sem start anterior, modo literal
+identity-only, pki/recipe/gates hashes e network-isolated próprio OBSERVED/ID exato;
+todos os outros papéis precisam ABSENT. Evento precede futura RPC e marca
+START_REQUESTED. identity_runtime_observed fixa hash sem permitir novo start após
+sucesso/resume. Hashchain não comprova efeito, mTLS ou autorização; cleanup próprio
+continua possível e retém rede até runner ABSENT. Sem driver/CLI novo ou expansão
+do diagnóstico;64eventos mantidos. Testes test_runner_identity_intents só temporários.

@@ -194,6 +194,49 @@ def _apply(state, event, identifier):
         _hash(data["runtime_evidence_sha256"])
         item["state"] = "OBSERVED"
         item["runtime_evidence_sha256"] = data["runtime_evidence_sha256"]
+    elif kind == "identity_start_requested":
+        parent = owned.get("network-isolated")
+        if (
+            set(data)
+            != {
+                "role",
+                "recipe_sha256",
+                "gates_sha256",
+                "pki_manifest_sha256",
+                "network_resource_id",
+                "mode",
+            }
+            or role != "runner"
+            or data["mode"] != "identity-only"
+            or item["state"] != "OBSERVED"
+            or item["resource_id"] is None
+            or "start" in item
+            or parent is None
+            or parent["state"] != "OBSERVED"
+            or parent["resource_id"] != data["network_resource_id"]
+            or any(
+                key not in {"runner", "network-isolated"} and value["state"] != "ABSENT"
+                for key, value in owned.items()
+            )
+        ):
+            raise ActivationError("intent_identity_start_invalid_or_already_requested")
+        for key in ("recipe_sha256", "gates_sha256", "pki_manifest_sha256", "network_resource_id"):
+            _hash(data[key])
+        item["state"] = "START_REQUESTED"
+        item["start"] = {key: value for key, value in data.items() if key != "role"}
+    elif kind == "identity_runtime_observed":
+        if (
+            set(data) != {"role", "runtime_evidence_sha256"}
+            or role != "runner"
+            or item["state"] != "START_REQUESTED"
+            or item.get("start", {}).get("mode") != "identity-only"
+            or item["resource_id"] is None
+            or "runtime_evidence_sha256" in item
+        ):
+            raise ActivationError("intent_identity_runtime_observation_invalid")
+        _hash(data["runtime_evidence_sha256"])
+        item["state"] = "OBSERVED"
+        item["runtime_evidence_sha256"] = data["runtime_evidence_sha256"]
     elif kind in {"probe_start_requested", "database_review_start_requested"}:
         database_review = kind == "database_review_start_requested"
         context_field = "request_context_sha256" if database_review else "proof_bundle_sha256"
