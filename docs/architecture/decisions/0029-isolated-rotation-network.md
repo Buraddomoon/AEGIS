@@ -47,3 +47,28 @@ Referências oficiais:
 - [Bridge driver](https://docs.docker.com/engine/network/drivers/bridge/).
 - [Gateway mode isolated](https://docs.docker.com/engine/network/port-publishing/#gateway-modes).
 - [Network create e flags](https://docs.docker.com/reference/cli/docker/network/create/).
+
+## Lifecycle interno de criação única
+
+`runner_activation_network_lifecycle` registra request durável antes da única RPC
+de create, com callback interno confiável de gates frescos (não JSON/API). Gates
+fixam operação/plano/escopo/receita/nome e exigem autorização específica, candidato
+PKI válido, perfil revisado, projeto quiescente/owned, subnet disponível e worker
+parado. O futuro coordenador ainda deve computá-los, nunca fornecer flags constantes.
+
+Gate/contexto são rechecados antes do efeito. ID retornado, ownership e inspeção
+física da configuração precisam concordar; sucesso retém somente a rede vazia
+para o chamador. Não verifica tráfego, mTLS nem ativa PKI. Sem CLI ou ampliação dos
+gates active_metadata nesta unidade, não invocar nativamente antes do executor.
+
+Falha/ambiguidade/interrupção tenta cleanup selecionado pelos mecanismos existentes,
+sem replay ou fechamento do pai. Colisão anterior à tentativa vira CONFLICT sem
+adoção/remoção; endpoint estrangeiro ou cleanup incerto retém rede. Dependente
+inesperado REQUESTED impede declarar ausência no intent mesmo sem create: resolver
+dependência primeiro, sem relaxar o armazenamento para fabricar sucesso. Retomada
+da operação não remove o papel já solicitado nem permite outro create.
+
+Testes usam daemon fixtures/intents temporários e cobrem gates negados/expirados,
+contexto mutado, RPC ambígua, ID errado, configuração insegura, interrupção e retenção.
+Driver concreto compilado/testado com transporte falso; nenhuma RPC real de create
+ou alteração de rede do host foi feita por esse incremento.

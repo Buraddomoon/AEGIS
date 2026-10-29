@@ -427,3 +427,10 @@ sem membros/opções extras/IPv6/Swarm. Conferir ownership antes/depois e estado
 intent. Metadados não provam tráfego ou acesso ao host. Teste opcional só consulta
 Demo existente, não cria/adota rede. Não ampliar active_metadata ou gerar candidato
 PKI curto para contornar TTL antes de o executor estar pronto para revisão.
+
+Lifecycle interno de rede (ADR0029) já compila/emite somente create fixo, com request
+durável antes da RPC, gates internos frescos e inspeção/ownership após. Sucesso
+retém rede vazia; falha/interrupt tenta cleanup selecionado, CONFLICT/endpoint
+estrangeiro/dependente pendente impedem sucesso. Sem replay, CLI ou gates concretos
+do coordenador nesta unidade. Testes só daemon fixtures; nenhuma rede real criada.
+Não interpretar callback sintético ou status de configuração como autorização.

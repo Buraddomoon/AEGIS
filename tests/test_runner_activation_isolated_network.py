@@ -238,7 +238,10 @@ def test_review_rechecks_ownership_and_durable_state_after_daemon_query(store, s
         network.review(store, OBJECT, docker=docker, ownership_docker=owner)
 
 
-def test_fresh_import_has_no_network_process_or_secret_effect():
+@pytest.mark.parametrize(
+    "module", ["runner_activation_isolated_network", "runner_activation_network_lifecycle"]
+)
+def test_fresh_import_has_no_network_process_or_secret_effect(module):
     result = subprocess.run(
         [
             sys.executable,
@@ -252,9 +255,11 @@ def guard(event, args):
     if event == 'open' and isinstance(args[0],str) and ('.env' in args[0] or args[0].endswith('.key')):
         raise AssertionError('secret forbidden')
 sys.addaudithook(guard)
-import runner_activation_isolated_network
+import importlib
+importlib.import_module(sys.argv[1])
 assert 'aegis.config' not in sys.modules
 """,
+            module,
         ],
         capture_output=True,
         text=True,

@@ -3157,3 +3157,23 @@ Este commit será402º,10desde ea2c61d; main privada/push direto. Nenhum novo ef
 Linux após diagnóstico4c28e0bf... encerrado. Próximo: lifecycle interno de criação
 única/ownership/cleanup e gates concretos antes de expor executor de rotação.
 Não gerar candidato curto só para renovar TTL antes do procedimento reviewable.
+
+## 2026-10-29 — lifecycle interno da rede com criação única e cleanup
+
+runner_activation_network_lifecycle implementa driver fechado de create e fluxo
+interno: request antes da RPC, callback confiável/fresco com plano/escopo/receita,
+contexto imutável, ID/ownership/configuração conferidos, rede vazia retida somente
+no sucesso. Sem CLI ou gates concretos de coordenador; não invocado em Docker real.
+Falha/interrupt limpa só ownership próprio, nunca retry. CONFLICT, membro estrangeiro
+ou dependente inesperado mantêm bloqueio; não relaxar dependências para passar.
+
+**195 testes lifecycle/rede/cleanup/intents passaram/2,63s**. Regressão ajustada
+respeita a retenção correta quando callback introduz dependente REQUESTED; não foi
+enfraquecido cleanup para satisfazer teste. Import inerte dos dois módulos testado.
+Ruff/formatação218arquivos e mypy4arquivos passaram. Teste opcional só leu metadados
+Demo existente; nenhum recurso Linux/volume/PKI/binding alterado.
+
+Este commit será403º,11desde ea2c61d; main privada/push direto. ADR0029 e AGENTS
+atualizados. Próximo: gates derivados do plano/inventário em operação, e depois
+runtime mTLS sem marcador; aprovação real continua necessária antes de qualquer
+novo ensaio. O sucesso original4c28e0bf... não é lease ou permissão de criação de rede.
