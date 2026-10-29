@@ -21,6 +21,113 @@ FLAGS = {
     "activation_permitted": False,
     "normal_operation_permitted": False,
 }
+FAILURE_FORMAT = "aegis-persisted-probe-rejection/1"
+FAILURE_PHASES = frozenset(
+    {"process", "input", "engine", "collect", "proofs", "encode", "dispose", "output"}
+)
+CONTINUITY_FAILURES = frozenset(
+    {
+        "persisted_probe_duplicate_field",
+        "persisted_probe_input_limit",
+        "persisted_probe_context_hash_required",
+        "persisted_probe_input_invalid",
+        "persisted_probe_context_mismatch",
+        "persisted_probe_context_or_secret_invalid",
+        "persisted_probe_ambient_libpq_configuration",
+        "persisted_probe_database_profile_mismatch",
+        "persisted_probe_privileged_database_role",
+        "persisted_probe_schema_unsupported",
+        "persisted_probe_private_pipe_required",
+        "persisted_probe_output_limit",
+        "persisted_probe_container_process_required",
+        "persisted_review_inputs_invalid",
+        "persisted_original_binding_mismatch",
+        "persisted_binding_review_blocked",
+        "persisted_complete_known_history_required",
+        "persisted_cleanup_unconfirmed",
+        "persisted_job_identity_mismatch",
+        "persisted_proofs_integrity_mismatch",
+        "persisted_proofs_policy_mismatch",
+        "persisted_proofs_context_mismatch",
+        "persisted_proofs_job_invalid",
+        "persisted_proofs_invalid",
+    }
+)
+SQLSTATE_FAILURES = {
+    "28P01": "database_authentication_rejected",
+    "28000": "database_authorization_rejected",
+    "42501": "database_privilege_rejected",
+    "42P01": "database_relation_unavailable",
+    "25006": "database_readonly_rejected",
+    "55P03": "database_lock_unavailable",
+    "57014": "database_statement_cancelled",
+    "3D000": "database_name_unavailable",
+}
+FAILURE_REASONS = (
+    CONTINUITY_FAILURES
+    | frozenset(SQLSTATE_FAILURES.values())
+    | {
+        "database_driver_rejected",
+        "unexpected_error",
+    }
+)
+
+
+def _failure_reason(error):
+    # Never stringify an arbitrary exception, driver message, statement or URL.
+    if (
+        isinstance(error, ContinuityError)
+        and len(error.args) == 1
+        and type(error.args[0]) is str
+        and error.args[0] in CONTINUITY_FAILURES
+    ):
+        return error.args[0]
+    # Do not import the database stack merely to reject an invalid input/process.
+    sql_error = getattr(sys.modules.get("sqlalchemy.exc"), "DBAPIError", None)
+    if sql_error is not None and isinstance(error, sql_error):
+        state = getattr(error.orig, "sqlstate", None)
+        return (
+            SQLSTATE_FAILURES.get(state, "database_driver_rejected")
+            if type(state) is str
+            else "database_driver_rejected"
+        )
+    return "unexpected_error"
+
+
+def decode_failure(payload, expected_context_sha256):
+    """Closed failure envelope only; it is neither a proof nor a success response."""
+    if type(payload) is not bytes or len(payload) > 4096:
+        return None
+    try:
+        value = json.loads(payload, object_pairs_hook=_unique)
+        if (
+            not isinstance(value, dict)
+            or set(value)
+            != {
+                "format",
+                "status",
+                "code",
+                "context_sha256",
+                "failure_phase",
+                "failure_reason",
+                *FLAGS,
+            }
+            or value["format"] != FAILURE_FORMAT
+            or value["status"] != "rejected"
+            or value["code"] != "persisted_probe_rejected"
+            or not isinstance(expected_context_sha256, str)
+            or not re.fullmatch("[a-f0-9]{64}", expected_context_sha256)
+            or value["context_sha256"] != expected_context_sha256
+            or type(value["failure_phase"]) is not str
+            or value["failure_phase"] not in FAILURE_PHASES
+            or type(value["failure_reason"]) is not str
+            or value["failure_reason"] not in FAILURE_REASONS
+            or any(value[key] is not False for key in FLAGS)
+        ):
+            return None
+        return value
+    except (ValueError, TypeError, KeyError, UnicodeError, RecursionError):
+        return None
 
 
 def _unique(pairs):
@@ -218,32 +325,52 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--context-sha256", required=True)
     args = parser.parse_args(argv)
+    phase = "process"
     try:
         if sys.stdout.isatty():
             raise ContinuityError("persisted_probe_private_pipe_required")
         _require_probe_process()
+        phase = "input"
         identity, descriptor, password = decode(
             sys.stdin.buffer.read(MAX_INPUT + 1), args.context_sha256
         )
+        phase = "engine"
         engine = _open_engine(password)
         try:
+            phase = "collect"
             bundle = collect(engine, identity, descriptor, verify=_require_fixed_database)
+            phase = "proofs"
             expected_proofs(bundle, digest(bundle))
+            phase = "encode"
             encoded = json.dumps(
                 bundle, sort_keys=True, separators=(",", ":"), ensure_ascii=False
             ).encode()
             if len(encoded) + 1 > MAX_OUTPUT:
                 raise ContinuityError("persisted_probe_output_limit")
         finally:
+            previous_phase, phase = phase, "dispose"
             engine.dispose()
+            phase = previous_phase
         # Contains original proofs; caller must capture privately, never echo/log.
+        phase = "output"
         sys.stdout.buffer.write(encoded + b"\n")
         return 0
-    except Exception:
+    except Exception as error:
         # Driver/SQL/input failures can contain credentials, never echo diagnostics.
         print(
             json.dumps(
-                {"status": "rejected", "code": "persisted_probe_rejected", **FLAGS}, sort_keys=True
+                {
+                    "format": FAILURE_FORMAT,
+                    "status": "rejected",
+                    "code": "persisted_probe_rejected",
+                    "context_sha256": args.context_sha256
+                    if re.fullmatch("[a-f0-9]{64}", args.context_sha256)
+                    else None,
+                    "failure_phase": phase,
+                    "failure_reason": _failure_reason(error),
+                    **FLAGS,
+                },
+                sort_keys=True,
             )
         )
         return 1

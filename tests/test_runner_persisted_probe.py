@@ -161,6 +161,97 @@ def test_engine_profile_uses_url_object_fixed_loopback_and_safe_connection_optio
     assert options["poolclass"].__name__ == "NullPool"
 
 
+@pytest.mark.parametrize(
+    "sqlstate,expected",
+    [
+        ("28P01", "database_authentication_rejected"),
+        ("42501", "database_privilege_rejected"),
+        ("42P01", "database_relation_unavailable"),
+        ("secret", "database_driver_rejected"),
+        (None, "database_driver_rejected"),
+    ],
+)
+def test_driver_rejections_report_only_reviewed_categories(bundle, monkeypatch, sqlstate, expected):
+    from sqlalchemy.exc import OperationalError
+
+    class DriverError(Exception):
+        pass
+
+    original = DriverError("private-sensitive-sentinel")
+    original.sqlstate = sqlstate
+    error = OperationalError(
+        "private-sensitive-sentinel", {"password": "private-sensitive-sentinel"}, original
+    )
+
+    def connect(_password):
+        raise error
+
+    monkeypatch.setattr(probe, "_open_engine", connect)
+    value = data(bundle)
+    code, result, encoded = invoke(value, monkeypatch)
+    assert code == 1 and result["failure_reason"] == expected
+    assert result["failure_phase"] == "engine"
+    assert probe.decode_failure(encoded, context_sha(value)) == result
+    assert b"private-sensitive-sentinel" not in encoded
+    assert value["database_password"].encode() not in encoded
+
+
+@pytest.mark.parametrize(
+    "reason", ["persisted_probe_schema_unsupported", "private-sensitive-sentinel"]
+)
+def test_continuity_failure_category_survives_dispose_without_exception_text(
+    bundle, monkeypatch, reason
+):
+    class Engine:
+        def dispose(self):
+            pass
+
+    def collect(*_args, **_kwargs):
+        raise ContinuityError(reason)
+
+    monkeypatch.setattr(probe, "_open_engine", lambda _password: Engine())
+    monkeypatch.setattr(probe, "collect", collect)
+    value = data(bundle)
+    code, result, encoded = invoke(value, monkeypatch)
+    assert code == 1 and result["failure_phase"] == "collect"
+    assert result["failure_reason"] == (
+        reason if reason in probe.CONTINUITY_FAILURES else "unexpected_error"
+    )
+    assert probe.decode_failure(encoded, context_sha(value)) == result
+    assert b"private-sensitive-sentinel" not in encoded
+
+
+@pytest.mark.parametrize(
+    "scene", ["context", "reason", "phase", "extra", "flag", "duplicate", "oversize"]
+)
+def test_failure_decoder_rejects_unreviewed_or_unbound_reports(scene):
+    report = {
+        "format": probe.FAILURE_FORMAT,
+        "status": "rejected",
+        "code": "persisted_probe_rejected",
+        "context_sha256": "a" * 64,
+        "failure_phase": "collect",
+        "failure_reason": "persisted_probe_schema_unsupported",
+        **probe.FLAGS,
+    }
+    if scene in {"context", "reason", "phase"}:
+        report[
+            {"context": "context_sha256", "reason": "failure_reason", "phase": "failure_phase"}[
+                scene
+            ]
+        ] = "unknown"
+    elif scene == "extra":
+        report["raw_exception"] = "private-sensitive-sentinel"
+    elif scene == "flag":
+        report["normal_operation_permitted"] = 0
+    encoded = json.dumps(report).encode()
+    if scene == "duplicate":
+        encoded = encoded[:-1] + b',"status":"rejected"}'
+    elif scene == "oversize":
+        encoded = b" " * 4096 + encoded
+    assert probe.decode_failure(encoded, "a" * 64) is None
+
+
 class Result:
     def __init__(self, value):
         self.value = value
