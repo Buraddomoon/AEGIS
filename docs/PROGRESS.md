@@ -3308,3 +3308,27 @@ Este commit será409º,17desde ea2c61d; main privada/push direto. Commit408ºb73
 sincronizado. Próximo: inspeção fechada do container/imagem/environment/mounts e
 endpoint de rede, antes de driver/gates/coordenador. A imagem histórica6b9033b9
 continua preservada e não foi atualizada implicitamente pelo código novo.
+
+## 2026-10-29 — inspeção fechada da configuração de identidade
+
+identity_inspection confere imagem sem VOLUME/ports/env imprevisto e container
+owned OBSERVED/START_REQUESTED em created/running, configuração/env/mounts exatos
+e endpoint172.30.88.2/rede própria. Binds folha RO/rprivate, nenhum volume original,
+porta, extra IPv6/link-local/links/opção de driver. Fonte host/env só predicados,
+sem valores retornados. Reconfere plano/receita/intent após IO. Perfil antes do
+start distingue endpoint ainda não alocado; depois exige ID/IP/prefixo reais.
+Metadados não demonstram mTLS, execução do modo, proveniência ou alcance de tráfego.
+
+**92 testes inspeção/compilador/templates/servidor de identidade passaram/19,14s**.
+Incluem Docker CLI real sobre HTTP Unix daemon falso, sem criar recursos; testes
+de expiração/drift e guards adversariais. Check inicial Ruff encontrou tail de
+teste inserido no bloco errado durante edição; movido ao caso de tmpfs duplicado,
+suite combinada executada após a correção. Ruff/check,227arquivos formatados e
+mypy4passaram. Inspeção nativa somente de image6b9033b9 confirmou formato/perfil
+básico, mantendo implementação do modo/proveniência falsos; imagem antiga intacta.
+
+Este commit será410º,18desde ea2c61d; main privada/push direto. Commit409ºf311157
+sincronizado; CI remota em andamento na última consulta, sem aprovação do delta
+novo alegada. Próximo: registrar start do servidor de identidade de forma durável,
+sem replay, antes de conectar gates/lifecycle. Nenhum startup Linux, PKI/binding,
+marcador ou interferência no Demo decorreu desses incrementos.

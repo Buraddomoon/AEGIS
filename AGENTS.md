@@ -483,3 +483,12 @@ Sem RPC/leitura de chaves; não executar argumentos como atalho de autorização
 Imagem com VOLUME/env herdado e runtime/mounts precisam de revisão futura. Testes
 test_runner_activation_identity_runtime não iniciam containers; perfil público
 continua não operacional e diagnóstico /3 não recebe papéis/contextos novos.
+
+identity_inspection só inspect de imagem/container por ID; OBSERVED/START_REQUESTED,
+ownership antes/depois e receita/plano rechecados após IO. Created/running exigem
+env/limits/processo/mounts/endpoints exatos; somente três binds RO e tmpfs opcional,
+sem volumes/ports/IPv6/endereços extras. Redigir fontes/env como predicados, nunca
+valores. Docker Go template usa index/defaults para campos opcionais. Check de imagem
+mantém implementação identity-only/proveniência falsos: perfil básico não prova
+bytes novos. Teste CLI real usa daemon Unix falso, não recursos reais. Sem CLI ou
+driver start; gate/coordenador nativos ainda pendentes. Ver ADR0030.

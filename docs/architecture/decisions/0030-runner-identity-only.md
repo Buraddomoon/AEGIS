@@ -69,3 +69,31 @@ Perfil público permanece executor_implemented=false e não amplia o diagnóstic
 
 Referências oficiais revisadas: [container create](https://docs.docker.com/reference/cli/docker/container/create/)
 e [gateway modes](https://docs.docker.com/engine/network/port-publishing/#gateway-modes).
+
+## Inspeção somente leitura
+
+runner_activation_identity_inspection projeta image inspect e container inspect
+por IDs completos. Conferência de imagem exige UID10001, sem VOLUME, ExposedPorts,
+OnBuild ou env herdado não revisado. Isso não comprova fonte/proveniência nem
+implementação do modo: esses flags permanecem falsos. Imagem histórica pode passar
+no perfil básico sem conter o código novo; não a declarar atualizada por isso.
+
+Container precisa estar OBSERVED/START_REQUESTED no intent e corresponder ao
+ownership antes/depois do IO. Somente created/running, processo/labels/limits/env
+exatos, nenhuma porta/volume declarado ou mount além dos três binds RO/rprivate e
+tmpfs /tmp opcional efetivo. Conferência usa caminhos correspondentes como booleanos,
+sem retornar fontes host/valores de env. Opções bind extras, chave RW, fonte errada,
+predicados inteiros e mount duplicado bloqueiam. Opções omitidas no JSON Docker
+usam index/defaults explícitos, sem relaxar valores esperados.
+
+Endpoint precisa ser somente da rede própria/ID, IP configurado172.30.88.2, sem
+IPv6/link-local/links/opções de driver extras. Antes do start, a projeção ainda pode
+não ter endereço/ID alocados; após start exige IP/prefixo/ID reais exatos. Isso não
+comprova conectividade/firewall ou mTLS. Releitura do plano/receita/intent após IO
+recusa expiração e drift; não existem create/start neste módulo.
+
+Testes executam o Docker CLI real contra daemon HTTP Unix falso, além de fixtures
+adversariais e PKI/planos temporários. Nenhum container é criado nesses testes.
+Inspeção nativa somente da imagem histórica6b9033b9 confirmou o formato básico,
+mantendo identity_mode_implementation_verified=false/image_provenance_verified=false.
+Runtime nativo, nova imagem, gates de start e coordenador continuam pendentes.

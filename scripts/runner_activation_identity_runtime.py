@@ -71,6 +71,7 @@ def recipe(store, path, plan_sha256):
         "image": image,
         "identity": identity.model_copy(update={"tests": ()}).model_dump(mode="json"),
         "network_resource_id": known_network,
+        "network_name": resource(store.summary()["id"], plan_sha256, network.ROLE)["name"],
         "ipv4_address": IP,
         "entrypoint": [probe.ENTRYPOINT],
         "arguments": ["-I", "-B", "-m", "aegis.lab_runner.server"],
