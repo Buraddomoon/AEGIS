@@ -117,6 +117,11 @@ def review_image(image, *, docker=None):
 def validate(spec, item, known_id, phase):
     if phase not in {"created", "running"}:
         raise ActivationError("identity_runtime_phase_invalid")
+    _configuration(spec, item, known_id, phase, ip=runtime.IP, stdin_open=False)
+
+
+def _configuration(spec, item, known_id, phase, *, ip, stdin_open):
+    """Shared physical predicates; public adapters retain distinct phase/IP/stdin contracts."""
     config = {
         "id": identifier(known_id),
         "name": "/" + spec["name"],
@@ -126,7 +131,7 @@ def validate(spec, item, known_id, phase):
         "entrypoint": spec["entrypoint"],
         "arguments": spec["arguments"],
         "working_directory": "/app",
-        "stdin_open": False,
+        "stdin_open": stdin_open,
         "tty": False,
         "healthcheck": ["NONE"],
         "stop_timeout": 5,
@@ -215,17 +220,17 @@ def validate(spec, item, known_id, phase):
     endpoint = {
         "name": spec["network_name"],
         "id": spec["network_resource_id"],
-        "ip": runtime.IP,
+        "ip": ip,
         "prefix": 29,
         "ipv6": "",
         "ipv6_gateway": "",
-        "configured_ip": runtime.IP,
+        "configured_ip": ip,
         "configured_extra_addresses_absent": True,
         "links_absent": True,
         "driver_options_absent": True,
     }
     expected_endpoints = [[endpoint, None]]
-    if phase == "created":
+    if phase in {"created", "exited"}:
         expected_endpoints.append([{**endpoint, "ip": "", "prefix": 0, "id": ""}, None])
         expected_endpoints.append([{**endpoint, "ip": "", "prefix": 0}, None])
     if item["network_names"] != [endpoint["name"], None] or digest(item["endpoints"]) not in set(

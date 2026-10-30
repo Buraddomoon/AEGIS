@@ -3683,3 +3683,23 @@ key lida ou payload persistido. Fonte do pacote da imagem64arquivos permanece ig
 de fonte SUCCESS na consulta. Próximo: inspeção física de created/exited e membership
 exato para o cliente, depois gates/captura/lifecycle/coordenador. Sem ensaio nativo
 ou renovação de candidato PKI.
+
+## 2026-10-30 — inspeção física fechada do cliente de identidade
+
+Adaptador somente leitura created/exited confere ID/fence/contexto, argv/pipe,
+quatro binds RO/rede/IPAM e limites. Queries no restante20s, ownership antes/depois,
+drift de intent/plano bloqueado. Servidor preserva seu contrato created/running/
+stdin fechado/IP.2. TLS/resultado/operação permanecem não comprovados pela metadata.
+
+**91passed/31,55s**, após revisão de releaseNetwork/cleanOperationalData no código
+oficial Moby: cliente encerrado pode ter IP operacional limpo, mas IPAM/rede fixa
+continuam obrigatórios. Não alegado teste do daemon local; tags exatas consultadas
+não estavam disponíveis na fonte remota. Docker CLI real em Unix daemon falso
+validou projeção dos quatro binds/redação. Recusa mount RW/CA fonte divergente/key
+antiga/argv/TTY/portas/env IPv6/contexto/prazo. Rodada91anterior se sobrepõe.
+
+**CI427º57e1d63/run41080108097 SUCCESS** nos dois shards Python e React; source-review
+41080108447 SUCCESS. Log privado identity-compiler-ci-success.log. Ruff/check,253
+arquivos formatados/mypy4passaram. Este será428º,36desde ea2c61d; main privada/push.
+Próximo: membership exato do cliente na rede, gates/captura/lifecycle/coordenador.
+Sem startup nativo ou renovação de candidato PKI.

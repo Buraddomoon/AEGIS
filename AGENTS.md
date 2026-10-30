@@ -621,3 +621,11 @@ quatro mounts RO (CA servidor/cert e key cliente novos + CA servidor antiga púb
 nenhum volume/key antiga/env livre. _create_arguments compartilhado é privado e
 recebe só receitas internas; server mantém stdin fechado/IP.2. Sem RPC/arquivo de
 payload/leitura de key. Gates/inspeção física/captura ainda pendentes antes de uso.
+
+identity_client_inspection só created/exited, stdin privado e IPAM.3 exatos, quatro
+binds RO/mode/limites/env/ownership/fence/contexto conferidos. Servidor público
+continua só created/running, stdin fechado e IP.2. Helper físico privado compartilha
+predicados, não cria fase operacional nova. Cliente exited pode ter IP operacional
+limpo, conservando IPAM/rede configurados; não inferir ausência/presença de tráfego
+disso. Cada query dentro do restante20s, drift/timeout bloqueiam. Saída hashes/
+predicados apenas; TLS/result/origem exigem prova separada. Sem driver/start CLI.

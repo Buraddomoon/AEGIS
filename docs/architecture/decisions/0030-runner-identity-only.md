@@ -364,3 +364,25 @@ necessários. Opções de stdin/attach revistas em
 [create](https://docs.docker.com/reference/cli/docker/container/create/) e
 [start](https://docs.docker.com/reference/cli/docker/container/start/); essa consulta
 não comprova o comportamento nativo futuro do novo cliente.
+
+## Inspeção física do cliente antes e depois do processo
+
+identity_client_inspection aceita somente created/exited. Exige ID/ownership,
+imagem, argv, stdin aberto sem TTY, limites, quatro binds RO/source predicates,
+nenhum volume/porta/env extra e rede/IPAM.3 fixos. Exited requer start durável
+com receita/contexto/IDs dos pais correspondentes; status/exit0 não provam TLS.
+Duas observações de ownership cercam a inspeção; plano/receita/intent relidos após
+IO, cada query limitada ao orçamento restante20s. Saída só hashes e predicados.
+
+Predicados físicos foram compartilhados em helper privado. Adaptador público do
+servidor permanece created/running/stdin fechado/IP.2; não aceita fase exited nem
+configuração do cliente. Implementação oficial
+[Moby releaseNetwork/cleanOperationalData](https://github.com/moby/moby/blob/master/daemon/container_operations.go)
+limpa IP operacional ao liberar sandbox. Para cliente created/exited, aceitar essa
+ausência conservando nome/ID da rede e IPAM estático.3; endereço configurado trocado
+continua bloqueado. Isso não comprova o comportamento exato do daemon local ou
+tráfego histórico. Runtime nativo ainda precisa de ensaio próprio.
+
+Teste real do Docker CLI contra daemon Unix falso confere quatro binds e redige
+caminhos; endpoint/provas usam fixtures, sem containers reais. TLS/resultado e
+membership global da rede não são inferidos do perfil físico.
