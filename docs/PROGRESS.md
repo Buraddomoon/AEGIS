@@ -3550,3 +3550,24 @@ Este commit será420º,28desde ea2c61d, main privada/push direto. CI419º84e5ee3
 de fonte SUCCESS; React SUCCESS e partições Python em andamento na consulta.
 Próximo: gate concreto que combina inventário ativo, imagem selada e inspeções
 físicas para servidor de identidade, antes de lifecycle/coordenador/ensaio nativo.
+
+## 2026-10-30 — gate composto para o servidor de identidade
+
+IdentityGates combina revisões ativas antes/depois, imagem selada/fonte atual,
+perfil da imagem, membros da rede e mounts/configuração física. Usa o mesmo
+ConfirmedPlan e prazo original; start com fence prévio bloqueia replay. Schema,
+contexto, booleans estritos, drift e freshness validados antes de publicar; sem
+Docker lifecycle novo. Hashes em memória ainda dependem do coordenador durável.
+
+**49passed/66,80s**:26casos de gates,11request e12verificação real de recibos/fontes
+seladas, sobrepostos às rodadas anteriores. Composição usa daemon falso e fixture
+só na fronteira de build, sem alegar ensaio nativo. Recusa worker/consumidores
+originais, endpoint estranho, mounts RW, portas, modo ausente, fonte antiga,
+recibo inteiro, receita/tempo/intent alterados. Corrigido erro de import na coleta
+isolada, após ordenação Ruff; repetição passou. Ruff/check,244arquivos formatados
+e mypy4passaram. Make test-runner-activation inclui os novos arquivos.
+
+420ºdfdf19d sincronizado. Este commit será421º,29desde ea2c61d, main privada/push.
+CI419º foi cancelada por supersessão após novo push; não tratada como sucesso.
+CI420º em andamento e source-review SUCCESS na consulta. Próximo: lifecycle interno
+create/start único com fences e cleanup próprio; autorização nativa segue pendente.

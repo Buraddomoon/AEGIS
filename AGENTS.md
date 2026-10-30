@@ -575,3 +575,11 @@ expiração vem da confirmação original, nunca renova orçamento. Sem Docker/P
 write. Teste host→probe→decoder usa exclusivamente loopback com SNI/SAN/DER de
 candidato temporário preservados, não altera HOST/PORT produtivos ou permite alvo
 livre. Não confundir prova pública com keypair/runtime/gate completo.
+
+IdentityGates reutiliza a mesma instância ConfirmedPlan/restrição300s da rede, sem
+JSON de gate/confirmação como entrada. Create/start/running fechados; start após
+fence é negado. Combina active_plan antes/depois, sealed image current/source,
+image profile, membros exatos e mounts físicos; timeout/freshness antes de publicar.
+Hashes de evidência só em memória até coordenador persistir. Testes de composição
+usam fixture apenas na fronteira do recibo selado, coberta separadamente por
+testes reais de arquivos. Não inferir TLS/ativação de gate ou fake daemon.

@@ -5,24 +5,27 @@ import copy
 import json
 import socket
 import ssl
+import sys
 import threading
 import time
 from datetime import timedelta
 from pathlib import Path
 
 import pytest
-import runner_activation_identity_request as builder
 import uvicorn
 from aegis.lab_runner import identity_probe as probe
 from aegis.lab_runner.protocol import RunnerIdentity
 from aegis.lab_runner.server import create_identity_app
 from aegis.lab_runner.tls_peer import IdentityTLSProtocol
-from runner_activation_confirmation import ConfirmedPlan
-from runner_activation_intents import ActivationIntents
 from test_runner_activation_image_source import git
 from test_runner_activation_plan import code as code
 from test_runner_activation_plan import material as material
 from test_runner_activation_plan import prepare
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+import runner_activation_identity_request as builder  # noqa: E402
+from runner_activation_confirmation import ConfirmedPlan  # noqa: E402
+from runner_activation_intents import ActivationIntents  # noqa: E402
 
 
 @pytest.fixture

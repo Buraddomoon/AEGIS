@@ -268,3 +268,26 @@ do candidato em Uvicorn com transporte revisado, executa quatro conexões TLS e
 valida o resultado pelo decoder. Só o destino TCP é roteado para loopback no teste;
 nome TLS172.30.88.2/SAN e hashes DER permanecem os de produção. Esse teste não
 prova rede/container nativos nem autoriza ativação.
+
+## Gate concreto do servidor de identidade
+
+IdentityGates recebe a mesma instância ConfirmedPlan usada pela rede: criação de
+um componente novo não estende o prazo da operação. Não recebe gates salvos nem
+assertivas JSON como confirmação. Revisa active_plan antes/depois, prova selada
+existente comparada à fonte atual, perfil da imagem, bridge/membros exatos e, nas
+fases start/running, configuração física/mounts/ausência de portas do container.
+Active inventory inclui membros parados e consumidores globais dos dois volumes
+originais; workers ou recursos estranhos bloqueiam. Create exige runner REQUESTED
+ausente, start OBSERVED sem fence anterior, running exige fence identity-only.
+
+Gate fecha schema/contexto/booleanos e freshness; timestamp representa início da
+observação, prazo no máximo20s e idade máxima10s no consumo. IO que excede o prazo
+impede publicação antes de efeito. Expiração também limitada à confirmação/plano.
+Composição não inicia recursos, não prova mTLS e não libera operação. Evidências
+são hashes em memória; coordenador ainda deve persistir/capturar origem real.
+
+Testes integram PKI/planos temporários, inventário/ownership/membros/mounts com
+daemon simulado. Somente a fronteira de build selado usa resposta de fixture,
+explicitamente coberta pelos testes independentes de arquivos/recibos/fonte; não
+anunciar como ensaio de build/container nativo. Corrigido também o bootstrap de
+imports dos novos testes para não depender da ordem global de coleta.
