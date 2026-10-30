@@ -188,7 +188,7 @@ def test_saved_json_confirmation_is_not_accepted():
         gates.IdentityGates({"confirmed": True}, {})
 
 
-@pytest.mark.parametrize("scene", ["bool", "extra", "phase", "scope", "stale"])
+@pytest.mark.parametrize("scene", ["bool", "extra", "phase", "scope", "resource", "stale"])
 def test_consumer_rejects_tampered_gate_context_types_or_freshness(prepared, scene):
     value, world, spec, *_ = prepared
     result = value.review("start", spec)
@@ -200,6 +200,8 @@ def test_consumer_rejects_tampered_gate_context_types_or_freshness(prepared, sce
         result["phase"] = "running"
     elif scene == "scope":
         result["scope_sha256"] = "f" * 64
+    elif scene == "resource":
+        result["resource_id"] = "f" * 64
     else:
         result["checked_at"] = (gates.plan.pki.clock() - timedelta(seconds=11)).isoformat()
         result["expires_at"] = (gates.plan.pki.clock() + timedelta(seconds=1)).isoformat()

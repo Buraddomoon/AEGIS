@@ -300,3 +300,25 @@ são rechecados; exec/attach/restart/run não existem. Driver faz uma RPC e exig
 resposta ID sintaticamente válida; start exige o mesmo ID. O lifecycle ainda deve
 reconciliar ownership, impedir replay após outcome ambíguo e executar cleanup.
 Não chamar driver diretamente como autorização: nenhum CLI/startup foi adicionado.
+
+## Lifecycle interno de início único
+
+identity_lifecycle recebe IdentityGates concreto, nunca JSON positivo ou callback
+externo. Exige papel runner novo: até ABSENT de tentativa anterior impede replay.
+Criação é precedida de intent e gate derivado; ID retornado precisa coincidir com
+ownership independente antes de observed. Start recebe outro gate com inspeção
+física de created, fence durável anterior à RPC e inspeção repetida após o fence.
+Depois do start, inspeção running e evidence hash duráveis precedem o gate final.
+Gate vincula também resource_id observado, sem reusar gate de outro container.
+
+Driver limita cada RPC ao menor prazo entre timeout local e tempo restante UTC/
+monotônico da confirmação original. Papéis incompatíveis também bloqueiam no
+driver. Nenhum create/start é repetido; retomada permite somente reconciliação/
+cleanup. Sucesso retém servidor e rede próprios para o futuro cliente, sem provar
+listen/readiness/mTLS. Flags de tráfego/ativação/operação/marcador ficam falsas.
+
+Qualquer falha após tentativa, inclusive interrupção, reconcilia/limpa somente
+runner próprio; rede permanece sob responsabilidade do coordenador. Colisão antes
+da nossa tentativa vira CONFLICT, sem adotar/remover o recurso. Cleanup incerto
+mantém intent/ID e não vira sucesso. Volumes, PKI ativa, DB/worker/Wazuh e binding
+não entram nesse fluxo. Não há CLI de execução ou novo ensaio autorizado.

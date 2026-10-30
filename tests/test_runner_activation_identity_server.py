@@ -98,6 +98,14 @@ def test_another_container_id_cannot_be_started(confirmed):
         server.command("start", confirmed, "f" * 64)
 
 
+def test_new_incompatible_role_after_start_fence_blocks_driver_before_rpc(confirmed, monkeypatch):
+    started(confirmed)
+    confirmed.store.request("redis")
+    monkeypatch.setattr(server, "_execute", lambda *a, **kw: pytest.fail("no RPC"))
+    with pytest.raises(server.ActivationError, match="incompatible_resource"):
+        server.IdentityServerDocker().start(confirmed, OBJECT)
+
+
 @pytest.mark.parametrize("phase", ["create", "start"])
 @pytest.mark.parametrize("reply", [b"bad", b"f" * 64 + b"\n", b"private-sensitive-sentinel"])
 def test_rpc_reply_errors_never_authorize_retry_or_expose_contents(
@@ -109,7 +117,8 @@ def test_rpc_reply_errors_never_authorize_retry_or_expose_contents(
         confirmed.store.request("runner")
     calls = []
 
-    def execute(args):
+    def execute(args, *, timeout):
+        assert 0 < timeout <= server.TIMEOUT
         calls.append(args)
         return reply
 
@@ -131,3 +140,17 @@ def test_expiration_blocks_rpc_before_daemon_access(confirmed, monkeypatch):
     monkeypatch.setattr(server, "_execute", lambda *a, **kw: pytest.fail("no RPC"))
     with pytest.raises(server.ActivationError, match="scope_or_budget_unconfirmed"):
         server.IdentityServerDocker().create(confirmed)
+
+
+def test_rpc_timeout_cannot_outlive_remaining_original_monotonic_budget(confirmed, monkeypatch):
+    confirmed.store.request("runner")
+    confirmed.deadline = server.time.monotonic() + 3
+    limits = []
+
+    def execute(args, *, timeout):
+        limits.append(timeout)
+        return (OBJECT + "\n").encode()
+
+    monkeypatch.setattr(server, "_execute", execute)
+    assert server.IdentityServerDocker().create(confirmed) == OBJECT
+    assert len(limits) == 1 and 0 < limits[0] <= 3

@@ -588,3 +588,12 @@ identity_server é driver interno create/start apenas, não executor autorizado.
 ConfirmedPlan/main/fence exatos antes da RPC; lifecycle precisa impedir repetição
 START_REQUESTED ambígua e reconciliar ID retornado/cleanup. Sem CLI/exec/restart.
 Testes do driver emulam replies; nunca invocam daemon real.
+
+identity_lifecycle só IdentityGates concreto e runner novo (ABSENT também bloqueia
+replay). Create intent/gate/ID reconciliado; start gate/fence durável/inspeção
+repetida antes da RPC; running físico/evidência durável/gate final. Driver RPC
+limitado ao orçamento UTC/monotônico restante, recusa outros papéis ativos. Sucesso
+retém servidor/rede sem provar TLS/readiness; falha limpa só runner próprio, mesmo
+após expiração/interrupção. Colisão pré-create vira CONFLICT sem delete/adoption.
+Rede/volumes/histórico permanecem; cleanup incerto é pendência, nunca sucesso.
+Resume de intent não autoriza repetir role. Sem CLI/coordenador nativo autorizado.

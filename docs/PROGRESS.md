@@ -3597,3 +3597,29 @@ Este commit será423º,31desde ea2c61d. 422º0e4a906 sincronizado; CI422º ainda
 andamento, React/source-review SUCCESS na última consulta. Lifecycle/gates com
 cleanup estão em validação no worktree e serão commit separado após a suíte.
 Próximo: concluir essa validação e construir imagem selada sem iniciar o Lab.
+
+## 2026-10-30 — lifecycle identity-only com fences, cleanup e retomada
+
+identity_lifecycle usa gates concretos para create/start/running, registra fence
+antes da RPC e hash físico antes da confirmação final; mantém só servidor/rede
+próprios no sucesso. Falha/interrupção reconcilia/limpa somente runner, inclusive
+após expiração. CONFLICT pré-create não é adotado/apagado. Cleanup incerto retém
+intent/ID e não anuncia sucesso. Gate agora fixa resource_id; driver também recusa
+outros papéis e limita RPC ao menor orçamento UTC/monotônico restante.
+
+**make test-runner-activation:340passed/228,17s +832passed/1skip/86,18s**. Skip opt-in
+de projeção de imagem não criou recursos. Primeira rodada teve337pass/1falha numa
+expectativa do teste: expiração bloqueava antes do erro de replay; expectativa
+corrigida e repetição passou. Caso novo de resume realmente fecha/reabre o lock,
+recarrega cadeia durável e demonstra ausência de replay sem mudar bytes/mtime.
+
+**18 testes do driver passaram/11,72s** após o refinamento do timeout, que ocorreu
+depois da coleta da suíte ampla; a rodada se sobrepõe à anterior, não é adicional.
+Ruff/check,248arquivos formatados/mypy4passaram. Só PKI/planos temporários e daemon
+simulado; build selado é fixture na composição e tem testes reais de arquivo
+separados. Não houve startup nativo, acesso ao diário, PKI ativa/binding ou marcador.
+
+423ºe2d361a sincronizado; este será424º,32desde ea2c61d, main privada/push direto.
+CI422º foi supersedida pelo push seguinte; não contada como sucesso. Próximo:
+exportar fonte limpa, wheels e build offline conferido do runner de identidade;
+depois cliente isolado/gates/recibo/coordenador e procedimento nativo específico.

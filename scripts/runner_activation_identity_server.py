@@ -1,12 +1,13 @@
 """Closed internal identity-server driver; no CLI, coordinator or native authorization."""
 
 import subprocess
+import time
 
 import runner_activation as plan
 import runner_activation_identity_runtime as runtime
 from aegis.domain.validation import digest
 from runner_activation_confirmation import ConfirmedPlan
-from runner_activation_metadata import ActivationError, _execute
+from runner_activation_metadata import TIMEOUT, ActivationError, _execute
 from runner_activation_ownership import identifier
 
 
@@ -16,6 +17,11 @@ def command(kind, confirmation, known_id=None):
         raise ActivationError("identity_server_confirmed_plan_required")
     c = confirmation
     original = c._guard()
+    if any(
+        role not in {"runner", "network-isolated"} and item["state"] != "ABSENT"
+        for role, item in original["resources"].items()
+    ):
+        raise ActivationError("identity_server_incompatible_resource")
     if plan.tool_state() != c.artifact["tool_commit"]:
         raise ActivationError("identity_server_executor_drift")
     spec = runtime.recipe(c.store, c.path, c.plan_sha256)
@@ -45,19 +51,27 @@ class IdentityServerDocker:
 
     def create(self, confirmation):
         args = command("create", confirmation)
-        confirmation._guard()
+        remaining = _budget(confirmation)
         try:
-            raw = _execute(args)
+            raw = _execute(args, timeout=remaining)
             return identifier(raw.decode("ascii").removesuffix("\n"))
         except (OSError, ValueError, UnicodeError, subprocess.SubprocessError):
             raise ActivationError("identity_server_create_outcome_unconfirmed") from None
 
     def start(self, confirmation, known_id):
         args = command("start", confirmation, known_id)
-        confirmation._guard()
+        remaining = _budget(confirmation)
         try:
-            raw = _execute(args)
+            raw = _execute(args, timeout=remaining)
             if identifier(raw.decode("ascii").removesuffix("\n")) != known_id:
                 raise ActivationError("identity_server_start_outcome_unconfirmed")
         except (OSError, ValueError, UnicodeError, subprocess.SubprocessError):
             raise ActivationError("identity_server_start_outcome_unconfirmed") from None
+
+
+def _budget(c):
+    c._guard()
+    remaining = min(c.deadline - time.monotonic(), (c.expires - plan.pki.clock()).total_seconds())
+    if remaining <= 0:
+        raise ActivationError("identity_server_rpc_budget_exhausted")
+    return min(TIMEOUT, remaining)
