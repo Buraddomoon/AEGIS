@@ -3437,3 +3437,24 @@ foram testados, execução real da workflow nova ainda deve ser acompanhada.
 Este commit será415º,23desde ea2c61d; main privada/push direto. Commit414º873faf2
 sincronizado. Próximo: confirmar CI dos dois shards/React e continuar a composição
 dos gates identity-only. Nenhum novo startup Linux/PKI/binding foi autorizado ou feito.
+
+## 2026-10-30 — confirmação não renova a janela original da operação
+
+Revisão do próximo gate encontrou que calcular300s por construção permitiria
+estender orçamento ao reconstruir objetos. Extraído ConfirmedPlan, utilizado pelo
+NetworkGates: beginSHA/ID originais fixados e expiração <=beginUTC+300s. Janela15min
+do plano não renova operação vencida; clock anterior ao último evento durável
+também bloqueia, além do limite monotônico já existente. Sem efeito externo,
+assinatura humana ou mudança no diagnóstico histórico. Cleanup continua independente.
+
+**49 testes confirmação/gates/lifecycle passaram/32,12s**, incluindo4regressões:
+reconstrução com prazo estendido, restante da janela, operação vencida/plano ainda
+válido e clock rollback após evento. Ruff/check,236arquivos formatados e mypy4passaram.
+Execução local da partição0 do415º: **1272passed/1skip/1217deselected/303,98s**;
+partição1 em andamento com os novos4casos, não declarar suíte completa ainda.
+CI415º41056361290: React SUCCESS, dois Python em andamento na última consulta.
+
+Este commit será416º,24desde ea2c61d; main privada/push direto. Commit415º9421095
+sincronizado e repositório novamente confirmado PRIVATE. Próximo: finalizar
+validação completa/CI e compor gate de identidade com fonte e inspeções físicas.
+Nenhuma renovação PKI, startup Linux ou binding foi feito/implicitamente autorizado.

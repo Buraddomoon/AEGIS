@@ -19,6 +19,7 @@ from test_runner_activation_subnet_review import Routes
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import runner_activation_network_gates as gates  # noqa: E402
+from runner_activation_confirmation import ConfirmedPlan  # noqa: E402
 from runner_activation_intents import ActivationIntents  # noqa: E402
 
 
@@ -63,6 +64,51 @@ def test_gate_composes_actual_pki_plan_ownership_and_two_fresh_subnet_snapshots(
     assert world.store.review()["resources"][gates.network.ROLE]["state"] == "REQUESTED"
     assert value.artifact["activation_performed"] is False
     assert value.artifact["profile"]["executor_implemented"] is False
+
+
+def reconstruct(value, expires):
+    return ConfirmedPlan(
+        value.path, value.plan_sha256, value.store, value.scope, expires.isoformat()
+    )
+
+
+def test_reconstructing_gate_cannot_extend_original_operation_budget(context, monkeypatch):
+    value, world = context
+    later = value.confirmed_at + timedelta(seconds=20)
+    monkeypatch.setattr(gates.plan.pki, "clock", lambda: later)
+    with pytest.raises(gates.ActivationError, match="confirmation_interval_invalid"):
+        reconstruct(value, later + timedelta(seconds=290))
+    assert value.docker.calls == [] and world.effects == []
+
+
+def test_another_gate_can_only_use_the_remaining_original_window(context, monkeypatch):
+    value, world = context
+    later = value.confirmed_at + timedelta(seconds=20)
+    monkeypatch.setattr(gates.plan.pki, "clock", lambda: later)
+    shared = reconstruct(value, value.expires)
+    assert shared.expires == value.expires and shared.begin_sha256 == value.begin_sha256
+    assert shared.started_at == value.started_at and shared.operation == value.operation
+    assert shared.expires <= shared.started_at + timedelta(seconds=300)
+    assert value.docker.calls == [] and world.effects == []
+
+
+def test_expired_original_operation_is_not_renewed_while_plan_is_still_valid(context, monkeypatch):
+    value, world = context
+    later = value.started_at + timedelta(seconds=301)
+    monkeypatch.setattr(gates.plan.pki, "clock", lambda: later)
+    with pytest.raises(gates.ActivationError, match="confirmation_interval_invalid"):
+        reconstruct(value, later + timedelta(seconds=1))
+    assert value.docker.calls == [] and world.effects == []
+
+
+def test_clock_rollback_before_latest_durable_action_refuses_further_effects(context, monkeypatch):
+    value, world = context
+    monkeypatch.setattr(gates.plan.pki, "clock", lambda: value.confirmed_at + timedelta(seconds=30))
+    world.store.request(gates.network.ROLE)
+    monkeypatch.setattr(gates.plan.pki, "clock", lambda: value.confirmed_at + timedelta(seconds=1))
+    with pytest.raises(gates.ActivationError, match="scope_or_budget_unconfirmed"):
+        value._guard()
+    assert value.docker.calls == [] and world.effects == []
 
 
 def test_computed_gate_is_consumed_by_single_create_fixture_and_never_replays(context):

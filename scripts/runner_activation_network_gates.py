@@ -9,10 +9,11 @@ import runner_activation_isolated_network as network
 import runner_activation_network_lifecycle as lifecycle
 import runner_activation_subnet_review as subnet
 from aegis.domain.validation import digest
+from runner_activation_confirmation import ConfirmedPlan
 from runner_activation_metadata import ActivationError
 
 
-class NetworkGates:
+class NetworkGates(ConfirmedPlan):
     """Compute facts under an explicit local operator confirmation, never saved gate JSON.
 
     The future coordinator must obtain specific authorization before instantiation
@@ -33,42 +34,12 @@ class NetworkGates:
         subnet_docker=None,
         routes=None,
     ):
-        plan.sha256(authorized_scope_sha256)
-        self.path, self.plan_sha256, self.store = path, plan_sha256, store
-        self.artifact = plan.load_plan(path, plan_sha256)
-        self.scope = authorized_scope_sha256
-        self.confirmed_at = plan.pki.clock()
-        self.expires = datetime.fromisoformat(authorization_expires_at)
-        if self.expires.utcoffset() != timedelta(0) or not timedelta(
-            0
-        ) < self.expires - self.confirmed_at <= timedelta(seconds=300):
-            raise ActivationError("network_authorization_interval_invalid")
-        self.deadline = time.monotonic() + (self.expires - self.confirmed_at).total_seconds()
-        self.operation = store.summary()["id"]
+        super().__init__(
+            path, plan_sha256, store, authorized_scope_sha256, authorization_expires_at
+        )
         self.docker, self.ownership_docker = docker, ownership_docker
         self.subnet_docker, self.routes = subnet_docker, routes
         self.evidence = []
-        self._guard()
-
-    def _guard(self):
-        state = self.store.review()
-        now = plan.pki.clock()
-        if (
-            self.scope != self.artifact["scope_sha256"]
-            or state["closed"]
-            or state["header"]
-            != {
-                "plan_id": self.artifact["id"],
-                "plan_sha256": self.plan_sha256,
-                "scope_sha256": self.scope,
-            }
-            or self.store.summary()["id"] != self.operation
-            or not self.confirmed_at <= now < self.expires
-            or time.monotonic() >= self.deadline
-            or plan.load_plan(self.path, self.plan_sha256) != self.artifact
-        ):
-            raise ActivationError("network_scope_or_budget_unconfirmed")
-        return state
 
     def _facts(self):
         self._guard()

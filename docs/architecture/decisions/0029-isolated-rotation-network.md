@@ -151,3 +151,18 @@ Sem CLI, chamada nativa de create, PKI nova ou binding alterado nesta unidade.
 Testes usam PKI/Git temporários e daemon fixtures, incluindo consumo pelo lifecycle
 de criação única, colisão após review antigo, fonte/intent/metadata alterados durante
 IO, budget/clock e bloqueio de worker/consumidor inesperados. Não provam rede real.
+
+## Orçamento vinculado à origem durável
+
+ConfirmedPlan centraliza a confirmação de escopo/plano/operador antes dos gates.
+Além do limite de300s desde a confirmação, a expiração não pode ultrapassar300s
+desde o evento begin original. ID e hash do begin são fixados após conferir o
+hashchain. Construir outro objeto de gate mais tarde não concede nova janela;
+um plano de15min ainda válido não renova uma operação já vencida.
+
+Relógio anterior à confirmação ou ao último evento durável bloqueia novos efeitos;
+orçamento monotônico também é conferido no mesmo processo. Não é atestado de
+relógio externo ou assinatura humana. Futuro coordenador deve manter resume
+restrito a reconciliação/cleanup, sem usar reconstrução de gates como renovação.
+Cleanup existente não depende dessa lease. Diagnóstico histórico não é alterado
+nem recebe nova autorização por esse componente. Testes só arquivos temporários.

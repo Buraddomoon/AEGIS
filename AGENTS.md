@@ -534,3 +534,10 @@ Localmente rodar shards em sequência por PG/Redis15. Teste test_ci_partitions c
 união/recusas/workflow. Limite18min mantido em cada shard; timeout anterior não é
 evidência de testes aprovados. IDs parametrizados precisam ser estáveis para comparar
 coletas entre processos. Ver docs/development/testing.md.
+
+ConfirmedPlan fixa operação/beginSHA e expiração <=beginUTC+300s, além de <=300s
+desde confirmação. Reconstruir gate não renova orçamento, mesmo com plano15min
+válido. Recusar clock anterior à confirmação/último evento e prazo monotônico;
+não inferir assinatura/atestado de relógio. NetworkGates usa esse componente,
+diagnóstico histórico não muda. Cleanup independente de lease expirada; futuro
+resume somente reconciliação/cleanup, sem renovar gate para novos efeitos.
