@@ -115,7 +115,7 @@ lab-down:
 	$(LAB) down
 .PHONY: test-runner
 test-runner:
-	$(VENV)/pytest tests/test_runner_protocol.py tests/test_runner_engine.py tests/test_runner_transport.py tests/test_runner_parent_death.py tests/test_runner_isolation.py -q
+	$(VENV)/pytest tests/test_runner_protocol.py tests/test_runner_engine.py tests/test_runner_transport.py tests/test_runner_identity_server.py tests/test_runner_identity_probe.py tests/test_runner_parent_death.py tests/test_runner_isolation.py -q
 
 # Separate database/API on 18785; never modifies the default Demo stack.
 LINUX_PLATFORM = docker compose --env-file .env --env-file .local/linux-lab/ids.env -p aegis-linux-lab -f docker-compose.yml -f labs/linux/compose.yml -f labs/linux/platform.yml

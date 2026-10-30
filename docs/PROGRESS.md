@@ -3451,10 +3451,41 @@ assinatura humana ou mudança no diagnóstico histórico. Cleanup continua indep
 reconstrução com prazo estendido, restante da janela, operação vencida/plano ainda
 válido e clock rollback após evento. Ruff/check,236arquivos formatados e mypy4passaram.
 Execução local da partição0 do415º: **1272passed/1skip/1217deselected/303,98s**;
-partição1 em andamento com os novos4casos, não declarar suíte completa ainda.
+partição1 em andamento; contagem final deve ser apurada no resultado do comando.
 CI415º41056361290: React SUCCESS, dois Python em andamento na última consulta.
 
 Este commit será416º,24desde ea2c61d; main privada/push direto. Commit415º9421095
 sincronizado e repositório novamente confirmado PRIVATE. Próximo: finalizar
 validação completa/CI e compor gate de identidade com fonte e inspeções físicas.
 Nenhuma renovação PKI, startup Linux ou binding foi feito/implicitamente autorizado.
+
+## 2026-10-30 — CI completa aprovada e probe TLS com incerteza explícita
+
+**CI416º/run41057596645 SUCCESS**: Python0 **1270passed/3skip/355,20s**, Python1
+**1216passed/5skip/399,11s**, React SUCCESS e checks configurados concluídos. O
+particionamento resolveu o limite18min sem excluir testes; diferenças de skips
+nativos opcionais são de ambiente. Log privado preservado em .local/ci-validation.
+Execução local iniciada no415º terminou **1272+1217passed/1skip**, em303,98s+372,84s.
+Ela coletou2490casos, sem os quatro casos de confirmação adicionados depois;
+corrigida a expectativa provisória do checkpoint anterior, sem somar rodadas.
+
+Novo identity_probe /1 só GET fixo emTLS1.3, contexto/hash/identidade/CA/folha
+conferidos,12s integral/caps HTTP, sem redirect/compressão/URL livre/volumes/jobs.
+Guard PID1/UID10001/container/pipe, sem overrides TLS/keylog, certificados públicos
+regulares/nonblocking/nofollow. Chave antiga não é lida. Saída factual não concede
+operação nem transforma controles TLS em detecção ATT&CK.
+
+Teste real revelou que omissão de cliente termina em reset sem alerta TLS explícito,
+tantoTLS1.3 como no experimentoTLS1.2. Esse reset não foi aceito como prova: mantido
+TLS1.3, identidade/CA antiga registradas e requisito cliente INCONCLUSIVE. Servidor
+que aceita identidade sem cliente é recusado. Expiração10/falha de rede não podem
+virar rejeição de issuer; códigos19/20/21 são conferidos. Exit0 pode ser revisão
+inconclusiva, host futuro deve validar status/flags. Autenticação do cliente ainda
+precisa evidência do transporte servidor. Nenhum ensaio nativo novo foi executado.
+
+**60 testes probe/servidor/transporte passaram/6,78s**, incluindo TLS loopback real,
+ASGI inseguro controlado para recusa, controles sintéticos explícitos, I/O/HTTP
+adversarial, keylog/overrides, FIFO/symlink/size e erros sem segredos. Ruff/check,
+238arquivos formatados e mypy4passaram. Imagens anteriores não incluem o novo módulo.
+Este commit será417º,25desde ea2c61d; main privada/push direto. Próximo: evidência TLS
+do peer no servidor, antes de gate/lifecycle/coordenador e autorização de ensaio.

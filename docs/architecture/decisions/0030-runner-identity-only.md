@@ -154,6 +154,42 @@ context_verified não comprova implementação do modo, mounts físicos ou tráf
 gates futuros devem combiná-lo com identity_inspection e identity_network. Sem
 CLI/start ou nova autorização real neste incremento.
 
+## Probe de identidade e controles TLS, com conclusão proporcional
+
+`aegis.lab_runner.identity_probe` oferece entrypoint fixo PID1/UID10001/container,
+stdin privado<=16KiB/contextSHA independente, sem URL/path/comando livre. Destino
+único172.30.88.2:8443 e somente GET /v1/identity. TLS1.3 exige CA/hostname válidos e
+pin DER da folha; identidade completa/allowlist vazia/header de modo precisam casar
+o contexto. Certificados públicos montados são conferidos por hash, chave cliente
+só pelo loader TLS. Não lê chave antiga, CA privada, diário ou PostgreSQL.
+
+Prazo async integral12s/handshake2s, header8KiB/body32KiB, Content-Length explícito,
+sem redirect/compressão/transfer encoding ou campos JSON duplicados. Arquivo público
+é regular e<=64KiB; open nonblocking/nofollow rejeita FIFO/symlink. Overrides
+SSLKEYLOGFILE/SSL_CERT_FILE/SSL_CERT_DIR são recusados antes de criar contexto.
+Erros só em códigos estáticos, sem mensagens/bytes de resposta ou segredos.
+
+Confere identidade com material candidato antes/depois dos controles e comprova
+rejeição da CA anterior apenas por código TLS de issuer não confiável19/20/21.
+Expiração10, timeout ou falha genérica de rede não contam como essa prova. Se a
+tentativa sem cliente recebe alerta certificate_required explícito, há evidência
+do requisito; reset/EOF sem razão TLS ficam **INCONCLUSIVE**, sem atribuir causa.
+Se a mesma identidade puder ser obtida sem certificado, o probe recusa sucesso.
+
+Uvicorn/asyncio reais no loopback retornaram reset, inclusive no experimentoTLS1.2.
+Mantido TLS1.3 e registrada a incerteza, sem converter reset em autenticação
+confirmada. A saída distingue identidade com material carregado de certificado
+cliente autenticado: não afirma que o cliente foi apresentado/verificado sem
+evidência do transporte do servidor. Próximo passo é instrumentar essa evidência.
+Exit0 significa revisão concluída e pode conter status inconclusive; futuro
+coordenador precisa validar status/flags, nunca autorizar por exitcode sozinho.
+Flags de ativação, volumes, marcador e rejeição de credencial cliente antiga são
+sempre falsas. Probe não é telemetria defensiva ou resultado ATT&CK DETECTED.
+
+Testes usam TLS real somente loopback e diretórios privados temporários; nenhum
+container/PKI/binding original é iniciado/modificado. Nova imagem/coordenador e
+autorização específica continuam necessários antes de invocar o probe no lab.
+
 ## Fonte da imagem fixada ao código atual
 
 runner_activation_identity_image usa o ID de imagem e commit fixados pelo plano.

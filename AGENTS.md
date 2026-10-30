@@ -541,3 +541,13 @@ válido. Recusar clock anterior à confirmação/último evento e prazo monotôn
 não inferir assinatura/atestado de relógio. NetworkGates usa esse componente,
 diagnóstico histórico não muda. Cleanup independente de lease expirada; futuro
 resume somente reconciliação/cleanup, sem renovar gate para novos efeitos.
+
+identity_probe /1 é GET-only/TLS1.3 em172.30.88.2:8443, PID1/UID10001/stdin privado,
+contexto fechado/hash/identidade/folha DER/CAs fixadas. Sem URL/comando livre,
+redirect/compressão/chave antiga/volumes;12s total, caps de input/header/body/certs,
+leitura nonblocking/nofollow e sem SSLKEYLOGFILE/overrides. Reset/EOF na omissão de
+cliente é INCONCLUSIVE; só alerta TLS explícito comprova requisito. Expiração ou
+falha de rede não são rejeição da CA por issuer. Exit0 pode ser revisão inconclusiva,
+nunca permissão operacional. Não afirmar cliente autenticado sem transporte do
+servidor; identidade com material não o comprova. Normal/activation/marker/volumes/
+old-client-rejection flags falsos. Testes loopback não autorizam invocação nativa.
