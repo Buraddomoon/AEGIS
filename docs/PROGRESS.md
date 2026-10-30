@@ -3584,3 +3584,16 @@ manifesto/receita alterados, exec/attach/restart/run, prazo expirado e saída in
 sem copiar segredo. Ruff/check passou. Make target inclui o arquivo. 421ºdfbbf78
 sincronizado; este será422º,30desde ea2c61d. CI421º em andamento/source-review SUCCESS
 na consulta. Próximo: lifecycle único com gates concretos e reconciliação de falhas.
+
+## 2026-10-30 — build verifica entrypoints e compatibilidade do TLS
+
+runner_image_assert inclui imports de identity_probe/server e guard exato do
+transporte TLS. Sem Runner/settings, rede, chaves ou diretórios de laboratório.
+**make test-runner-image-build:136passed/3,79s**, incluindo imports reais em processo
+isolado com audit hook e rejeição estática de versão incompatível sem imprimir
+exceção. Nenhum build nativo novo executado até este checkpoint.
+
+Este commit será423º,31desde ea2c61d. 422º0e4a906 sincronizado; CI422º ainda em
+andamento, React/source-review SUCCESS na última consulta. Lifecycle/gates com
+cleanup estão em validação no worktree e serão commit separado após a suíte.
+Próximo: concluir essa validação e construir imagem selada sem iniciar o Lab.

@@ -41,3 +41,14 @@ Testes criam repositórios Git descartáveis somente em main, sem remoto. Cobrem
 contexto determinístico, ignorados intactos, dirty/staged/untracked/detached,
 links/executáveis/paths/limites, mudança de HEAD, tar especial, permissões/fsync,
 SHA independente e CLI. Nenhum build ou laboratório real decorre dessa preparação.
+
+## Conferência de imports no build de identidade
+
+O checker instalado agora importa identity_probe/server além dos probes de SQL/
+diário e exige require_compatibility do transporte TLS. Não instancia Runner nem
+settings, não abre chaves/volumes e não escuta em portas. Módulos aegis.config/
+models carregados por efeito colateral bloqueiam o build. Guard de versão é o
+mesmo do boot, não uma exceção para empacotamento. Teste em processo separado
+confere imports reais com audit hook que recusa rede, processos, mkdir e secrets.
+Erro de compatibilidade produz diagnóstico estático sem texto da exceção.
+Recibos antigos não são reescritos; fonte nova ainda exige novo build selado.

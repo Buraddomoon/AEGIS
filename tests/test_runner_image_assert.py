@@ -193,3 +193,60 @@ assert 'aegis' not in sys.modules
         timeout=5,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_actual_identity_entrypoint_imports_and_tls_version_guard_have_no_lab_side_effects(
+    tmp_path,
+):
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            "-c",
+            """
+import sys
+sys.path.insert(0, sys.argv[1])
+def guard(event, args):
+    if event in {'socket.connect', 'socket.bind', 'subprocess.Popen', 'os.system', 'os.mkdir'}:
+        raise AssertionError('No lab effects allowed')
+    if event == 'open' and isinstance(args[0], str):
+        if args[0].endswith(('.key', '.env', '.sqlite')) or args[0].startswith(('/state/', '/work/')):
+            raise AssertionError('No private state allowed')
+sys.addaudithook(guard)
+import runner_image_assert
+runner_image_assert.probe_imports()
+assert 'aegis.config' not in sys.modules
+assert 'aegis.models' not in sys.modules
+assert 'aegis.lab_runner.identity_probe' in sys.modules
+assert 'aegis.lab_runner.server' in sys.modules
+assert 'aegis.lab_runner.tls_peer' in sys.modules
+""",
+            str(root / "scripts"),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 0, result.stderr
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_unsupported_identity_transport_fails_build_check_without_printing_exception(
+    monkeypatch, tmp_path, capsys
+):
+    monkeypatch.setattr(image.os, "getuid", lambda: 10001)
+    monkeypatch.setattr(image.os, "getgid", lambda: 10001)
+    monkeypatch.setattr(image, "_read", lambda *a: b"{}")
+    monkeypatch.setattr(image, "check", lambda *a: {"probe_imports_verified": False})
+
+    class Transport:
+        def require_compatibility(self):
+            raise RuntimeError("private-sensitive-sentinel")
+
+    monkeypatch.setattr(image.importlib, "import_module", lambda *a: Transport())
+    assert image.main() == 1
+    result = capsys.readouterr().out
+    assert json.loads(result) == {"status": "rejected", "code": "runner_image_build_check_rejected"}
+    assert "private-sensitive-sentinel" not in result

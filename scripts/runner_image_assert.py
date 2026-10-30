@@ -139,6 +139,22 @@ def _read(path, maximum):
         return content
 
 
+def probe_imports():
+    """Import fixed entrypoints only; compatibility is checked before any lab startup."""
+    for module in (
+        "sqlalchemy",
+        "psycopg",
+        "aegis.lab_runner.journal_probe",
+        "aegis.lab_runner.persisted_probe",
+        "aegis.lab_runner.identity_probe",
+        "aegis.lab_runner.server",
+    ):
+        importlib.import_module(module)
+    importlib.import_module("aegis.lab_runner.tls_peer").require_compatibility()
+    if "aegis.config" in sys.modules or "aegis.models" in sys.modules:
+        raise ImageCheckError("image_probe_import_side_effect")
+
+
 def main():
     try:
         if sys.version_info[:2] != (3, 13) or os.getuid() != 10001 or os.getgid() != 10001:
@@ -146,15 +162,7 @@ def main():
         expected = json.loads(_read(SOURCE, 256 * 1024))
         root = Path(sysconfig.get_path("purelib")) / "aegis"
         result = check(expected, root, _read(RUNTIME_LOCK, 65536), _read(BUILD_LOCK, 65536))
-        for module in (
-            "sqlalchemy",
-            "psycopg",
-            "aegis.lab_runner.journal_probe",
-            "aegis.lab_runner.persisted_probe",
-        ):
-            importlib.import_module(module)
-        if "aegis.config" in sys.modules or "aegis.models" in sys.modules:
-            raise ImageCheckError("image_probe_import_side_effect")
+        probe_imports()
         result["probe_imports_verified"] = True
         print(json.dumps(result, sort_keys=True))
         return 0
