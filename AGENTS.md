@@ -568,3 +568,10 @@ timeout min(12s, restante); histórico pode ser decodificado expirado sem rede.
 decode_result fecha schema/hash/tipos/classificação até4KiB, sem provar origem;
 coordenador deve assegurar runtime/imagem próprios. /1 não é convertido por rehash.
 Flags de ativação/volumes/marker/old-client-rejection permanecem falsas.
+
+identity_request prepara /2 somente de ConfirmedPlan vivo/main limpa e inventários
+públicos fixados, conferidos duas vezes. Não ler .key/ids.env/.env nesse builder;
+expiração vem da confirmação original, nunca renova orçamento. Sem Docker/PKI
+write. Teste host→probe→decoder usa exclusivamente loopback com SNI/SAN/DER de
+candidato temporário preservados, não altera HOST/PORT produtivos ou permite alvo
+livre. Não confundir prova pública com keypair/runtime/gate completo.

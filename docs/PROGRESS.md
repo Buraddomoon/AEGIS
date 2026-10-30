@@ -3530,3 +3530,23 @@ controles. Ruff/check,240arquivos formatados/mypy4passaram. Sem ensaio Docker re
 CI418º1e06044/run41062809372 SUCCESS nos três jobs. Este commit será419º,27desde
 ea2c61d; main privada/push direto. Próximo: preparação do request no host e gates/
 lifecycle fechados; imagem atualizada e autorização própria ainda serão necessárias.
+
+## 2026-10-30 — pedido do host validado com mTLS real em loopback
+
+identity_request deriva request /2 de ConfirmedPlan/operação e material público
+fixado ao plano. Confere manifesto/descritores/IDs/URL e fonte limpa antes/depois;
+não lê chaves privadas/ids.env/.env nem escreve PKI. Janela expira com a confirmação
+original. Nenhum Docker/SQL/diário/volume original foi aberto. Gate completo de
+pares de chaves/imagem/runtime permanece separado e ainda precisa ser integrado.
+
+**11 testes novos passaram/17,33s**: preservação bytes/mtime, leitura pública apenas,
+JSON sem confirmação, expiração antes/durante IO, commit/material alterado e fluxo
+host→probe→decoder com TLS real em loopback. Nome TLS/SAN/DER do candidato mantidos,
+somente TCP roteado no teste. **make test-runner127passed/10,67s**; Ruff/check,242
+arquivos formatados e mypy4passaram. Warning conhecido de Starlette/httpx registrado
+na saída; sem falhas. Reset sem alerta continua INCONCLUSIVE.
+
+Este commit será420º,28desde ea2c61d, main privada/push direto. CI419º84e5ee3: revisão
+de fonte SUCCESS; React SUCCESS e partições Python em andamento na consulta.
+Próximo: gate concreto que combina inventário ativo, imagem selada e inspeções
+físicas para servidor de identidade, antes de lifecycle/coordenador/ensaio nativo.

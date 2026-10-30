@@ -253,3 +253,18 @@ pacote/dependências diferentes não transforma uma imagem velha em atual. Recon
 commit/recibo após IO. Sem build/pull/start ou leitura de chaves. Essa evidência é
 local sob confiança no host/daemon, sem assinatura de publicador ou execução do
 modo comprovadas. TLS/comportamento efetivo ainda precisam de ensaio próprio.
+
+## Pedido do probe preparado no host
+
+identity_request aceita somente ConfirmedPlan vivo, operação/begin duráveis e
+main limpa fixada. Inventários públicos de origem/candidato, manifesto/descritores,
+IDs e URL precisam corresponder ao plano antes e depois da leitura. Request /2
+fixa hashes PEM/DER, operação/escopo/plano e expiração da confirmação original;
+não lê chaves privadas ou ids.env, não escreve PKI e não chama Docker. Isso não
+substitui o gate completo dos pares de chaves, imagem e runtime.
+
+Teste de integração temporário gera o request pelo host, usa o certificado real
+do candidato em Uvicorn com transporte revisado, executa quatro conexões TLS e
+valida o resultado pelo decoder. Só o destino TCP é roteado para loopback no teste;
+nome TLS172.30.88.2/SAN e hashes DER permanecem os de produção. Esse teste não
+prova rede/container nativos nem autoriza ativação.
