@@ -1,5 +1,33 @@
 # Testes e evidências
 
+## CI particionada — 2026-10-30
+
+O job único atingiu o limite18min após o crescimento da suíte. A CI agora executa
+duas partições Python complementares, cada uma com PostgreSQL/Redis próprios no
+runner GitHub, e um job React sem esses serviços. Runners padrão Ubuntu, caches e
+cancelamento de runs redundantes permanecem; nenhum recurso pago foi habilitado.
+Lint/tipos/advisory Python rodam uma vez, no shard0; checks React continuam completos.
+Falha em um shard não cancela o outro, mas impede aprovação da workflow inteira.
+
+`python scripts/run_ci_tests.py --shard 0` e `--shard 1` coletam a suíte completa e
+selecionam por SHA256 do caminho canônico do arquivo, mantendo todos os seus casos
+no mesmo shard. Não são dois subconjuntos mantidos à mão: cada arquivo pertence
+exatamente a uma partição. Adições/ordenação não movem arquivos existentes. Shard
+inválido/vazio, arquivo fora de tests ou PYTEST_ADDOPTS herdado impedem sucesso.
+CLI não aceita filtros/ignore; `--collect-only` permite conferir a seleção.
+
+Localmente, executar os dois comandos **em sequência**, nunca junto de outra suíte
+PG/Redis15. `make test`/pytest normal continuam completos e sem particionamento.
+Coleta não significa execução aprovada; conferir resultados de ambos os jobs e
+do React. Comparação real de coleta da alteração conferiu2490casos =1273+1217,
+zero omissões/overlap; contagem muda conforme testes novos. IDs de dois casos UUID
+do diário foram fixados por nome para comparação entre processos, sem mudar dados.
+
+Referências: [hook de coleta pytest](https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems)
+e [matriz GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations).
+
+## Execução local
+
 `make infra` é pré-requisito dos testes de integração. `make test-unit` não exige serviços. `make test` roda pytest e Vitest; `make lint` verifica Ruff/format, mypy do domínio e TypeScript/Prettier; `make build` constrói a SPA.
 
 PostgreSQL real é usado com um schema aleatório por sessão. A fixture aplica Alembic e trunca apenas tabelas desse schema entre testes, removendo o schema criado ao finalizar. Redis utiliza DB 15 nos testes de API, com chaves somente do namespace ÆGIS. Não usar Redis DB 14/15 para dados importantes no ambiente de desenvolvimento.

@@ -3416,3 +3416,24 @@ CI do413ºe641e5f/run40940163204 encerrou cancelled: annotation oficial confirmo
 como erro funcional dos testes nem alegar green. Próxima prioridade é particionar
 CI preservando cobertura completa/cancelamento/caches. Este commit será414º,
 22desde ea2c61d, main privada/push direto. Nenhum efeito Linux/PKI/binding novo.
+
+## 2026-10-30 — CI completa em duas partições complementares
+
+Corrigido o gargalo de runtime do job único, confirmado por annotation oficial
+do run40940163204: limite18min excedido. Nova matriz0/1 divide pytest pelo SHA256
+do caminho do arquivo, coletando tudo e selecionando cada caso uma vez. Cada job
+tem PG/Redis próprios; frontend separado sem serviços Python. Lint/tipos/advisory
+Python somente0, caches/cancelamento redundante mantidos e fail-fast=false entre
+shards. Sem alteração de máquina/plano pago, skips novos ou redução de verificações.
+
+**81 testes particionamento/continuidade passaram/0,34s**, incluindo16casos novos.
+Coleta real de pytest completo e ambos os comandos confirmou **2490 =1273+1217**,
+zero overlap/omissões. Primeira comparação encontrou dois nodeIDs UUID aleatórios
+entre processos, não uma omissão do plugin; IDs por nome foram fixados, mesmos
+dados/casos mantidos, coletas repetidas e comparação exata passou. Lint/formatação
+235arquivos/mypy4passaram. actionlint não está disponível; sintaxe YAML/contratos
+foram testados, execução real da workflow nova ainda deve ser acompanhada.
+
+Este commit será415º,23desde ea2c61d; main privada/push direto. Commit414º873faf2
+sincronizado. Próximo: confirmar CI dos dois shards/React e continuar a composição
+dos gates identity-only. Nenhum novo startup Linux/PKI/binding foi autorizado ou feito.

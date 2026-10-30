@@ -204,6 +204,16 @@ def test_job_corruption_and_ambiguity_block_without_repair(journal, problem):
         ("started_at", "2099-01-01T00:00:00Z"),
         ("ended_at", "2099-01-01T00:00:00Z"),
     ],
+    ids=[
+        "job_id",
+        "runner_id",
+        "marker",
+        "scope_hash",
+        "artifact_bytes",
+        "artifact_sha256",
+        "started_at",
+        "ended_at",
+    ],
 )
 def test_receipt_must_match_its_original_job_even_with_rehashed_content(journal, field, value):
     root, identity, _ = journal
