@@ -3623,3 +3623,24 @@ separados. Não houve startup nativo, acesso ao diário, PKI ativa/binding ou ma
 CI422º foi supersedida pelo push seguinte; não contada como sucesso. Próximo:
 exportar fonte limpa, wheels e build offline conferido do runner de identidade;
 depois cliente isolado/gates/recibo/coordenador e procedimento nativo específico.
+
+## 2026-10-30 — imagem de identidade construída e conferida
+
+Fonte limpa424º1c23ee4 exportada:67arquivos/64do pacote. Wheels46/21.223.287bytes
+verificados por hash, sem instalação no host. Build selado5ccbca482dd649b58f90b89d85c4d885
+concluído com cliente exit0, base oficial por digest/rede none no RUN; checker
+UID10001 confirmou64arquivos/43runtime/3build/imports de identidade/compat TLS.
+
+Imagem526267ad8a54df12ffe130724874bb79bcdbb6ecb61345afe3a1ddc1d3085be5; recibo
+SHA dfa0b726b3c21ab35610bbd2af86c15c03ec45426ce81ca0b12e644f550d8e70 (JSON canônico).
+Review real identity_image confirmou fonte atual/recibo e inspection somente leitura
+confirmou perfil sem volumes/ports/labels extras. Metadata posterior:0containers/
+0redes Linux e0consumidores de journal/postgres-data. Sem startup, PKI/binding,
+marcador, descarte de histórico ou candidato novo. Build não comprova TLS nativo.
+
+Evidência curada: [imagem](evidence/identity-image-2026-10-30/README.md). Artefatos
+privados .local/pki-milestone/identity-mode-{source,wheels,build-plan,build-result,
+image-review}.json preservados; sem publicação de logs/contexto. CI424º em andamento,
+source-review SUCCESS na consulta. Este será425º,33desde ea2c61d, main privada/push.
+Próximo: contrato durável dedicado ao cliente de identidade, mantendo diagnóstico
+/3 e superfícies atuais fechados; depois runtime/gates/recibo/coordenador.
