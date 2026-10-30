@@ -322,3 +322,23 @@ runner próprio; rede permanece sob responsabilidade do coordenador. Colisão an
 da nossa tentativa vira CONFLICT, sem adotar/remover o recurso. Cleanup incerto
 mantém intent/ID e não vira sucesso. Volumes, PKI ativa, DB/worker/Wazuh e binding
 não entram nesse fluxo. Não há CLI de execução ou novo ensaio autorizado.
+
+## Papel durável do cliente de identidade
+
+identity-client representa somente o futuro probe de quatro GETs fixos, sem
+reusar api/controller como shell ou executor. Registro exige runner observado
+com fence identity-only/evidência física e rede observada correspondente; outros
+papéis ativos bloqueiam. Novo start fixa hashes de recipe/gate/request e IDs dos
+dois pais, antes da RPC futura. Reply observado guarda hashes de resultado/runtime,
+sem substituir validação de origem, conteúdo ou classificação. Fence não é
+removido após sucesso: repetição e retomada de start continuam proibidas.
+
+Cliente não confirmado retém servidor e rede. Cleanup seleciona primeiro cliente,
+então runner/rede; falha no primeiro impede efeitos nos pais. O perfil API/DB e
+o perfil de identidade não podem coexistir: testes antigos do conjunto original
+continuam completos nesse escopo, e o conjunto cliente/runner/rede recebe testes
+próprios. Nenhum caso é omitido da coleta CI. Limite64eventos não mudou.
+
+Somente catálogo de ownership/fences/cleanup foi ampliado: diagnóstico /3 e
+contextos ativos existentes não admitem o cliente. Não há runtime/gates/coordenador
+ou CLI desse papel ainda, nem nova execução nativa autorizada.

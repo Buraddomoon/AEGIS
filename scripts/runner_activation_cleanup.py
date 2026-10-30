@@ -8,6 +8,7 @@ from runner_activation_metadata import IMAGES, ActivationError, _execute, image_
 from runner_activation_ownership import identifier, observe
 
 ORDER = (
+    "identity-client",
     "api",
     "database-review-after",
     "database-review-before",
@@ -21,6 +22,7 @@ ORDER = (
     "network-isolated",
 )
 IMAGE_ROLE = {
+    "identity-client": "runner",
     "api": "application",
     "runner": "runner",
     "journal-before": "runner",

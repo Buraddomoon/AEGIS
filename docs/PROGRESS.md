@@ -3644,3 +3644,24 @@ image-review}.json preservados; sem publicação de logs/contexto. CI424º em an
 source-review SUCCESS na consulta. Este será425º,33desde ea2c61d, main privada/push.
 Próximo: contrato durável dedicado ao cliente de identidade, mantendo diagnóstico
 /3 e superfícies atuais fechados; depois runtime/gates/recibo/coordenador.
+
+## 2026-10-30 — ownership e fences dedicados ao cliente de identidade
+
+identity-client exige runner identity-only com runtime observado e rede exata;
+start durável fixa contexto/recipe/gates e IDs de pais. Reply só hashes, sem
+classificar TLS por conta própria. Sem replay após reply ou resume. Cleanup novo
+cliente→runner→rede retém pais quando ausência do cliente é incerta. Diagnóstico
+/3 e contextos ativos antigos continuam negando esse papel/presença.
+
+**233passed/2,21s** em intents/ownership/cleanup e **170passed/42,51s** com último
+caso adicional/metadata ativo/diagnóstico; rodadas sobrepostas, não somadas. Cobrem
+close/reopen/resume real sem mudar bytes/mtime, pais/contexto trocados, comando
+extra, estados incertos e cleanup/falhas sem efeitos nos pais. Fixtures do perfil
+API/DB mantêm catálogo original incompatível com cliente; novo perfil tem cobertura
+própria, sem excluir testes da CI. Ruff/check,249arquivos formatados/mypy4passaram.
+
+425º0801947 sincronizado; este será426º,34desde ea2c61d. Build64arquivos permanece
+conferido; somente scripts host mudaram. CI424º em andamento/source-review425º
+SUCCESS na consulta. Próximo: compilador e inspeção física do cliente (IP fixo,
+quatro secrets RO, stdin privado), gates e captura limitada, depois coordenador.
+Sem startup de Lab, PKI ativa, candidato novo, diário ou binding.

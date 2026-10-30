@@ -15,12 +15,14 @@ from runner_activation_metadata import PROJECT, ActivationError, document
 
 FORMAT = "aegis-activation-resource-event/1"
 DATABASE_REVIEW_ROLES = frozenset({"database-review-before", "database-review-after"})
+IDENTITY_CLIENT_ROLE = "identity-client"
 ROLES = frozenset(
     (
         "db",
         "redis",
         "api",
         "runner",
+        IDENTITY_CLIENT_ROLE,
         "journal-before",
         "journal-after",
         *DATABASE_REVIEW_ROLES,
@@ -82,7 +84,29 @@ def _dependents(role, owned):
         return {key for key in owned if not key.startswith("network-")}
     if role == "db":
         return {"api", *DATABASE_REVIEW_ROLES}
-    return {"api"} if role in {"redis", "runner"} else set()
+    if role == "runner":
+        return {"api", IDENTITY_CLIENT_ROLE}
+    return {"api"} if role == "redis" else set()
+
+
+def _identity_parents(owned):
+    runner, network = owned.get("runner", {}), owned.get("network-isolated", {})
+    if (
+        runner.get("state") != "OBSERVED"
+        or runner.get("resource_id") is None
+        or runner.get("start", {}).get("mode") != "identity-only"
+        or "runtime_evidence_sha256" not in runner
+        or network.get("state") != "OBSERVED"
+        or network.get("resource_id") is None
+        or runner["start"].get("network_resource_id") != network["resource_id"]
+        or any(
+            key not in {"runner", "network-isolated", IDENTITY_CLIENT_ROLE}
+            and value["state"] != "ABSENT"
+            for key, value in owned.items()
+        )
+    ):
+        raise ActivationError("intent_observed_identity_server_required")
+    return runner, network
 
 
 def _require_no_dependents(role, owned):
@@ -122,6 +146,9 @@ def _apply(state, event, identifier):
         # New work must not resurrect dependents during/after their dependency's
         # cleanup. Journal probes are network=none in the future fixed profile.
         parents = {"db", "redis", "runner"} if role == "api" else set()
+        if role == IDENTITY_CLIENT_ROLE:
+            _identity_parents(owned)
+            parents |= {"runner", "network-isolated"}
         if role in DATABASE_REVIEW_ROLES:
             database = owned.get("db")
             if (
@@ -237,6 +264,43 @@ def _apply(state, event, identifier):
         _hash(data["runtime_evidence_sha256"])
         item["state"] = "OBSERVED"
         item["runtime_evidence_sha256"] = data["runtime_evidence_sha256"]
+    elif kind == "identity_client_start_requested":
+        runner, network = _identity_parents(owned)
+        if (
+            set(data)
+            != {
+                "role",
+                "recipe_sha256",
+                "gates_sha256",
+                "request_context_sha256",
+                "runner_resource_id",
+                "network_resource_id",
+            }
+            or role != IDENTITY_CLIENT_ROLE
+            or item["state"] != "OBSERVED"
+            or item["resource_id"] is None
+            or "start" in item
+            or data["runner_resource_id"] != runner["resource_id"]
+            or data["network_resource_id"] != network["resource_id"]
+        ):
+            raise ActivationError("intent_identity_client_start_invalid_or_already_requested")
+        for key in set(data) - {"role"}:
+            _hash(data[key])
+        item["state"] = "START_REQUESTED"
+        item["start"] = {key: value for key, value in data.items() if key != "role"}
+    elif kind == "identity_client_reply_observed":
+        if (
+            set(data) != {"role", "result_sha256", "runtime_evidence_sha256"}
+            or role != IDENTITY_CLIENT_ROLE
+            or item["state"] != "START_REQUESTED"
+            or "request_context_sha256" not in item.get("start", {})
+            or item["resource_id"] is None
+        ):
+            raise ActivationError("intent_identity_client_reply_observation_invalid")
+        for key in ("result_sha256", "runtime_evidence_sha256"):
+            _hash(data[key])
+            item[key] = data[key]
+        item["state"] = "OBSERVED"
     elif kind in {"probe_start_requested", "database_review_start_requested"}:
         database_review = kind == "database_review_start_requested"
         context_field = "request_context_sha256" if database_review else "proof_bundle_sha256"

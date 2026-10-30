@@ -602,7 +602,15 @@ Imagem nova identity-only preparada/selada em2026-10-30: build5ccbca482dd649b58f
 image526267ad8a54df12ffe130724874bb79bcdbb6ecb61345afe3a1ddc1d3085be5,
 sourceSHA d7c788d66194c5b6d7d227745e8ca794d1ab7834893fb23550a662c381919c6c,
 receiptSHA dfa0b726b3c21ab35610bbd2af86c15c03ec45426ce81ca0b12e644f550d8e70.
-64arquivos/43runtime/3build/imports/compat guard verificados comoUID10001. Receitos
+64arquivos/43runtime/3build/imports/compat guard verificados comoUID10001. Recibos
 privados identity-mode-*; imagens históricas preservadas. Build não iniciou Lab,
 não renovou candidato nem ativa PKI. Sem CLI/ensaio autorizado; runtime/mTLS nativos
 continuam pendentes. Ver docs/evidence/identity-image-2026-10-30.
+
+Role identity-client é dedicada ao probe GET-only, não API/controller genérico.
+Request exige runner OBSERVED identity-only/runtime hash e rede OBSERVED/ID do
+fence, sem outros papéis ativos. Start fixa request/recipe/gates/IDs de pais;
+reply guarda só hashes e preserva fence. Cleanup cliente→runner→rede; cliente
+incerto retém pais. Max64 eventos e diagnóstico /3 permanecem fechados. Contextos
+ativos antigos continuam recusando cliente presente; runtime/gates próprios ainda
+pendentes. Testes de hashes/intents não comprovam TLS ou origem do resultado.

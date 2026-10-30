@@ -14,6 +14,10 @@ from runner_activation_intents import ActivationIntents  # noqa: E402
 from test_runner_activation_metadata import images  # noqa: E402
 from test_runner_activation_ownership import FakeDocker  # noqa: E402
 
+# The API/DB profile and identity-only client cannot coexist. The latter has
+# dedicated dependency/cleanup tests in test_runner_identity_client_intents.
+ORIGINAL_ORDER = tuple(role for role in cleanup.ORDER if role != "identity-client")
+
 
 class World:
     def __init__(self, store, roles, *, running=False, absent=False):
@@ -71,17 +75,17 @@ def begin(store):
 def test_all_owned_resources_close_in_dependency_order_with_repeated_absence_checks(tmp_path):
     with ActivationIntents(tmp_path / "intents") as store:
         begin(store)
-        world = World(store, cleanup.ORDER, running=True)
+        world = World(store, ORIGINAL_ORDER, running=True)
         result = cleanup.cleanup(store, images(), docker=world, ownership_docker=world)
         assert result["status"] == "owned_resources_absence_verified"
-        assert result["resources_reviewed"] == len(cleanup.ORDER)
+        assert result["resources_reviewed"] == len(ORIGINAL_ORDER)
         assert result["managed_resources_absence_verified"]
         assert store.review()["closed"] and result["volumes_removed"] is False
         assert result["authorization_verified"] is result["normal_operation_permitted"] is False
         removed = [role for role, kind, _ in world.effects if kind == "remove"]
-        assert removed == list(cleanup.ORDER)
+        assert removed == list(ORIGINAL_ORDER)
         assert all(
-            args[-1] == f"{cleanup.ORDER.index(role) + 1:064x}" for role, _, args in world.effects
+            args[-1] == f"{ORIGINAL_ORDER.index(role) + 1:064x}" for role, _, args in world.effects
         )
         assert all(
             flag not in args
@@ -99,7 +103,7 @@ def test_all_owned_resources_close_in_dependency_order_with_repeated_absence_che
 def test_unconfirmed_api_cleanup_retains_database_cache_runner_and_all_networks(tmp_path, failure):
     with ActivationIntents(tmp_path / "intents") as store:
         begin(store)
-        world = World(store, cleanup.ORDER, running=True)
+        world = World(store, ORIGINAL_ORDER, running=True)
         world.fail = ("api", failure)
         result = cleanup.cleanup(store, images(), docker=world, ownership_docker=world)
         assert result["status"] == "cleanup_incomplete" and not store.review()["closed"]
