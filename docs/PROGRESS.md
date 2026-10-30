@@ -3396,3 +3396,23 @@ Este commit será413º,21desde ea2c61d; main privada/push direto. Commit412º3a2
 sincronizado, CI40938992208 em andamento na última consulta. Próximo: compor gate
 identity-only com confirmação exata, fonte/imagem revisadas e inspeções físicas,
 então lifecycle/coordenador; ainda sem CLI/driver de start ou nova autorização.
+
+## 2026-10-30 — fonte da imagem de identidade e retomada da validação
+
+identity_image exige recibo de build selado já existente/hash independente, cliente
+terminado0, imagem/commit fixados e pacote/dependências iguais à main limpa atual.
+Reusa verificadores de inputs do diagnóstico sem chamar seu run/SQL/diário. Não
+adota recibo ausente, imagem diferente, exit boolfalse/inteiro ou fonte desatualizada.
+Confere commit/recibo após IO, sem build/pull/start, chaves ou permissões inferidas.
+
+**12 testes passaram/1,93s** em retomada confirmada, com fixtures de build/imagem/
+Git temporárias e import inerte; Ruff/check e formatação do delta passaram. Processo
+de teste anterior à pausa não estava mais disponível: seu resultado não foi
+presumido, suíte reexecutada. Recibo fixture permanece com bytes/mtime intactos no
+sucesso; teste de remoção atua somente em temporário, nunca em evidência original.
+
+CI do413ºe641e5f/run40940163204 encerrou cancelled: annotation oficial confirmou
+**limite de18min excedido**, sem suíte completa aprovada. Não atribuir a timeout
+como erro funcional dos testes nem alegar green. Próxima prioridade é particionar
+CI preservando cobertura completa/cancelamento/caches. Este commit será414º,
+22desde ea2c61d, main privada/push direto. Nenhum efeito Linux/PKI/binding novo.

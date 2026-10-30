@@ -517,3 +517,10 @@ start identity-only/runtime duráveis. active_plan confere recipe/PKI/rede do fe
 contra plano atual. Não reescrever start incompatível. Diagnóstico /3 ainda recusa
 runner/fases identity antes dos inputs. Fato de ownership não prova modo/mounts/
 tráfego: combinar inspeções físicas e gates antes de efeito. Sem CLI/start reais.
+
+identity_image exige recibo selado existente/hash revisado e build_client_exit_verified
+booltrue antes de reconciliar metadata; não gerar prova ausente. Imagem/commit vêm
+do plano, referências de build são apoio. Fonte de pacote/requirements.lock/pyproject
+precisa igualar main limpa atual; trocar commit não atualiza imagem antiga. Sem
+build/pull/start/SQL/diário. Reusa somente verificadores de inputs do diagnóstico,
+não seu lifecycle/autorização. Flags de assinatura/modo runtime/operação são falsos.

@@ -153,3 +153,18 @@ PKI/Compose/inventário/plan TTL e ownership após IO. Retorno identity_only_own
 context_verified não comprova implementação do modo, mounts físicos ou tráfego:
 gates futuros devem combiná-lo com identity_inspection e identity_network. Sem
 CLI/start ou nova autorização real neste incremento.
+
+## Fonte da imagem fixada ao código atual
+
+runner_activation_identity_image usa o ID de imagem e commit fixados pelo plano.
+Referências de build identificam provas de apoio, não escolhem outro executável.
+Exige recibo de build já existente/íntegro com cliente terminado0; ausência não pode
+ser suprida implicitamente por revisão de uma imagem presente. Reusa verificadores
+de fonte/build do diagnóstico, sem chamar plano/run/SQL/diário desse procedimento.
+
+Confere metadados locais do build/imagem e compara todos os arquivos do pacote,
+requirements.lock e pyproject.toml aos blobs da main limpa atual. Novo commit com
+pacote/dependências diferentes não transforma uma imagem velha em atual. Reconfere
+commit/recibo após IO. Sem build/pull/start ou leitura de chaves. Essa evidência é
+local sob confiança no host/daemon, sem assinatura de publicador ou execução do
+modo comprovadas. TLS/comportamento efetivo ainda precisam de ensaio próprio.
