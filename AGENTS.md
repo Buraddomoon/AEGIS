@@ -614,3 +614,10 @@ reply guarda só hashes e preserva fence. Cleanup cliente→runner→rede; clien
 incerto retém pais. Max64 eventos e diagnóstico /3 permanecem fechados. Contextos
 ativos antigos continuam recusando cliente presente; runtime/gates próprios ainda
 pendentes. Testes de hashes/intents não comprovam TLS ou origem do resultado.
+
+identity_client_runtime só compila role dedicada/servidor identity-only observado,
+recipe/manifesto reais e plano/hash/contexto fixados. IP172.30.88.3, pipe sem TTY,
+quatro mounts RO (CA servidor/cert e key cliente novos + CA servidor antiga pública),
+nenhum volume/key antiga/env livre. _create_arguments compartilhado é privado e
+recebe só receitas internas; server mantém stdin fechado/IP.2. Sem RPC/arquivo de
+payload/leitura de key. Gates/inspeção física/captura ainda pendentes antes de uso.

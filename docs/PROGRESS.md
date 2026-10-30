@@ -3665,3 +3665,21 @@ conferido; somente scripts host mudaram. CI424º em andamento/source-review425º
 SUCCESS na consulta. Próximo: compilador e inspeção física do cliente (IP fixo,
 quatro secrets RO, stdin privado), gates e captura limitada, depois coordenador.
 Sem startup de Lab, PKI ativa, candidato novo, diário ou binding.
+
+## 2026-10-30 — compilador do cliente limitado ao probe de identidade
+
+identity_client_runtime gera somente comando/IP.3/contextSHA/rede próprios, quatro
+secrets RO/pipe privado e limites fixos. Confere plano e fence real de servidor;
+sem volume/key antiga/env livre/RPC/leitura de key. Helper privado de flags comuns
+preserva perfil do servidor (stdin fechado/IP.2), sem criar comando genérico de API.
+
+**101passed/48,66s** cliente/server compilers, inspeção e driver: paths com vírgula/
+newline/NUL, contexto inválido, segredo redirecionado, fence de pais divergente,
+expiração, intent alterado durante compilação e recusa de role observada. Documentação
+oficial Docker create/start consultada para stdin/attach. Nenhum container novo,
+key lida ou payload persistido. Fonte do pacote da imagem64arquivos permanece igual.
+
+426º5cd8648 sincronizado; este será427º,35desde ea2c61d. CI426º em andamento e revisão
+de fonte SUCCESS na consulta. Próximo: inspeção física de created/exited e membership
+exato para o cliente, depois gates/captura/lifecycle/coordenador. Sem ensaio nativo
+ou renovação de candidato PKI.

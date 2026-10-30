@@ -90,6 +90,14 @@ def create_arguments(store, path, plan_sha256):
     spec = recipe(store, path, plan_sha256)
     if state["resources"].get("runner") != {"state": "REQUESTED", "resource_id": None}:
         raise ActivationError("identity_runtime_new_runner_intent_required")
+    args = _create_arguments(spec)
+    if store.review() != state:
+        raise ActivationError("identity_runtime_operation_changed")
+    return args
+
+
+def _create_arguments(spec):
+    """Shared fixed resource flags, called only with internally derived recipes."""
     args = [
         "container",
         "create",
@@ -107,7 +115,7 @@ def create_arguments(store, path, plan_sha256):
         "--network",
         spec["network_resource_id"],
         "--ip",
-        IP,
+        spec["ipv4_address"],
         "--ipc",
         "private",
         "--cgroupns",
@@ -138,6 +146,8 @@ def create_arguments(store, path, plan_sha256):
         "--tmpfs",
         "/tmp:" + TMPFS,
     ]
+    if spec["stdin_open"]:
+        args.append("--interactive")
     for target, source in sorted(spec["mount_sources"].items()):
         args.extend(
             (
@@ -153,6 +163,4 @@ def create_arguments(store, path, plan_sha256):
         args.extend(("--env", key + "=" + value))
     for key, value in sorted(spec["labels"].items()):
         args.extend(("--label", key + "=" + value))
-    if store.review() != state:
-        raise ActivationError("identity_runtime_operation_changed")
     return (*args, spec["image"], *spec["arguments"])

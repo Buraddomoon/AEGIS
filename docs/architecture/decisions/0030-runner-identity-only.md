@@ -342,3 +342,25 @@ próprios. Nenhum caso é omitido da coleta CI. Limite64eventos não mudou.
 Somente catálogo de ownership/fences/cleanup foi ampliado: diagnóstico /3 e
 contextos ativos existentes não admitem o cliente. Não há runtime/gates/coordenador
 ou CLI desse papel ainda, nem nova execução nativa autorizada.
+
+## Compilação do cliente isolado
+
+identity_client_runtime deriva somente o probe fixo de identidade, na mesma imagem
+fixada do runner e rede por ID completo. Exige header/plano e fence do servidor
+comparados à receita e manifesto atuais. Contexto é SHA256, sem URL/path/comando
+livre como argumento. Criação exige intent novo REQUESTED; OBSERVED não é reusado.
+
+IP172.30.88.3 e Python-I/-B/module identity_probe/--context-sha256 fixos, stdin aberto
+para pipe privado sem TTY. UID10001, readonly/caps removidas/no-new-privileges,
+192MiB/0,5CPU/16PIDs/tmpfs16MiB, sem ports/health/restart/logs. Quatro binds RO
+rprivate: CA servidor/certificado e chave cliente do candidato, mais apenas CA
+servidor pública anterior. Sem volumes, chave antiga, chave servidor ou CA privada.
+Env tem só valores de runtime revisados; IDs/conteúdo chegam no request fechado.
+
+Opções de recurso são compiladas por helper privado comum ao servidor, recebendo
+apenas receitas derivadas internamente. Servidor conserva stdin fechado/IP.2 e
+seu perfil. Compilação não lê chaves nem faz RPC; inspeção/captura/gates continuam
+necessários. Opções de stdin/attach revistas em
+[create](https://docs.docker.com/reference/cli/docker/container/create/) e
+[start](https://docs.docker.com/reference/cli/docker/container/start/); essa consulta
+não comprova o comportamento nativo futuro do novo cliente.
