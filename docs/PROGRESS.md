@@ -3703,3 +3703,23 @@ antiga/argv/TTY/portas/env IPv6/contexto/prazo. Rodada91anterior se sobrepõe.
 arquivos formatados/mypy4passaram. Este será428º,36desde ea2c61d; main privada/push.
 Próximo: membership exato do cliente na rede, gates/captura/lifecycle/coordenador.
 Sem startup nativo ou renovação de candidato PKI.
+
+## 2026-10-30 — membros exatos da rede do cliente
+
+Review read-only fixa runner running/IP.2 e cliente próprio parado/IP.3 opcional
+segundo fase/alocação; create exige cliente ausente. Confere ownership/imagens/
+bridge/IDs/nomes/prefixos/MAC/EndpointID único, dois snapshots e prazo20s. Request
+e fence de pais vinculados, sem inferir TLS/tráfego/quiescência global. Review
+anterior de runner único permanece fechado à presença do cliente.
+
+**84passed/31,82s** rede cliente/runner/bridge: substituição de membro com mesma
+contagem, runner ausente/parado, terceiro membro, IP/IPv6/nome/driver divergentes,
+EndpointID duplicado, cliente running, drift/intent/contexto/prazo e create/adoption.
+Ruff/check,255arquivos formatados/mypy4passaram. Apenas daemon/PKI/planos temporários,
+sem bridge/container real ou candidato PKI novo.
+
+428º48d58a2 sincronizado; este será429º,37desde ea2c61d, main privada/push. CI427º
+completa2668passed/8skips opcionais +React79passed. 428º ainda em andamento. Tempos
+observados427º:shard0 537,18s e shard1 942,53s; revisar balanceamento com base nos
+durations já disponíveis, mantendo todos os testes/limite18min. Próximo: gates/
+inventário ativo do cliente, captura/lifecycle/coordenador antes de escopo nativo.

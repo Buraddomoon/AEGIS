@@ -21,19 +21,23 @@ def _members(spec, item, runner_id, phase):
     if members:
         if runner_id is None or set(members) != {runner_id}:
             raise ActivationError("identity_network_member_set_mismatch")
-        entry = members[runner_id]
-        if (
-            not isinstance(entry, dict)
-            or set(entry) != {"Name", "EndpointID", "MacAddress", "IPv4Address", "IPv6Address"}
-            or entry["Name"] != spec["name"]
-            or entry["IPv4Address"] != runtime.IP + "/29"
-            or entry["IPv6Address"] != ""
-            or not isinstance(entry["MacAddress"], str)
-            or not re.fullmatch("(?:[0-9a-f]{2}:){5}[0-9a-f]{2}", entry["MacAddress"])
-        ):
-            raise ActivationError("identity_network_endpoint_mismatch")
-        identifier(entry["EndpointID"])
+        _member(members[runner_id], spec["name"], runtime.IP)
     return len(members)
+
+
+def _member(entry, name, ip):
+    """Closed endpoint predicates; callers choose only internally fixed names/addresses."""
+    if (
+        not isinstance(entry, dict)
+        or set(entry) != {"Name", "EndpointID", "MacAddress", "IPv4Address", "IPv6Address"}
+        or entry["Name"] != name
+        or entry["IPv4Address"] != ip + "/29"
+        or entry["IPv6Address"] != ""
+        or not isinstance(entry["MacAddress"], str)
+        or not re.fullmatch("(?:[0-9a-f]{2}:){5}[0-9a-f]{2}", entry["MacAddress"])
+    ):
+        raise ActivationError("identity_network_endpoint_mismatch")
+    identifier(entry["EndpointID"])
 
 
 def review(store, path, plan_sha256, phase, *, docker=None, ownership_docker=None):

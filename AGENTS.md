@@ -629,3 +629,10 @@ predicados, não cria fase operacional nova. Cliente exited pode ter IP operacio
 limpo, conservando IPAM/rede configurados; não inferir ausência/presença de tráfego
 disso. Cada query dentro do restante20s, drift/timeout bloqueiam. Saída hashes/
 predicados apenas; TLS/result/origem exigem prova separada. Sem driver/start CLI.
+
+identity_client_network só create/start/exited: runner próprio running/IP.2 sempre
+presente; cliente próprio parado/IP.3 opcional após create conforme allocation/
+release, nunca membro estranho ou ausência do runner. IDs/nomes/IP/prefixo/MAC/
+EndpointID únicos, ownership/images/count e bridge exatos, dois snapshots/20s.
+Fase exited exige fence/contexto/IDs fixados. Não inferir quiescência global/TLS/
+tráfego dessa projeção. Review antigo de runner único permanece fechado ao cliente.

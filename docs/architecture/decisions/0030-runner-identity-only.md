@@ -386,3 +386,19 @@ tráfego histórico. Runtime nativo ainda precisa de ensaio próprio.
 Teste real do Docker CLI contra daemon Unix falso confere quatro binds e redige
 caminhos; endpoint/provas usam fixtures, sem containers reais. TLS/resultado e
 membership global da rede não são inferidos do perfil físico.
+
+## Membership exato durante o cliente
+
+identity_client_network admite create/start/exited sob os pais fixados pelo
+contexto. Runner deve estar observado/running na imagem fixada e sempre presente
+na rede com nome/IP.2/prefixo29 exatos. Create exige cliente ausente; start/exited
+aceitam somente runner ou runner+cliente próprio parado emIP.3, conforme alocação/
+liberação do endpoint. Contagem nunca substitui IDs, nomes, MAC/EndpointID válidos,
+IPs/prefixos ou ausência de IPv6/campos extras. EndpointID duplicado é recusado.
+
+Confere ownership dos três recursos e count do bridge, dois snapshots completos,
+plano/recipe/intent após IO e prazo integral20s com queries limitadas pelo restante.
+Exited exige fence de start vinculado ao request/IDs dos pais. Helper privado de
+endpoint foi compartilhado; review antigo de runner único segue rejeitando cliente.
+Saída só hashes/counts/IDs próprios, sem tráfego. Quiescência global e mTLS não são
+comprovados aqui; inventário ativo/gates do cliente ainda precisam ser integrados.
