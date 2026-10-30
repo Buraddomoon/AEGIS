@@ -10,6 +10,7 @@ import re
 import ssl
 import stat
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -18,6 +19,9 @@ from aegis.lab_runner.protocol import RunnerIdentity
 
 HOST, PORT = "172.30.88.2", 8443
 MAX_INPUT, MAX_RESPONSE = 16384, 32768
+MAX_OUTPUT = 4096
+REQUEST_FORMAT = "aegis-identity-tls-request/2"
+RESULT_FORMAT = "aegis-identity-tls-probe/2"
 DEADLINE_SECONDS = 12
 FILES = {
     "candidate_server_ca": Path("/run/secrets/controller_server_ca"),
@@ -39,6 +43,7 @@ ERRORS = frozenset(
         "private_pipe_required",
         "ambient_tls_configuration",
         "context_invalid",
+        "reply_invalid",
         "certificate_inputs_unconfirmed",
         "tls13_unavailable",
         "positive_identity_unconfirmed",
@@ -66,7 +71,22 @@ def _sha(value):
     return isinstance(value, str) and re.fullmatch("[a-f0-9]{64}", value) is not None
 
 
-def decode(payload, expected_sha256):
+def _now():
+    return datetime.now(UTC)
+
+
+def _window(value):
+    created, expires = (datetime.fromisoformat(value[key]) for key in ("created_at", "expires_at"))
+    if (
+        created.utcoffset() != timedelta(0)
+        or expires.utcoffset() != timedelta(0)
+        or not timedelta(0) < expires - created <= timedelta(seconds=300)
+    ):
+        raise ProbeError("context_invalid")
+    return created, expires
+
+
+def decode(payload, expected_sha256, *, current=True):
     try:
         if type(payload) is not bytes or len(payload) > MAX_INPUT or not _sha(expected_sha256):
             raise ValueError
@@ -76,19 +96,27 @@ def decode(payload, expected_sha256):
             or set(value)
             != {
                 "format",
+                "created_at",
+                "expires_at",
                 "operation_id",
                 "plan_sha256",
                 "scope_sha256",
                 "identity",
                 "certificate_sha256",
                 "server_leaf_sha256",
+                "client_leaf_sha256",
             }
             or digest(value) != expected_sha256
-            or value["format"] != "aegis-identity-tls-request/1"
+            or value["format"] != REQUEST_FORMAT
             or UUID(hex=value["operation_id"]).hex != value["operation_id"]
             or any(
                 not _sha(value[key])
-                for key in ("plan_sha256", "scope_sha256", "server_leaf_sha256")
+                for key in (
+                    "plan_sha256",
+                    "scope_sha256",
+                    "server_leaf_sha256",
+                    "client_leaf_sha256",
+                )
             )
             or not isinstance(value["certificate_sha256"], dict)
             or set(value["certificate_sha256"]) != set(FILES)
@@ -99,6 +127,9 @@ def decode(payload, expected_sha256):
             raise ValueError
         identity = RunnerIdentity.model_validate(value["identity"])
         if identity.tests or digest(identity.model_dump(mode="json")) != digest(value["identity"]):
+            raise ValueError
+        created, expires = _window(value)
+        if current and not created <= _now() < expires:
             raise ValueError
         return value
     except (ValueError, TypeError, KeyError, AttributeError, RecursionError):
@@ -187,12 +218,19 @@ async def _exchange(context):
             or "content-encoding" in headers
             or headers.get("content-type", "").split(";", 1)[0] != "application/json"
             or headers.get("x-aegis-runner-mode") != "identity-only"
+            or not _sha(headers.get("x-aegis-client-cert-sha256"))
+            or headers.get("x-aegis-client-cert-policy") != "required"
+            or headers.get("x-aegis-tls-version") != "TLSv1.3"
         ):
             raise ProbeError("positive_identity_unconfirmed")
         body = await reader.readexactly(int(length))
         if await reader.read(1):
             raise ProbeError("positive_identity_unconfirmed")
-        return json.loads(body, object_pairs_hook=_unique), peer_sha
+        return (
+            json.loads(body, object_pairs_hook=_unique),
+            peer_sha,
+            headers["x-aegis-client-cert-sha256"],
+        )
     finally:
         writer.close()
         with contextlib.suppress(OSError, ssl.SSLError, TimeoutError):
@@ -202,24 +240,44 @@ async def _exchange(context):
 
 async def check(value):
     """Internal fixed-peer operation; native invocation still requires host authorization."""
+    created, expires = _window(value)
+    if not created <= _now() < expires:
+        raise ProbeError("transport_deadline")
+    public = {}
     for name, path in FILES.items():
-        if hashlib.sha256(_public(path)).hexdigest() != value["certificate_sha256"][name]:
+        public[name] = _public(path)
+        if hashlib.sha256(public[name]).hexdigest() != value["certificate_sha256"][name]:
             raise ProbeError("certificate_inputs_unconfirmed")
+    der = ssl.PEM_cert_to_DER_cert(public["candidate_client_cert"].decode("ascii"))
+    if hashlib.sha256(der).hexdigest() != value["client_leaf_sha256"]:
+        raise ProbeError("certificate_inputs_unconfirmed")
     good = _context(FILES["candidate_server_ca"], authenticated=True)
     missing = _context(FILES["candidate_server_ca"], authenticated=False)
     previous = _context(FILES["previous_server_ca"], authenticated=True)
 
+    async def request(context):
+        if not created <= _now() < expires:
+            raise ProbeError("transport_deadline")
+        return await _exchange(context)
+
     async def positive(context):
-        document, peer_sha = await _exchange(context)
-        if digest(document) != digest(value["identity"]) or peer_sha != value["server_leaf_sha256"]:
+        document, peer_sha, client_sha = await request(context)
+        if (
+            digest(document) != digest(value["identity"])
+            or peer_sha != value["server_leaf_sha256"]
+            or client_sha != value["client_leaf_sha256"]
+        ):
             raise ProbeError("positive_identity_unconfirmed")
 
     try:
-        async with asyncio.timeout(DEADLINE_SECONDS):
+        remaining = (expires - _now()).total_seconds()
+        if remaining <= 0:
+            raise ProbeError("transport_deadline")
+        async with asyncio.timeout(min(DEADLINE_SECONDS, remaining)):
             await positive(good)
             omission = "certificate_required_alert"
             try:
-                await _exchange(missing)
+                await request(missing)
             except ssl.SSLError as error:
                 if error.reason != "TLSV13_ALERT_CERTIFICATE_REQUIRED":
                     raise ProbeError("missing_client_rejection_unconfirmed") from None
@@ -229,7 +287,7 @@ async def check(value):
             else:
                 raise ProbeError("missing_client_rejection_unconfirmed")
             try:
-                await _exchange(previous)
+                await request(previous)
             except ssl.SSLCertVerificationError as error:
                 if error.verify_code not in {19, 20, 21}:
                     raise ProbeError("previous_trust_rejection_unconfirmed") from None
@@ -238,22 +296,50 @@ async def check(value):
             await positive(good)
     except TimeoutError:
         raise ProbeError("transport_deadline") from None
+    return _result(value, omission)
+
+
+def _result(value, omission):
     return {
-        "format": "aegis-identity-tls-probe/1",
+        "format": RESULT_FORMAT,
         "status": "identity_tls_controls_verified"
         if omission == "certificate_required_alert"
         else "identity_tls_controls_inconclusive",
         "context_sha256": digest(value),
         "identity_sha256": digest(value["identity"]),
         "server_leaf_sha256": value["server_leaf_sha256"],
+        "client_leaf_sha256": value["client_leaf_sha256"],
         "tls_version": "TLSv1.3",
         "identity_with_candidate_material_verified": True,
-        "client_certificate_requirement_verified": omission == "certificate_required_alert",
+        "candidate_client_certificate_verified": True,
+        "server_client_certificate_policy_verified": True,
+        "missing_client_rejection_verified": omission == "certificate_required_alert",
         "missing_client_control_outcome": omission,
         "previous_ca_rejected": True,
         "identity_revalidated": True,
         **FLAGS,
     }
+
+
+def decode_result(payload, expected, expected_context_sha256):
+    """Check closed wire integrity/classification only; runtime origin is a separate gate."""
+    try:
+        checked = decode(json.dumps(expected).encode(), expected_context_sha256, current=False)
+        if type(payload) is not bytes or len(payload) > MAX_OUTPUT:
+            raise ValueError
+        value = json.loads(payload, object_pairs_hook=_unique)
+        if not isinstance(value, dict):
+            raise ValueError
+        outcome = value.get("missing_client_control_outcome")
+        if (
+            not isinstance(outcome, str)
+            or outcome not in {"certificate_required_alert", "connection_closed_without_tls_reason"}
+            or digest(value) != digest(_result(checked, outcome))
+        ):
+            raise ValueError
+        return value
+    except (ValueError, TypeError, KeyError, AttributeError, RecursionError):
+        raise ProbeError("reply_invalid") from None
 
 
 def main(argv=None):

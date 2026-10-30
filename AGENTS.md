@@ -560,3 +560,11 @@ ou prova de outra conexão. self.app depende de Uvicorn0.54.0 exato: upgrade blo
 identity startup até revisão/testes, não relaxar guard para obter green. Modo normal
 auto preservado, sem dependências novas. Probe /1 ainda ignora esses headers; não
 afirmar consumo/verificação pelo cliente antes da próxima versão explícita.
+
+Probe TLS /2 agora exige headers do adapter e cliente DER esperado, além de janela
+UTC<=300s. Peer cliente/política são fatos separados da rejeição negativa: reset
+continua inconclusive/negative=false. Janela antes de arquivos/cada conexão e
+timeout min(12s, restante); histórico pode ser decodificado expirado sem rede.
+decode_result fecha schema/hash/tipos/classificação até4KiB, sem provar origem;
+coordenador deve assegurar runtime/imagem próprios. /1 não é convertido por rehash.
+Flags de ativação/volumes/marker/old-client-rejection permanecem falsas.

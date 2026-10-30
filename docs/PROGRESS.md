@@ -3511,3 +3511,22 @@ CI417ºf80b104/run41060922484 SUCCESS nos dois shards Python/React na última co
 Este commit será418º,26desde ea2c61d; main privada/push direto. Próximo: versão de
 request/resultado do probe que confere peer esperado e mantém controle negativo
 inconclusivo quando falta razão TLS; depois gates/lifecycle/coordenador.
+
+## 2026-10-30 — contrato /2 valida o peer cliente e limita sua janela
+
+Probe /2 vincula DER cliente esperado aos headers do transporte revisado, política
+required/TLS1.3 e identidade/folha servidor. Peer/política observados não apagam a
+incerteza independente do controle sem certificado. Reset/EOF continuam inconclusive;
+flags operacionais/volumes/marker/cliente antigo continuam falsas. /1 é recusado,
+sem upgrade automático. Decoder4KiB fecha campos/hash/booleans/classificação e
+preserva leitura histórica após expiração sem permitir novas conexões.
+
+Janela UTC<=300s conferida antes de material/rede e de cada conexão; prazo async
+min(12s, restante). **make test-runner:127passed/11,22s**, reexecutado porque a sessão
+anterior deixou de estar disponível, sem presumir seu resultado. Inclui TLS real,
+headers ausentes/peer errado, wire adulterado/legado/replay e expiração durante
+controles. Ruff/check,240arquivos formatados/mypy4passaram. Sem ensaio Docker real.
+
+CI418º1e06044/run41062809372 SUCCESS nos três jobs. Este commit será419º,27desde
+ea2c61d; main privada/push direto. Próximo: preparação do request no host e gates/
+lifecycle fechados; imagem atualizada e autorização própria ainda serão necessárias.

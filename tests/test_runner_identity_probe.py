@@ -12,6 +12,7 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -19,7 +20,8 @@ import uvicorn
 from aegis.lab_runner import identity_probe as probe
 from aegis.lab_runner.protocol import RunnerIdentity
 from aegis.lab_runner.server import create_identity_app
-from fastapi import FastAPI
+from aegis.lab_runner.tls_peer import EXTENSION, IdentityTLSProtocol
+from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from test_runner_transport import initialize
 from test_runner_transport import pki as pki
@@ -37,13 +39,19 @@ def request_context(pki, tmp_path, monkeypatch):
     monkeypatch.setattr(probe, "CLIENT_KEY", pki / "runner-client.key")
     identity = RunnerIdentity(runner_id=uuid4(), laboratory_id=uuid4(), asset_id=uuid4(), tests=())
     leaf = ssl.PEM_cert_to_DER_cert((pki / "test-server.crt").read_text())
+    now = datetime.now(UTC)
     return {
-        "format": "aegis-identity-tls-request/1",
+        "format": probe.REQUEST_FORMAT,
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(seconds=300)).isoformat(),
         "operation_id": uuid4().hex,
         "plan_sha256": "a" * 64,
         "scope_sha256": "b" * 64,
         "identity": identity.model_dump(mode="json"),
         "server_leaf_sha256": hashlib.sha256(leaf).hexdigest(),
+        "client_leaf_sha256": hashlib.sha256(
+            ssl.PEM_cert_to_DER_cert((pki / "runner-client.crt").read_text())
+        ).hexdigest(),
         "certificate_sha256": {
             key: hashlib.sha256(path.read_bytes()).hexdigest() for key, path in files.items()
         },
@@ -51,7 +59,9 @@ def request_context(pki, tmp_path, monkeypatch):
 
 
 @contextmanager
-def serving(value, pki, monkeypatch, *, require_client=True, application=None, protocol="auto"):
+def serving(
+    value, pki, monkeypatch, *, require_client=True, application=None, protocol=IdentityTLSProtocol
+):
     identity = RunnerIdentity.model_validate(value["identity"])
     listener = socket.socket()
     listener.bind(("127.0.0.1", 0))
@@ -94,7 +104,16 @@ def test_actual_tls_proves_candidate_identity_required_client_and_rejection_of_p
     assert result["status"] == (
         "identity_tls_controls_verified" if conclusive else "identity_tls_controls_inconclusive"
     )
-    assert result["client_certificate_requirement_verified"] is conclusive
+    assert result["server_client_certificate_policy_verified"] is True
+    assert result["candidate_client_certificate_verified"] is True
+    assert result["client_leaf_sha256"] == request_context["client_leaf_sha256"]
+    assert result["missing_client_rejection_verified"] is conclusive
+    assert (
+        probe.decode_result(
+            json.dumps(result).encode(), request_context, probe.digest(request_context)
+        )
+        == result
+    )
     assert result["context_sha256"] == probe.digest(request_context)
     assert result["tls_version"] == "TLSv1.3"
     assert all(
@@ -113,8 +132,160 @@ def test_server_that_does_not_require_client_certificate_cannot_pass_controls(
     request_context, pki, monkeypatch
 ):
     with serving(request_context, pki, monkeypatch, require_client=False):
-        with pytest.raises(probe.ProbeError, match="missing_client_rejection_unconfirmed"):
+        with pytest.raises(probe.ProbeError, match="positive_identity_unconfirmed"):
             asyncio.run(probe.check(request_context))
+
+
+def test_server_without_reviewed_peer_adapter_cannot_confirm_client_authentication(
+    request_context, pki, monkeypatch
+):
+    with serving(request_context, pki, monkeypatch, protocol="auto"):
+        with pytest.raises(probe.ProbeError, match="positive_identity_unconfirmed"):
+            asyncio.run(probe.check(request_context))
+
+
+def test_a_response_to_the_no_certificate_control_is_always_rejected(request_context, monkeypatch):
+    async def exchange(_context):
+        return (
+            request_context["identity"],
+            request_context["server_leaf_sha256"],
+            request_context["client_leaf_sha256"],
+        )
+
+    monkeypatch.setattr(probe, "_exchange", exchange)
+    with pytest.raises(probe.ProbeError, match="missing_client_rejection_unconfirmed"):
+        asyncio.run(probe.check(request_context))
+
+
+@pytest.mark.parametrize(
+    "outcome", ["certificate_required_alert", "connection_closed_without_tls_reason"]
+)
+def test_result_decoder_keeps_client_authentication_separate_from_negative_control_uncertainty(
+    request_context, outcome
+):
+    result = probe._result(request_context, outcome)  # Protocol fixture, not transport evidence.
+    expected = probe.digest(request_context)
+    assert probe.decode_result(json.dumps(result).encode(), request_context, expected) == result
+    assert result["candidate_client_certificate_verified"]
+    assert result["missing_client_rejection_verified"] is (outcome == "certificate_required_alert")
+
+
+@pytest.mark.parametrize(
+    "scene",
+    [
+        "legacy",
+        "integer_bool",
+        "activation",
+        "extra",
+        "context",
+        "client",
+        "status",
+        "negative",
+        "outcome",
+        "duplicate",
+        "oversize",
+    ],
+)
+def test_closed_result_cannot_upgrade_legacy_claim_activation_hide_uncertainty_or_rebind_client(
+    request_context, scene
+):
+    result = probe._result(request_context, "connection_closed_without_tls_reason")
+    if scene == "legacy":
+        result["format"] = "aegis-identity-tls-probe/1"
+    elif scene == "integer_bool":
+        result["candidate_client_certificate_verified"] = 1
+    elif scene == "activation":
+        result["activation_permitted"] = True
+    elif scene == "extra":
+        result["unreviewed"] = True
+    elif scene == "context":
+        result["context_sha256"] = "f" * 64
+    elif scene == "client":
+        result["client_leaf_sha256"] = "f" * 64
+    elif scene == "status":
+        result["status"] = "identity_tls_controls_verified"
+    elif scene == "negative":
+        result["missing_client_rejection_verified"] = True
+    elif scene == "outcome":
+        result["missing_client_control_outcome"] = "anything"
+    payload = json.dumps(result).encode()
+    if scene == "duplicate":
+        payload = payload[:-1] + b',"format":"duplicate"}'
+    elif scene == "oversize":
+        payload += b" " * probe.MAX_OUTPUT
+    with pytest.raises(probe.ProbeError, match="reply_invalid"):
+        probe.decode_result(payload, request_context, probe.digest(request_context))
+
+
+def test_result_from_another_operation_is_not_rebound_by_hashing_a_new_context(request_context):
+    result = probe._result(request_context, "certificate_required_alert")
+    changed = copy.deepcopy(request_context)
+    changed["operation_id"] = uuid4().hex
+    with pytest.raises(probe.ProbeError, match="reply_invalid"):
+        probe.decode_result(json.dumps(result).encode(), changed, probe.digest(changed))
+
+
+@pytest.mark.parametrize("scene", ["naive", "backwards", "overlong", "future", "expired"])
+def test_request_window_is_utc_bounded_and_current_before_execution(request_context, scene):
+    value = copy.deepcopy(request_context)
+    now = datetime.now(UTC)
+    if scene == "naive":
+        value["created_at"] = now.replace(tzinfo=None).isoformat()
+    elif scene == "backwards":
+        value["expires_at"] = value["created_at"]
+    elif scene == "overlong":
+        value["expires_at"] = (
+            datetime.fromisoformat(value["created_at"]) + timedelta(seconds=301)
+        ).isoformat()
+    elif scene == "future":
+        value["created_at"], value["expires_at"] = (
+            (now + timedelta(seconds=1)).isoformat(),
+            (now + timedelta(seconds=10)).isoformat(),
+        )
+    else:
+        value["created_at"], value["expires_at"] = (
+            (now - timedelta(seconds=10)).isoformat(),
+            now.isoformat(),
+        )
+    with pytest.raises(probe.ProbeError, match="context_invalid"):
+        probe.decode(json.dumps(value).encode(), probe.digest(value))
+
+
+def test_historical_reply_is_readable_but_expired_context_cannot_reopen_material_or_network(
+    request_context, monkeypatch
+):
+    result = probe._result(request_context, "connection_closed_without_tls_reason")
+    expires = datetime.fromisoformat(request_context["expires_at"])
+    monkeypatch.setattr(probe, "_now", lambda: expires)
+    assert (
+        probe.decode_result(
+            json.dumps(result).encode(), request_context, probe.digest(request_context)
+        )
+        == result
+    )
+    monkeypatch.setattr(probe, "_public", lambda *a: pytest.fail("No file read permitted"))
+    with pytest.raises(probe.ProbeError, match="transport_deadline"):
+        asyncio.run(probe.check(request_context))
+
+
+def test_expiration_between_controls_blocks_the_next_connection(request_context, monkeypatch):
+    calls = 0
+    expires = datetime.fromisoformat(request_context["expires_at"])
+
+    async def exchange(context):
+        nonlocal calls
+        calls += 1
+        monkeypatch.setattr(probe, "_now", lambda: expires)
+        return (
+            request_context["identity"],
+            request_context["server_leaf_sha256"],
+            request_context["client_leaf_sha256"],
+        )
+
+    monkeypatch.setattr(probe, "_exchange", exchange)
+    with pytest.raises(probe.ProbeError, match="transport_deadline"):
+        asyncio.run(probe.check(request_context))
+    assert calls == 1
 
 
 @pytest.mark.parametrize("outcome", ["explicit_alert", "reset", "eof"])
@@ -127,7 +298,11 @@ def test_only_an_explicit_tls_reason_can_confirm_certificate_requirement(
         nonlocal calls
         calls += 1
         if calls in {1, 4}:
-            return request_context["identity"], request_context["server_leaf_sha256"]
+            return (
+                request_context["identity"],
+                request_context["server_leaf_sha256"],
+                request_context["client_leaf_sha256"],
+            )
         if calls == 2:
             if outcome == "reset":
                 raise ConnectionResetError("private-sensitive-sentinel")
@@ -143,7 +318,9 @@ def test_only_an_explicit_tls_reason_can_confirm_certificate_requirement(
     monkeypatch.setattr(probe, "_exchange", exchange)
     result = asyncio.run(probe.check(request_context))
     assert calls == 4 and result["previous_ca_rejected"]
-    assert result["client_certificate_requirement_verified"] is (outcome == "explicit_alert")
+    assert result["server_client_certificate_policy_verified"] is True
+    assert result["candidate_client_certificate_verified"] is True
+    assert result["missing_client_rejection_verified"] is (outcome == "explicit_alert")
     assert result["status"] == (
         "identity_tls_controls_verified"
         if outcome == "explicit_alert"
@@ -155,7 +332,15 @@ def test_only_an_explicit_tls_reason_can_confirm_certificate_requirement(
 
 @pytest.mark.parametrize(
     "scene",
-    ["redirect", "encoding", "oversize", "wrong_mode", "duplicate_header", "duplicate_json"],
+    [
+        "redirect",
+        "encoding",
+        "oversize",
+        "wrong_mode",
+        "duplicate_header",
+        "duplicate_json",
+        "wrong_client",
+    ],
 )
 def test_fixed_http_reader_rejects_redirect_compression_oversize_and_ambiguous_responses(
     request_context, pki, monkeypatch, scene
@@ -163,9 +348,10 @@ def test_fixed_http_reader_rejects_redirect_compression_oversize_and_ambiguous_r
     app = FastAPI()
 
     @app.get("/v1/identity")
-    def response():
+    def response(request: Request):
         body = json.dumps(request_context["identity"]).encode()
         headers = {"X-AEGIS-Runner-Mode": "identity-only"}
+        headers.update(request.scope["extensions"][EXTENSION].headers())
         status = 200
         if scene == "redirect":
             status, headers["Location"] = 301, "https://external.invalid/"
@@ -177,6 +363,8 @@ def test_fixed_http_reader_rejects_redirect_compression_oversize_and_ambiguous_r
             headers["X-AEGIS-Runner-Mode"] = "execution"
         elif scene == "duplicate_json":
             body = b'{"tests":[],"tests":[]}'
+        elif scene == "wrong_client":
+            headers["X-AEGIS-Client-Cert-SHA256"] = "f" * 64
         value = Response(body, status_code=status, headers=headers, media_type="application/json")
         if scene == "duplicate_header":
             value.raw_headers.append((b"content-type", b"application/json"))
@@ -254,7 +442,11 @@ def test_network_failure_or_expiration_is_not_misreported_as_trust_or_client_req
         if scene == "timeout":
             await asyncio.sleep(1)
         if calls in {1, 4}:
-            return request_context["identity"], request_context["server_leaf_sha256"]
+            return (
+                request_context["identity"],
+                request_context["server_leaf_sha256"],
+                request_context["client_leaf_sha256"],
+            )
         if calls == 2:
             if scene == "no_certificate_any_error":
                 raise ConnectionRefusedError("private-sensitive-sentinel")
@@ -286,6 +478,7 @@ def test_network_failure_or_expiration_is_not_misreported_as_trust_or_client_req
         "hash",
         "duplicate",
         "oversize",
+        "legacy",
     ],
 )
 def test_context_is_closed_hashed_and_never_accepts_arbitrary_endpoint_or_executable_test(
@@ -294,6 +487,8 @@ def test_context_is_closed_hashed_and_never_accepts_arbitrary_endpoint_or_execut
     value = copy.deepcopy(request_context)
     if scene == "url":
         value["url"] = "https://external.invalid/"
+    elif scene == "legacy":
+        value["format"] = "aegis-identity-tls-request/1"
     elif scene == "tests":
         value["identity"]["tests"] = ["linux-file-marker/v1"]
     elif scene == "unknown_identity_field":

@@ -218,6 +218,27 @@ de lab foi iniciado. O probe /1 ainda não consome esses headers: seu relatório
 inconclusivo permanece proporcional; a próxima versão deve vinculá-los ao cliente
 esperado e conservar a incerteza independente do controle negativo.
 
+## Probe /2: autenticação observada e controle negativo separados
+
+Request/resultado sobem para /2, sem upgrade implícito de /1. Request fixa também
+DER do cliente e janela UTC positiva<=300s. Probe confere PEM e DER do material,
+identidade/folha servidor e os três headers do adapter revisado: hash cliente
+esperado, política required e versãoTLS1.3. Ausência/divergência da prova recusa a
+revisão. O vínculo depende do servidor/imagem/transportes próprios verificados;
+um header de servidor arbitrário não é atestado independente de origem.
+
+candidate_client_certificate_verified e server_client_certificate_policy_verified
+representam o peer e SSLContext observados. missing_client_rejection_verified
+continua falso quando a tentativa sem certificado só produz reset/EOF. Resultado
+global permanece inconclusive nesse caso, com fatos positivos preservados; nenhuma
+flag de ativação/volumes/marcador/credencial cliente antiga se torna verdadeira.
+
+Janela é conferida antes de abrir material/rede e de cada conexão. Timeout integral
+é min(12s, restante da janela). decode_result confere até4KiB, formato fechado,
+hash/contexto/folhas, tipos booleanos estritos e classificação coerente. Pode ler
+recibo histórico após expiração, sem autorizar reutilização do contexto na rede.
+Não autentica origem sozinho: coordenador deve capturar do runtime próprio.
+
 ## Fonte da imagem fixada ao código atual
 
 runner_activation_identity_image usa o ID de imagem e commit fixados pelo plano.
