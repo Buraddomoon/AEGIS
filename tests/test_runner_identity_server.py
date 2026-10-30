@@ -77,6 +77,9 @@ def test_identity_only_boot_never_instantiates_runner_and_keeps_mtls_required(
     assert config["ssl_cert_reqs"] == ssl.CERT_REQUIRED
     assert config["proxy_headers"] is False and config["workers"] == 1
     assert config["ssl_ca_certs"] == "/run/secrets/runner_client_ca"
+    from aegis.lab_runner.tls_peer import IdentityTLSProtocol
+
+    assert config["http"] is IdentityTLSProtocol
     with TestClient(app, base_url="https://testserver") as client:
         assert client.get("/v1/identity").json() == expected(identity)
         assert client.post("/v1/jobs").status_code == 503

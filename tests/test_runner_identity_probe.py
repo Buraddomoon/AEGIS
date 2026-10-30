@@ -51,7 +51,7 @@ def request_context(pki, tmp_path, monkeypatch):
 
 
 @contextmanager
-def serving(value, pki, monkeypatch, *, require_client=True, application=None):
+def serving(value, pki, monkeypatch, *, require_client=True, application=None, protocol="auto"):
     identity = RunnerIdentity.model_validate(value["identity"])
     listener = socket.socket()
     listener.bind(("127.0.0.1", 0))
@@ -66,6 +66,7 @@ def serving(value, pki, monkeypatch, *, require_client=True, application=None):
             ssl_ca_certs=str(pki / "client-ca.crt"),
             ssl_cert_reqs=ssl.CERT_REQUIRED if require_client else ssl.CERT_NONE,
             proxy_headers=False,
+            http=protocol,
         )
     )
     thread = threading.Thread(target=instance.run, kwargs={"sockets": [listener]}, daemon=True)

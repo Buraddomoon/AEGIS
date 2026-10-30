@@ -7,7 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -112,7 +112,13 @@ def _application(identity: RunnerIdentity, *, runner: Runner | None = None) -> F
         )
 
     @app.get("/v1/identity")
-    def get_identity():
+    def get_identity(request: Request, response: Response):
+        if runner is None:
+            from aegis.lab_runner.tls_peer import EXTENSION, ClientCertificate
+
+            proof = request.scope.get("extensions", {}).get(EXTENSION)
+            if isinstance(proof, ClientCertificate):
+                response.headers.update(proof.headers())
         return identity
 
     if runner is None:
@@ -155,6 +161,12 @@ def main():
     )
     # Identity review does not open state/work paths or recover interrupted jobs.
     # The normal runner retains its existing explicit startup/recovery behavior.
+    protocol = "auto"
+    if configuration.identity_only:
+        from aegis.lab_runner.tls_peer import IdentityTLSProtocol, require_compatibility
+
+        require_compatibility()
+        protocol = IdentityTLSProtocol
     app = (
         create_identity_app(identity)
         if configuration.identity_only
@@ -171,6 +183,7 @@ def main():
         ssl_cert_reqs=ssl.CERT_REQUIRED,
         proxy_headers=False,
         access_log=False,
+        http=protocol,
         limit_concurrency=16,
         timeout_keep_alive=2,
         timeout_graceful_shutdown=8,

@@ -190,6 +190,34 @@ Testes usam TLS real somente loopback e diretórios privados temporários; nenhu
 container/PKI/binding original é iniciado/modificado. Nova imagem/coordenador e
 autorização específica continuam necessários antes de invocar o probe no lab.
 
+## Evidência do peer obtida no transporte do servidor
+
+`tls_peer.IdentityTLSProtocol` adiciona uma extensão ASGI privada por conexão.
+Captura DER do peer diretamente de ssl_object somente quando o SSLContext real
+está em CERT_REQUIRED; guarda apenas hash/version em dataclass imutável. O app
+identity-only retorna headers de hash do cliente/política/versão TLS somente
+para esse tipo de evidência. Headers recebidos do cliente não são fontes aceitas.
+Sem certificado/contexto/política apropriados, não emitir prova.
+
+Adapter usa o protocolo H11 já instalado, com wrapper ASGI próprio de cada
+conexão antes de parsing ou agendamento de tasks. Extensão reservada é sempre
+substituída, inclusive porNone, e scope/extensions são copiados por request.
+Não depende de contextvars, TLS de conexão anterior ou ordem de task eager;
+reutilizar a mesma instância de protocolo para outra conexão é recusado.
+
+O campo per-connection self.app é um detalhe revisado do Uvicorn0.54.0. Compatibilidade
+é guardada por versão exata no startup identity-only e no construtor do adapter;
+upgrade deve rever código/contrato e repetir testes, sem simplesmente ampliar
+allowlist. Não há nova dependência ou substituição do parser HTTP. Modo normal
+continua auto; somente identity-only seleciona o adapter no entrypoint.
+
+Testes TLS loopback reais conferem hash DER do cliente mesmo com header de request
+falso, além de isolamento entre conexões, ausência de prova sem TLS/validação e
+recusa de versão desconhecida antes de abrir servidor/diário. Nenhuma rede/container
+de lab foi iniciado. O probe /1 ainda não consome esses headers: seu relatório
+inconclusivo permanece proporcional; a próxima versão deve vinculá-los ao cliente
+esperado e conservar a incerteza independente do controle negativo.
+
 ## Fonte da imagem fixada ao código atual
 
 runner_activation_identity_image usa o ID de imagem e commit fixados pelo plano.

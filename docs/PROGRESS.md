@@ -3489,3 +3489,25 @@ adversarial, keylog/overrides, FIFO/symlink/size e erros sem segredos. Ruff/chec
 238arquivos formatados e mypy4passaram. Imagens anteriores não incluem o novo módulo.
 Este commit será417º,25desde ea2c61d; main privada/push direto. Próximo: evidência TLS
 do peer no servidor, antes de gate/lifecycle/coordenador e autorização de ensaio.
+
+## 2026-10-30 — certificado cliente observado no transporte TLS
+
+tls_peer captura SHA256 DER diretamente de ssl_object/CERT_REQUIRED e vincula
+dataclass imutável à conexão por wrapper ASGI. Identity-only emite headers de
+hash/política/versão somente desse objeto, ignorando headers de request. Scope é
+copiado/extensão sobrescrita e instância de protocolo não pode ser reutilizada;
+sem dependência de contextvars/agendamento. Main seleciona H11 adapter só no modo
+identity-only, preservando auto no runner normal. Versão exata Uvicorn0.54.0 guardada
+antes do boot; detalhe interno self.app exige revisão em upgrade.
+
+**make test-runner:102passed/8,22s**, incluindo TLS real loopback com fingerprint
+cliente exato, tentativa de spoof via header, conexões independentes, recusa de
+ausência/validação opcional/DER malformado e versão desconhecida. Rodada71pass se
+sobrepõe e não é adicional. Ruff/check,240arquivos formatados e mypy4passaram.
+Sem container/rede Linux, diário original, PKI/binding ou Docker socket. Probe /1
+ainda não valida headers novos; não foi anunciado cliente autenticado por ele.
+
+CI417ºf80b104/run41060922484 SUCCESS nos dois shards Python/React na última consulta.
+Este commit será418º,26desde ea2c61d; main privada/push direto. Próximo: versão de
+request/resultado do probe que confere peer esperado e mantém controle negativo
+inconclusivo quando falta razão TLS; depois gates/lifecycle/coordenador.

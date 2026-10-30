@@ -551,3 +551,12 @@ falha de rede não são rejeição da CA por issuer. Exit0 pode ser revisão inc
 nunca permissão operacional. Não afirmar cliente autenticado sem transporte do
 servidor; identidade com material não o comprova. Normal/activation/marker/volumes/
 old-client-rejection flags falsos. Testes loopback não autorizam invocação nativa.
+
+tls_peer captura certificado DER de ssl_object/CERT_REQUIRED para prova privada
+ASGI por conexão, nunca de headers do cliente. Só identity-only emite headers de
+hash/policy/version para dataclass válida. Wrapper antes de tasks/parser, scope
+copiado, extensão reservada sobrescrita e instância não reutilizável; sem contextvars
+ou prova de outra conexão. self.app depende de Uvicorn0.54.0 exato: upgrade bloqueia
+identity startup até revisão/testes, não relaxar guard para obter green. Modo normal
+auto preservado, sem dependências novas. Probe /1 ainda ignora esses headers; não
+afirmar consumo/verificação pelo cliente antes da próxima versão explícita.
