@@ -583,3 +583,8 @@ image profile, membros exatos e mounts físicos; timeout/freshness antes de publ
 Hashes de evidência só em memória até coordenador persistir. Testes de composição
 usam fixture apenas na fronteira do recibo selado, coberta separadamente por
 testes reais de arquivos. Não inferir TLS/ativação de gate ou fake daemon.
+
+identity_server é driver interno create/start apenas, não executor autorizado.
+ConfirmedPlan/main/fence exatos antes da RPC; lifecycle precisa impedir repetição
+START_REQUESTED ambígua e reconciliar ID retornado/cleanup. Sem CLI/exec/restart.
+Testes do driver emulam replies; nunca invocam daemon real.

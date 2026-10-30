@@ -291,3 +291,12 @@ daemon simulado. Somente a fronteira de build selado usa resposta de fixture,
 explicitamente coberta pelos testes independentes de arquivos/recibos/fonte; não
 anunciar como ensaio de build/container nativo. Corrigido também o bootstrap de
 imports dos novos testes para não depender da ordem global de coleta.
+
+## Driver fechado antes do lifecycle
+
+identity_server só compila create do perfil fixo e start por ID completo com fence
+identity-only/recipe/manifesto/rede exatos. ConfirmedPlan vivo e main limpa fixada
+são rechecados; exec/attach/restart/run não existem. Driver faz uma RPC e exige
+resposta ID sintaticamente válida; start exige o mesmo ID. O lifecycle ainda deve
+reconciliar ownership, impedir replay após outcome ambíguo e executar cleanup.
+Não chamar driver diretamente como autorização: nenhum CLI/startup foi adicionado.

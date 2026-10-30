@@ -3571,3 +3571,16 @@ e mypy4passaram. Make test-runner-activation inclui os novos arquivos.
 CI419º foi cancelada por supersessão após novo push; não tratada como sucesso.
 CI420º em andamento e source-review SUCCESS na consulta. Próximo: lifecycle interno
 create/start único com fences e cleanup próprio; autorização nativa segue pendente.
+
+## 2026-10-30 — driver limitado ao servidor de identidade
+
+identity_server compila somente create fixo/start por ID completo e fence durável
+exato, confirmação viva e código fixado. Uma RPC por chamada, sem comandos livres,
+retry ou health exec. Start recusa recipe/manifesto/ID trocados e estado já observado.
+Lifecycle/coordenador ainda responsáveis por no-replay e cleanup; nada foi iniciado.
+
+**16passed/14,84s**, compilação e replies simulados: start sem fence, ID estranho,
+manifesto/receita alterados, exec/attach/restart/run, prazo expirado e saída inválida
+sem copiar segredo. Ruff/check passou. Make target inclui o arquivo. 421ºdfbbf78
+sincronizado; este será422º,30desde ea2c61d. CI421º em andamento/source-review SUCCESS
+na consulta. Próximo: lifecycle único com gates concretos e reconciliação de falhas.
