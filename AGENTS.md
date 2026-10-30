@@ -525,7 +525,7 @@ precisa igualar main limpa atual; trocar commit não atualiza imagem antiga. Sem
 build/pull/start/SQL/diário. Reusa somente verificadores de inputs do diagnóstico,
 não seu lifecycle/autorização. Flags de assinatura/modo runtime/operação são falsos.
 
-CI em duas partições Python fixas0/1 por hash canônico do arquivo via run_ci_tests.py,
+CI em duas partições Python fixas0/1 por hash canônico (mais PINNED revisado) via run_ci_tests.py,
 coletando tudo e selecionando cada caso exatamente uma vez. Workflow precisa conter
 ambos; falha/partição vazia/path externo/PYTEST_ADDOPTS são erros. React em job próprio,
 lint/tipos/advisory Python no0, cancelamento redundante/cache preservados; sem paid
@@ -636,3 +636,9 @@ release, nunca membro estranho ou ausência do runner. IDs/nomes/IP/prefixo/MAC/
 EndpointID únicos, ownership/images/count e bridge exatos, dois snapshots/20s.
 Fase exited exige fence/contexto/IDs fixados. Não inferir quiescência global/TLS/
 tráfego dessa projeção. Review antigo de runner único permanece fechado ao cliente.
+
+Balanceamento CI: somente identity_lifecycle e diagnostic_coordinator inteiros
+fixados no0 após durations reais427º (537s/943s). Restante continua SHAfile%2.
+Nenhuma exclusão, nova máquina ou aumento de timeout. Toda mudança de PINNED exige
+teste de complementaridade e comparação real dos nodeIDs da coleta completa.
+Relatório2726=1379+1347/zerooverlap/zeroomissões é coleta, não execução de testes.

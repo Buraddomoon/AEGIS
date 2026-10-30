@@ -9,6 +9,12 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SHARDS = 2
+# Run41080108097: 537s vs943s. Move whole heavy fixture files, never cases,
+# to retain every test while giving both partitions room under the same18min.
+PINNED = {
+    "tests/test_runner_activation_identity_lifecycle.py": 0,
+    "tests/test_runner_diagnostic_coordinator.py": 0,
+}
 
 
 def partition(path: str) -> int:
@@ -22,6 +28,8 @@ def partition(path: str) -> int:
         or relative.as_posix() != path
     ):
         raise pytest.UsageError("CI partition requires a canonical path under tests")
+    if path in PINNED:
+        return PINNED[path]
     return int.from_bytes(hashlib.sha256(path.encode("utf-8")).digest()[:8], "big") % SHARDS
 
 

@@ -11,8 +11,12 @@ Falha em um shard não cancela o outro, mas impede aprovação da workflow intei
 
 `python scripts/run_ci_tests.py --shard 0` e `--shard 1` coletam a suíte completa e
 selecionam por SHA256 do caminho canônico do arquivo, mantendo todos os seus casos
-no mesmo shard. Não são dois subconjuntos mantidos à mão: cada arquivo pertence
-exatamente a uma partição. Adições/ordenação não movem arquivos existentes. Shard
+no mesmo shard. Duas atribuições explícitas em `run_ci_tests.PINNED` movem arquivos
+inteiros de lifecycle/coordenador para0, com base nos durations da run41080108097
+(537,18s no0 contra942,53s no1). Isso preserva dois jobs/limite18min; melhoria de
+tempo ainda depende da próxima execução completa. Cada arquivo pertence exatamente
+a uma partição, incluindo os fixados. Adições/ordenação não movem arquivos existentes;
+alterar atribuições exige evidência e nova conferência de união. Shard
 inválido/vazio, arquivo fora de tests ou PYTEST_ADDOPTS herdado impedem sucesso.
 CLI não aceita filtros/ignore; `--collect-only` permite conferir a seleção.
 
@@ -20,7 +24,9 @@ Localmente, executar os dois comandos **em sequência**, nunca junto de outra su
 PG/Redis15. `make test`/pytest normal continuam completos e sem particionamento.
 Coleta não significa execução aprovada; conferir resultados de ambos os jobs e
 do React. Comparação real de coleta da alteração conferiu2490casos =1273+1217,
-zero omissões/overlap; contagem muda conforme testes novos. IDs de dois casos UUID
+zero omissões/overlap; contagem muda conforme testes novos. Após o rebalanceamento,
+coleta real2726 =1379+1347, também sem omissões/overlap; coleta não executa casos.
+IDs de dois casos UUID
 do diário foram fixados por nome para comparação entre processos, sem mudar dados.
 
 Referências: [hook de coleta pytest](https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems)

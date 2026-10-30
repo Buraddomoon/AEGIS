@@ -22,11 +22,10 @@ def select(root, items, index):
 
 
 def test_every_case_is_selected_once_and_all_cases_of_a_file_share_a_partition(tmp_path):
+    files = ["tests/test_module_" + str(file) + ".py" for file in range(100)] + list(runner.PINNED)
     items = [
-        SimpleNamespace(
-            path=tmp_path / "tests" / ("test_module_" + str(file) + ".py"), nodeid=(file, case)
-        )
-        for file in range(100)
+        SimpleNamespace(path=tmp_path / file, nodeid=(file, case))
+        for file in files
         for case in range(5)
     ]
     first, rejected_first = select(tmp_path, items, 0)
@@ -35,8 +34,11 @@ def test_every_case_is_selected_once_and_all_cases_of_a_file_share_a_partition(t
     assert set(id(item) for item in second) == set(id(item) for item in rejected_first)
     assert not set(id(item) for item in first) & set(id(item) for item in second)
     assert sorted(item.nodeid for item in first + second) == sorted(item.nodeid for item in items)
-    for file in range(100):
+    for file in files:
         assert sum(item.nodeid[0] == file for item in first) in (0, 5)
+    for file, index in runner.PINNED.items():
+        assert type(index) is int and index in range(runner.SHARDS)
+        assert sum(item.nodeid[0] == file for item in (first, second)[index]) == 5
 
 
 def test_adding_or_reordering_files_never_moves_existing_cases(tmp_path):

@@ -3723,3 +3723,21 @@ completa2668passed/8skips opcionais +React79passed. 428º ainda em andamento. Te
 observados427º:shard0 537,18s e shard1 942,53s; revisar balanceamento com base nos
 durations já disponíveis, mantendo todos os testes/limite18min. Próximo: gates/
 inventário ativo do cliente, captura/lifecycle/coordenador antes de escopo nativo.
+
+## 2026-10-30 — balanceamento CI baseado nos durations medidos
+
+Run427º41080108097 passou:0 1319passed/3skips/537,18s;1 1349passed/5skips/942,53s;
+React79passed. Durations já registrados identificaram lifecycle identity e
+coordenador diagnóstico concentrados no1 (casos até13,47s). Dois arquivos inteiros
+fixados no0 via PINNED; demais mantêm SHAfile%2. Sem novos jobs, timeout maior ou
+exclusões. Melhora de wall-clock ainda depende da próxima run, não presumida.
+
+**16passed/0,13s** complementação agora inclui arquivos fixados, além dos500casos
+gerados anteriores. Comparação real de três coletas em processos independentes:
+**2726=1379+1347**, Counters de nodeIDs sem omissão/overlap. Isso não é execução
+aprovada dos2726casos. Logs privados identity-ci-balanced-collection-{all,0,1}.log
+e relatório JSON preservados; nenhum PostgreSQL/Redis/Lab iniciado na coleta.
+
+429º73b188a sincronizado; este será430º,38desde ea2c61d, main privada/push. Próximo:
+inventário ativo e gates do cliente, captura limitada/lifecycle/coordenador. Build
+64arquivos segue atual; sem PKI nova, startup ou autorização de ensaio reutilizada.
