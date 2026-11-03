@@ -65,6 +65,46 @@ def test_current_source_proof_uses_existing_completed_build_without_operational_
     assert "private-sensitive-sentinel" not in json.dumps(result)
 
 
+def test_source_review_never_calls_the_build_receipt_publisher(built, repository, monkeypatch):
+    monkeypatch.setattr(
+        image.inputs.image_build, "_write", lambda *a, **kw: pytest.fail("no publication")
+    )
+    assert invoke(built, repository)["local_build_inputs_verified"] is True
+
+
+def test_receipt_removed_after_outer_precheck_is_not_recreated(built, repository, monkeypatch):
+    prepared, _, _ = built
+    receipt = prepared.folder / "receipt.json"
+    original = image.inputs._runner
+
+    def removed(*args):
+        receipt.unlink()  # Disposable fixture only, reproduces concurrent loss.
+        return original(*args)
+
+    monkeypatch.setattr(image.inputs, "_runner", removed)
+    with pytest.raises((image.ActivationError, FileNotFoundError)):
+        invoke(built, repository)
+    assert not receipt.exists()
+
+
+def test_receipt_removed_during_native_image_inspection_is_not_recreated(
+    built, repository, monkeypatch
+):
+    prepared, _, _ = built
+    receipt = prepared.folder / "receipt.json"
+    original = image.inputs.image_build._execute
+
+    def removed(*args, **kwargs):
+        raw = original(*args, **kwargs)
+        receipt.unlink(missing_ok=True)
+        return raw
+
+    monkeypatch.setattr(image.inputs.image_build, "_execute", removed)
+    with pytest.raises((image.ActivationError, FileNotFoundError)):
+        invoke(built, repository)
+    assert not receipt.exists()
+
+
 @pytest.mark.parametrize("scene", ["missing", "hash", "exit_false", "integer_exit", "other_image"])
 def test_missing_or_unreviewed_receipt_is_not_generated_or_adopted(
     built, repository, monkeypatch, scene

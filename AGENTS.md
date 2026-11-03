@@ -763,3 +763,9 @@ consumo durável e120s exclusivamentecleanup. Não aceitar roots/targets/argv li
 por CLI. Recibo separado/exit0 só ausência verificada; input original adulterado
 recusa efeitos e exige intervenção sob escopo próprio. Não apagar fences/repetir
 plano para recuperar. CLI testada com clones privados; ensaio nativo não autorizado.
+
+Leitores de prova selada devem usar build_review_runner.review_existing: nunca
+publicar/recriar receipt.json durante consulta, inclusive se ele desaparecer
+após precheck/inspect. _runner de diagnóstico usa esse caminho. Build/review
+explícitos ainda podem publicar prova de build. Não fazer fallback do leitor
+para publisher. Regressão reproduzida/corrigida sem builds/containers nativos.

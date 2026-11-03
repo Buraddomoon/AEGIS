@@ -413,6 +413,18 @@ def build(folder, expected_sha):
 
 def review(folder, expected_sha):
     """Reconcile existing build outputs using image inspection only, never replay the build."""
+    return _review(folder, expected_sha, publish_receipt=True)
+
+
+def review_existing(folder, expected_sha):
+    """Verify retained proof without publishing/recreating any build receipt."""
+    return _review(folder, expected_sha, publish_receipt=False)
+
+
+def _review(folder, expected_sha, *, publish_receipt):
+    previous = None if publish_receipt else _json(folder / "receipt.json")
+    if not publish_receipt and not isinstance(previous, dict):
+        raise ActivationError("runner_build_existing_receipt_required")
     plan = verify(folder, expected_sha)
     if _json(folder / "build-requested.json") != {
         "plan_sha256": expected_sha,
@@ -561,13 +573,17 @@ def review(folder, expected_sha):
         "publisher_signature_verified": False,
         **FLAGS,
     }
-    try:
-        _write(
-            folder / "receipt.json",
-            json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode(),
-        )
-    except FileExistsError:
-        if _json(folder / "receipt.json") != receipt:
+    if publish_receipt:
+        try:
+            _write(
+                folder / "receipt.json",
+                json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode(),
+            )
+        except FileExistsError:
+            if _json(folder / "receipt.json") != receipt:
+                raise ActivationError("runner_build_receipt_conflict") from None
+    else:
+        if previous != receipt or _json(folder / "receipt.json") != receipt:
             raise ActivationError("runner_build_receipt_conflict") from None
     return {
         "status": "runner_image_built_and_locally_verified",

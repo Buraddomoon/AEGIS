@@ -4089,3 +4089,35 @@ Próximo: suíte completa de ativação local, revisão cruzada dos contratos/CL
 CI do commit final. Só depois conferir imagem/disponibilidade, preparar candidato
 e plano reais e apresentar escopo concreto para aprovação específica. Todo o
 material histórico e Demo preservados; continuidade comum não autoriza native run.
+
+## 2026-11-03 — suíte completa local e correção da publicação de recibo em consulta
+
+**make test-runner-activation no448ºb51fe97 terminou exit0**: **660passed/963,69s**
+mais **838passed/1skip/97,54s** (1498aprovados; skip é metadata opt-in). Não iniciou
+Lab. Log privado identity-final-activation-tests.log preservado.
+
+Revisão cruzada reproduziu uma falha: após precheck, perda do recibo permitia que
+a consulta de imagem o publicasse novamente. Repro privado falhou antes da
+correção (DID NOT RAISE). review_existing agora verifica recibo prévio/final sem
+chamar publisher; leitores de imagem/diagnóstico usam esse caminho. Build/review
+explícitos conservam publicação original. **81passed/29,76s** build/identity-image/
+diagnostic-plan e repro agora **1passed/0,47s**; novos casos impedem publisher e
+recriação após perda antes/durante inspect. Ruff/278formatados/mypy4passaram.
+
+Preflight REAL somente leitura em448º confirmou pacote64/dependências compatíveis
+com imagem526267ad..., quatro imagens presentes, dois volumes preservados e
+projeto sem containers/redes/consumidores globais. Recibo6a5d18c79c888a7cbe73275b1
+da8d1996136a3fb68216d115b93a6ce860c6b4e em identity-readonly-readiness-b10cbff9*.json.
+Inventário público originalb4462e0ac8cbceb744a6a8c2751e22a22c49cc7dd233732a75945d457e989311,
+descriptor51bd654a94117f78644b54ac0f34e4375d438d32f1b39ef6b10335f221e6114d; quatro
+certificados expirados, sem ler chaves antigas/gerar candidato. Não prova mTLS.
+
+CI448º41659669266: React/partição2SUCCESS (**763passed/1skip/964,40s**);0/1CANCELLED
+com annotation18min confirmada. Grupo1 chegou a **1077passed/1skip/1074,18s**, mas
+o job ultrapassou limite com setup/teardown. Workflow não aprovada. Logs/annotations
+privados identity-ci-448-* preservados. Redistribuição em4partições em preparação,
+mesmo max-parallel2/18min/checks; não habilitar recursos pagos/excluir casos.
+
+448ºb51fe97 sincronizado; este será449º,57desde ea2c61d. Próximo: commit separado
+da CI e aguardar validação completa; só depois candidato/plano reais e aprovação
+específica do ensaio. Nenhuma nova autorização consumida; Demo/PKI/volumes intactos.

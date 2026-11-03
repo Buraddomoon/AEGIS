@@ -67,7 +67,7 @@ def _runner(inputs, images):
     folder = image_build.ROOT / _identifier(inputs["build_id"])
     _hash(inputs["build_plan_sha256"])
     _hash(inputs["build_receipt_sha256"])
-    verified = image_build.review(folder, inputs["build_plan_sha256"])
+    verified = image_build.review_existing(folder, inputs["build_plan_sha256"])
     if (
         verified["receipt_sha256"] != inputs["build_receipt_sha256"]
         or verified["native_image_id"] != images["runner"]
