@@ -736,3 +736,8 @@ runtime atual/origem TLS/fence do plano ou autorização de retomada. Nunca exec
 componentes por import manual para contornar CLI nativa/escopo ainda pendentes.
 PINNED inclui client_lifecycle0 (132s local, ausente do commit CI436º). Coleta
 2916=1103+1061+752 exata após leitor, não testes aprovados; política CI inalterada.
+
+runner_activation.load_for_cleanup lê plano histórico /2 com o MESMO hash/schema/
+policy, permitindo expiração apenas para cleanup próprio. Não abre PKI/volume/
+credenciais/daemon nem concede create/start/lease; load_plan/recheck permanecem
+atuais. Não usar leitor histórico em gates/compiladores/ativação.

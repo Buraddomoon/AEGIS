@@ -221,6 +221,19 @@ def plan(source, candidate, manifest_sha256, images, output_root, *, docker=None
 
 def load_plan(path, expected_sha256):
     """Read a pinned, unexpired plan; does not grant authorization or query Docker."""
+    return _load_plan(path, expected_sha256, current=True)
+
+
+def load_for_cleanup(path, expected_sha256):
+    """Historical integrity/policy only; expiry must not prevent owned cleanup.
+
+    Not suitable for compilation, create/start, admission or a renewed lease.
+    Does not read PKI/credentials/volumes or query the daemon.
+    """
+    return _load_plan(path, expected_sha256, current=False)
+
+
+def _load_plan(path, expected_sha256, *, current):
     sha256(expected_sha256)
     path = pki.absolute(path)
     if path.name != "plan.json":
@@ -267,7 +280,7 @@ def load_plan(path, expected_sha256):
         created.utcoffset() != timedelta(0)
         or expires.utcoffset() != timedelta(0)
         or expires - created != TTL
-        or not created <= pki.clock() < expires
+        or (current and not created <= pki.clock() < expires)
     ):
         raise ActivationError("plan_expired_or_invalid_time")
     return artifact

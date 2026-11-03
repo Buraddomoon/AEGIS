@@ -4008,3 +4008,17 @@ selada mas sem prova de runtime novo; nenhuma nova autorização consumida. Pró
 CLI nativa opt-in e recuperação fechada de ownership sob novo escopo, procedimento
 final/CI e só então preparar candidato/plano reais e pedir aprovação específica.
 Demo/volumes/PKI/binding/diário preservados; não iniciar Lab por continuidade comum.
+
+## 2026-11-03 — leitura histórica do plano para cleanup
+
+load_for_cleanup compartilha a validação fechada/hash/policy do plano/2, permitindo
+leitura após expiração sem abrir PKI/credenciais/volumes/daemon. load_plan/recheck
+continuam exigindo janela atual; o leitor histórico nunca concede create/start
+ou lease novo. **49passed/58,70s** planos atuais/históricos: expiração/sem mudança
+de bytes/mtime/sem PKI ou recheck nativo, hash/scope/profile/duração/boolean inteiro/
+formato antigo recusados. Ruff/format passaram.
+
+444º74851d8 sincronizado; este será445º,53desde ea2c61d. CLI de execução e consulta
+de histórico de tentativas seguem no worktree em unidade separada, ainda sem
+validação; não invocar nativamente. Próximo: testes dessa CLI e cleanup fechado
+de recursos próprios sob escopo novo. Sem novo candidato/plano ou ensaio real.
