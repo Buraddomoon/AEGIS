@@ -79,7 +79,11 @@ def test_client_profile_rejects_shells_unsafe_mounts_networks_or_configuration(s
     elif scene == "port":
         value["ports"] = {"8443/tcp": [{"HostPort": "8443"}]}
     elif scene == "writable_key":
-        value["mounts"][0]["writable"] = True
+        next(
+            item
+            for item in value["mounts"]
+            if item["target"] == "/run/secrets/controller_client_key"
+        )["writable"] = True
     elif scene in {"old_ca_source", "missing_old_ca", "old_key"}:
         entry = next(
             item for item in value["mounts"] if item["target"] == inspection.runtime.PREVIOUS_CA

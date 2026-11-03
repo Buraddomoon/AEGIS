@@ -432,3 +432,22 @@ leitura pública apenas. Review não gera contexto novo, persiste payload ou abr
 rede/chaves. Retorna contexto validado, sem prova de TLS/ativação. Nova confirmação
 da mesma operação não adota request anterior, e não transforma resume em execução.
 Fluxo loopback agora inclui essa revalidação antes dos quatro controles reais TLS.
+
+## Gates concretos do cliente
+
+IdentityClientGates recebe a mesma ConfirmedPlan e os bytes/hash originais do
+request, sem renovar prazo. Só create/start/exited são admitidos; start com fence
+prévio bloqueia replay. Combina active_plan antes/depois, request/public pins,
+build selado/fonte atual, perfil de imagem e do servidor identity-only running,
+network membership e configuração física do cliente quando existente.
+
+Revisão final de active_plan confere novamente o mesmo manifesto e material
+público/privado do plano; decode final confere bytes/janela originais, evitando
+repetir leituras criptográficas equivalentes. Alteração da PKI após a inspeção
+continua recusada. Snapshot inicial do prazo20s, idade máxima10s, expiração limitada
+a confirmação/plano e strict booleans/contexto/IDs antes de publicar.
+
+Gate e hashes de evidência têm cópia em memória; coordenador futuro deve persistir
+origem/referências duráveis. Testes integram PKI/plano reais temporários e daemon
+simulado, com fixture só na fronteira selada de imagem (testada separadamente).
+Não há prova de resultado TLS nem CLI de execução nesse componente.

@@ -657,3 +657,11 @@ expiração original e operação/plano/scope/IDs/PEM/DER exatos. Rehash de inpu
 semanticamente diferente não o autoriza. Source/main/material/intent relidos após
 IO e decode temporal final; não lê chaves, não grava payload ou conecta à rede.
 Outra confirmação não pode adotar request anterior; resume permanece cleanup.
+
+IdentityClientGates combina mesma ConfirmedPlan300s/request existente, active_plan
+antes/depois, fonte/imagem selada, perfil físico de parent/client e membership
+exato. Só create/start/exited, start com fence anterior negado. Final active_plan
+revalida manifesto/material completos; decode final revalida bytes/janela sem
+repetir leituras crypto equivalentes. Gate fecha contexto/resourceIDs/checks bool/
+freshness e guarda cópia privada/evidência hashes em memória. Não prova TLS/output
+ou autorização assinada; lifecycle/captura/coordenador e persistência ainda pendentes.

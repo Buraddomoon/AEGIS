@@ -3780,3 +3780,23 @@ reportados na CI histórica. Apenas PKI temporária/loopback, nenhum Lab iniciad
 431º38607fb sincronizado; este será432º,40desde ea2c61d, main privada/push. Próximo:
 gates concretos que compõem request/PKI, fonte/imagem, parent/container/bridge e
 inventário ativo dentro da mesma confirmação300s; depois captura/lifecycle/coordenador.
+
+## 2026-11-03 — gates concretos do cliente com lease/request originais
+
+IdentityClientGates integra active_plan antes/depois, request, fonte/imagem, parent
+identity-only running, perfil físico e bridge/membros. Scope/resourceIDs/receita/
+contexto e booleans estritos/freshness conferidos; sem renovar confirmação/janela.
+Start com fence prévio negado. Guarda cópia privada do gate e hashes em memória;
+persistência/origem do output dependem do coordenador/captura ainda pendentes.
+
+**23passed/92,34s** após evitar segunda leitura crypto redundante já coberta pelo
+active_plan final, mantendo teste de PKI alterada após inspeção. Cobrem três fases,
+worker/volumes, modo/argv parent, chave cliente RW, imagem obsoleta, request/receita
+/cache/contexto/IDs/prazo/intent divergentes e replay. Rodadas34/22anteriores se
+sobrepõem. Teste RW agora seleciona a chave cliente pelo target, em vez do primeiro
+mount; dois casos direcionados passaram/6,18s. Fixture só na fronteira de build,
+verificador real selado coberto separadamente. Ruff/check,258formatados/mypy4passaram.
+
+432ºc983a62 sincronizado; este será433º,41desde ea2c61d. Próximo: transporte/captura
+4KiB (já testado no worktree) e driver/lifecycle com fence, depois coordenador
+limitado e escopo nativo revisável. Sem container/PKI original/journal/binding.
