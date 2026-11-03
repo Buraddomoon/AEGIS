@@ -95,9 +95,11 @@ class IdentityClientGates:
         self.runtime_docker, self.network_docker = runtime_docker, network_docker
         self.evidence = []
         self._last_gate = None
+        self._last_review = None
 
     def review(self, phase, spec):
         self._last_gate = None
+        self._last_review = None
         c = self.confirmation
         original = c._guard()
         current = original["resources"].get(runtime.ROLE, {})
@@ -251,4 +253,16 @@ class IdentityClientGates:
             }
         )
         self._last_gate = copy.deepcopy(gate)
+        self._last_review = copy.deepcopy(
+            {
+                "plan_before": before,
+                "plan_after": after,
+                "image_inputs": sealed,
+                "image_profile": profile,
+                "server_runtime": server,
+                "network": bridge,
+                "client_runtime": physical,
+                "request_context_sha256": self.context_sha256,
+            }
+        )
         return gate

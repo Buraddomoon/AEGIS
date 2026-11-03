@@ -3840,7 +3840,7 @@ coordenador/escopo nativo continuam pendentes. PKI, volumes e Demo preservados.
 ## 2026-11-03 — CI completa em três partições com paralelo limitado a dois
 
 Run435º41641991673 CANCELLED: annotations dos jobs125937868644/125937869272 confirmam
-“The job has exceeded the maximum execution time of18m0s”. Não contada como green
+“The job has exceeded the maximum execution time of 18m0s”. Não contada como green
 ou falha funcional conhecida. Suíte cresceu com gates/driver; redistribuição em
 3partições mantendo max-parallel2,18min por job, runners padrão e checks completos.
 Sem filtros/omissões, runner pago ou mudança de orçamento GitHub.
@@ -3855,3 +3855,24 @@ não testes2830aprovados. Logs privados identity-ci-three-collection-* preservad
 do cliente já passou15casos e a revisão de regressões compartilhadas segue em
 andamento; será commit separado após conferência. Próximo: consolidar esse marco
 e implementar o coordenador/recibos/procedimento nativo antes de qualquer ensaio.
+
+## 2026-11-03 — lifecycle único do cliente e fechamento por ownership
+
+Cliente agora usa gates computados, receita fixa e fence durável antes de attach;
+reconcilia ID/estado físico, confere reply fechado e gate exited antes de registrar
+os hashes. Cleanup remove somente o cliente próprio, mantendo pais; conflito não
+adota recurso. Qualquer role anterior, inclusive ABSENT após reopen, impede replay.
+Reply inconclusivo continua inconclusivo; não equivale a TLS nativo comprovado.
+
+**15passed/132,54s** lifecycle; **130passed/5,43s** regressões compartilhadas. Após
+asserts adicionais de correlação/replay, **make test-runner-activation terminou
+com exit0**: primeiro comando contém526casos (coleta conferida); segundo mostrou
+**838passed/1skip/97,50s**. Skip é projeção opt-in de metadata de imagem, sem
+ensaio nativo omitido como aprovado. Ruff/check e quatro arquivos formatados passaram.
+Gates guardam cópia das revisões normalizadas para a próxima camada persistir.
+Nenhuma RPC Docker real/PKI ativa/volume/marcador foi usado pelos testes.
+
+436º7b06efc sincronizado; este será437º,45desde ea2c61d, main privada/push direto.
+CI436º41647053065: React e partições0/1 passaram; partição2 ainda executando na
+consulta. Não declarar CI concluída. Próximo: armazenamento privado e imutável dos
+artefatos, coordenador limitado e procedimento revisável; sem novo ensaio autorizado.

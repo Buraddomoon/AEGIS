@@ -686,3 +686,11 @@ inalterados/runners padrão; arquivos inteiros PINNED lifecycle0/coordinator1,
 restante SHAfile%3. Todos os casos seguem exatamente uma vez. Coleta2830=1046+
 1041+743/zerooverlap/zeroomissões inclui lifecycle ainda no worktree na conferência;
 não significa execução aprovada. Sem aumento de concorrência ou recurso pago.
+
+identity_client_lifecycle usa somente IdentityClientGates concreto e role nova
+(ABSENT/reopen também bloqueiam replay). Create/ID/gates/fence antes de attach;
+inspeção exited/gate/reply hash antes de evento observado. Cleanup só cliente
+próprio; colisão não adota/apaga, cleanup incerto retém pais. Reply protocolar
+verificado não torna controls_inconclusive em TLS confirmado. Gate records têm
+revisões normalizadas em memória; coordenador deve persistir antes de efeitos.
+Sem CLI/ensaio autorizado, sem uso de volumes/worker/journal/PKI ativa.

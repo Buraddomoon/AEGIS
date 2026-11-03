@@ -7,7 +7,7 @@ import runner_activation_cleanup as closure
 import runner_pki as pki
 from aegis.domain.validation import digest
 from aegis.lab_runner.persisted_probe import FAILURE_PHASES, FAILURE_REASONS
-from runner_activation_intents import DATABASE_REVIEW_ROLES
+from runner_activation_intents import DATABASE_REVIEW_ROLES, IDENTITY_CLIENT_ROLE
 from runner_activation_metadata import ActivationError
 from runner_activation_ownership import identifier, observe
 
@@ -78,6 +78,12 @@ def run(
             "database_review_start_requested",
             "database_reader",
         )
+    elif role == IDENTITY_CLIENT_ROLE:
+        context_field, start_event, prefix = (
+            "request_context_sha256",
+            "identity_client_start_requested",
+            "identity_client",
+        )
     else:
         raise ActivationError("owned_probe_role_required")
     state = store.review()
@@ -112,15 +118,18 @@ def run(
         phase = "start_gate"
         approved = gate("start")
         gates["start"] = digest(approved)
-        store.append(
-            start_event,
-            {
-                "role": role,
-                "recipe_sha256": digest(spec),
-                "gates_sha256": digest(approved),
-                context_field: context_sha256,
-            },
-        )
+        start_data = {
+            "role": role,
+            "recipe_sha256": digest(spec),
+            "gates_sha256": digest(approved),
+            context_field: context_sha256,
+        }
+        if role == IDENTITY_CLIENT_ROLE:
+            start_data.update(
+                runner_resource_id=spec["runner_resource_id"],
+                network_resource_id=spec["network_resource_id"],
+            )
+        store.append(start_event, start_data)
         if store.review()["resources"][role]["state"] != "START_REQUESTED":
             raise ActivationError(prefix + "_start_intent_changed")
         phase = "inspect_before_start"
@@ -172,6 +181,8 @@ def run(
     return {
         "format": "aegis-journal-probe-lifecycle-review/1"
         if prefix == "journal_probe"
+        else "aegis-identity-client-lifecycle-review/1"
+        if prefix == "identity_client"
         else "aegis-database-reader-lifecycle-review/1",
         "operation_id": operation,
         "role": role,
