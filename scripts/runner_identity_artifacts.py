@@ -9,7 +9,7 @@ from pathlib import Path
 import runner_pki as pki
 from aegis.domain.validation import digest
 from runner_activation_confirmation import ConfirmedPlan
-from runner_activation_metadata import ActivationError, document
+from runner_activation_metadata import ActivationError, _unique
 
 ROOT = Path(__file__).resolve().parents[1] / ".local/pki-identity-runtime"
 FORMAT = "aegis-identity-assay-artifact/1"
@@ -185,7 +185,10 @@ class IdentityArtifacts:
             raw = stream.read(MAX_BYTES + 1)
         if len(raw) > MAX_BYTES:
             raise ActivationError("identity_artifact_size_exceeded")
-        value = document(raw)
+        try:
+            value = json.loads(raw, object_pairs_hook=_unique)
+        except (ValueError, UnicodeError, RecursionError):
+            raise ActivationError("identity_artifact_json_invalid") from None
         if (
             not isinstance(value, dict)
             or set(value) != {"format", *self.anchor, "name", "recorded_at", "body_sha256", "body"}

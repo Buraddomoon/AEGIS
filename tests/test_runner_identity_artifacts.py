@@ -78,6 +78,14 @@ def test_size_limit_applies_to_complete_envelope_before_any_write(records):
     assert not (value.folder / "receipt.json").exists()
 
 
+def test_normalized_review_larger_than_docker_metadata_cap_round_trips(records):
+    value, _, _ = records
+    body = {"normalized_review": "x" * (96 * 1024)}
+    expected = value.write("client-lifecycle", body)
+    assert value.read("client-lifecycle")["body"] == body
+    assert value.inventory()["client-lifecycle"] == expected
+
+
 @pytest.mark.parametrize("scene", ["symlink", "hardlink", "fifo", "permissions", "truncated"])
 def test_unsafe_and_partial_records_cannot_pass_review(records, tmp_path, scene):
     value, _, _ = records

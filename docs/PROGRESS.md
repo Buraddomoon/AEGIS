@@ -3897,3 +3897,13 @@ Refere-se a7b06efc; CI437º41650774843 estavaQUEUED na última consulta.
 437ºd94a598 sincronizado; este será438º,46desde ea2c61d, main privada/push direto.
 Próximo: persistir fatos antes de efeitos, coordenar rede/servidor/cliente/cleanup
 no mesmo orçamento e preparar procedimento concreto. Sem Lab/PKI ativa/volumes.
+
+## 2026-11-03 — correção do limite de leitura de artefatos
+
+A revisão encontrou uso indevido do decoder de metadata Docker64KiB no leitor de
+artefatos256KiB. O leitor agora aplica seu próprio limite e parsing com rejeição
+de campos duplicados, preservando JSON canônico/hash. **29passed/23,77s** na suíte
+completa de artefatos, incluindo round-trip96KiB e as restrições anteriores. Ruff/
+format passaram. Nenhum efeito nativo. 438º0ee6100 sincronizado; este será439º,
+47desde ea2c61d. Gates persistidos e orçamento/coordenador seguem em unidades
+separadas no worktree; não anunciados como concluídos neste commit.
