@@ -418,3 +418,17 @@ e metadata antes/depois. Exited precisa do start durável; metadata não infere 
 ou veracidade do resultado. Revisões antigas recusam cliente presente e diagnóstico
 /3 mantém catálogo próprio: testes novos verificam recusa antes de consultar inputs.
 Confirmação300s/gates/coordenador continuam separados da revisão de plano15min.
+
+## Revalidar o request original sem renovar a janela
+
+identity_request.review recebe os bytes/hash já preparados e a mesma ConfirmedPlan.
+Reaplica schema/janela /2, exige created_at posterior à confirmação, confere todos
+os pins públicos contra manifesto/inventários/plano e mantém a expiração original.
+Operação, escopo, IDs e hashes PEM/DER não podem ser trocados por recomputar o hash.
+Código/material/intent são rechecados após IO e a janela é validada novamente.
+
+Helpers privados de snapshot/valor foram compartilhados com request(), conservando
+leitura pública apenas. Review não gera contexto novo, persiste payload ou abre
+rede/chaves. Retorna contexto validado, sem prova de TLS/ativação. Nova confirmação
+da mesma operação não adota request anterior, e não transforma resume em execução.
+Fluxo loopback agora inclui essa revalidação antes dos quatro controles reais TLS.

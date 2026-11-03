@@ -62,6 +62,7 @@ def test_public_request_preserves_material_and_never_reads_private_keys_or_envir
     monkeypatch.setattr(builder.plan.pki, "read", restricted)
     raw, expected = builder.request(confirmed)
     value = probe.decode(raw, expected)
+    assert builder.review(confirmed, raw, expected) == value
     assert value["operation_id"] == confirmed.operation
     assert value["scope_sha256"] == confirmed.scope
     assert value["plan_sha256"] == confirmed.plan_sha256
@@ -164,7 +165,7 @@ def test_host_request_probe_and_decoder_use_actual_pinned_certificates_over_loop
     confirmed, material, monkeypatch
 ):
     raw, expected = builder.request(confirmed)
-    context = probe.decode(raw, expected)
+    context = builder.review(confirmed, raw, expected)
     source, candidate, _ = material
     monkeypatch.setattr(
         probe,
@@ -223,3 +224,67 @@ def test_host_request_probe_and_decoder_use_actual_pinned_certificates_over_loop
     assert result["context_sha256"] == expected
     assert all(result[key] is False for key in probe.FLAGS)
     assert probe.decode_result(json.dumps(result).encode(), context, expected) == result
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "operation_id",
+        "plan_sha256",
+        "scope_sha256",
+        "identity",
+        "server_leaf_sha256",
+        "client_leaf_sha256",
+        "certificate_sha256",
+        "expires_at",
+    ],
+)
+def test_rehashed_protocol_valid_request_cannot_rebind_public_pki_scope_or_original_window(
+    confirmed, field
+):
+    raw, _ = builder.request(confirmed)
+    value = json.loads(raw)
+    if field == "operation_id":
+        value[field] = "f" * 32
+    elif field == "identity":
+        value[field]["asset_id"] = "00000000-0000-0000-0000-000000000001"
+    elif field == "certificate_sha256":
+        value[field]["candidate_client_cert"] = "f" * 64
+    elif field == "expires_at":
+        value[field] = (confirmed.expires + timedelta(seconds=1)).isoformat()
+    else:
+        value[field] = "f" * 64
+    payload, expected = json.dumps(value).encode(), builder.digest(value)
+    assert probe.decode(payload, expected) == value  # Valid protocol, wrong local binding.
+    with pytest.raises(builder.ActivationError, match="context_binding_mismatch"):
+        builder.review(confirmed, payload, expected)
+
+
+def test_request_from_before_confirmation_is_refused_before_pki_io(confirmed, monkeypatch):
+    raw, _ = builder.request(confirmed)
+    value = json.loads(raw)
+    value["created_at"] = (confirmed.confirmed_at - timedelta(seconds=1)).isoformat()
+    monkeypatch.setattr(builder.plan.pki, "inventory", lambda *a, **kw: pytest.fail("no IO"))
+    with pytest.raises(builder.ActivationError, match="predates_confirmation"):
+        builder.review(confirmed, json.dumps(value).encode(), builder.digest(value))
+
+
+def test_new_confirmation_does_not_adopt_a_previously_prepared_request(confirmed):
+    raw, expected = builder.request(confirmed)
+    other = ConfirmedPlan(
+        confirmed.path,
+        confirmed.plan_sha256,
+        confirmed.store,
+        confirmed.scope,
+        confirmed.expires.isoformat(),
+    )
+    with pytest.raises(builder.ActivationError, match="predates_confirmation"):
+        builder.review(other, raw, expected)
+
+
+def test_existing_request_review_cannot_outlive_original_confirmation(confirmed, monkeypatch):
+    raw, expected = builder.request(confirmed)
+    monkeypatch.setattr(builder.plan.pki, "clock", lambda: confirmed.expires)
+    monkeypatch.setattr(builder.plan.pki, "inventory", lambda *a, **kw: pytest.fail("no IO"))
+    with pytest.raises(builder.ActivationError, match="scope_or_budget_unconfirmed"):
+        builder.review(confirmed, raw, expected)

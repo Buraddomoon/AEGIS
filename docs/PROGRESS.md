@@ -3762,3 +3762,21 @@ obrigatório e fase/papel indevidos. Rodada183anterior se sobrepõe. Ruff/check,
 arquivos formatados/mypy4passaram. Este será431º,39desde ea2c61d, main privada/push.
 Próximo: validar request existente/public pins sem renovar janela, depois gates
 concretos/captura/lifecycle/coordenador. Essa revalidação está em teste no worktree.
+
+## 2026-11-03 — revalidação do request sem alterar nonce ou janela
+
+identity_request.review confere bytes/hash existentes com a mesma confirmação,
+material público/manifesto e pins de operação/escopo/plano/IDs/PEM/DER. Mantém
+expires original e exige created após confirmação. Fonte/intent/material relidos
+após IO e decode temporal final. Sem payload novo/persistência, chaves ou rede.
+Helpers públicos-only compartilhados com o builder; modo real permanece pendente.
+
+**79passed/51,51s** request/probe, incluindo loopback mTLS real após review, leitura
+pública/bytes/mtime preservados, rehash válido de campos alterados recusado, pedido
+anterior à confirmação, nova confirmação sem adoção e expiração antes de IO.
+Ruff/check e mypy4passaram. São testes Python de request/probe, não os79 testes React
+reportados na CI histórica. Apenas PKI temporária/loopback, nenhum Lab iniciado.
+
+431º38607fb sincronizado; este será432º,40desde ea2c61d, main privada/push. Próximo:
+gates concretos que compõem request/PKI, fonte/imagem, parent/container/bridge e
+inventário ativo dentro da mesma confirmação300s; depois captura/lifecycle/coordenador.

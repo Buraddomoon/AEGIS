@@ -650,3 +650,10 @@ nomes reservados e consumidores globais dos dois volumes conferidos duas vezes.
 active_plan exige request_context_sha256 só nesse papel e confere fence/recipe/
 IDs; nenhum outro papel recebe esse parâmetro. Diagnóstico /3 continua recusando
 cliente antes de inputs. Isso é revisão de metadata/PKI, não TLS/ativação/CLI.
+
+identity_request.review revalida bytes/hash existentes e public pins contra a
+mesma ConfirmedPlan, sem criar contexto/janela novos. Exige created>=confirmed_at,
+expiração original e operação/plano/scope/IDs/PEM/DER exatos. Rehash de input
+semanticamente diferente não o autoriza. Source/main/material/intent relidos após
+IO e decode temporal final; não lê chaves, não grava payload ou conecta à rede.
+Outra confirmação não pode adotar request anterior; resume permanece cleanup.
