@@ -781,3 +781,8 @@ privado com candidato/plano/hashes/CI antes de perguntar, sem operação fictíc
 Se HEAD posterior ao commit da CI contiver SOMENTE Markdown, conferir igualdade
 de todo conteúdo não-Markdown e source-review do HEAD; não presumir equivalência.
 Nenhum native run por mensagem genérica de continuidade ou aprovação histórica.
+
+Recibos de build/review_existing: comparar digests canônicos, nunca igualdade
+Python que aceita bool/int (False==0,True==1). Não normalizar/reescrever prova
+malformada. Código452º altera executável: CI450º/equivalência Markdown451º NÃO
+validam esse commit. Esperar nova CI completa antes do pacote/ensaio nativo.

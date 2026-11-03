@@ -4161,3 +4161,25 @@ arquivos não-Markdown entre450ºe451º e source-review451º antes de gerar o pa
 Próximo: concluir CI, candidato/plano privados atuais, revisão/hash em pergunta
 específica; aguardar resposta antes de qualquer native run. Não interpretar
 continuidade como autorização de ensaio. Histórico/Demo/volumes/PKI preservados.
+
+## 2026-11-03 — flags de recibo com comparação canônica estrita
+
+Comparação Python de objetos aceitava0/1 comoFalse/True em recibos existentes.
+Builder/review_existing agora comparam digests JSON canônicos para impedir essa
+equivalência de tipo sem reescrever o arquivo inválido. **85passed/30,33s** build/
+identity-image/diagnostic-plan, incluindo4casos dos dois caminhos/flags. Primeira
+rodada encontrou erro de posicionamento dos asserts no teste novo; corrigido e
+reexecutado serialmente em identity-typed-receipt-final-tests.log. Rodadas anteriores
+se sobrepõem e não são somadas. Ruff/278formatados/mypy4passaram.
+
+Cinco coletas atuais: **2971=763+682+741+785**, zeroomissões/overlap/extras. Não é
+execução2971aprovada. Índice completo passou no scan de padrões; quatro comandos
+CLI --help passaram sem mudar raízes de operação/PKI. RepoPRIVATE/main/0divergência
+confirmados; sem credenciais/novos serviços. Revisão de fontes451º41707498992SUCCESS.
+
+CI450º41706761742: React e grupos0/1SUCCESS,2/3em andamento na última consulta.
+Correção executável exige CI do novo commit; não reutilizar a equivalência só de
+Markdown entre450º/451º para este código. Nenhum candidato/plano REAL emitido ou
+startup autorizado. 451º8e5cb96 sincronizado; este será452º,60desde ea2c61d.
+Próximo: CI completa desse commit, preflight somente leitura e pacote concreto de
+candidato/plano. Pedir autorização específica e aguardar antes de native run.

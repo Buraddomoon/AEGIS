@@ -24,7 +24,7 @@ Cada arquivo pertence exatamente a uma partição. Adições/ordenação não mo
 arquivos existentes; mudar SHARDS/PINNED exige evidência e conferência da união.
 Shard inválido/vazio, arquivo fora de tests ou PYTEST_ADDOPTS herdado impedem
 sucesso. CLI não aceita filtros/ignore; `--collect-only` confere a seleção.
-Cinco coletas independentes conferiram **2967=759+682+741+785**, sem omissões,
+Cinco coletas independentes conferiram **2971=763+682+741+785**, sem omissões,
 extras ou repetição de nodeIDs. Coleta não significa execução aprovada.
 
 Localmente, executar os quatro comandos **em sequência**, nunca junto de outra

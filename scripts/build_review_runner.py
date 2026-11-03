@@ -580,10 +580,12 @@ def _review(folder, expected_sha, *, publish_receipt):
                 json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode(),
             )
         except FileExistsError:
-            if _json(folder / "receipt.json") != receipt:
+            if digest(_json(folder / "receipt.json")) != digest(receipt):
                 raise ActivationError("runner_build_receipt_conflict") from None
     else:
-        if previous != receipt or _json(folder / "receipt.json") != receipt:
+        if digest(previous) != digest(receipt) or digest(_json(folder / "receipt.json")) != digest(
+            receipt
+        ):
             raise ActivationError("runner_build_receipt_conflict") from None
     return {
         "status": "runner_image_built_and_locally_verified",

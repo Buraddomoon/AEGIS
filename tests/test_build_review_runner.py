@@ -92,6 +92,23 @@ def test_context_contains_only_verified_source_wheels_and_fixed_build_recipe(pre
     assert "--push" not in args and "--load" in args
 
 
+@pytest.mark.parametrize("field,value", [("lab_started", 0), ("build_client_exit_verified", 1)])
+@pytest.mark.parametrize("reader", ["review", "review_existing"])
+def test_rehashed_integer_receipt_flags_are_not_accepted_as_boolean_proof(
+    prepared, monkeypatch, field, value, reader
+):
+    simulate_build(prepared, monkeypatch, "native_annotation_only")
+    build.build(prepared.folder, prepared.report["plan_sha256"])
+    path = prepared.folder / "receipt.json"
+    receipt = json.loads(path.read_bytes())
+    receipt[field] = value
+    path.write_text(json.dumps(receipt))
+    before = path.read_bytes()
+    with pytest.raises(build.ActivationError, match="receipt_conflict"):
+        getattr(build, reader)(prepared.folder, prepared.report["plan_sha256"])
+    assert path.read_bytes() == before
+
+
 @pytest.mark.parametrize("scene", ["changed", "extra", "symlink", "hardlink", "mode"])
 def test_changed_or_polluted_context_never_reaches_a_build_effect(
     prepared, monkeypatch, tmp_path, scene
