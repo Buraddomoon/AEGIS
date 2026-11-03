@@ -4043,3 +4043,27 @@ suítes anteriores. Não chamar isso de ensaio nativo. Ruff/format passaram.
 41656232589 estava aguardando; source-review41656233053SUCCESS. Recuperação
 fechada/escopo final/CI ainda pendentes ANTES de preparar candidato/plano reais e
 pedir aprovação específica. Nenhum novo uso de PKI/volumes/Lab/contas ou marcador.
+
+## 2026-11-03 — recuperação interna sob novo escopo cleanup-only
+
+runner_identity_cleanup prepara plano separado de15min, fixando operação/begin/
+plano original, fence/requested originais, imagens, estado/hash do intent e main
+atual. Não lê PKI/credenciais/volumes ou Docker no prepare. Execução exige novo
+scope exato/confirmação literal, plano consumível e lease<=120s UTC/monotônico.
+Native só consulta ownership e stop(SIGTERM5s)/remove dos papéis originais identity;
+exige REMOVAL_REQUESTED/ID e fence durável antes do efeito. Não estende/reinicia o
+ensaio300s nem aceita outros papéis/force/volumes. Recibo separado preserva anterior.
+
+**57passed/34,58s** recuperação19 + cleanup compartilhado38 após último fence.
+Inclui recuperação dos3roles após expiração original com recibo antigo imutável,
+ambiguidade reconciliada por labels/ID, foreign/falha/interrupção retidos, janela/
+rollback/monotônico/cap2s, confirmação/scope/papel, rehash boolean inteiro e inputs
+originais alterados recusados. Nenhum daemon real: efeitos/ownership são fixtures;
+a fronteira nativa compila comandos reais e transporte é simulado. Ruff/format
+passaram. Rodadas16/57anteriores se sobrepõem.
+
+446ºe25b5e0 sincronizado; este será447º,55desde ea2c61d, main privada/push. CLI de
+recuperação e revisão final do procedimento/CI ainda pendentes; não invocar
+nativamente biblioteca/CLI do ensaio. Não foi gerado candidato/plano real ou
+consumida autorização. Próximo: CLI plan/run de cleanup com roots fixos/lock/resume
+exatos e validação integrada antes de apresentar escopo para aprovação humana.

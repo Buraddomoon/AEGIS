@@ -512,3 +512,13 @@ propaga após tentativa de cleanup/recibo. Controle TLS inconclusivo não é pro
 CLI opt-in, revisão histórica de recibos e autorização nativa permanecem pendentes.
 O [procedimento](../../../labs/linux/IDENTITY.md) distingue esses limites de
 ativação PKI/binding, diário e operação normal, ainda fora desse ensaio.
+
+## Recuperação independente e restrita a cleanup
+
+Um crash ou timeout não permite reiniciar o ensaio. O componente de recuperação
+prepara novo escopo de15min ligado à operação/begin/plano/fence/requested, estado
+original e fonte atual. Só após autorização específica ele consome o plano e
+permite ownership/stop/remove por até120s UTC/monotônicos; nenhum create/start ou
+renovação da autorização anterior. Perfis/IDs/papéis fechados e fences antes de
+efeitos; resposta perdida é reconciliada, nunca force. Recibo separado conserva
+a evidência anterior. CLI e escopo humano final continuam em preparação.

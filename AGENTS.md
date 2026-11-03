@@ -748,3 +748,11 @@ fence OU histórico prévio do plano (inclusive vazio/closed), revalida metadata
 fonte antes de begin e usa lease230s. Não lê credenciais/gera chaves/starta outros
 serviços. Exit0 só verified_and_closed; erro estático. Existência da CLI não
 autoriza ensaio: recuperação/escopo final/CI e aprovação específica ainda faltam.
+
+identity_cleanup prepara escopo NOVO cleanup-only15min, source/main/estado/
+operation/begin/plano/fence/requested/imagens fixados, sem PKI/volume/Docker. Run
+exige confirmação literal/scope exato, uso único e120s UTC/monotônico novos; NÃO
+renova ensaio300s. Ownership+stop/remove só papéis/IDs originais; efeito exige
+REMOVAL_REQUESTED e fence de consumo durável. Sem force/volume/start/create.
+Interrupção conserva pendência/recibo e propaga; novo recibo não reescreve antigo.
+CLI/escopo final/CI e nova aprovação ainda faltam antes de qualquer uso nativo.
