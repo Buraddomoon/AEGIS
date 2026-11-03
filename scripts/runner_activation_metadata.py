@@ -14,6 +14,7 @@ VOLUMES = ("journal", "postgres-data")
 IMAGES = ("application", "runner", "postgres", "redis")
 NETWORKS = ("backend", "ingress", "isolated")
 MAX_OUTPUT = 65536
+SMALL_PROBE_OUTPUT = 4096
 TIMEOUT = 10
 ENV = {"PATH": "/usr/bin:/bin", "LC_ALL": "C"}
 DAEMON_FORMAT = '{"id":{{json .ID}},"os":{{json .OSType}},"architecture":{{json .Architecture}}}'
@@ -95,7 +96,7 @@ def _execute(arguments, *, payload=None, timeout=None, output_limit=None, failur
     if type(budget) not in (int, float) or not 0 < budget <= 20:
         raise ActivationError("docker_time_budget_invalid")
     limit = MAX_OUTPUT if output_limit is None else output_limit
-    if type(limit) is not int or limit not in {MAX_OUTPUT, 4 * 1024**2}:
+    if type(limit) is not int or limit not in {SMALL_PROBE_OUTPUT, MAX_OUTPUT, 4 * 1024**2}:
         raise ActivationError("docker_output_profile_invalid")
     if failure_decoder is not None and (
         not callable(failure_decoder) or payload is None or limit != 4 * 1024**2

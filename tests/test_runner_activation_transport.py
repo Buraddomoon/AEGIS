@@ -58,6 +58,38 @@ def test_output_is_drained_while_input_is_written_and_stderr_is_never_returned(m
     assert processes[0][0].returncode == 0
 
 
+@pytest.mark.parametrize("channel", [1, 2])
+def test_small_probe_cap_includes_both_output_channels_and_reaps_overflow(monkeypatch, channel):
+    processes = child(
+        monkeypatch, f"import os,sys;sys.stdin.buffer.read();os.write({channel},b'x'*4097)"
+    )
+    with pytest.raises(transport.ActivationError, match="response_too_large"):
+        transport._execute(
+            ("closed-fixture-only",),
+            payload=b"bounded-request",
+            timeout=5,
+            output_limit=transport.SMALL_PROBE_OUTPUT,
+        )
+    assert processes[0][0].poll() is not None and processes[0][0].stdin.closed
+
+
+def test_small_probe_cap_preserves_full_duplex_eof_and_excludes_stderr(monkeypatch):
+    processes = child(
+        monkeypatch,
+        "import os,sys;os.write(2,b'private-sensitive-sentinel');assert sys.stdin.buffer.read()==b'context';os.write(1,b'ok')",
+    )
+    assert (
+        transport._execute(
+            ("closed-fixture-only",),
+            payload=b"context",
+            timeout=5,
+            output_limit=transport.SMALL_PROBE_OUTPUT,
+        )
+        == b"ok"
+    )
+    assert processes[0][0].returncode == 0 and processes[0][0].stdin.closed
+
+
 @pytest.mark.parametrize(
     "code,expected",
     [
@@ -120,7 +152,12 @@ def test_nonzero_private_probe_has_only_a_trusted_bounded_rejection_decoder(
 
 @pytest.mark.parametrize(
     "payload,limit,decoder",
-    [(None, 4 * 1024**2, lambda _: None), (b"x", 65536, lambda _: None), (b"x", 4 * 1024**2, True)],
+    [
+        (None, 4 * 1024**2, lambda _: None),
+        (b"x", 65536, lambda _: None),
+        (b"x", 4096, lambda _: None),
+        (b"x", 4 * 1024**2, True),
+    ],
 )
 def test_metadata_or_invalid_callbacks_cannot_select_failure_decoding(
     monkeypatch, payload, limit, decoder

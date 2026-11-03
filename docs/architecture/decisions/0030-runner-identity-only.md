@@ -451,3 +451,17 @@ Gate e hashes de evidência têm cópia em memória; coordenador futuro deve per
 origem/referências duráveis. Testes integram PKI/plano reais temporários e daemon
 simulado, com fixture só na fronteira selada de imagem (testada separadamente).
 Não há prova de resultado TLS nem CLI de execução nesse componente.
+
+## Transporte limitado para a saída do cliente
+
+O transporte host privado recebe perfil fechado4KiB para o futuro cliente,
+preservando default64KiB e perfil de provas SQL4MiB. Limite conta stdout+stderr;
+somente stdout pode voltar ao decoder. Escrita de stdin é drenada junto da saída
+e envia EOF, com prazo, kill/reap e config/env Docker independentes do usuário.
+Failure decoder permanece exclusivo do perfil SQL4MiB; não há callback livre no
+perfil novo. Perfil de saída não seleciona comando, URL ou imagem por API.
+
+Testes usam processos Python locais reais para limite nos dois canais, EOF/full
+duplex, stderr não retornado e reap. Isso testa o transporte, não execução de
+container: matar/recolher o CLI não confirma encerramento do container. O lifecycle
+ainda deve usar ownership/cleanup e manter estado incerto quando não confirmado.

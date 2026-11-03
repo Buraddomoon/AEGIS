@@ -665,3 +665,9 @@ revalida manifesto/material completos; decode final revalida bytes/janela sem
 repetir leituras crypto equivalentes. Gate fecha contexto/resourceIDs/checks bool/
 freshness e guarda cópia privada/evidência hashes em memória. Não prova TLS/output
 ou autorização assinada; lifecycle/captura/coordenador e persistência ainda pendentes.
+
+Transporte privado _execute aceita novo perfil fechado4KiB além dos perfis
+64KiB/4MiB existentes. Conta stdout+stderr, retorna só stdout e mantém EOF/
+kill/reap/ENV/config Docker saneados. Failure decoder continua exclusivo do4MiB;
+nenhum comando/payload livre foi exposto. Reap do CLI não comprova container
+encerrado: lifecycle deve reconciliar/limpar por ownership independentemente.

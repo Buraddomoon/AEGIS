@@ -3800,3 +3800,20 @@ verificador real selado coberto separadamente. Ruff/check,258formatados/mypy4pas
 432ºc983a62 sincronizado; este será433º,41desde ea2c61d. Próximo: transporte/captura
 4KiB (já testado no worktree) e driver/lifecycle com fence, depois coordenador
 limitado e escopo nativo revisável. Sem container/PKI original/journal/binding.
+
+## 2026-11-03 — captura host limitada a4KiB
+
+Perfil pequeno fechado no transporte privado, preservando limites64KiB/4MiB dos
+adaptadores existentes. stdout+stderr limitados conjuntamente, só stdout retorna;
+EOF/full duplex/config e ENV saneados/prazo/kill/reap mantidos. Failure decoder
+continua apenas no perfil SQL4MiB. Sem comando/URL/API ou driver nativo novo.
+
+**87passed/1,34s** transporte/metadata, incluindo processos reais pequenos com
+overflow em cada canal, EOF, stderr excluído e rejeição de failure_decoder4KiB
+antes de spawn. Rodada86anterior se sobrepõe. Reap de processo CLI não comprova
+container removido: cleanup por ownership continua obrigatório na próxima camada.
+Nenhum Docker lifecycle real foi invocado. Ruff/format passaram.
+
+433º9f1405d sincronizado; este será434º,42desde ea2c61d, main privada/push. Próximo:
+driver fechado do cliente com gate recente e janela restante, depois lifecycle
+único/recibo/coordenador/escopo nativo. Sem acesso a volumes/PKI ativos ou marcador.
