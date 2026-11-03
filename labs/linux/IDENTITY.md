@@ -201,3 +201,7 @@ próprios verificada e operação encerrada; não autoriza PKI/binding/operaçã
 Se plano/fence/requested original estiver ausente ou adulterado, a recuperação
 automatizada recusa efeitos. Preserve a quarentena e obtenha um escopo de
 inspeção/intervenção próprio; não contorne os checks com Docker rm manual.
+
+Escopo operacional para revisão humana:
+[ensaio único de identidade](IDENTITY-ASSAY.md). Pacote privado com candidato,
+plano, hashes e CI precisa ser concluído antes da solicitação de autorização.

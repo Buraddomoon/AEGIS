@@ -775,3 +775,9 @@ run448º41659669266 exceder18min nos jobs0/1. PINNED server_lifecycle0/client_li
 identity_coordinator2/diagnostic_coordinator3; demais SHAfile%4. Sem filtros/exclusões.
 Cinco coletas2967=759+682+741+785 exatas; coleta não executa casos. Conferir4jobsPython
 e React antes de declarar CI aprovada. Histórico3shards acima é histórico.
+
+Escopo humano do próximo ensaio: labs/linux/IDENTITY-ASSAY.md. Finalizar pacote
+privado com candidato/plano/hashes/CI antes de perguntar, sem operação fictícia.
+Se HEAD posterior ao commit da CI contiver SOMENTE Markdown, conferir igualdade
+de todo conteúdo não-Markdown e source-review do HEAD; não presumir equivalência.
+Nenhum native run por mensagem genérica de continuidade ou aprovação histórica.

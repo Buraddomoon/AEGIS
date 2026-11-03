@@ -4138,3 +4138,26 @@ Próximo: aguardar CI completa desse código e revalidar somente leitura a prova
 da imagem pelo caminho non-publishing, sem gerar candidato cedo. Depois preparar
 escopo/candidato/plano reais e solicitar aprovação específica antes de startup.
 Nenhuma autorização nova consumida, nenhum Lab/volume/binding/PKI original alterado.
+
+## 2026-11-03 — escopo operacional de identidade documentado, sem startup
+
+Escopo revisável em labs/linux/IDENTITY-ASSAY.md fixa somente bridge/servidor/
+cliente, imagem/recibo selados,4conexõesTLS, lease230s/limite300s incluindo cleanup,
+sem banco/worker/Wazuh/diário/marcador/ativação. Recuperação é autorização NOVA
+cleanup-only120s. Exige pacote privado de candidato/plano/hash/CI antes da aprovação.
+Nenhum candidato/plano REAL foi emitido ainda, evitando expiração durante a CI.
+
+Revisão REAL pelo novo caminho non-publishing em450º1955d9a verificou fonte64/
+dependências/imagem e metadata quiescente, preservando bytes/inode/mtime do recibo.
+Relatório identity-nonpublishing-readiness-ff8c88662513490a881f4c443b32996c.json, SHA
+937d63e8742936feeebe8dc1f1f4a469a132e7453a0cc06f1862971ba47b3cbc, privado. Sem
+startup/PKI nova/prova de TLS. CI450º41706761742: ReactSUCCESS,0/1executando e2/3
+aguardando na última consulta; source-review41706761830SUCCESS. Não declarar CI
+completa nem pedir autorização antes dos quatro jobs concluídos.
+
+450º1955d9a sincronizado; este será451º,59desde ea2c61d. Alteração SOMENTE Markdown:
+CI450º continua válida para o código se passar; conferir igualdade de todos os
+arquivos não-Markdown entre450ºe451º e source-review451º antes de gerar o pacote.
+Próximo: concluir CI, candidato/plano privados atuais, revisão/hash em pergunta
+específica; aguardar resposta antes de qualquer native run. Não interpretar
+continuidade como autorização de ensaio. Histórico/Demo/volumes/PKI preservados.
