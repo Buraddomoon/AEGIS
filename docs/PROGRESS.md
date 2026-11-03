@@ -4022,3 +4022,24 @@ formato antigo recusados. Ruff/format passaram.
 de histórico de tentativas seguem no worktree em unidade separada, ainda sem
 validação; não invocar nativamente. Próximo: testes dessa CLI e cleanup fechado
 de recursos próprios sob escopo novo. Sem novo candidato/plano ou ensaio real.
+
+## 2026-11-03 — CLI opt-in do ensaio com tentativa única
+
+runner_identity_assay exige confirmação literal e scope exato antes de IO/lock;
+usa root de plano fixo, build inputs fechados, lock compartilhado, recheck metadata
+e fonte/imagem antes de begin. Invoca somente coordenador com lease230s/reserva
+de cleanup. Histórico do mesmo plano bloqueia inclusive tentativas vazias já
+encerradas, sem depender apenas do fence. Falha pré-efeito fecha só intent vazio;
+recursos pendentes preservados. Exit0 somente controles verificados/closed; erro
+redigido e digest canônico do corpo do recibo na saída.
+
+**114passed/8,50s** CLI/intents: confirmação antes de IO, scope errado/fence/
+histórico/lock/pins/ordem/budget, tentativa vazia falha sem replay, interrupção com
+REQUESTED preservado, inputs/root fixos e exit/erros. Coordenador é fronteira fixture
+explícita nesse teste; o ciclo real de gates foi exercitado separadamente nas
+suítes anteriores. Não chamar isso de ensaio nativo. Ruff/format passaram.
+
+445ºdf8b58c sincronizado; este será446º,54desde ea2c61d, main privada/push. CI445º
+41656232589 estava aguardando; source-review41656233053SUCCESS. Recuperação
+fechada/escopo final/CI ainda pendentes ANTES de preparar candidato/plano reais e
+pedir aprovação específica. Nenhum novo uso de PKI/volumes/Lab/contas ou marcador.

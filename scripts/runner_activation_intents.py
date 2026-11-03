@@ -465,6 +465,14 @@ class ActivationIntents:
             "begin", {"plan_id": plan_id, "plan_sha256": plan_sha256, "scope_sha256": scope_sha256}
         )
 
+    def has_plan_history(self, plan_sha256):
+        """Under the exclusive project lock, include closed/empty attempts too."""
+        self._check()
+        _hash(plan_sha256)
+        return any(
+            state["header"]["plan_sha256"] == plan_sha256 for _, state in self._histories().values()
+        )
+
     def resume(self, identifier, expected_begin_sha256):
         self._check()
         _identifier(identifier)

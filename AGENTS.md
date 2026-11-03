@@ -741,3 +741,10 @@ runner_activation.load_for_cleanup lê plano histórico /2 com o MESMO hash/sche
 policy, permitindo expiração apenas para cleanup próprio. Não abre PKI/volume/
 credenciais/daemon nem concede create/start/lease; load_plan/recheck permanecem
 atuais. Não usar leitor histórico em gates/compiladores/ativação.
+
+runner_identity_assay é CLI host opt-in, confirmação identity-only literal/scope
+exato, plano em root fixo e build inputs fechados. Sob lock compartilhado, nega
+fence OU histórico prévio do plano (inclusive vazio/closed), revalida metadata/
+fonte antes de begin e usa lease230s. Não lê credenciais/gera chaves/starta outros
+serviços. Exit0 só verified_and_closed; erro estático. Existência da CLI não
+autoriza ensaio: recuperação/escopo final/CI e aprovação específica ainda faltam.

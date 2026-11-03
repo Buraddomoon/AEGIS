@@ -2,7 +2,7 @@
 
 Estado: coordenador interno implementado com gates, armazenamento privado e
 cleanup por ownership; validação automatizada usa PKI/Git temporários e RPCs
-simuladas. **O ensaio nativo ainda não foi realizado nem autorizado.** A CLI de execução nativa e o
+simuladas. **O ensaio nativo ainda não foi realizado nem autorizado.** A CLI de execução foi implementada; recuperação fechada e
 escopo operacional final ainda estão em preparação. Este documento não concede
 permissão para iniciar recursos. Os ensaios históricos não podem ser repetidos.
 
@@ -101,7 +101,7 @@ protocolo nos testes não são evidência de TLS nativo.
 
 ## O que permanece pendente
 
-CLI de execução opt-in e escopo operacional final, seguidos de
+Recuperação fechada de ownership, escopo operacional final e CI, seguidos de
 autorização específica e um único ensaio nativo. Não usar imports Python manuais
 para contornar essa preparação. A ativação real de PKI/binding permanece uma etapa
 separada e precisa também de imagem de aplicação atual, plano e aprovação próprios.
@@ -137,3 +137,24 @@ Exit0 significa **integridade dos registros salvos**, inclusive de um ensaio que
 falhou. A saída usa recorded_assay_status/recorded_tls_controls_verified; não
 revalida runtime, origem TLS ou fence junto ao plano e nunca permite retomada.
 Recibo incompleto não pode ser promovido a verificação íntegra por essa CLI.
+
+## CLI de execução opt-in
+
+`scripts/runner_identity_assay.py --help` apenas lista argumentos. **Não executar
+o ensaio antes de concluir a recuperação/escopo e obter autorização específica.**
+A CLI exige plan-id, expected-sha256, authorized-scope-sha256, build-id,
+build-plan-sha256, build-receipt-sha256 e confirm-identity-only-assay explícito.
+Não aceita alvos/URL/comandos/roots livres, credenciais ou geração de chave.
+
+Sob lock compartilhado do projeto, recusa fence ou histórico de uso do mesmo
+plano (mesmo tentativa vazia/encerrada), revalida metadata e fonte/imagem selada
+antes de iniciar o orçamento. Então cria intent novo e invoca somente o
+coordenador identity-only. Plano/candidato precisam estar válidos; preflight não
+concede assinatura humana. Erros não imprimem exceções privadas.
+
+A saída inclui corpo do recibo e seu digest JSON canônico. Exit0 é reservado a
+identity_assay_verified_and_closed; resultado inconclusivo retorna1, com evidências
+preservadas. Uma falha antes do primeiro efeito fecha somente intent vazio. Com
+recursos pendentes, preserva ownership para recuperação; não reinicia ou limpa
+globalmente. A existência da CLI não autoriza seu uso automático ao continuar o
+desenvolvimento.
