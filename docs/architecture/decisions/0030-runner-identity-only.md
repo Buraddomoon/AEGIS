@@ -484,3 +484,19 @@ saída só é retornada após decode_result fechado /2. CLI exit0 não torna JSO
 rejeitado/tamperado/oversize válido. Controle sem certificado inconclusivo mantém
 sua classificação, sem virar autorização. Origem/runtime/cleanup final exigem
 o lifecycle/coordenador ainda pendentes; testes de RPC usam replies simulados.
+
+## Artefatos privados de uso único
+
+IdentityArtifacts cria diretório0700 exclusivo por operação, somente com uma
+ConfirmedPlan válida e intent novo. Nomes de registro fechados, arquivos0600
+O_EXCL/NOFOLLOW e fsync do arquivo/diretório; registro parcial permanece como
+fence, nunca é sobrescrito ou adotado. Envelope fixa operação/beginSHA/plano/scope,
+nome/timestamp UTC e hash do corpo JSON normalizado. Limite256KiB por registro,
+sem bytes/objetos arbitrários/NaN; leitura rejeita links/FIFO/permissões, troca de
+diretório, adulteração e inventário desconhecido.
+
+Coordenador deve gravar os fatos normalizados antes do efeito; não fornecer
+chaves, senhas, stderr ou exceções. Cleanup/recibo permanecem graváveis após
+expiração e fechamento do intent, sem renovar lease. Hash é integridade relativa
+ao recibo retido, não assinatura ou proteção contra proprietário local malicioso.
+Ainda não há CLI/coordenador nativo autorizado nesta camada.

@@ -694,3 +694,10 @@ próprio; colisão não adota/apaga, cleanup incerto retém pais. Reply protocol
 verificado não torna controls_inconclusive em TLS confirmado. Gate records têm
 revisões normalizadas em memória; coordenador deve persistir antes de efeitos.
 Sem CLI/ensaio autorizado, sem uso de volumes/worker/journal/PKI ativa.
+
+IdentityArtifacts é host-only, intent novo/ConfirmedPlan concreta, diretório de
+operação exclusivo0700 e nomes fechados/O_EXCL0600/fsync. Não reabrir writer ou
+sobrescrever parciais. Gravar só JSON normalizado público, nunca key/senha/raw
+stderr/exceção. Confere anchor/header/inodes/permissões/hash e inventário fechado;
+recibo/cleanup após expiração/closure não renovam autorização. Hash não é assinatura.
+CI436º41647053065 passou3partições:2807Python+8skip opcionais; React79passou.

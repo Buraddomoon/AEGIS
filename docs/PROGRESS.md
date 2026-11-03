@@ -3876,3 +3876,24 @@ Nenhuma RPC Docker real/PKI ativa/volume/marcador foi usado pelos testes.
 CI436º41647053065: React e partições0/1 passaram; partição2 ainda executando na
 consulta. Não declarar CI concluída. Próximo: armazenamento privado e imutável dos
 artefatos, coordenador limitado e procedimento revisável; sem novo ensaio autorizado.
+
+## 2026-11-03 — armazenamento privado do ensaio e CI completa aprovada
+
+IdentityArtifacts cria diretório exclusivo por operação e envelopes vinculados ao
+beginSHA/plano/escopo. Nomes fechados/256KiB/JSON estrito, permissões0700/0600,
+O_EXCL/NOFOLLOW/fsync; sem adoção/sobrescrita/replay. Leitor confere hashes/anchor/
+permissões/links/inode e inventário. Escrita de cleanup após expiração/closure
+permanece possível sem autorizar novos efeitos. Ainda não conectado a ensaio nativo.
+
+**28passed/27,38s**, PKI/plano/intents reais temporários: adulteração/cross-operation,
+traversal, symlink/hardlink/FIFO, parcial, overflow/NaN/objeto, troca de diretório,
+fsync falho/sem retry, operação existente e lease expirado. Ruff/format passaram.
+
+CI436º**41647053065 SUCCESS**, todas3partições e React: **2807passed/8skip** Python
+(1040+1040+727;369,08s/939,31s/924,24s) e **79passed/12arquivos** React. Log privado
+identity-ci-three-success.log preservado; source-review41647053197 tambémSUCCESS.
+Refere-se a7b06efc; CI437º41650774843 estavaQUEUED na última consulta.
+
+437ºd94a598 sincronizado; este será438º,46desde ea2c61d, main privada/push direto.
+Próximo: persistir fatos antes de efeitos, coordenar rede/servidor/cliente/cleanup
+no mesmo orçamento e preparar procedimento concreto. Sem Lab/PKI ativa/volumes.
