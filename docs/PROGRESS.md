@@ -3907,3 +3907,18 @@ completa de artefatos, incluindo round-trip96KiB e as restrições anteriores. R
 format passaram. Nenhum efeito nativo. 438º0ee6100 sincronizado; este será439º,
 47desde ea2c61d. Gates persistidos e orçamento/coordenador seguem em unidades
 separadas no worktree; não anunciados como concluídos neste commit.
+
+## 2026-11-03 — gates persistidos antes da admissão
+
+Rede/servidor preservam cópia dos fatos normalizados. RecordedServerGates e
+RecordedClientGates computam reviews reais e gravam gate/fatos/hashes no storage
+da MESMA confirmação antes de retornar admissão. Rede usa wrapper equivalente.
+Depois do fsync, lease/intent/freshness são conferidos novamente; falha do cliente
+revoga cache. Registro retido não vira token de autorização/replay.
+
+**68passed/111,14s**: gates originais de rede/servidor e fronteira de persistência;
+expiração/intent alterado durante IO, fato velho, gravação falha/duplicada e outra
+confirmação recusados. Provedor computado é chamado, não JSON salvo. Testes de
+wrappers servidor/cliente usam fronteira computada explícita; não comprovam TLS
+nativo. Ruff/format passaram. 439º sincronizado; este será440º,48desde ea2c61d.
+Próximo: orçamento único com reserva de cleanup e coordenador integrado. Sem Lab.

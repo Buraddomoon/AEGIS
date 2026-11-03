@@ -701,3 +701,8 @@ sobrescrever parciais. Gravar só JSON normalizado público, nunca key/senha/raw
 stderr/exceção. Confere anchor/header/inodes/permissões/hash e inventário fechado;
 recibo/cleanup após expiração/closure não renovam autorização. Hash não é assinatura.
 CI436º41647053065 passou3partições:2807Python+8skip opcionais; React79passou.
+
+RecordedServerGates/RecordedClientGates e before_network_create persistem fatos
+normalizados/gate/evidência antes de retornar admissão, sempre mesma confirmação.
+Lease/intent/freshness rechecados depois do fsync; falha de persistência/recheck
+revoga cache do cliente. Artefato não permite replay. Gates nativos não invocados.

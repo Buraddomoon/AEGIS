@@ -1,5 +1,6 @@
 """Internal live gates for one isolated bridge; no CLI, approval service or lifecycle."""
 
+import copy
 import time
 from datetime import datetime, timedelta
 
@@ -40,6 +41,7 @@ class NetworkGates(ConfirmedPlan):
         self.docker, self.ownership_docker = docker, ownership_docker
         self.subnet_docker, self.routes = subnet_docker, routes
         self.evidence = []
+        self._last_review = None
 
     def _facts(self):
         self._guard()
@@ -56,6 +58,7 @@ class NetworkGates(ConfirmedPlan):
         return value
 
     def before_create(self, phase, spec):
+        self._last_review = None
         if phase != "create":
             raise ActivationError("network_gate_create_only")
         original = self._guard()
@@ -119,5 +122,8 @@ class NetworkGates(ConfirmedPlan):
                 "after_sha256": digest(after),
                 "subnet_review_sha256": digest(availability),
             }
+        )
+        self._last_review = copy.deepcopy(
+            {"plan_before": before, "plan_after": after, "subnet": availability}
         )
         return gate

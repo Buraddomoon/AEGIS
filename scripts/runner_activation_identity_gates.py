@@ -84,8 +84,10 @@ class IdentityGates:
         self.docker, self.ownership_docker = docker, ownership_docker
         self.runtime_docker, self.network_docker = runtime_docker, network_docker
         self.evidence = []
+        self._last_review = None
 
     def review(self, phase, spec):
+        self._last_review = None
         c = self.confirmation
         original = c._guard()
         resource = original["resources"].get("runner", {})
@@ -206,6 +208,16 @@ class IdentityGates:
                 "image_profile_sha256": digest(profile),
                 "network_sha256": digest(bridge),
                 "runtime_sha256": digest(physical) if physical is not None else None,
+            }
+        )
+        self._last_review = copy.deepcopy(
+            {
+                "plan_before": before,
+                "plan_after": after,
+                "image_inputs": sealed,
+                "image_profile": profile,
+                "network": bridge,
+                "runtime": physical,
             }
         )
         return gate
