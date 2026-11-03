@@ -3,29 +3,32 @@
 ## CI particionada — 2026-10-30
 
 O job único atingiu o limite18min após o crescimento da suíte. A CI agora executa
-duas partições Python complementares, cada uma com PostgreSQL/Redis próprios no
+três partições Python complementares, cada uma com PostgreSQL/Redis próprios no
 runner GitHub, e um job React sem esses serviços. Runners padrão Ubuntu, caches e
 cancelamento de runs redundantes permanecem; nenhum recurso pago foi habilitado.
 Lint/tipos/advisory Python rodam uma vez, no shard0; checks React continuam completos.
 Falha em um shard não cancela o outro, mas impede aprovação da workflow inteira.
 
-`python scripts/run_ci_tests.py --shard 0` e `--shard 1` coletam a suíte completa e
+`python scripts/run_ci_tests.py --shard 0`, `--shard 1` e `--shard 2` coletam a suíte completa e
 selecionam por SHA256 do caminho canônico do arquivo, mantendo todos os seus casos
 no mesmo shard. Duas atribuições explícitas em `run_ci_tests.PINNED` movem arquivos
-inteiros de lifecycle/coordenador para0, com base nos durations da run41080108097
-(537,18s no0 contra942,53s no1). Isso preserva dois jobs/limite18min; melhoria de
-tempo ainda depende da próxima execução completa. Cada arquivo pertence exatamente
+inteiros de lifecycle/coordenador para0/1. O primeiro balanceamento em dois jobs
+passou, mas a run41641991673 atingiu18min em ambos após crescer a suíte. Terceiro
+shard foi incluído mantendo **max-parallel2**, runners padrão e limite18min por job;
+sem casos omitidos ou recursos pagos habilitados. Tempo completo do novo arranjo
+ainda depende da CI. Cada arquivo pertence exatamente
 a uma partição, incluindo os fixados. Adições/ordenação não movem arquivos existentes;
 alterar atribuições exige evidência e nova conferência de união. Shard
 inválido/vazio, arquivo fora de tests ou PYTEST_ADDOPTS herdado impedem sucesso.
 CLI não aceita filtros/ignore; `--collect-only` permite conferir a seleção.
 
-Localmente, executar os dois comandos **em sequência**, nunca junto de outra suíte
+Localmente, executar os três comandos **em sequência**, nunca junto de outra suíte
 PG/Redis15. `make test`/pytest normal continuam completos e sem particionamento.
-Coleta não significa execução aprovada; conferir resultados de ambos os jobs e
+Coleta não significa execução aprovada; conferir resultados dos três jobs e
 do React. Comparação real de coleta da alteração conferiu2490casos =1273+1217,
 zero omissões/overlap; contagem muda conforme testes novos. Após o rebalanceamento,
-coleta real2726 =1379+1347, também sem omissões/overlap; coleta não executa casos.
+coleta real2726 =1379+1347, também sem omissões/overlap. Expansão atual conferiu
+2830=1046+1041+743 incluindo lifecycle no worktree; coleta não executa casos.
 IDs de dois casos UUID
 do diário foram fixados por nome para comparação entre processos, sem mudar dados.
 

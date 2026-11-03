@@ -525,9 +525,9 @@ precisa igualar main limpa atual; trocar commit não atualiza imagem antiga. Sem
 build/pull/start/SQL/diário. Reusa somente verificadores de inputs do diagnóstico,
 não seu lifecycle/autorização. Flags de assinatura/modo runtime/operação são falsos.
 
-CI em duas partições Python fixas0/1 por hash canônico (mais PINNED revisado) via run_ci_tests.py,
+CI em três partições Python fixas0/1/2 por hash canônico (mais PINNED revisado) via run_ci_tests.py,
 coletando tudo e selecionando cada caso exatamente uma vez. Workflow precisa conter
-ambos; falha/partição vazia/path externo/PYTEST_ADDOPTS são erros. React em job próprio,
+todos; falha/partição vazia/path externo/PYTEST_ADDOPTS são erros. React em job próprio,
 lint/tipos/advisory Python no0, cancelamento redundante/cache preservados; sem paid
 features. Nunca omitir partição para obter green ou tratar collect-only como execução.
 Localmente rodar shards em sequência por PG/Redis15. Teste test_ci_partitions confere
@@ -679,3 +679,10 @@ RPC. Budget menor entre10s create/15s attach e restante UTC/monotônico, output4
 e decoder fechado. Admissão em memória consumida até em falha; recheck falho
 revoga cache. Lifecycle ainda deve impedir replay durável após resume e limpar
 container próprio: kill/reap CLI não o comprova. Sem exec/restart/CLI/API nova.
+
+Estado CI2026-11-03: run435º41641991673 excedeu18min nos dois jobs (annotations
+confirmadas), sem aprovação presumida. Agora3shards com max-parallel2/timeout18
+inalterados/runners padrão; arquivos inteiros PINNED lifecycle0/coordinator1,
+restante SHAfile%3. Todos os casos seguem exatamente uma vez. Coleta2830=1046+
+1041+743/zerooverlap/zeroomissões inclui lifecycle ainda no worktree na conferência;
+não significa execução aprovada. Sem aumento de concorrência ou recurso pago.

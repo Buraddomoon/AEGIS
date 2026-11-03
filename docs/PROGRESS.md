@@ -3836,3 +3836,22 @@ real: replies de protocolo são fixtures, sem alegar novas evidências TLS nativ
 434ºdb71b00 sincronizado; este será435º,43desde ea2c61d, main privada/push. Lifecycle
 durável ainda precisa coordenar efeitos e cleanup próprio após resume/timeout;
 coordenador/escopo nativo continuam pendentes. PKI, volumes e Demo preservados.
+
+## 2026-11-03 — CI completa em três partições com paralelo limitado a dois
+
+Run435º41641991673 CANCELLED: annotations dos jobs125937868644/125937869272 confirmam
+“The job has exceeded the maximum execution time of18m0s”. Não contada como green
+ou falha funcional conhecida. Suíte cresceu com gates/driver; redistribuição em
+3partições mantendo max-parallel2,18min por job, runners padrão e checks completos.
+Sem filtros/omissões, runner pago ou mudança de orçamento GitHub.
+
+**16passed/0,15s**: unicidade/complemento agora para todos os shards e arquivos
+fixados; inválido3/boolean/path externo/filtros/vazio recusados. Quatro coletas
+reais em processos independentes conferiram **2830=1046+1041+743**, zerooverlap/
+omissões (inclui lifecycle em validação no worktree). Isso é cobertura da seleção,
+não testes2830aprovados. Logs privados identity-ci-three-collection-* preservados.
+
+435º91542b9 sincronizado; este será436º,44desde ea2c61d, main privada/push. Lifecycle
+do cliente já passou15casos e a revisão de regressões compartilhadas segue em
+andamento; será commit separado após conferência. Próximo: consolidar esse marco
+e implementar o coordenador/recibos/procedimento nativo antes de qualquer ensaio.

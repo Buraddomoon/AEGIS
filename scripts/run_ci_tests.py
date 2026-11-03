@@ -1,4 +1,4 @@
-"""Run one of two complementary file-based pytest partitions; no lab startup."""
+"""Run one complementary file-based pytest partition; no lab startup."""
 
 import argparse
 import hashlib
@@ -8,12 +8,12 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-SHARDS = 2
-# Run41080108097: 537s vs943s. Move whole heavy fixture files, never cases,
-# to retain every test while giving both partitions room under the same18min.
+SHARDS = 3
+# Run41641991673 hit18min in BOTH partitions as fixture coverage grew.
+# Distribute whole heavy files, never cases; max-parallel remains2 in CI.
 PINNED = {
     "tests/test_runner_activation_identity_lifecycle.py": 0,
-    "tests/test_runner_diagnostic_coordinator.py": 0,
+    "tests/test_runner_diagnostic_coordinator.py": 1,
 }
 
 
