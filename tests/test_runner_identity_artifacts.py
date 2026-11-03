@@ -54,6 +54,26 @@ def test_existing_operation_folder_and_existing_record_cannot_be_adopted_or_over
     assert (value.folder / "requested.json").read_bytes() == original
 
 
+def test_plan_scope_cannot_be_replayed_by_another_operation_or_runtime_root(records, tmp_path):
+    from runner_activation_intents import ActivationIntents
+
+    value, c, _ = records
+    path = c.path.parent / "identity-assay-requested.json"
+    before = path.read_bytes()
+    fence = json.loads(before)
+    assert artifacts.digest(fence) == value.plan_use_sha256
+    assert fence["requested_artifact_sha256"] == artifacts.digest(value.read("requested"))
+    with ActivationIntents(tmp_path / "other-intents") as store:
+        store.begin(c.artifact["id"], c.plan_sha256, c.scope)
+        other = artifacts.ConfirmedPlan(
+            c.path, c.plan_sha256, store, c.scope, c.expires.isoformat()
+        )
+        with pytest.raises(FileExistsError):
+            artifacts.IdentityArtifacts(other, root=tmp_path / "other-records")
+        assert store.review()["resources"] == {}
+    assert path.read_bytes() == before
+
+
 @pytest.mark.parametrize("name", ["../receipt", "receipt.json", "/tmp/receipt", "", "worker", 1])
 def test_only_closed_record_names_are_accepted(records, name):
     value, _, _ = records

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import runner_pki as pki
 from aegis.domain.validation import digest
+from build_review_runner import _write
 from runner_activation_confirmation import ConfirmedPlan
 from runner_activation_metadata import ActivationError, _unique
 
@@ -84,7 +85,7 @@ class IdentityArtifacts:
             self.folder.mkdir(mode=0o700)  # Existing folder is never adopted.
             pki.sync(self.root)
             self.fd = os.open(self.folder, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-            self.write(
+            requested = self.write(
                 "requested",
                 {
                     "tool_commit": confirmation.artifact["tool_commit"],
@@ -95,6 +96,17 @@ class IdentityArtifacts:
                     "normal_operation_permitted": False,
                 },
             )
+            # A fresh operation must not reuse this plan's consumed scope. Keep
+            # the fence with the immutable plan, independently of runtime root.
+            use = {
+                "format": "aegis-identity-assay-plan-use/1",
+                **self.anchor,
+                "requested_artifact_sha256": requested,
+            }
+            _write(confirmation.path.parent / "identity-assay-requested.json", _encode(use))
+            self.plan_use_sha256 = digest(use)
+            if confirmation._guard()["resources"]:
+                raise ActivationError("identity_artifact_new_operation_required")
         except BaseException:
             self.close()
             raise

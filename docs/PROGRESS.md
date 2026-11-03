@@ -3937,3 +3937,15 @@ rollback/reconstrução, caps inválidos, expansão de escopo e comandos fixos/s
 force. Primeira rodada14pass/2falhas de expectativa/precheck foi corrigida; suíte
 completa reexecutada. Ruff/format passaram. 440º40aad7b sincronizado; este será
 441º,49desde ea2c61d. Coordenador/fluxo integrado seguem em validação no worktree.
+
+## 2026-11-03 — consumo do plano entre operações
+
+Além do diretório exclusivo por operação, IdentityArtifacts agora grava fence
+O_EXCL0600/fsync junto ao plano antes de qualquer efeito, vinculado ao requested
+artifactSHA/begin/operação/plano/scope. Outra operação ou runtime root não pode
+reusar o plano já consumido. Partial/falha permanecem preservados; sem retry.
+**38passed/38,02s** artefatos e gates persistidos, incluindo tentativa real com
+outro intent/operação/root e preservação dos bytes originais. Ruff/check e
+270arquivos formatados passaram. 441º1e70e20 sincronizado; este será442º,
+50desde ea2c61d. Coordenador12casos passou antes desse ajuste; reexecução completa
+com fence está em andamento, ainda não declarada concluída. Sem efeito nativo.

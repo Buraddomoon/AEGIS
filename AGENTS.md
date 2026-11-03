@@ -712,3 +712,8 @@ monotônico original e UTC mínimo. Sem renovar janela ao reconstruir ou após
 rollback. Adaptadores nativos fechados; ownership/cleanup só3roles identity e
 mesmos operation/plan. Expiração normal não bloqueia cleanup; corte300s retém
 incerteza, nunca force/volume delete. Nenhum native CLI/ensaio autorizado.
+
+Artefatos identity também consomem plano com identity-assay-requested.json
+O_EXCL0600/fsync junto a plan.json, fixando requested artifactSHA e anchor. Nova
+operação/root não autoriza reutilizar plano consumido. Fence parcial é preservado;
+não apagar para retry. Nenhum arquivo PKI original/candidato é alterado por isso.
