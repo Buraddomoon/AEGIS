@@ -642,3 +642,11 @@ fixados no0 após durations reais427º (537s/943s). Restante continua SHAfile%2.
 Nenhuma exclusão, nova máquina ou aumento de timeout. Toda mudança de PINNED exige
 teste de complementaridade e comparação real dos nodeIDs da coleta completa.
 Relatório2726=1379+1347/zerooverlap/zeroomissões é coleta, não execução de testes.
+
+Estado2026-11-03: cliente agora tem contextos dedicados identity-create/start/exited
+no active_metadata/active_plan, mantendo contextos runner antigos fechados quando
+cliente presente. Exige pai running com fence/runtime e rede própria; projeto,
+nomes reservados e consumidores globais dos dois volumes conferidos duas vezes.
+active_plan exige request_context_sha256 só nesse papel e confere fence/recipe/
+IDs; nenhum outro papel recebe esse parâmetro. Diagnóstico /3 continua recusando
+cliente antes de inputs. Isso é revisão de metadata/PKI, não TLS/ativação/CLI.

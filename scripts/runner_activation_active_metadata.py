@@ -7,7 +7,7 @@ import runner_activation_metadata as metadata
 import runner_activation_ownership as ownership
 from aegis.domain.validation import digest
 from runner_activation_cleanup import IMAGE_ROLE
-from runner_activation_intents import DATABASE_REVIEW_ROLES
+from runner_activation_intents import DATABASE_REVIEW_ROLES, IDENTITY_CLIENT_ROLE, _identity_parents
 from runner_activation_isolated_network import ROLE as ISOLATED_ROLE
 from runner_activation_metadata import ActivationError
 
@@ -18,9 +18,16 @@ IDENTITY_PHASES = {
     "identity-start": "start",
     "identity-running": "running",
 }
+CLIENT_PHASES = {
+    "identity-create": "create",
+    "identity-start": "start",
+    "identity-exited": "exited",
+}
 
 
 def context_allowed(role, phase):
+    if role == IDENTITY_CLIENT_ROLE:
+        return phase in CLIENT_PHASES
     if role == "runner":
         return phase in IDENTITY_PHASES
     if role == ISOLATED_ROLE:
@@ -65,13 +72,25 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
     deadline = time.monotonic() + 20
     if not context_allowed(role, phase):
         raise ActivationError("active_metadata_probe_context_required")
-    identity_context = role == "runner"
-    stage = IDENTITY_PHASES[phase] if identity_context else phase
+    client_context = role == IDENTITY_CLIENT_ROLE
+    identity_context = role == "runner" or client_context
+    identity_roles = {"runner", ISOLATED_ROLE}
+    if client_context:
+        stage = CLIENT_PHASES[phase]
+        identity_roles.add(IDENTITY_CLIENT_ROLE)
+        member_counts = {1} if stage == "create" else {1, 2}
+    elif identity_context:
+        stage = IDENTITY_PHASES[phase]
+        member_counts = {0} if stage == "create" else {1} if stage == "running" else {0, 1}
+    else:
+        stage, member_counts = phase, set()
     original = store.review()
     images = copy.deepcopy(images)
     expected_inventory_sha256 = digest(expected_inventory)
     owned = original["resources"]
     current = owned.get(role)
+    if client_context:
+        _identity_parents(owned)
     if (
         original["closed"]
         or current is None
@@ -95,6 +114,14 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
             )
         )
         or (
+            stage == "exited"
+            and (
+                current["state"] not in {"OBSERVED", "START_REQUESTED"}
+                or current["resource_id"] is None
+                or "request_context_sha256" not in current.get("start", {})
+            )
+        )
+        or (
             stage == "running"
             and (
                 current["state"] != "OBSERVED"
@@ -107,15 +134,24 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
         or any(item["state"] == "REQUESTED" and key != role for key, item in owned.items())
         or ("runner" in owned and owned["runner"]["state"] != "ABSENT" and not identity_context)
         or (
+            IDENTITY_CLIENT_ROLE in owned
+            and owned[IDENTITY_CLIENT_ROLE]["state"] != "ABSENT"
+            and not client_context
+        )
+        or (
             identity_context
             and (
                 owned.get(ISOLATED_ROLE, {}).get("state") != "OBSERVED"
                 or owned.get(ISOLATED_ROLE, {}).get("resource_id") is None
                 or any(
-                    key not in {"runner", ISOLATED_ROLE} and item["state"] != "ABSENT"
+                    key not in identity_roles and item["state"] != "ABSENT"
                     for key, item in owned.items()
                 )
-                or ("start" in current and current["start"].get("mode") != "identity-only")
+                or (
+                    not client_context
+                    and "start" in current
+                    and current["start"].get("mode") != "identity-only"
+                )
             )
         )
         or (
@@ -152,6 +188,12 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
                         raise ActivationError("active_metadata_owned_image_mismatch")
                     if key == role and found["details"]["running"] is not (stage == "running"):
                         raise ActivationError("active_metadata_probe_already_running")
+                    if (
+                        client_context
+                        and key == "runner"
+                        and found["details"]["running"] is not True
+                    ):
+                        raise ActivationError("active_metadata_identity_parent_not_running")
                     containers.add(item["resource_id"])
                 else:
                     if (
@@ -163,11 +205,7 @@ def review(store, images, expected_inventory, role, phase, *, docker=None, owner
                     if (
                         identity_context
                         and key == ISOLATED_ROLE
-                        and (
-                            found["details"]["member_count"]
-                            not in ({1} if stage == "running" else {0, 1})
-                            or (stage == "create" and found["details"]["member_count"] != 0)
-                        )
+                        and found["details"]["member_count"] not in member_counts
                     ):
                         raise ActivationError("active_metadata_identity_network_members_mismatch")
                     networks.add(item["resource_id"])

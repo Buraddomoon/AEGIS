@@ -128,6 +128,9 @@ def test_owned_recheck_uses_pinned_build_code_identity_and_exact_consumers(
         "identity-create",
         "identity-start",
         "identity-running",
+        "client-identity-create",
+        "client-identity-start",
+        "client-identity-exited",
     ],
 )
 def test_wrong_owned_context_fails_before_input_queries(diagnostic, tmp_path, monkeypatch, scene):
@@ -141,15 +144,19 @@ def test_wrong_owned_context_fails_before_input_queries(diagnostic, tmp_path, mo
         if scene == "extra_role":
             store.request("redis")
         monkeypatch.setattr(review, "inputs", lambda *a, **k: pytest.fail("Input access forbidden"))
+        if scene.startswith("client-identity-"):
+            role, phase = "identity-client", scene.removeprefix("client-")
+        elif scene.startswith("identity-"):
+            role, phase = "runner", scene
+        else:
+            role, phase = "db", "exited" if scene == "wrong_phase" else "create"
         with pytest.raises(ValueError, match="owned_context"):
             review.recheck(
                 folder,
                 report["plan_sha256"],
                 store,
-                "runner" if scene.startswith("identity-") else "db",
-                scene
-                if scene.startswith("identity-")
-                else ("exited" if scene == "wrong_phase" else "create"),
+                role,
+                phase,
                 repo=options["repo"],
             )
 

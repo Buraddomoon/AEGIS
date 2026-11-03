@@ -9,9 +9,24 @@ from aegis.domain.validation import digest
 from runner_activation_metadata import IMAGES, ActivationError
 
 
-def recheck(path, expected_sha256, store, role, phase, *, docker=None, ownership_docker=None):
+def recheck(
+    path,
+    expected_sha256,
+    store,
+    role,
+    phase,
+    *,
+    docker=None,
+    ownership_docker=None,
+    request_context_sha256=None,
+):
     if not active.context_allowed(role, phase):
         raise ActivationError("active_plan_probe_context_required")
+    client_context = role == active.IDENTITY_CLIENT_ROLE
+    if client_context:
+        activation.sha256(request_context_sha256)
+    elif request_context_sha256 is not None:
+        raise ActivationError("active_plan_client_context_not_allowed")
     artifact = activation.load_plan(path, expected_sha256)
     state = store.review()
     if (
@@ -33,6 +48,24 @@ def recheck(path, expected_sha256, store, role, phase, *, docker=None, ownership
             or started.get("network_resource_id") != spec["network_resource_id"]
         ):
             raise ActivationError("active_plan_identity_start_binding_mismatch")
+    if client_context:
+        from runner_activation_identity_client_runtime import recipe
+
+        spec = recipe(store, path, expected_sha256, request_context_sha256)
+        started = state["resources"].get(active.IDENTITY_CLIENT_ROLE, {}).get("start")
+        if (phase == "identity-exited" and started is None) or (
+            started is not None
+            and any(
+                started.get(key) != value
+                for key, value in {
+                    "recipe_sha256": digest(spec),
+                    "request_context_sha256": request_context_sha256,
+                    "runner_resource_id": spec["runner_resource_id"],
+                    "network_resource_id": spec["network_resource_id"],
+                }.items()
+            )
+        ):
+            raise ActivationError("active_plan_identity_client_start_binding_mismatch")
     images = {key: artifact["metadata"]["images"][key]["id"] for key in IMAGES}
     observed = None
 
@@ -89,6 +122,7 @@ def recheck(path, expected_sha256, store, role, phase, *, docker=None, ownership
         "old_descriptor_sha256": artifact["pki"]["old_descriptor_sha256"],
         "new_descriptor_sha256": artifact["pki"]["new_descriptor_sha256"],
         "scope_sha256": state["header"]["scope_sha256"],
+        **({"request_context_sha256": request_context_sha256} if client_context else {}),
         "owned_metadata": observed,
         "pending_gates": list(activation.PENDING),
         **activation.FLAGS,

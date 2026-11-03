@@ -3741,3 +3741,24 @@ e relatório JSON preservados; nenhum PostgreSQL/Redis/Lab iniciado na coleta.
 429º73b188a sincronizado; este será430º,38desde ea2c61d, main privada/push. Próximo:
 inventário ativo e gates do cliente, captura limitada/lifecycle/coordenador. Build
 64arquivos segue atual; sem PKI nova, startup ou autorização de ensaio reutilizada.
+
+## 2026-11-03 — retomada e inventário ativo dedicado ao cliente
+
+Retomado main limpo430º9306ff5. CI430º41094783103 SUCCESS:1376passed/3skips/844,73s
+no0 e1342passed/5skips/740,71s no1; React79passed e source-review SUCCESS. Resultado
+completo2718passed/8skips, sem omissões. Log privado identity-ci-balanced-success.log.
+Tempos observados após balanceamento:14m04/12m20, ambos no limite18min existente.
+
+Contextos identity-create/start/exited do cliente agora revisam pai running/rede,
+projeto/nomes e consumidores globais dos volumes em duas coletas. active_plan fixa
+requestSHA exclusivo do papel, compara fence/recipe/IDs e confere PKI/fonte. Outros
+contextos e diagnóstico /3 seguem fechados à presença/uso do cliente. Sem startup,
+renovação PKI, acesso ao diário ou binding.
+
+**186passed/109,42s**, após simplificar condições e adicionar três recusas explícitas
+do diagnóstico antes de inputs. Inclui worker/consumidores, pai parado, bridge
+vazio/extra, imagem/request divergentes, expiração/intent/metadata alterados, hash
+obrigatório e fase/papel indevidos. Rodada183anterior se sobrepõe. Ruff/check,256
+arquivos formatados/mypy4passaram. Este será431º,39desde ea2c61d, main privada/push.
+Próximo: validar request existente/public pins sem renovar janela, depois gates
+concretos/captura/lifecycle/coordenador. Essa revalidação está em teste no worktree.

@@ -402,3 +402,19 @@ Exited exige fence de start vinculado ao request/IDs dos pais. Helper privado de
 endpoint foi compartilhado; review antigo de runner único segue rejeitando cliente.
 Saída só hashes/counts/IDs próprios, sem tráfego. Quiescência global e mTLS não são
 comprovados aqui; inventário ativo/gates do cliente ainda precisam ser integrados.
+
+## Inventário ativo específico do cliente — 2026-11-03
+
+Cliente admite somente identity-create/start/exited, sem criar fases genéricas
+create/start/running ou ampliar as do runner. Pai precisa estar OBSERVED/running
+com fence identity-only/runtime registrado e rede correspondente; somente os três
+recursos próprios podem estar ativos. Duas coletas incluem containers parados,
+redes/nomes reservados e consumidores globais de journal/postgres-data. Worker,
+consumidor estranho, imagem divergente ou pai parado bloqueiam a revisão.
+
+active_plan recebe request_context_sha256 exclusivamente para esse papel. Receita
+e fence são comparados ao contexto/IDs, além da revisão integral de código, PKI
+e metadata antes/depois. Exited precisa do start durável; metadata não infere TLS
+ou veracidade do resultado. Revisões antigas recusam cliente presente e diagnóstico
+/3 mantém catálogo próprio: testes novos verificam recusa antes de consultar inputs.
+Confirmação300s/gates/coordenador continuam separados da revisão de plano15min.

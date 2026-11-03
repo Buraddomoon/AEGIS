@@ -186,7 +186,7 @@ def test_uncertain_client_cleanup_blocks_parent_effects_and_keeps_intents(server
 
 def test_new_role_does_not_enable_diagnostic_or_existing_active_contexts():
     assert CLIENT not in diagnostic.profile()["roles"]
-    for phase in ("create", "start", "running", "identity-create", "identity-start"):
+    for phase in ("create", "start", "running", "identity-running", "ready"):
         assert not active.context_allowed(CLIENT, phase)
 
 
