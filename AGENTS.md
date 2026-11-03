@@ -706,3 +706,9 @@ RecordedServerGates/RecordedClientGates e before_network_create persistem fatos
 normalizados/gate/evidência antes de retornar admissão, sempre mesma confirmação.
 Lease/intent/freshness rechecados depois do fsync; falha de persistência/recheck
 revoga cache do cliente. Artefato não permite replay. Gates nativos não invocados.
+
+IdentityBudget: efeitos até begin+240s; leituras/cleanup nativos até begin+300s,
+monotônico original e UTC mínimo. Sem renovar janela ao reconstruir ou após
+rollback. Adaptadores nativos fechados; ownership/cleanup só3roles identity e
+mesmos operation/plan. Expiração normal não bloqueia cleanup; corte300s retém
+incerteza, nunca force/volume delete. Nenhum native CLI/ensaio autorizado.

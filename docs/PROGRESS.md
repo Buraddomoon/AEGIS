@@ -3922,3 +3922,18 @@ confirmação recusados. Provedor computado é chamado, não JSON salvo. Testes 
 wrappers servidor/cliente usam fronteira computada explícita; não comprovam TLS
 nativo. Ruff/format passaram. 439º sincronizado; este será440º,48desde ea2c61d.
 Próximo: orçamento único com reserva de cleanup e coordenador integrado. Sem Lab.
+
+## 2026-11-03 — orçamento original e adaptadores nativos fechados
+
+IdentityBudget exige janela de efeitos<=begin+240s, reservando cleanup somente até
+begin+300s. Deadline monotônico deriva da confirmação original, sem renovação por
+reconstrução/rollback UTC. Cada query/RPC recebe o menor prazo restante. Adapters
+compilam apenas metadata/ownership/perfil/bridge/rotas fixos; cleanup aceita só
+network-isolated/runner/identity-client da operação/plano e nunca force/volumes.
+Sem CLI ou invocação nativa: criação desses objetos não é autorização humana.
+
+**16passed/17,47s**: reserva, expiração de efeitos mantendo cleanup, corte300s,
+rollback/reconstrução, caps inválidos, expansão de escopo e comandos fixos/sem
+force. Primeira rodada14pass/2falhas de expectativa/precheck foi corrigida; suíte
+completa reexecutada. Ruff/format passaram. 440º40aad7b sincronizado; este será
+441º,49desde ea2c61d. Coordenador/fluxo integrado seguem em validação no worktree.
