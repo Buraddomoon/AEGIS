@@ -671,3 +671,11 @@ Transporte privado _execute aceita novo perfil fechado4KiB além dos perfis
 kill/reap/ENV/config Docker saneados. Failure decoder continua exclusivo do4MiB;
 nenhum comando/payload livre foi exposto. Reap do CLI não comprova container
 encerrado: lifecycle deve reconciliar/limpar por ownership independentemente.
+
+identity_client_driver exige IdentityClientGates e último gate computado recente
+com hash igual à evidência; JSON positivo não entra. Start exige fence/gateSHA/
+request/IDs exatos, revalida payload público original e congela intent antes da
+RPC. Budget menor entre10s create/15s attach e restante UTC/monotônico, output4KiB
+e decoder fechado. Admissão em memória consumida até em falha; recheck falho
+revoga cache. Lifecycle ainda deve impedir replay durável após resume e limpar
+container próprio: kill/reap CLI não o comprova. Sem exec/restart/CLI/API nova.

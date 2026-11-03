@@ -465,3 +465,22 @@ Testes usam processos Python locais reais para limite nos dois canais, EOF/full
 duplex, stderr não retornado e reap. Isso testa o transporte, não execução de
 container: matar/recolher o CLI não confirma encerramento do container. O lifecycle
 ainda deve usar ownership/cleanup e manter estado incerto quando não confirmado.
+
+## Driver do cliente com admissão consumível
+
+identity_client_driver aceita somente IdentityClientGates com último gate real
+computado, contexto/resourceIDs completos, freshness e hash de evidência iguais.
+Create usa só receita derivada; start exige o fence durável com o gateSHA, request
+e pais exatos. Payload público original é revalidado e o intent fica congelado
+durante a preparação. JSON positivo, exec/restart/run/remove não são interfaces.
+
+Admissão em memória é consumida inclusive diante de erro ou interrupção na
+preparação; nova revisão malsucedida revoga cache anterior. Isso não substitui
+fences/lifecycle duráveis: create/start ambíguos não podem ser reemitidos após
+resume. Driver limita RPC ao restante UTC/monotônico e10s create/15s attach.
+
+Attach envia somente bytes originais por pipe e captura no perfil4KiB agregado;
+saída só é retornada após decode_result fechado /2. CLI exit0 não torna JSON
+rejeitado/tamperado/oversize válido. Controle sem certificado inconclusivo mantém
+sua classificação, sem virar autorização. Origem/runtime/cleanup final exigem
+o lifecycle/coordenador ainda pendentes; testes de RPC usam replies simulados.

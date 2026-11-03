@@ -97,6 +97,7 @@ class IdentityClientGates:
         self._last_gate = None
 
     def review(self, phase, spec):
+        self._last_gate = None
         c = self.confirmation
         original = c._guard()
         current = original["resources"].get(runtime.ROLE, {})

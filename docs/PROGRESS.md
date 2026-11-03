@@ -3817,3 +3817,22 @@ Nenhum Docker lifecycle real foi invocado. Ruff/format passaram.
 433º9f1405d sincronizado; este será434º,42desde ea2c61d, main privada/push. Próximo:
 driver fechado do cliente com gate recente e janela restante, depois lifecycle
 único/recibo/coordenador/escopo nativo. Sem acesso a volumes/PKI ativos ou marcador.
+
+## 2026-11-03 — driver fechado com gate recente e admissão consumível
+
+Driver limita create/attach à receita/request originais, último gate computado
+recente, freeze de intent e fence exato antes de start. Request/public pins
+revalidados, prazos10s/15s limitados ao lease UTC/monotônico restante. Attach4KiB
+só retorna frame /2 válido; stderr/erros são estáticos, sem expor conteúdo. Cache
+consumido até em outcome ambíguo; recheck falho revoga gate anterior.
+
+**21passed/93,02s**: create/attach únicos simulados, gate ausente, fence/ID/hash/
+request/lease divergentes, JSON positivo incapaz de substituir gate, operações
+Docker livres recusadas, rehash/boolean inteiro/rejeição/oversize do reply e
+controle inconclusivo preservado. Teste de budget clip3s usa relógio controlado.
+Rodada20anterior se sobrepõe. Ruff/check,260formatados/mypy4passaram. Nenhuma RPC
+real: replies de protocolo são fixtures, sem alegar novas evidências TLS nativas.
+
+434ºdb71b00 sincronizado; este será435º,43desde ea2c61d, main privada/push. Lifecycle
+durável ainda precisa coordenar efeitos e cleanup próprio após resume/timeout;
+coordenador/escopo nativo continuam pendentes. PKI, volumes e Demo preservados.
