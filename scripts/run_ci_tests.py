@@ -14,6 +14,9 @@ SHARDS = 3
 PINNED = {
     "tests/test_runner_activation_identity_lifecycle.py": 0,
     "tests/test_runner_diagnostic_coordinator.py": 1,
+    # The new full identity coordinator took133s locally; run436's shard0 took
+    # 369s versus924s in shard2. Preserve whole-file coverage and use that room.
+    "tests/test_runner_identity_coordinator.py": 0,
 }
 
 
@@ -36,7 +39,7 @@ def partition(path: str) -> int:
 class FileShard:
     def __init__(self, index: int, *, root: Path = ROOT):
         if type(index) is not int or index not in range(SHARDS):
-            raise pytest.UsageError("CI partition must be 0 or 1")
+            raise pytest.UsageError("CI partition must be 0, 1 or 2")
         self.index, self.root = index, root.resolve()
 
     def pytest_collection_modifyitems(self, config, items):

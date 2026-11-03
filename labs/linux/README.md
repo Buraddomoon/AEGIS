@@ -109,3 +109,7 @@ O [plano coordenado](../../docs/operations/runner-pki-activation.md) ainda depen
 de harness e autorização específica; consulta positiva não prova o diário real.
 
 [Diagnóstico único dos volumes preservados](DIAGNOSTIC.md): planejamento/recheck de metadados e executor opt-in, com novo escopo autorizado antes de qualquer startup original. Preparação não autoriza execução.
+
+[Ensaio de identidade mTLS](IDENTITY.md): coordenador interno sem banco/diário/
+marcador, com evidências persistidas e cleanup por ownership. CLI/escopo final e
+ensaio nativo ainda pendentes; documentação ou fixtures não autorizam execução.

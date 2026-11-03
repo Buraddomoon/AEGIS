@@ -500,3 +500,15 @@ chaves, senhas, stderr ou exceções. Cleanup/recibo permanecem graváveis após
 expiração e fechamento do intent, sem renovar lease. Hash é integridade relativa
 ao recibo retido, não assinatura ou proteção contra proprietário local malicioso.
 Ainda não há CLI/coordenador nativo autorizado nesta camada.
+
+## Coordenador interno e orçamento de cleanup
+
+O coordenador integra rede/servidor/cliente, persistindo gates e fatos antes dos
+efeitos e usando uma única confirmação. Efeitos terminam até begin+240s e RPCs de
+leitura/cleanup até begin+300s, UTC/monotônico originais. Consumo O_EXCL do plano
+impede reuse por outra operação. Cleanup incerto retém dependências; interrupção
+propaga após tentativa de cleanup/recibo. Controle TLS inconclusivo não é promovido.
+
+CLI opt-in, revisão histórica de recibos e autorização nativa permanecem pendentes.
+O [procedimento](../../../labs/linux/IDENTITY.md) distingue esses limites de
+ativação PKI/binding, diário e operação normal, ainda fora desse ensaio.

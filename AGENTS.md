@@ -717,3 +717,12 @@ Artefatos identity também consomem plano com identity-assay-requested.json
 O_EXCL0600/fsync junto a plan.json, fixando requested artifactSHA e anchor. Nova
 operação/root não autoriza reutilizar plano consumido. Fence parcial é preservado;
 não apagar para retry. Nenhum arquivo PKI original/candidato é alterado por isso.
+
+Identity coordinator interno integra apenas bridge/identity-only runner/client,
+mesma NetworkGates e budget240s/300s, persistência antes de RPC e cleanup sempre.
+Erro de IO pode deixar recibo incompleto; nunca sucesso artificial. Controles
+inconclusivos preservados, cleanup incerto retém pais, interrupção propaga após
+cleanup/recibo quando possível. Sem CLI/novo ensaio autorizado. Ver labs/linux/IDENTITY.md.
+Novo test_runner_identity_coordinator inteiro PINNED0 (133s local;CI436grupo0=369s
+versusgrupo2=924s), demais pins preservados. Coleta2896=1088+1041+767 exata, não testes
+aprovados;3shards/max-parallel2/18min continuam. Não excluir casos para otimizar CI.

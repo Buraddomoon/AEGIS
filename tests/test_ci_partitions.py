@@ -115,7 +115,7 @@ def test_inherited_filters_cannot_reduce_ci_coverage(monkeypatch):
     assert "private-sensitive-sentinel" not in str(caught.value)
 
 
-def test_workflow_runs_both_partitions_and_preserves_all_quality_checks():
+def test_workflow_runs_all_partitions_and_preserves_all_quality_checks():
     workflow = yaml.safe_load((runner.ROOT / ".github/workflows/ci.yml").read_text())
     backend, web = workflow["jobs"]["validate"], workflow["jobs"]["web"]
     assert backend["strategy"]["matrix"]["shard"] == list(range(runner.SHARDS))

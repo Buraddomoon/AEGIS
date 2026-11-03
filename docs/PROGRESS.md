@@ -3949,3 +3949,32 @@ outro intent/operação/root e preservação dos bytes originais. Ruff/check e
 270arquivos formatados passaram. 441º1e70e20 sincronizado; este será442º,
 50desde ea2c61d. Coordenador12casos passou antes desse ajuste; reexecução completa
 com fence está em andamento, ainda não declarada concluída. Sem efeito nativo.
+
+## 2026-11-03 — coordenador completo do ensaio de identidade
+
+Fluxo interno rede→servidor identity-only→cliente fixo→cleanup→recibo, usando a
+MESMA confirmação e orçamento original. Gates/fatos persistidos antes das RPCs,
+fence por plano e papel, sem retry/adoção. Cleanup sempre tentado, independente
+do lease normal; dependência incerta retém pais. Recibo fixa inventário/hashes,
+separa controles verificados/inconclusivos/falha/cleanup pendente e nunca habilita
+PKI/binding/operação normal. Não há startup de DB/worker/Wazuh/diário ou marcador.
+
+**12passed/141,46s**, após fence do plano: fluxo completo com gates/PKI/Git/intents/
+artefatos reais temporários; RPCs/metadata de daemon e prova de imagem são fronteiras
+fixture explícitas. Cobrem sucesso/inconclusivo, create ambíguo, runtime inseguro,
+reply inválido/expiração, cleanup incerto com pais retidos, interrupção propagada,
+gate parcial e falha de recibo sem vazar exceção. Rodadas9/12anteriores se sobrepõem.
+Isso não comprova TLS nativo. Ruff/check/270formatados/mypy4passaram.
+
+Arquivo inteiro do novo coordenador fixado no shard0: mediu133s localmente antes
+do fence, e CI436ºteve369s nesse grupo versus924s no2. Mantidos3shards/max-parallel2/
+18min e todos os checks. **16testes de seleção passaram**; quatro coletas reais
+conferiram **2896=1088+1041+767**, zerooverlap/omissões, cada nodeID uma vez. Coleta
+não equivale à execução2896aprovada. Erro de shard agora menciona0/1/2.
+
+442º998164d sincronizado; este será443º,51desde ea2c61d, main privada/push direto.
+Última CI completa conhecida436º41647053065SUCCESS; trabalhos recentes aguardam
+validação, sem aprovação presumida. Procedimento em labs/linux/IDENTITY.md reflete
+limites reais. Próximo: leitor histórico sem efeitos, CLI opt-in/escopo final e
+CI antes de pedir autorização nativa específica. Não preparar PKI real cedo para
+evitar expiração; candidato antigo preservado. Nenhuma nova autorização consumida.
