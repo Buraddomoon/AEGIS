@@ -1,5 +1,8 @@
 """Prepare/execute a separate one-use identity cleanup scope; never resume an assay."""
 
+import argparse
+import json
+import subprocess
 import time
 from datetime import timedelta
 from pathlib import Path
@@ -12,7 +15,7 @@ import runner_activation_ownership as ownership
 import runner_identity_artifacts as artifacts
 from aegis.domain.validation import digest
 from build_review_runner import _write
-from runner_activation_intents import ActivationIntents, _hash, _identifier
+from runner_activation_intents import DEFAULT_ROOT, ActivationIntents, _hash, _identifier
 from runner_activation_metadata import ActivationError
 from runner_identity_budget import ROLES
 
@@ -40,6 +43,15 @@ FIELDS = {
     "snapshot",
     "scope_sha256",
 }
+ERRORS = (
+    ValueError,
+    OSError,
+    TypeError,
+    KeyError,
+    AttributeError,
+    RecursionError,
+    subprocess.SubprocessError,
+)
 
 
 def _snapshot(path, expected, store, runtime_root):
@@ -276,7 +288,7 @@ def execute(
     try:
         result = closure.cleanup(store, snap["images"], docker=native, ownership_docker=native)
         native.remaining()
-    except (ValueError, OSError, TypeError, KeyError, AttributeError):
+    except ERRORS:
         failed = "identity_cleanup_unconfirmed"
     except BaseException as error:
         interrupted, failed = error, "identity_cleanup_interrupted"
@@ -312,3 +324,103 @@ def execute(
     if interrupted is not None:
         raise interrupted
     return receipt
+
+
+def prepare_from_original(
+    path, expected_sha256, operation_id, begin_sha256, *, intents_root=None, runtime_root=None
+):
+    """Resume the exact original lock/history only to prepare a separate policy."""
+    _identifier(operation_id)
+    _hash(begin_sha256)
+    _hash(expected_sha256)
+    with ActivationIntents(DEFAULT_ROOT if intents_root is None else intents_root) as store:
+        store.resume(operation_id, begin_sha256)
+        return prepare(
+            path,
+            expected_sha256,
+            store,
+            root=ROOT,
+            runtime_root=artifacts.ROOT if runtime_root is None else runtime_root,
+        )
+
+
+def run_from_ids(
+    identifier,
+    expected_sha256,
+    authorized_scope_sha256,
+    *,
+    confirm_owned_cleanup=False,
+    intents_root=None,
+    docker=None,
+    ownership_docker=None,
+):
+    if confirm_owned_cleanup is not True:
+        raise ActivationError("identity_cleanup_explicit_confirmation_required")
+    folder = ROOT / _identifier(identifier)
+    value = load(folder, expected_sha256)
+    if _hash(authorized_scope_sha256) != value["scope_sha256"]:
+        raise ActivationError("identity_cleanup_authorized_scope_mismatch")
+    snap = value["snapshot"]
+    with ActivationIntents(DEFAULT_ROOT if intents_root is None else intents_root) as store:
+        store.resume(_identifier(snap["operation_id"]), _hash(snap["begin_sha256"]))
+        return execute(
+            folder,
+            expected_sha256,
+            authorized_scope_sha256,
+            store,
+            confirm_owned_cleanup=True,
+            docker=docker,
+            ownership_docker=ownership_docker,
+        )
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    prepare_parser = sub.add_parser("plan")
+    for name in ("original-plan-id", "original-plan-sha256", "operation-id", "begin-sha256"):
+        prepare_parser.add_argument("--" + name, required=True)
+    run_parser = sub.add_parser("run")
+    for name in ("cleanup-plan-id", "expected-sha256", "authorized-scope-sha256"):
+        run_parser.add_argument("--" + name, required=True)
+    run_parser.add_argument("--confirm-owned-cleanup", required=True, action="store_true")
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "plan":
+            path = (
+                plan.ROOT
+                / ".local/pki-activation-plans"
+                / _identifier(args.original_plan_id)
+                / "plan.json"
+            )
+            result = prepare_from_original(
+                path, args.original_plan_sha256, args.operation_id, args.begin_sha256
+            )
+            print(json.dumps(result, sort_keys=True))
+            return 0  # Policy preparation only, no cleanup or runtime assertion.
+        result = run_from_ids(
+            args.cleanup_plan_id,
+            args.expected_sha256,
+            args.authorized_scope_sha256,
+            confirm_owned_cleanup=args.confirm_owned_cleanup,
+        )
+        print(
+            json.dumps({"receipt": result, "receipt_body_sha256": digest(result)}, sort_keys=True)
+        )
+        return 0 if result["managed_resources_absence_verified"] is True else 1
+    except ERRORS:
+        print(
+            json.dumps(
+                {
+                    "status": "rejected",
+                    "error": "identity_owned_cleanup_unconfirmed",
+                    "assay_resumed": False,
+                    "normal_operation_permitted": False,
+                }
+            )
+        )
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

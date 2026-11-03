@@ -521,4 +521,5 @@ original e fonte atual. Só após autorização específica ele consome o plano 
 permite ownership/stop/remove por até120s UTC/monotônicos; nenhum create/start ou
 renovação da autorização anterior. Perfis/IDs/papéis fechados e fences antes de
 efeitos; resposta perdida é reconciliada, nunca force. Recibo separado conserva
-a evidência anterior. CLI e escopo humano final continuam em preparação.
+a evidência anterior. CLI plan/run implementada com roots fixos e lock/resume
+exatos; escopo humano final/CI e ensaio nativo continuam pendentes.

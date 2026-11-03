@@ -756,3 +756,10 @@ renova ensaio300s. Ownership+stop/remove só papéis/IDs originais; efeito exige
 REMOVAL_REQUESTED e fence de consumo durável. Sem force/volume/start/create.
 Interrupção conserva pendência/recibo e propaga; novo recibo não reescreve antigo.
 CLI/escopo final/CI e nova aprovação ainda faltam antes de qualquer uso nativo.
+
+identity_cleanup tem CLI plan/run com roots fixos e lock/resume op/begin originais.
+Plan só publica escopo; run exige confirmação literal antes de IO e scope exato,
+consumo durável e120s exclusivamentecleanup. Não aceitar roots/targets/argv livres
+por CLI. Recibo separado/exit0 só ausência verificada; input original adulterado
+recusa efeitos e exige intervenção sob escopo próprio. Não apagar fences/repetir
+plano para recuperar. CLI testada com clones privados; ensaio nativo não autorizado.

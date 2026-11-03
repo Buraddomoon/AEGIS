@@ -2,8 +2,8 @@
 
 Estado: coordenador interno implementado com gates, armazenamento privado e
 cleanup por ownership; validação automatizada usa PKI/Git temporários e RPCs
-simuladas. **O ensaio nativo ainda não foi realizado nem autorizado.** A CLI de execução foi implementada; recuperação fechada e
-escopo operacional final ainda estão em preparação. Este documento não concede
+simuladas. **O ensaio nativo ainda não foi realizado nem autorizado.** CLIs de execução e recuperação foram implementadas; revisão final do
+escopo operacional e CI ainda estão em preparação. Este documento não concede
 permissão para iniciar recursos. Os ensaios históricos não podem ser repetidos.
 
 ## Objetivo e limites
@@ -101,7 +101,7 @@ protocolo nos testes não são evidência de TLS nativo.
 
 ## O que permanece pendente
 
-Recuperação fechada de ownership, escopo operacional final e CI, seguidos de
+Revisão final do escopo operacional e CI, seguidos de
 autorização específica e um único ensaio nativo. Não usar imports Python manuais
 para contornar essa preparação. A ativação real de PKI/binding permanece uma etapa
 separada e precisa também de imagem de aplicação atual, plano e aprovação próprios.
@@ -141,7 +141,7 @@ Recibo incompleto não pode ser promovido a verificação íntegra por essa CLI.
 ## CLI de execução opt-in
 
 `scripts/runner_identity_assay.py --help` apenas lista argumentos. **Não executar
-o ensaio antes de concluir a recuperação/escopo e obter autorização específica.**
+o ensaio antes de concluir escopo/CI e obter autorização específica.**
 A CLI exige plan-id, expected-sha256, authorized-scope-sha256, build-id,
 build-plan-sha256, build-receipt-sha256 e confirm-identity-only-assay explícito.
 Não aceita alvos/URL/comandos/roots livres, credenciais ou geração de chave.
@@ -158,3 +158,46 @@ preservadas. Uma falha antes do primeiro efeito fecha somente intent vazio. Com
 recursos pendentes, preserva ownership para recuperação; não reinicia ou limpa
 globalmente. A existência da CLI não autoriza seu uso automático ao continuar o
 desenvolvimento.
+
+## Recuperação após crash ou cleanup incerto
+
+Recuperação nunca retoma o ensaio. Primeiro prepare um escopo separado, com os
+pins independentes da operação original. Esta preparação grava somente um novo
+plano local, sob o lock/resume exatos do projeto; não consulta Docker nem abre
+PKI/credenciais/volumes. O plano fixa o estado/fence/requested originais e main
+atual, tem validade15min e não concede autoridade por si só.
+
+```bash
+.venv/bin/python scripts/runner_identity_cleanup.py plan \
+  --original-plan-id UUID_HEX_PLANO_ORIGINAL \
+  --original-plan-sha256 HASH_PLANO_ORIGINAL \
+  --operation-id UUID_HEX_OPERACAO_ORIGINAL \
+  --begin-sha256 HASH_BEGIN_ORIGINAL
+```
+
+Revise o plano e obtenha **autorização específica desse novo escopo**. Só então:
+
+```bash
+.venv/bin/python scripts/runner_identity_cleanup.py run \
+  --cleanup-plan-id UUID_HEX_NOVO_PLANO \
+  --expected-sha256 HASH_NOVO_PLANO \
+  --authorized-scope-sha256 HASH_NOVO_ESCOPO \
+  --confirm-owned-cleanup
+```
+
+Substitua os placeholders pelos pins reais. Roots são fixos, sem argumentos de
+alvo/comando. Run revalida snapshot/fonte sob o lock original e consome o plano
+antes do primeiro RPC. A nova janela é **somente cleanup, até120s**, independente
+da autorização de300s do ensaio anterior. Native só consulta ownership e permite
+SIGTERM5s/remove dos papéis/IDs originais, com fence durável e REMOVAL_REQUESTED.
+Não aceita create/start, force, remoção de volumes ou papéis de DB/API/worker.
+
+Resposta perdida é reconciliada; foreign/ambiguidade/expiração/interrupção mantêm
+a pendência. Não repetir plano consumido ou apagar fences; prepare outro escopo
+para revisão se necessário. O recibo de recuperação fica separado no diretório
+do novo plano e não reescreve o recibo do ensaio. Exit0 exige ausência dos recursos
+próprios verificada e operação encerrada; não autoriza PKI/binding/operação normal.
+
+Se plano/fence/requested original estiver ausente ou adulterado, a recuperação
+automatizada recusa efeitos. Preserve a quarentena e obtenha um escopo de
+inspeção/intervenção próprio; não contorne os checks com Docker rm manual.

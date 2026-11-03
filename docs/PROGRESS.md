@@ -4067,3 +4067,25 @@ recuperação e revisão final do procedimento/CI ainda pendentes; não invocar
 nativamente biblioteca/CLI do ensaio. Não foi gerado candidato/plano real ou
 consumida autorização. Próximo: CLI plan/run de cleanup com roots fixos/lock/resume
 exatos e validação integrada antes de apresentar escopo para aprovação humana.
+
+## 2026-11-03 — CLI de recuperação com lock/resume e roots fixos
+
+CLI plan/run de cleanup adicionada: plan usa UUID/hash originais e begin sob
+lock/resume para publicar escopo separado, sem Docker/PKI/volumes. Run exige
+confirmação literal e hash autorizado antes de IO/lock, roots fixos, snapshot
+revalidado e consumo durável; somente120s cleanup, sem reabrir ensaio. Saída com
+recibo/digest canônico e exit0 apenas ausência verificada. Erros estáticos.
+
+**29passed/40,03s** CLI10 + core19, com cloned histories privados reais para
+exercitar lock/resume sem tocar no intent ativo da fixture; begin errado, replay,
+confirmação/pins/root fixos, exits e redação cobertos. Integração core inclui os
+3roles após expiração original, recibo antigo preservado. Não são RPCs nativas.
+Ruff/check/format/mypy executados antes do commit. Nenhum novo candidato/plano
+REAL ou ensaio nativo. O procedimento atualizado distingue preparo/autorizações.
+
+447ºe2ff861 sincronizado; este será448º,56desde ea2c61d, main privada/push direto.
+Última consulta: CI447º41658838142 aguardando; source-review41658838106SUCCESS.
+Próximo: suíte completa de ativação local, revisão cruzada dos contratos/CLI e
+CI do commit final. Só depois conferir imagem/disponibilidade, preparar candidato
+e plano reais e apresentar escopo concreto para aprovação específica. Todo o
+material histórico e Demo preservados; continuidade comum não autoriza native run.
