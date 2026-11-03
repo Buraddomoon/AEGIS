@@ -73,7 +73,7 @@ def test_path_outside_reviewed_collection_or_noncanonical_path_fails_closed(path
         runner.partition(path)
 
 
-@pytest.mark.parametrize("index", [-1, 3, True, "0"])
+@pytest.mark.parametrize("index", [-1, 4, True, "0"])
 def test_unknown_partition_cannot_silently_skip_tests(index):
     with pytest.raises(pytest.UsageError):
         runner.FileShard(index)
@@ -100,7 +100,7 @@ def test_cli_uses_full_test_root_and_cannot_accept_filters_or_ignore_paths(monke
     args, kwargs = calls[0]
     assert args[0] == str(runner.ROOT / "tests") and "--collect-only" not in args
     assert len(kwargs["plugins"]) == 1 and kwargs["plugins"][0].index == 0
-    for extra in ("--ignore=tests/test_auth.py", "-k=never", "--shard=3"):
+    for extra in ("--ignore=tests/test_auth.py", "-k=never", "--shard=4"):
         with pytest.raises(SystemExit):
             runner.main(["--shard", "0", extra])
 

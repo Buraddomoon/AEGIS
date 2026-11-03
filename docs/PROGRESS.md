@@ -4121,3 +4121,20 @@ mesmo max-parallel2/18min/checks; não habilitar recursos pagos/excluir casos.
 448ºb51fe97 sincronizado; este será449º,57desde ea2c61d. Próximo: commit separado
 da CI e aguardar validação completa; só depois candidato/plano reais e aprovação
 específica do ensaio. Nenhuma nova autorização consumida; Demo/PKI/volumes intactos.
+
+## 2026-11-03 — quatro partições complementares mantendo duas simultâneas
+
+Após annotations18min dos jobs0/1 na CI448º, matriz agora0..3 com os quatro arquivos
+pesados em grupos separados: server_lifecycle0/client_lifecycle1/identity_coordinator2/
+diagnostic_coordinator3. Demais arquivos SHAfile%4. Mantidos max-parallel2,18min,
+runners padrão, lint/tipos/advisories e React completos. Sem exclusões/filtros ou
+recursos pagos. **16passed/0,19s** seleção; cinco coletas reais independentes
+conferiram **2967=759+682+741+785**, zero omissões/extras/overlap, cada nodeID uma vez.
+Coleta não é execução2967aprovada. Logs privados identity-four-ci-collection-*
+preservados; documentação de testes atualizada para o arranjo presente.
+
+449º2335c6d sincronizado; este será450º,58desde ea2c61d. Main privada/push direto.
+Próximo: aguardar CI completa desse código e revalidar somente leitura a prova
+da imagem pelo caminho non-publishing, sem gerar candidato cedo. Depois preparar
+escopo/candidato/plano reais e solicitar aprovação específica antes de startup.
+Nenhuma autorização nova consumida, nenhum Lab/volume/binding/PKI original alterado.

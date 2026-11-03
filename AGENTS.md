@@ -769,3 +769,9 @@ publicar/recriar receipt.json durante consulta, inclusive se ele desaparecer
 após precheck/inspect. _runner de diagnóstico usa esse caminho. Build/review
 explícitos ainda podem publicar prova de build. Não fazer fallback do leitor
 para publisher. Regressão reproduzida/corrigida sem builds/containers nativos.
+
+CI atual:4shards0..3, max-parallel2/18min/runners padrão inalterados, depois de
+run448º41659669266 exceder18min nos jobs0/1. PINNED server_lifecycle0/client_lifecycle1/
+identity_coordinator2/diagnostic_coordinator3; demais SHAfile%4. Sem filtros/exclusões.
+Cinco coletas2967=759+682+741+785 exatas; coleta não executa casos. Conferir4jobsPython
+e React antes de declarar CI aprovada. Histórico3shards acima é histórico.

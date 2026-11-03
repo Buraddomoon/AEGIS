@@ -8,17 +8,14 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-SHARDS = 3
-# Run41641991673 hit18min in BOTH partitions as fixture coverage grew.
-# Distribute whole heavy files, never cases; max-parallel remains2 in CI.
+SHARDS = 4
+# Run41659669266 hit18min in partitions0/1;2 passed. Keep max-parallel2
+# and spread the four heavy lifecycle/coordinator files, never individual cases.
 PINNED = {
     "tests/test_runner_activation_identity_lifecycle.py": 0,
-    "tests/test_runner_diagnostic_coordinator.py": 1,
-    # The new full identity coordinator took133s locally; run436's shard0 took
-    # 369s versus924s in shard2. Preserve whole-file coverage and use that room.
-    "tests/test_runner_identity_coordinator.py": 0,
-    # Client lifecycle was not committed in run436; it adds132s locally.
-    "tests/test_runner_activation_identity_client_lifecycle.py": 0,
+    "tests/test_runner_activation_identity_client_lifecycle.py": 1,
+    "tests/test_runner_identity_coordinator.py": 2,
+    "tests/test_runner_diagnostic_coordinator.py": 3,
 }
 
 
@@ -41,7 +38,7 @@ def partition(path: str) -> int:
 class FileShard:
     def __init__(self, index: int, *, root: Path = ROOT):
         if type(index) is not int or index not in range(SHARDS):
-            raise pytest.UsageError("CI partition must be 0, 1 or 2")
+            raise pytest.UsageError("CI partition must be 0, 1, 2 or 3")
         self.index, self.root = index, root.resolve()
 
     def pytest_collection_modifyitems(self, config, items):

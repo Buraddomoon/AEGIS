@@ -1,36 +1,36 @@
 # Testes e evidências
 
-## CI particionada — 2026-10-30
+## CI particionada — 2026-11-03
 
-O job único atingiu o limite18min após o crescimento da suíte. A CI agora executa
-três partições Python complementares, cada uma com PostgreSQL/Redis próprios no
-runner GitHub, e um job React sem esses serviços. Runners padrão Ubuntu, caches e
-cancelamento de runs redundantes permanecem; nenhum recurso pago foi habilitado.
-Lint/tipos/advisory Python rodam uma vez, no shard0; checks React continuam completos.
-Falha em um shard não cancela o outro, mas impede aprovação da workflow inteira.
+A CI executa quatro partições Python complementares, com PostgreSQL/Redis
+próprios por job, e um job React sem esses serviços. Runners padrão Ubuntu e
+caches; **max-parallel2**, limite18min por job e cancelamento de runs redundantes.
+Nenhum recurso pago foi habilitado. Lint/tipos/advisory Python rodam uma vez no
+shard0; checks React continuam completos. Falha em uma partição não cancela as
+outras, mas impede aprovação da workflow inteira.
 
-`python scripts/run_ci_tests.py --shard 0`, `--shard 1` e `--shard 2` coletam a suíte completa e
-selecionam por SHA256 do caminho canônico do arquivo, mantendo todos os seus casos
-no mesmo shard. Duas atribuições explícitas em `run_ci_tests.PINNED` movem arquivos
-inteiros de lifecycle/coordenador para0/1. O primeiro balanceamento em dois jobs
-passou, mas a run41641991673 atingiu18min em ambos após crescer a suíte. Terceiro
-shard foi incluído mantendo **max-parallel2**, runners padrão e limite18min por job;
-sem casos omitidos ou recursos pagos habilitados. Tempo completo do novo arranjo
-ainda depende da CI. Cada arquivo pertence exatamente
-a uma partição, incluindo os fixados. Adições/ordenação não movem arquivos existentes;
-alterar atribuições exige evidência e nova conferência de união. Shard
-inválido/vazio, arquivo fora de tests ou PYTEST_ADDOPTS herdado impedem sucesso.
-CLI não aceita filtros/ignore; `--collect-only` permite conferir a seleção.
+`python scripts/run_ci_tests.py --shard 0`, `--shard 1`, `--shard 2` e `--shard 3`
+coletam toda a suíte e selecionam por SHA256 do caminho canônico do arquivo.
+Todos os casos de um arquivo permanecem juntos. Quatro arquivos pesados estão
+fixados em grupos separados em `run_ci_tests.PINNED`: lifecycle do servidor0,
+lifecycle do cliente1, coordenador identity2 e coordenador diagnóstico3.
 
-Localmente, executar os três comandos **em sequência**, nunca junto de outra suíte
-PG/Redis15. `make test`/pytest normal continuam completos e sem particionamento.
-Coleta não significa execução aprovada; conferir resultados dos três jobs e
-do React. Comparação real de coleta da alteração conferiu2490casos =1273+1217,
-zero omissões/overlap; contagem muda conforme testes novos. Após o rebalanceamento,
-coleta real2726 =1379+1347, também sem omissões/overlap. Expansão atual conferiu
-2830=1046+1041+743 incluindo lifecycle no worktree; coleta não executa casos.
-IDs de dois casos UUID
-do diário foram fixados por nome para comparação entre processos, sem mudar dados.
+A run41659669266 com três partições atingiu18min nos jobs0/1;2 e React passaram.
+Grupo1 chegou a1077passed/1skip em1074,18s de pytest, mas o job excedeu o limite
+incluindo setup/teardown. O arranjo atual distribui essa carga sem aumentar
+concorrência/timeout ou omitir casos. Sua aprovação depende da CI real.
+
+Cada arquivo pertence exatamente a uma partição. Adições/ordenação não movem
+arquivos existentes; mudar SHARDS/PINNED exige evidência e conferência da união.
+Shard inválido/vazio, arquivo fora de tests ou PYTEST_ADDOPTS herdado impedem
+sucesso. CLI não aceita filtros/ignore; `--collect-only` confere a seleção.
+Cinco coletas independentes conferiram **2967=759+682+741+785**, sem omissões,
+extras ou repetição de nodeIDs. Coleta não significa execução aprovada.
+
+Localmente, executar os quatro comandos **em sequência**, nunca junto de outra
+suíte PG/Redis15. `make test`/pytest normal permanecem completos e sem partição.
+Conferir conclusão dos quatro jobs Python e do React. IDs de dois casos UUID
+do diário são fixos para comparar coletas entre processos, sem mudar dados.
 
 Referências: [hook de coleta pytest](https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems)
 e [matriz GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations).
