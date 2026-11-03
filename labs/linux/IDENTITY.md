@@ -2,7 +2,7 @@
 
 Estado: coordenador interno implementado com gates, armazenamento privado e
 cleanup por ownership; validação automatizada usa PKI/Git temporários e RPCs
-simuladas. **O ensaio nativo ainda não foi realizado nem autorizado.** A CLI e o
+simuladas. **O ensaio nativo ainda não foi realizado nem autorizado.** A CLI de execução nativa e o
 escopo operacional final ainda estão em preparação. Este documento não concede
 permissão para iniciar recursos. Os ensaios históricos não podem ser repetidos.
 
@@ -101,7 +101,7 @@ protocolo nos testes não são evidência de TLS nativo.
 
 ## O que permanece pendente
 
-CLI opt-in, revisão histórica dos recibos e escopo operacional final, seguidos de
+CLI de execução opt-in e escopo operacional final, seguidos de
 autorização específica e um único ensaio nativo. Não usar imports Python manuais
 para contornar essa preparação. A ativação real de PKI/binding permanece uma etapa
 separada e precisa também de imagem de aplicação atual, plano e aprovação próprios.
@@ -109,3 +109,31 @@ separada e precisa também de imagem de aplicação atual, plano e aprovação p
 Consulte o [checkpoint](../../docs/PROGRESS.md), o
 [ADR0030](../../docs/architecture/decisions/0030-runner-identity-only.md) e a
 [preparação da rotação](../../docs/operations/runner-pki-activation.md).
+
+## Revisão histórica somente leitura
+
+A CLI abaixo lê apenas o diretório privado de artefatos. Exige pins retidos
+independentemente: UUID da operação e hashes de begin/plano/escopo/corpo do recibo.
+O último hash é o digest JSON canônico do **corpo** do recibo, não SHA dos bytes
+do envelope/arquivo. Não extraia os pins dos próprios arquivos como se isso
+comprovasse uma origem independente.
+
+```bash
+.venv/bin/python scripts/runner_identity_review.py \
+  --operation-id UUID_HEX_DA_OPERACAO \
+  --begin-sha256 HASH_BEGIN \
+  --plan-sha256 HASH_PLANO \
+  --scope-sha256 HASH_ESCOPO \
+  --receipt-body-sha256 HASH_CORPO_RECIBO
+```
+
+Substitua os placeholders pelos pins reais; o comando não aceita destinos ou
+comandos nativos. Confere envelopes/inventário/hashes de estágios e preimages dos
+gates, request/reply fechados e classificação, com duas leituras dos arquivos.
+Recusa parciais/adulteração/permissões/links/inventário desconhecido. Funciona
+após expiração, sem abrir plano/intents/PKI, criar lock, gravar ou consultar Docker.
+
+Exit0 significa **integridade dos registros salvos**, inclusive de um ensaio que
+falhou. A saída usa recorded_assay_status/recorded_tls_controls_verified; não
+revalida runtime, origem TLS ou fence junto ao plano e nunca permite retomada.
+Recibo incompleto não pode ser promovido a verificação íntegra por essa CLI.

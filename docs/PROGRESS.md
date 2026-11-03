@@ -3978,3 +3978,33 @@ validação, sem aprovação presumida. Procedimento em labs/linux/IDENTITY.md r
 limites reais. Próximo: leitor histórico sem efeitos, CLI opt-in/escopo final e
 CI antes de pedir autorização nativa específica. Não preparar PKI real cedo para
 evitar expiração; candidato antigo preservado. Nenhuma nova autorização consumida.
+
+## 2026-11-03 — leitor e CLI histórica sem efeitos
+
+runner_identity_review confere envelopes canônicos/anchor/inventário, hashes de
+estágios e fatos normalizados dos gates, request/reply e classificação. Exige
+UUID/begin/plano/scope e hash do CORPO do recibo retidos independentemente. Duas
+leituras detectam mudança; rejeita parciais/links/permissões/extra/tampering. Não
+abre plano/intents/PKI, renova lease, grava lock/arquivo ou consulta Docker. Exit0
+é integridade salva, mesmo com ensaio registrado como falho; saída recorded_*
+nunca declara runtime atual. Fence junto ao plano não é rechecado pelo leitor.
+
+**58passed/196,89s**: leitor16casos + coordenador12 + artefatos30, incluindo revisão
+dos14registros completos após expiração, para controles verificados/inconclusivos.
+Após CLI somente leitura, **4passed/3,46s** adicionais (16deselected dessa rodada),
+cobrindo pins obrigatórios, ausência de comando nativo e erro OS redigido.
+**16testes CI passaram/0,12s**. Ruff/check/272formatados/mypy4passaram. Falha inicial
+foi caminho incorreto de monkeypatch no teste, corrigido antes da reexecução.
+
+Client lifecycle inteiro agoraPINNED0: adicionou132s locais e não estava no commit
+da CI436º924s do grupo2. Não aumentar timeout/concurrency nem excluir casos.
+Quatro coletas independentes: **2916=1103+1061+752**, zerooverlap/omissões. Isso é
+seleção, não execução2916aprovada. CI443º41654477856: React passou, dois jobs Python
+em execução/um aguardando na última consulta. CI completa conhecida436ºSUCCESS.
+
+443ºe952a3a sincronizado; este será444º,52desde ea2c61d, main privada/push direto.
+Checkpoint: candidato real antigo expirado/preservado; imagem identity526267ad...
+selada mas sem prova de runtime novo; nenhuma nova autorização consumida. Próximo:
+CLI nativa opt-in e recuperação fechada de ownership sob novo escopo, procedimento
+final/CI e só então preparar candidato/plano reais e pedir aprovação específica.
+Demo/volumes/PKI/binding/diário preservados; não iniciar Lab por continuidade comum.

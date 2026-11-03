@@ -22,6 +22,7 @@ from test_runner_activation_subnet_review import Routes
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import runner_identity_coordinator as coordinator  # noqa: E402
+import runner_identity_review as saved_review  # noqa: E402
 from runner_activation_intents import ActivationIntents  # noqa: E402
 
 IDS = {"network-isolated": "c" * 64, "runner": OBJECT, "identity-client": "e" * 64}
@@ -253,6 +254,20 @@ def test_complete_flow_persists_before_each_effect_and_preserves_inconclusive_co
         world.execute()
     assert world.effects == before
     assert SECRET not in b"".join(p.read_bytes() for p in files).decode()
+    world.monkeypatch.setattr(
+        coordinator.network.plan.pki, "clock", lambda: world.c.expires + timedelta(days=2)
+    )
+    review = saved_review.review(
+        world.c.operation,
+        world.c.begin_sha256,
+        world.c.plan_sha256,
+        world.c.scope,
+        coordinator.digest(result),
+        root=world.root,
+    )
+    assert review["recorded_assay_status"] == result["status"]
+    assert review["recorded_tls_controls_verified"] is (scene is None)
+    assert review["records_reviewed"] == 14 and review["native_runtime_rechecked"] is False
 
 
 @pytest.mark.parametrize("scene", ["network_ambiguous", "unsafe_server", "bad_wire", "expired"])

@@ -726,3 +726,13 @@ cleanup/recibo quando possível. Sem CLI/novo ensaio autorizado. Ver labs/linux/
 Novo test_runner_identity_coordinator inteiro PINNED0 (133s local;CI436grupo0=369s
 versusgrupo2=924s), demais pins preservados. Coleta2896=1088+1041+767 exata, não testes
 aprovados;3shards/max-parallel2/18min continuam. Não excluir casos para otimizar CI.
+
+runner_identity_review é CLI somente leitura: pins independentes op/begin/plano/
+scope e digest JSON canônico do CORPO do recibo. Confere envelopes/inventário/
+fatos de gates/request/reply/classificação, duas leituras e arquivos privados.
+Não abre plano/intents/PKI, não grava/renova lease/consulta Docker; funciona após
+expiração. Exit0 é integridade salva, mesmo se ensaio falhou. recorded_* não prova
+runtime atual/origem TLS/fence do plano ou autorização de retomada. Nunca executar
+componentes por import manual para contornar CLI nativa/escopo ainda pendentes.
+PINNED inclui client_lifecycle0 (132s local, ausente do commit CI436º). Coleta
+2916=1103+1061+752 exata após leitor, não testes aprovados; política CI inalterada.

@@ -53,6 +53,31 @@ def _name(name):
     return name + ".json"
 
 
+def decode_record(raw, name, anchor):
+    """Closed historical integrity check; never admission or a current lease."""
+    _name(name)
+    if type(raw) is not bytes or len(raw) > MAX_BYTES:
+        raise ActivationError("identity_artifact_size_exceeded")
+    try:
+        value = json.loads(raw, object_pairs_hook=_unique)
+    except (ValueError, UnicodeError, RecursionError):
+        raise ActivationError("identity_artifact_json_invalid") from None
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"format", *anchor, "name", "recorded_at", "body_sha256", "body"}
+        or value["format"] != FORMAT
+        or value["name"] != name
+        or any(value[key] != expected for key, expected in anchor.items())
+        or not isinstance(value["body"], dict)
+        or digest(value["body"]) != value["body_sha256"]
+        or datetime.fromisoformat(value["recorded_at"]).utcoffset() != timedelta(0)
+    ):
+        raise ActivationError("identity_artifact_integrity_mismatch")
+    if _encode(value) != raw:
+        raise ActivationError("identity_artifact_encoding_mismatch")
+    return value
+
+
 class IdentityArtifacts:
     """Trusted host coordinator only; fixed names, no overwrite or resume writer.
 
@@ -195,26 +220,7 @@ class IdentityArtifacts:
             ):
                 raise ActivationError("identity_artifact_unsafe_file")
             raw = stream.read(MAX_BYTES + 1)
-        if len(raw) > MAX_BYTES:
-            raise ActivationError("identity_artifact_size_exceeded")
-        try:
-            value = json.loads(raw, object_pairs_hook=_unique)
-        except (ValueError, UnicodeError, RecursionError):
-            raise ActivationError("identity_artifact_json_invalid") from None
-        if (
-            not isinstance(value, dict)
-            or set(value) != {"format", *self.anchor, "name", "recorded_at", "body_sha256", "body"}
-            or value["format"] != FORMAT
-            or value["name"] != name
-            or any(value[key] != expected for key, expected in self.anchor.items())
-            or not isinstance(value["body"], dict)
-            or digest(value["body"]) != value["body_sha256"]
-            or datetime.fromisoformat(value["recorded_at"]).utcoffset() != timedelta(0)
-        ):
-            raise ActivationError("identity_artifact_integrity_mismatch")
-        # Reject non-finite numbers, unsupported values and noncanonical rewrites.
-        if _encode(value) != raw:
-            raise ActivationError("identity_artifact_encoding_mismatch")
+        value = decode_record(raw, name, self.anchor)
         self._check()
         return value
 

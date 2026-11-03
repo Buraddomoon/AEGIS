@@ -17,6 +17,8 @@ PINNED = {
     # The new full identity coordinator took133s locally; run436's shard0 took
     # 369s versus924s in shard2. Preserve whole-file coverage and use that room.
     "tests/test_runner_identity_coordinator.py": 0,
+    # Client lifecycle was not committed in run436; it adds132s locally.
+    "tests/test_runner_activation_identity_client_lifecycle.py": 0,
 }
 
 

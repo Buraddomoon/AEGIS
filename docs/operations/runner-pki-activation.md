@@ -377,3 +377,16 @@ Isso não comprova autenticação carregada, proveniência, conteúdo do volume 
 exclusividade, limpeza ou autorização. Lifecycle e readiness do servidor já estão implementados/testados com fixtures.
 Permanecem pendentes imagem atual/proveniência e coordenador diagnóstico completo. Não
 executar os componentes isoladamente como substituto desses gates.
+
+## Checkpoint atual do ensaio de identidade
+
+O diagnóstico dos volumes originais citado nas seções históricas foi verificado
+e encerrado em2026-10-29; autorização consumida, conforme
+[evidência preservada](../evidence/diagnostic-2026-10-29/README.md). Imagem runner
+identity-only selada em2026-10-30, sem equivaler a prova de runtime.
+
+O coordenador interno de identidade integra somente bridge/servidor/cliente,
+artefatos e cleanup por ownership, testados com fixtures. Consulte o
+[procedimento atual](../../labs/linux/IDENTITY.md). CLI de execução, escopo final
+e ensaio nativo continuam pendentes; não iniciar componentes manualmente. A
+ativação PKI/binding e imagem atual da aplicação permanecem etapas separadas.
