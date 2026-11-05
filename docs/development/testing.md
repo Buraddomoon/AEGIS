@@ -23,6 +23,12 @@ em528,03s/852,44s/630,61s de pytest; o grupo2 excedeu18min incluindo setup.
 O coordenador identity foi movido inteiro do2 para a capacidade livre do0.
 A aprovação desse ajuste depende da CI real, não das durações anteriores.
 
+Validação concluída: [run42091266302](https://github.com/Buraddomoon/AEGIS/actions/runs/42091266302)
+SUCCESS no commit56ce8d0. **2.963 testes Python passaram e oito inspeções nativas
+opcionais foram puladas**; React:79 testes/12 arquivos. Os quatro jobs Python
+terminaram em menos de16min cada, incluindo setup/teardown. As mudanças posteriores
+de registro são somente Markdown; não representam nova execução de laboratório.
+
 Cada arquivo pertence exatamente a uma partição. Adições/ordenação não movem
 arquivos existentes; mudar SHARDS/PINNED exige evidência e conferência da união.
 Shard inválido/vazio, arquivo fora de tests ou PYTEST_ADDOPTS herdado impedem

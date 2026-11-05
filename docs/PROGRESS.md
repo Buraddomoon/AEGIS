@@ -4215,3 +4215,37 @@ aprovação integral. Source-review42091266429SUCCESS. Roadmap/aceite corrigidos
 o diagnóstico original de29/10 já estava comprovado e não deve continuar listado
 como pendência; identidade mTLS nativa e ativação/binding continuam não aceitos.
 Essa correção de registro não altera evidências históricas ou amplia autorização.
+
+## 2026-11-05 — correção de CI validada e escopo encerrado
+
+[CI42091266302](https://github.com/Buraddomoon/AEGIS/actions/runs/42091266302)
+**SUCCESS**, executando56ce8d0942c7fa95fa5393f9c1dfa640797eb295. Contagens e tempos
+foram lidos dos logs dos jobs concluídos, não inferidos da coleta:
+
+| Grupo Python | Passaram | Inspeções opcionais puladas | Tempo pytest |
+| --- | --- | --- | --- |
+| 0 | 773 | 2 | 857,09s |
+| 1 | 681 | 1 | 846,39s |
+| 2 | 728 | 1 | 851,96s |
+| 3 | 781 | 4 | 705,59s |
+| Total | **2.963** | **8** | jobs separados |
+
+Total2.971 casos, sem falhas; os oito skips são inspeções nativas opcionais,
+sem criar recursos ausentes. React: **79 testes/12 arquivos**, lint/format/build
+e auditoria passaram. Python: Ruff/format, mypy limitado aos quatro arquivos do
+domínio e revisão de dependências passaram. Auditoria manteve um achado transitivo
+explicitamente revisado; não é alegação de ausência de vulnerabilidades. Aviso
+Starlette/httpx permanece. Não somar a execução local741 às contagens da CI.
+
+O grupo2 que antes excedia18min concluiu em14min55s de job; maior job Python
+foi15min05s. Quatro grupos, max-parallel2 e timeout18min preservados. Fonte453º
+56ce8d0 e documentação454ºc3c5090 sincronizados; source-review454º42094134589SUCCESS.
+Diferença entre fonte testada e documentação posterior conferida somente Markdown.
+Este checkpoint será455º: **três commits nesta retomada**; hash final no Git.
+
+Roadmap/aceite/procedimentos agora distinguem diagnóstico original concluído de
+identidade nativa ainda não comprovada e ativação/binding não entregues. Nenhum
+novo ensaio, plano, intent, candidato, build/pull, mudança de PKI/binding, remoção
+de rede ou startup de laboratório nesta retomada. A rede qasrc foi preservada
+conforme decisão explícita. Correções encerradas; o ensaio continua bloqueado e
+depende de orientação futura sobre o conflito de rede e autorização específica.

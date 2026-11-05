@@ -792,3 +792,9 @@ e concluir somente as correções. Ela ocupa172.30.0.0/16 e colide com o subnet
 fixo172.30.88.0/29; preflight nativo recusado. Não remover/modificar essa rede,
 contornar o gate ou iniciar ensaio. Não gerar planos/candidatos para essa execução
 enquanto o bloqueio persistir. Continuidade não amplia esse escopo.
+
+Correção CI validada: run42091266302SUCCESS sobre56ce8d0, quatro jobs Python
+(2963passed/8skip opcionais) e React79/12arquivos. Alterações posteriores desta
+rodada são somente Markdown; conferir igualdade de todo código/config/deps antes
+de associar esse resultado ao HEAD. Não reiniciar CI completa por registro textual.
+Atualizar o checkpoint final e encerrar as correções, mantendo o bloqueio nativo.

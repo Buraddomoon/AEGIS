@@ -1,16 +1,18 @@
 # Troca coordenada da PKI do runner — plano, sem execução autorizada
 
-Este documento prepara a revisão de uma intervenção futura. Nenhum comando de
-ativação ou ensaio foi executado neste incremento. As autorizações de outubro21/22
-continuam consumidas. A ferramenta atual oferece somente inspect/prepare/verify.
-Este plano não é um executor e não recebe uma aprovação pelo simples merge/push.
-O novo harness `runner_activation.py` acrescenta **plan/recheck somente de
-metadados**, descritos abaixo; ainda não oferece apply ou lifecycle.
+Este documento descreve uma intervenção futura de ativação completa, ainda não
+executada. `runner_pki.py` oferece inspect/prepare/verify e `runner_activation.py`
+oferece **plan/recheck somente de metadados**, sem apply de rotação. O diagnóstico
+separado de banco/diário foi executado e encerrado em29/10; o ensaio identity-only
+tem CLI própria, mas não foi executado. Esses estados não equivalem à ativação.
+As autorizações anteriores estão consumidas; um commit/push não concede nova
+aprovação. Ver [estado consolidado](../product/roadmap.md).
 
 Para a conferência mTLS inicial, o servidor agora oferece um modo de identidade
 sem Runner/Journal/Workspace, sem rotas de jobs e com allowlist vazia. Ainda não
-foi implantado nem validado em container próprio; requer imagem nova e executor
-revisado. Não confundir identidade verificada com prontidão de execução ou
+foi implantado nem validado em container próprio. Sua imagem e coordenador já
+foram preparados/testados; em05/11, o preflight foi bloqueado por sobreposição de
+rede e o usuário determinou preservá-la. Não confundir identidade com prontidão de execução ou
 continuidade do volume. Ver [ADR0030](../architecture/decisions/0030-runner-identity-only.md).
 
 ## Perfil inicial delimitado

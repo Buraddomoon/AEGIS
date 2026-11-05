@@ -1,10 +1,11 @@
 # Ensaio de identidade mTLS antes da rotação
 
-Estado: coordenador interno implementado com gates, armazenamento privado e
-cleanup por ownership; validação automatizada usa PKI/Git temporários e RPCs
-simuladas. **O ensaio nativo ainda não foi realizado nem autorizado.** CLIs de execução e recuperação foram implementadas; revisão final do
-escopo operacional e CI ainda estão em preparação. Este documento não concede
-permissão para iniciar recursos. Os ensaios históricos não podem ser repetidos.
+Estado em 2026-11-05: coordenador e CLIs de execução/revisão/cleanup implementados;
+CI42091266302 aprovada. Validação automatizada usa PKI/Git temporários e RPCs
+simuladas. **O ensaio nativo ainda não foi realizado nem autorizado.** O preflight
+recusou sobreposição com a rede Docker `qasrc`; o usuário determinou preservá-la
+e concluir somente as correções. Este documento não concede permissão para
+iniciar recursos. Os ensaios históricos não podem ser repetidos.
 
 ## Objetivo e limites
 
@@ -101,9 +102,11 @@ protocolo nos testes não são evidência de TLS nativo.
 
 ## O que permanece pendente
 
-Revisão final do escopo operacional e CI, seguidos de
-autorização específica e um único ensaio nativo. Não usar imports Python manuais
-para contornar essa preparação. A ativação real de PKI/binding permanece uma etapa
+O ensaio nativo está bloqueado pela sobreposição de rede observada em 05/11.
+Nenhuma alteração da rede ou do subnet está autorizada nesta rodada. Uma futura
+intervenção exige decisão sobre esse bloqueio, material/plano atuais e autorização
+específica; CI aprovada não a substitui. Não usar imports Python manuais para
+contornar o procedimento. A ativação real de PKI/binding permanece uma etapa
 separada e precisa também de imagem de aplicação atual, plano e aprovação próprios.
 
 Consulte o [checkpoint](../../docs/PROGRESS.md), o
