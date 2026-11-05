@@ -4249,3 +4249,15 @@ novo ensaio, plano, intent, candidato, build/pull, mudança de PKI/binding, remo
 de rede ou startup de laboratório nesta retomada. A rede qasrc foi preservada
 conforme decisão explícita. Correções encerradas; o ensaio continua bloqueado e
 depende de orientação futura sobre o conflito de rede e autorização específica.
+
+## 2026-11-05 — próximo escopo escolhido: PDF, laboratório adiado
+
+Usuário escolheu **adiar laboratório e avançar em relatórios PDF**. Leitura local
+reconfirmou sobreposição qasrc; nenhuma rede modificada. Levantamento de faixas
+foi somente leitura e não virou configuração/plano. Não prosseguir com essa troca.
+
+ADR0031 define três exportações usando builders existentes, renderização textual
+local limitada e sem recursos externos. ReportLab5.1.0/Pillow13.0.0 runtime e
+pypdf6.21.4 somente dev, metadados/licenças/compatibilidade consultados nas fontes
+oficiais e resolução com versões existentes restringidas. Locks adicionam apenas
+os novos pacotes; sem atualização geral. Implementação PDF ainda não operacional.

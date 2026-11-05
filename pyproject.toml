@@ -12,12 +12,13 @@ dependencies = [
   "fastapi==0.156.0", "pydantic==2.14.1", "pydantic-settings==2.16.1",
   "sqlalchemy==2.1.5", "alembic==1.20.0", "psycopg[binary]==3.3.6",
   "redis==8.1.0", "httpx==0.28.1", "argon2-cffi==25.1.0",
-  "uvicorn==0.54.0", "pysigma==2.0.1", "packaging==26.3", "PyYAML>=6.0.3,<7"
+  "uvicorn==0.54.0", "pysigma==2.0.1", "packaging==26.3", "PyYAML>=6.0.3,<7",
+  "reportlab==5.1.0"
 ]
 
 [project.optional-dependencies]
 backup = ["pyrage==1.4.0"]
-dev = ["pyrage==1.4.0", "pytest==9.1.1", "pytest-cov>=7,<8", "ruff==0.17.1", "mypy==2.4.0", "types-PyYAML", "pip-audit==2.10.1"]
+dev = ["pyrage==1.4.0", "pytest==9.1.1", "pytest-cov>=7,<8", "ruff==0.17.1", "mypy==2.4.0", "types-PyYAML", "pip-audit==2.10.1", "pypdf==6.21.4"]
 
 [tool.setuptools.packages.find]
 where = ["apps/api"]

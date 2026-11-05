@@ -798,3 +798,10 @@ Correção CI validada: run42091266302SUCCESS sobre56ce8d0, quatro jobs Python
 rodada são somente Markdown; conferir igualdade de todo código/config/deps antes
 de associar esse resultado ao HEAD. Não reiniciar CI completa por registro textual.
 Atualizar o checkpoint final e encerrar as correções, mantendo o bloqueio nativo.
+
+Novo escopo em2026-11-05: usuário escolheu **adiar laboratório e avançar em
+relatórios PDF**. Não preparar mudança de subnet/PKI ou ensaio. Implementar PDFs
+de execução/cobertura/comparação sobre builders existentes, conforme ADR0031;
+preservar semântica de hashes e avisos sintéticos, sem templates/HTML/imagens/URLs
+externos ou expressões do usuário. pypdf somente dev. Só declarar PDF operacional
+após geração/parser/API/UI testados e distinguir código da versão implantada.
