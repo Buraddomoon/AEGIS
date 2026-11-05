@@ -118,7 +118,7 @@ export function CoveragePage() {
                   início inclusivo/fim exclusivo.
                 </p>
                 <div className="inline-actions">
-                  {(['html', 'json'] as const).map((format) => (
+                  {(['pdf', 'html', 'json'] as const).map((format) => (
                     <button
                       key={format}
                       className="button"
@@ -247,7 +247,7 @@ export function CoveragePage() {
                 : 'Equivalência não confirmada. Revise diferenças, contexto desconhecido ou resultados parciais antes de concluir melhoria ou regressão.'}
             </div>
             <div className="inline-actions">
-              {(['html', 'json'] as const).map((format) => (
+              {(['pdf', 'html', 'json'] as const).map((format) => (
                 <button
                   key={format}
                   className="button"

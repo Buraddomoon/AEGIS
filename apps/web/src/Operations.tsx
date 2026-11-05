@@ -465,6 +465,14 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
         <button
           className="button quiet"
           disabled={busy}
+          onClick={() => void run(() => downloadReport(id, 'pdf'), 'Relatório PDF exportado.')}
+        >
+          <Download size={16} />
+          Exportar PDF
+        </button>
+        <button
+          className="button quiet"
+          disabled={busy}
           onClick={() => void run(() => downloadReport(id, 'json'), 'Relatório JSON exportado.')}
         >
           <FileJson size={16} />
@@ -742,7 +750,7 @@ export function Reports() {
       <PageHeading
         eyebrow="EVIDÊNCIAS QUE PODEM SER INSPECIONADAS"
         title="Relatórios"
-        description="Exporte resultados, escopo, aprovação, eventos e limitações em HTML ou JSON."
+        description="Exporte resultados, escopo, aprovação, eventos e limitações em PDF, HTML ou JSON."
       />
       <CoverageFilters
         filters={filters}
@@ -787,6 +795,16 @@ export function Reports() {
                     <td>{date(r.ended_at)}</td>
                     <td>
                       <div className="inline-actions">
+                        <button
+                          className="button small"
+                          disabled={busy || filters.dirty || data.isFetching}
+                          onClick={() =>
+                            void run(() => downloadReport(r.id, 'pdf'), 'PDF exportado.')
+                          }
+                        >
+                          <Download size={14} />
+                          PDF
+                        </button>
                         <button
                           className="button small"
                           disabled={busy || filters.dirty || data.isFetching}

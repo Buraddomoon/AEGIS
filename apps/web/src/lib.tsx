@@ -251,6 +251,12 @@ export async function downloadFile(path: string, filename: string) {
     const error = await response.json().catch(() => null)
     throw new Error(error?.error?.message ?? 'Não foi possível exportar o relatório.')
   }
+  if (
+    filename.endsWith('.pdf') &&
+    response.headers.get('content-type')?.split(';')[0] !== 'application/pdf'
+  ) {
+    throw new Error('O servidor não retornou um arquivo PDF válido.')
+  }
   const blob = await response.blob(),
     url = URL.createObjectURL(blob),
     link = document.createElement('a')
@@ -260,6 +266,6 @@ export async function downloadFile(path: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export function downloadReport(runId: string, format: 'json' | 'html') {
+export function downloadReport(runId: string, format: 'json' | 'html' | 'pdf') {
   return downloadFile(`/reports/${runId}?format=${format}`, `aegis-${runId}.${format}`)
 }
