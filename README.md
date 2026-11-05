@@ -49,7 +49,7 @@ Wazuh para usar o Demo. [Instalação e solução de problemas](docs/operations/
 3. Solicite execução e revise o escopo, a versão do ambiente e o hash.
 4. Aprove e confirme o início. Cada aprovação permite uma única execução.
 5. Abra os resultados e inspecione eventos, evidências, justificativas e hashes.
-6. Em **Cobertura de detecção**, aplique os filtros e exporte HTML ou JSON.
+6. Em **Cobertura de detecção**, aplique os filtros e exporte PDF, HTML ou JSON.
 7. Repita com nova aprovação e compare as duas execuções.
 
 | Teste Demo | Resultado esperado, sintético | Evidência/interpretação |
@@ -75,15 +75,20 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 | Campanhas | Escopo/hash imutáveis, aprovação, fila PostgreSQL, cancelamento, timeout, cleanup | Linux exige revisão separada; nenhum comando arbitrário |
 | ATT&CK | Fonte oficial Enterprise 20.0, 706 técnicas/subtécnicas ativas no snapshot inicial; matriz, busca, proveniência e publicação controlada | Catalogado não significa testado; publicação completa inclui retiradas |
 | Evidências | Eventos originais, correlação por identidade/marcador/tempo/regra, hashes e histórico | Ausência de alerta não comprova ausência de telemetria |
-| Cobertura | Modo/período/release/legado, comparação e HTML/JSON com denominadores | Contexto incompleto bloqueia equivalência; delta não comprova causalidade |
+| Cobertura | Modo/período/release/legado, comparação e PDF/HTML/JSON com denominadores | Contexto incompleto bloqueia equivalência; delta não comprova causalidade |
+| Relatórios PDF | Execução, recorte e comparação; resumo e apêndice completo; avisos em todas as páginas | Exportação limitada, sem truncamento; sem PDF/A ou assinatura digital |
 | Sigma | Parsing pySigma, versões, vínculos revisados, análise estática, preparação e prévia restrita de campos | Conversão/implantação bloqueadas sem backend/pipeline compatíveis |
 | Agendamentos | Grants delimitados, limite de ocorrências, pausa/revogação e auditoria | Somente Demo; mínimo 60 s, até 100 horários e 90 dias por plano |
-| Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing, recibos, candidato PKI, revisão de vínculo, plano de metadados, probe de continuidade e componentes de runtime/cleanup testados localmente | Um marcador de 43 bytes; coordenador de ativação da rotação e inspeção autorizada dos volumes originais pendentes; componentes não autorizam execução |
+| Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing, campanha integrada e diagnóstico histórico dos volumes | Um marcador de 43 bytes; rotação PKI/binding pendente e ensaios reais sujeitos a autorização específica |
 | Wazuh | Indexer somente leitura, TLS, binding agente/regra, paginação e coleta correlacionada | Um ensaio Linux/Wazuh 4.14.9; sem Windows/archives/outras regras |
 | Recuperação | Backup consistente, restore offline, quarentena, reconciliação e novo ciclo Demo em clone | Sem cutover, recuperação entre hosts ou RPO/RTO garantidos |
 | Cópia cifrada | age/X25519 opcional host-only, chave separada, restore verificado e plano de retenção | Sem upload/expurgo; originais permanecem em claro; custódia ainda local |
 
 ![Filtros e exportações reais de cobertura no Demo E2E](docs/images/coverage.png)
+
+![Primeira página de um PDF gerado no E2E com dados sintéticos](docs/images/report-pdf.png)
+
+[Relatórios PDF: uso, integridade e limites](docs/operations/pdf-reports.md).
 
 A prévia fica em **Regras → Preparação de conversão → Gerar prévia de campos**.
 [Subconjunto suportado e limites](docs/integrations/sigma.md#prévia-de-transformação-de-campos).
@@ -178,7 +183,7 @@ Git; não substitui testes, auditoria, revisão humana ou ensaio de instalação
   de parsing utilizado não carrega o cache; não alegamos zero vulnerabilidades.
   [Revisão e premissa testada](docs/security/dependency-advisories.json).
 - Sigma sem backend/pipeline compatível permanece bloqueado; Atomic importa somente
-  metadados. Windows, PDF, Caldera, outros SIEMs/EDRs e IA permanecem roadmap.
+  metadados. Windows, Caldera, outros SIEMs/EDRs e IA permanecem roadmap.
 - Backup não recupera automaticamente configuração, segredos, imagens ou journals
   dos laboratórios. Chave/ciphertext no mesmo computador não protegem contra perda
   do host. Destino externo foi adiado; nenhuma cópia foi enviada.

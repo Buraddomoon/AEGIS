@@ -1,6 +1,7 @@
 # ADR0031 — Exportação PDF dos relatórios existentes
 
-Data: 2026-11-05. Decisão aceita; implementação/validação em andamento.
+Data: 2026-11-05. Decisão implementada; validação local concluída, CI/implantação
+registradas em docs/PROGRESS.md.
 
 ## Escopo
 
@@ -16,7 +17,8 @@ dependência transitiva obrigatória. pypdf **6.21.4**, BSD-3-Clause, fica somen
 em dev para verificar PDFs gerados. Hashes de wheels PyPI fixados nos locks,
 mantendo as demais versões. Sem extras comerciais, navegador, executáveis ou
 fontes baixadas no runtime. Fontes Vera fornecidas pelo pacote são incorporadas;
-textos sem glifo disponível usam escapes Unicode explícitos.
+textos sem glifo disponível usam escapes Unicode explícitos. A licença Bitstream
+Vera acompanha as fontes no wheel.
 
 O adaptador gera bytes em memória. Layout fixo, conteúdo textual escapado antes
 de Paragraph, sem HTML do usuário, links ativos, imagens, templates livres,
@@ -25,7 +27,8 @@ do relatório, com caracteres Unicode escapados, sem truncamento. Hash do JSON
 completo e hash original conservam seus significados distintos; nenhum é uma
 assinatura digital ou hash dos bytes PDF.
 
-Limites iniciais: JSON de entrada512KiB, PDF8MiB/120páginas/20s por renderização;
+Limites iniciais: JSON de entrada512KiB, PDF8MiB/120páginas e orçamento cooperativo
+20s verificado ao paginar/finalizar, sem preempção de thread;
 uma renderização por processo e10pedidos PDF/minuto/usuário, compartilhados pelos
 três endpoints. Recusar limite excedido antes de entregar qualquer arquivo
 parcial; manter JSON/HTML disponíveis. Não criar jobs persistidos para documentos

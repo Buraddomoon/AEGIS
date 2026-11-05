@@ -12,7 +12,7 @@ todo o roadmap. A versão do código não foi elevada para simular marcos conclu
 | Classificações e evidências corretas | testes contra alerta de outro ativo/marcador/tempo/regra e inspeção de payload/hash |
 | Cancelamento, timeout, idempotência e cleanup | testes de claim/entrega concorrente, cancelamento ativo/fila, falha/recuperação |
 | Métricas com denominadores e histórico | teste 1/3 e E2E 2/6; técnicas catalogadas distintas das avaliadas |
-| Exportação e comparação | HTML escapado, JSON original, repetição com nova aprovação e comparação de mesmo escopo |
+| Exportação e comparação | PDF com parser/API/UI/E2E validados, HTML escapado, JSON original e comparação de mesmo escopo |
 | UI funcional e responsiva | E2E visita páginas e verifica ausência de overflow em 390px; capturas reais |
 | Catálogo oficial versionado | snapshot, referência, licença e hash de origem |
 | Integrações não configuradas explícitas | Wazuh desconectado; Linux somente por opt-in revisado; scheduler somente Demo aprovado |
@@ -125,3 +125,10 @@ substituem essa evidência. Ativação/binding permanecem fora do aceite.
 Em 05/11, o preflight recusou sobreposição com a rede Docker `qasrc`; o usuário
 escolheu preservá-la e concluir somente as correções. Não houve novo ensaio,
 remoção de rede, ativação ou autorização de operação normal nessa retomada.
+
+Exportação PDF aceita no fluxo Demo: execução individual, cobertura filtrada e
+comparação gerados pela API, baixados no Firefox e lidos por parser independente.
+Resumo, evidências/hash/apêndice completo e aviso sintético em todas as páginas;
+limites recusam PDF parcial. Viewer, erros, auditoria e limites de requisição
+testados. Sem mudança de veredictos, assinatura digital, PDF/A ou alegação de
+validação adicional Linux/Wazuh. Estado da imagem implantada e CI em PROGRESS.

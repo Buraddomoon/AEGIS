@@ -62,12 +62,16 @@ para demonstrar o fluxo.
 ## 0.5 — Automação e operação
 
 Entregue: recortes de cobertura por modo/período/release/legado, relatórios
-agregados e comparativos HTML/JSON, hashes/membros/denominadores explícitos e
+agregados e comparativos PDF/HTML/JSON, hashes/membros/denominadores explícitos e
 snapshot coerente. Comparação exige manifesto e resultados completos/contexto
 conhecido. Interface recusa ações sobre cache após erro de atualização.
 [Operação](../operations/coverage-reports.md).
 
-Extensão do agendamento aprovado para Lab Mode, após isolamento efetivo; relatórios comparativos automáticos e PDF; retenção/arquivo, backup/restore verificado, isolamento por workspace e gestão de usuários mais completa.
+PDF de execução, cobertura e comparação entregue com testes de parser/API/UI e
+E2E Demo, limites e avisos de origem. Estado de implantação/CI no checkpoint.
+[Uso e limites](../operations/pdf-reports.md).
+
+Extensão do agendamento aprovado para Lab Mode, após isolamento efetivo; relatórios comparativos automáticos; retenção/arquivo, backup/restore verificado, isolamento por workspace e gestão de usuários mais completa.
 
 Futuro: Caldera, outros SIEM/EDR, Windows em VM própria, CI/CD e assistência por IA sem controle autônomo sobre evidências/detecção/alterações críticas. Núcleo independente de IA comercial.
 

@@ -39,7 +39,7 @@ Não é medição ou promessa de escala. Nenhuma simulação/coleta externa é i
 
 ## Exportar
 
-**Exportar recorte HTML/JSON** entrega seleção canônica, referência resolvida,
+**Exportar recorte PDF/HTML/JSON** entrega seleção canônica, referência resolvida,
 denominadores, estados, timestamp do snapshot e membros com run/scope/result IDs
 e hashes. A UI envia o hash esperado do recorte; mudança da referência de
 catálogo retorna409, exigindo recarga. Novos dados do mesmo recorte podem entrar
@@ -49,7 +49,7 @@ anterior ao vivo. Hash de escopo não é token de autorização.
 **Comparar execuções** usa opções paginadas de todas as runs concluídas do
 recorte, com proteção contra páginas incompletas/misturadas; o segundo lado é
 da mesma campanha. Não comparar uma run consigo mesma. Exportação comparativa
-HTML/JSON inclui os dois relatórios técnicos completos, evidências/hashes,
+PDF/HTML/JSON inclui os dois relatórios técnicos completos, evidências/hashes,
 diferenças de regras/vínculos/testes/ambiente, resumo e denominadores por lado.
 
 Equivalência exige pais e filhos COMPLETED, manifesto de testes correspondente,
@@ -66,6 +66,10 @@ individuais existentes mantêm formato e integridade. Exportação é uma proje�
 sem tabela artificial de relatórios nem implantação de regra. Qualquer papel
 autenticado consulta/exporta no workspace único; exports têm limite30/min/usuário
 e auditoria com tipo/formato/hash, sem senha/token ou payload bruto no log.
+
+PDF usa layout textual fixo e apêndice completo, com limites próprios e avisos
+de origem em todas as páginas. Exceder um limite recusa o arquivo inteiro;
+JSON/HTML continuam disponíveis. [Procedimento e integridade](pdf-reports.md).
 
 ## API e verificação do arquivo
 

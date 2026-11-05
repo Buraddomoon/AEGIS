@@ -15,9 +15,9 @@ Sessão por cookie HttpOnly. Login JSON exige `X-Aegis-Request: browser`; origem
 | campaigns | GET/POST; POST `/{id}/runs` com idempotency_key |
 | executions | GET lista/detalhe, POST approve/start/cancel/reject |
 | schedules | GET/POST lista/criação; GET detalhe e occurrences; POST approve (admin), pause (operador), revoke (admin), com confirmação explícita |
-| coverage | GET indicadores/runs; GET report; GET compare e compare/report, com formato HTML/JSON |
+| coverage | GET indicadores/runs; GET report; GET compare e compare/report, com formato PDF/HTML/JSON |
 | rules | GET/POST import YAML; GET `/{id}/versions` e `/{id}/versions/{version_id}/analysis` |
-| reports | GET lista de concluídas; GET `/{run_id}?format=json|html` |
+| reports | GET lista de concluídas; GET `/{run_id}?format=json|html|pdf` |
 | connectors | GET estado; POST `/wazuh/test` somente configuração do ambiente |
 | audit | GET lista paginada (admin) |
 | health | GET live/ready, sem autenticação |
