@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import puppeteer from 'puppeteer-core'
 
 let input = ''
@@ -15,7 +15,8 @@ const page = await browser.newPage(),
 page.on('pageerror', (e) => errors.push(e.message))
 page.setDefaultTimeout(20000)
 await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
-await mkdir('../../docs/images', { recursive: true })
+const screenshotDirectory = process.env.AEGIS_E2E_SCREENSHOTS ?? '../../docs/images'
+await mkdir(screenshotDirectory, { recursive: true })
 async function button(text, selector = 'button') {
   await page.waitForFunction(
     (text, selector) =>
@@ -49,7 +50,26 @@ async function navigate(hash) {
 async function screenshot(name) {
   const dismiss = await page.$('button[aria-label="Dispensar mensagem"]')
   if (dismiss) await dismiss.click()
-  await page.screenshot({ path: `../../docs/images/${name}.png`, fullPage: true })
+  await page.screenshot({ path: `${screenshotDirectory}/${name}.png`, fullPage: true })
+}
+async function exportPdf(label, path, filename) {
+  const waiting = page.waitForResponse(
+    (r) => r.url().includes(path) && r.url().includes('format=pdf'),
+  )
+  await button(label)
+  const response = await waiting
+  assert.equal(response.status(), 200)
+  assert.equal(response.headers()['content-type'], 'application/pdf')
+  const bytes = await response.buffer()
+  assert.equal(bytes.subarray(0, 5).toString(), '%PDF-')
+  assert.match(response.headers()['x-aegis-report-sha256'], /^[a-f0-9]{64}$/)
+  await writeFile(`../../.local/e2e/${filename}.pdf`, bytes)
+  const visibilityAfterDownload = await page.evaluate(() => document.visibilityState)
+  // Firefox may focus its download UI; return as a user would before following
+  // another run. TanStack Query deliberately pauses polling in a hidden tab.
+  await page.bringToFront()
+  assert.equal(await page.evaluate(() => document.visibilityState), 'visible')
+  console.log(JSON.stringify({ pdfExport: filename, visibilityAfterDownload }))
 }
 async function selectComparisonPair(before, after) {
   await page.waitForFunction(
@@ -145,6 +165,7 @@ try {
   )
   assert.equal(report.synthetic, true)
   assert.equal(report.run.executions.length, 4)
+  await exportPdf('Exportar PDF', `/reports/${firstId}?`, 'execution-report')
   await button('Repetir campanha')
   await page.waitForFunction((id) => location.hash !== `#executions/${id}`, {}, firstId)
   const secondId = await page.evaluate(() => location.hash.split('/')[1])
@@ -167,6 +188,7 @@ try {
   assert.equal(comparedReport.summary.after.valid_tests, 3)
   assert.equal(comparedReport.summary.detected_rate_delta_percentage_points, 0)
   assert.ok(comparedReport.before.run.executions.some((e) => e.evidence.length))
+  await exportPdf('Exportar comparação PDF', '/coverage/compare/report?', 'comparison-report')
   const exportedScope = page.waitForResponse(
     (r) => r.url().includes('/coverage/report?') && r.url().includes('format=json'),
   )
@@ -176,6 +198,7 @@ try {
   assert.equal(scopedReport.metrics.valid_tests, 6)
   assert.equal(scopedReport.metrics.members.length, 2)
   assert.match(scopedReport.integrity_sha256, /^[a-f0-9]{64}$/)
+  await exportPdf('Exportar recorte PDF', '/coverage/report?', 'coverage-report')
   await screenshot('coverage')
   await page.select('select[aria-label="Release dos indicadores"]', 'legacy')
   await button('Aplicar recorte')
@@ -400,7 +423,10 @@ level: informational
     condition: 'selection',
   })
   assert.deepEqual(mapping[1], {
-    selection: { 'data.aegis.schema': 'aegis-json/1', 'data.aegis.observation': 'marker_file_read' },
+    selection: {
+      'data.aegis.schema': 'aegis-json/1',
+      'data.aegis.observation': 'marker_file_read',
+    },
     condition: 'selection',
   })
   await page.$eval('dialog[open] section', (section) => section.scrollIntoView({ block: 'start' }))
@@ -409,7 +435,10 @@ level: informational
   assert.equal(
     await page.evaluate(() => {
       const dialog = document.querySelector('dialog[open]')
-      return document.documentElement.scrollWidth <= innerWidth + 1 && dialog.getBoundingClientRect().width <= innerWidth
+      return (
+        document.documentElement.scrollWidth <= innerWidth + 1 &&
+        dialog.getBoundingClientRect().width <= innerWidth
+      )
     }),
     true,
     'Mapping preview dialog must fit a mobile viewport',
@@ -455,6 +484,7 @@ level: informational
       tests: 16,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
       screenshots: 13,
+      pdfExports: 3,
       browserErrors: errors.length,
     }),
   )

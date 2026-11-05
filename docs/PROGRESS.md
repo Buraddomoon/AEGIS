@@ -4261,3 +4261,37 @@ local limitada e sem recursos externos. ReportLab5.1.0/Pillow13.0.0 runtime e
 pypdf6.21.4 somente dev, metadados/licenças/compatibilidade consultados nas fontes
 oficiais e resolução com versões existentes restringidas. Locks adicionam apenas
 os novos pacotes; sem atualização geral. Implementação PDF ainda não operacional.
+
+## 2026-11-05 — PDFs implementados e fluxo Demo validado localmente
+
+Gerador em pdf_reporting.py e entrega compartilhada em report_downloads.py:
+PDFs de execução/cobertura/comparação, apêndice JSON completo, hash do conteúdo,
+aviso em todas as páginas, fontes incorporadas, limites e recusa sem arquivo
+parcial. API autenticada mantém filtros/hash de recorte, permite consulta viewer,
+limita10PDFs/min/usuário e audita somente geração bem-sucedida. Relatório de
+execução agora usa snapshot READONLY consistente, como as exportações analíticas.
+UI tem downloads nas execuções, relatórios e cobertura/comparação, tratamento de
+erros e rejeição de resposta com MIME incorreto. Sem migração ou alteração de
+regras/evidências/autorizações.
+
+Testes executados:11do gerador com parser pypdf; grupo de regressão API/segurança/
+analytics/gerador **41passed/37,29s**; frontend **83passed/13arquivos**; Ruff/
+282arquivos formatados/mypy4 e build Vite passaram. Essas suítes se sobrepõem,
+não somar contagens. pip check passou; auditoria dirigida dos três pacotes novos
+sem achados conhecidos, auditoria runtime mantém somente DiskCache revisado.
+
+Primeiro E2E gerou o PDF de execução, mas parou ao esperar atualização da segunda
+run. Inspeção confirmou aba hidden após download Firefox; polling pausa nesse
+estado por padrão. Harness agora traz a aba de volta antes de seguir, sem alterar
+polling/timeouts/controles da aplicação. E2E repetido em schema descartável próprio
+**PASS:4runs/16testesDemo/3PDFs/zeroerrosJS**. PDFs lidos independentemente: execução
+13páginas/66.860bytes, cobertura4/52.166, comparação26/91.942; aviso sintético em
+todas as páginas. Logs/arquivos completos privados em .local/pdf-reporting e
+.local/e2e. Capturas E2E desta rodada foram direcionadas ao diretório privado,
+preservando a galeria anterior. Primeira página inspecionada visualmente.
+
+Commits456ºeed06ab/457ºfbc4e26/458º5ea6a70/459ºa6ea674 sincronizados. CI completa
+da fonte final ainda pendente; não reutilizar CI455º. Site18780 ainda usa imagem
+anterior neste checkpoint. Próximo: validar nova imagem/atualização local e CI,
+registrando resultados reais. Linux/Wazuh/qasrc/PKI permanecem fora da operação;
+locks/pacote alterados invalidam equivalência com a imagem runner histórica.
