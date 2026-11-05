@@ -117,34 +117,31 @@ Revisão persistida do vínculo entregue na API/UI administrativa: pendências d
 pais/filhos, validação de cleanup/spec/geração/identidades e bloqueio acima do
 limite de histórico. Registro Linux e bind/unbind Wazuh impõem o predicado sob
 lock; novas solicitações Linux participam do lock de revogação/revisão. Plano de
-troca coordenada documentado; harness, inspeção do banco/diário Linux parado,
-ativação/preflight e recuperação sob confiança alterada continuam pendentes.
+troca coordenada documentado; ativação/preflight e recuperação sob confiança
+alterada continuam pendentes. O diagnóstico original já foi concluído, abaixo.
 [Revisão](../operations/linux-binding-review.md) ·
 [Plano](../operations/runner-pki-activation.md).
 
-Harness de metadados da ativação entregue: plan/recheck host-only, hashes da PKI/
-Compose, quatro imagens explícitas e volumes existentes/quiescência em Docker local.
-Artefato privado/hash/TTL15min, sem apply ou confiança operacional. Continuam
-pendentes o executor com intents/cleanup, inspeção autorizada do banco/diário
-originais, mTLS/mounts reais, registro revogado e encerramento verificável.
+### Estado consolidado da rotação Linux — 2026-11-05
 
-Componentes de continuidade entregues: leitura do diário parado por cópia privada
-DB+WAL, schema/identidade/jobs/eventos e correspondência completa às provas do
-banco Linux em snapshot somente leitura. Probe fixo /state com stdin limitado e
-resumo sem conteúdo de jobs; testes em PG/SQLite temporários, sem abrir volumes
-reais. Falta integrar ao executor com intents/ownership/cleanup e provar mounts,
-continuidade original e mTLS sob um novo escopo autorizado. Sem ativação implícita.
+- **Concluído:** plan/recheck de metadados, intents/ownership, drivers de probes,
+  transporte limitado e cleanup integrado ao diagnóstico. Em 29/10, o diagnóstico
+  autorizado verificou uma prova SQL antes/depois e dois jobs/oito eventos do
+  diário original; cinco recursos próprios removidos e volumes preservados.
+  [Evidência e limites](../evidence/diagnostic-2026-10-29/README.md).
+- **Implementado e testado, sem ensaio nativo:** servidor identity-only, cliente
+  fixo, quatro controles TLS, coordenador, evidências e CLIs de execução/revisão/
+  cleanup. A imagem foi construída e conferida; isso não comprova mTLS nativo.
+  [Procedimento](../../labs/linux/IDENTITY.md).
+- **Bloqueado no ambiente atual:** o preflight de 05/11 encontrou a rede Docker
+  `qasrc` em `172.30.0.0/16`, sobreposta ao subnet fixo `172.30.88.0/29`. O usuário
+  determinou preservá-la e concluir somente as correções. Nenhum novo ensaio,
+  alteração dessa rede ou mudança de subnet está autorizado nesta rodada.
+- **Ainda não entregue:** ativação coordenada da PKI, atualização do binding e
+  preflight sob a nova confiança, com imagem de aplicação atual e evidência de
+  encerramento. O sucesso histórico do diagnóstico não libera operação normal
+  nem autoriza reutilizar os ensaios anteriores.
 
-Ownership durável entregue como componente host-only: eventos exclusivos/fsync,
-hashchain, recursos em catálogo fechado, lock/retomada e retenção de dependências.
-Referência de escopo/ausência registrada não é autorização nem consulta ao daemon.
-Falta integrar os componentes ao executor de ciclo de vida fixo, validar runtime/
-mounts/mTLS/registro revogado e fechar os recursos sob novo escopo específico.
-
-Receita e revisão de runtime dos probes entregues: imagem por ID, módulo fixo,
-UID/rede/limites/mount read-only/nocopy e env por allowlist sem expor valores.
-Start intent durável impede replay; decoder compara contextos/inventário completo.
-Cleanup interno com driver concreto fechado, durabilidade/ownership/imagem antes
-dos efeitos, dependências retidas e ausência reconferida. Driver real não invocado;
-sem CLI apply ou create/start implementados. Faltam coordenador completo/transporte
-do bundle e gates físicos/mTLS/registro revogado para um novo ensaio autorizado.
+Windows, novas simulações e ampliação Wazuh continuam nos marcos futuros; não são
+pré-requisitos adicionados para concluir as correções atuais. Resultados de CI
+e commits desta rodada ficam no [checkpoint](../PROGRESS.md).

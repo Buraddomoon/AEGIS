@@ -102,24 +102,26 @@ permanecem fora do aceite. [Limites](../operations/linux-binding-review.md).
 Plan/recheck da ativação Linux aceitos para snapshots de metadados: hashes PKI/
 Compose, imagens locais por ID, volumes/labels/consumidores e TTL15min; consulta
 real e fixtures não concedem autorização nem comprovam diário/runtime/imagens.
-Executor/ativação/banco original/mTLS novo ainda fora do aceite. Nenhum ensaio
-anterior é reaberto por um plano. [Contrato](../operations/runner-pki-activation.md).
+Ativação e mTLS novo ainda fora do aceite; o diagnóstico original tem aceite
+limitado abaixo. Nenhum ensaio anterior é reaberto por um plano.
+[Contrato](../operations/runner-pki-activation.md).
 
-Continuidade banco/diário aceita como componente testado em schemas/diários
-temporários: snapshot PG somente leitura, binding antigo exato, provas completas
-por hash e revisão DB+WAL sem inicializar a origem. Probe /state limitado e sem
-conteúdo de jobs na saída. Não equivale a inspeção dos volumes reais, ativação,
-mTLS novo ou permissão de retomar jobs. Esses itens continuam fora do aceite.
+Diagnóstico banco/diário **executado e aceito no escopo de 29/10**: PostgreSQL
+original iniciou uma vez sob autorização específica; uma prova SQL foi comparada
+antes/depois e dois jobs/oito eventos do diário foram lidos duas vezes. Cinco
+recursos próprios foram removidos, com ausência reconferida e volumes preservados.
+O startup escreveu WAL/metadados conforme autorizado; as consultas e o diário
+foram somente leitura. Não é comparação de todas as tabelas, atestado atual,
+rotação PKI ou permissão de retomar jobs. Autorização consumida.
+[Evidência completa](../evidence/diagnostic-2026-10-29/README.md).
 
-Ownership aceito como armazenamento testado em temporários: catálogo/nomes/labels
-derivados, eventos/hashchain/fsync, retomada por hash, recusa de histórico parcial e
-retenção de dependências. Não aceita Docker/apply/ativação ou ausência real apenas
-pelo hash de uma observação registrada. [ADR0022](../architecture/decisions/0022-activation-resource-intents.md).
+Ownership, intents, runtime e cleanup foram integrados ao diagnóstico acima;
+deixaram de ser apenas componentes de fixture nesse escopo. O coordenador
+identity-only e suas CLIs estão implementados/testados, mas o ensaio nativo mTLS
+novo **ainda não foi realizado**. Imagem construída e testes de loopback não
+substituem essa evidência. Ativação/binding permanecem fora do aceite.
+[Escopo](../../labs/linux/IDENTITY-ASSAY.md).
 
-Runtime de probes aceito como componente testado: receita restrita, revisão de
-configuração/mounts/env/isolamento e decoder/contexto/contagens/comparação lógica.
-Intent de start não repetível e cleanup interno aceitos com registros duráveis
-temporários/daemon fixtures; query real apenas de metadados Demo já existentes.
-Isso não aceita runtime no volume original, create/start, coordenador completo,
-origem física do banco, mTLS novo ou ativação autorizada. Nenhum driver de cleanup
-foi aplicado a recursos reais. [ADR0023](../architecture/decisions/0023-journal-probe-runtime.md).
+Em 05/11, o preflight recusou sobreposição com a rede Docker `qasrc`; o usuário
+escolheu preservá-la e concluir somente as correções. Não houve novo ensaio,
+remoção de rede, ativação ou autorização de operação normal nessa retomada.

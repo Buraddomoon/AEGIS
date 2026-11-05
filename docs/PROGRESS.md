@@ -4206,3 +4206,12 @@ Candidato fcd676ec... expira2026-11-05T20:13:26Z; não é material atual para um
 futura intervenção com requisito de24h restantes. Históricos/Demo/volumes/PKI
 originais preservados. Próximo: verificar CI completa do ajuste e registrar o
 resultado; ensaio nativo permanece bloqueado, sem pedir nova autorização agora.
+
+Execução local do grupo2 coletado ANTES do ajuste: **741 passed**, zero falhas,
+557,49s; log privado resumed-partition-2.log. Não somar aos16testes rápidos como
+se fossem uma suíte completa. Commit453º56ce8d0 sincronizado. Nova CI42091266302:
+React e Python0/1SUCCESS na consulta; Python2/3em andamento, portanto ainda sem
+aprovação integral. Source-review42091266429SUCCESS. Roadmap/aceite corrigidos:
+o diagnóstico original de29/10 já estava comprovado e não deve continuar listado
+como pendência; identidade mTLS nativa e ativação/binding continuam não aceitos.
+Essa correção de registro não altera evidências históricas ou amplia autorização.
