@@ -4183,3 +4183,26 @@ Markdown entre450º/451º para este código. Nenhum candidato/plano REAL emitido
 startup autorizado. 451º8e5cb96 sincronizado; este será452º,60desde ea2c61d.
 Próximo: CI completa desse commit, preflight somente leitura e pacote concreto de
 candidato/plano. Pedir autorização específica e aguardar antes de native run.
+
+## 2026-11-05 — retomada limitada às correções e bloqueio de rede confirmado
+
+A CI452º41709790455 terminou: React e Python0/1/3SUCCESS; Python2 foi cancelado
+por exceder18min (annotation confirmada), portanto a workflow NÃO passou.
+Tempos pytest dos grupos aprovados:528,03s/852,44s/630,61s. Ajuste pequeno move
+o arquivo inteiro test_runner_identity_coordinator.py do2 para a folga do0;
+quatro grupos, max-parallel2, timeout18min e todos os casos permanecem.
+16testes de particionamento/Ruff/format passaram. Cinco coletas reais confirmaram
+2971=775+682+729+785, zeroomissões/repetições; coleta não significa execução.
+Execução local do grupo2 original iniciada para obter durações reais; resultado
+e CI do ajuste ainda pendentes neste checkpoint.
+
+Revisão sem publicação da imagem selada confirmou os64arquivos do pacote e
+dependências atuais, sem build/pull/start ou alteração de recibo. Preflight
+somente leitura recusou subnet: rede Docker qasrc172.30.0.0/16, sem containers
+na consulta, sobrepõe172.30.88.0/29. Usuário escolheu explicitamente **preservar a
+rede e concluir somente as correções**. Nenhuma rede removida/modificada, nenhum
+ensaio, intent operacional, plano ou candidato novo preparado nesta retomada.
+Candidato fcd676ec... expira2026-11-05T20:13:26Z; não é material atual para uma
+futura intervenção com requisito de24h restantes. Históricos/Demo/volumes/PKI
+originais preservados. Próximo: verificar CI completa do ajuste e registrar o
+resultado; ensaio nativo permanece bloqueado, sem pedir nova autorização agora.

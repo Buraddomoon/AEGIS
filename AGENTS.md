@@ -770,10 +770,10 @@ após precheck/inspect. _runner de diagnóstico usa esse caminho. Build/review
 explícitos ainda podem publicar prova de build. Não fazer fallback do leitor
 para publisher. Regressão reproduzida/corrigida sem builds/containers nativos.
 
-CI atual:4shards0..3, max-parallel2/18min/runners padrão inalterados, depois de
-run448º41659669266 exceder18min nos jobs0/1. PINNED server_lifecycle0/client_lifecycle1/
-identity_coordinator2/diagnostic_coordinator3; demais SHAfile%4. Sem filtros/exclusões.
-Cinco coletas2967=759+682+741+785 exatas; coleta não executa casos. Conferir4jobsPython
+CI atual:4shards0..3, max-parallel2/18min/runners padrão inalterados. Após o grupo2
+da run41709790455 exceder18min, PINNED server_lifecycle0/client_lifecycle1/
+identity_coordinator0/diagnostic_coordinator3; demais SHAfile%4. Sem filtros/exclusões.
+Cinco coletas2971=775+682+729+785 exatas; coleta não executa casos. Conferir4jobsPython
 e React antes de declarar CI aprovada. Histórico3shards acima é histórico.
 
 Escopo humano do próximo ensaio: labs/linux/IDENTITY-ASSAY.md. Finalizar pacote
@@ -786,3 +786,9 @@ Recibos de build/review_existing: comparar digests canônicos, nunca igualdade
 Python que aceita bool/int (False==0,True==1). Não normalizar/reescrever prova
 malformada. Código452º altera executável: CI450º/equivalência Markdown451º NÃO
 validam esse commit. Esperar nova CI completa antes do pacote/ensaio nativo.
+
+Escopo atual solicitado pelo usuário em2026-11-05: preservar a rede Docker qasrc
+e concluir somente as correções. Ela ocupa172.30.0.0/16 e colide com o subnet
+fixo172.30.88.0/29; preflight nativo recusado. Não remover/modificar essa rede,
+contornar o gate ou iniciar ensaio. Não gerar planos/candidatos para essa execução
+enquanto o bloqueio persistir. Continuidade não amplia esse escopo.

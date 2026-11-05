@@ -1,6 +1,6 @@
 # Testes e evidências
 
-## CI particionada — 2026-11-03
+## CI particionada — 2026-11-05
 
 A CI executa quatro partições Python complementares, com PostgreSQL/Redis
 próprios por job, e um job React sem esses serviços. Runners padrão Ubuntu e
@@ -12,19 +12,22 @@ outras, mas impede aprovação da workflow inteira.
 `python scripts/run_ci_tests.py --shard 0`, `--shard 1`, `--shard 2` e `--shard 3`
 coletam toda a suíte e selecionam por SHA256 do caminho canônico do arquivo.
 Todos os casos de um arquivo permanecem juntos. Quatro arquivos pesados estão
-fixados em grupos separados em `run_ci_tests.PINNED`: lifecycle do servidor0,
-lifecycle do cliente1, coordenador identity2 e coordenador diagnóstico3.
+fixados em `run_ci_tests.PINNED`: lifecycle do servidor e coordenador identity0,
+lifecycle do cliente1 e coordenador diagnóstico3.
 
 A run41659669266 com três partições atingiu18min nos jobs0/1;2 e React passaram.
 Grupo1 chegou a1077passed/1skip em1074,18s de pytest, mas o job excedeu o limite
 incluindo setup/teardown. O arranjo atual distribui essa carga sem aumentar
-concorrência/timeout ou omitir casos. Sua aprovação depende da CI real.
+concorrência/timeout ou omitir casos. Na run41709790455, os grupos0/1/3 passaram
+em528,03s/852,44s/630,61s de pytest; o grupo2 excedeu18min incluindo setup.
+O coordenador identity foi movido inteiro do2 para a capacidade livre do0.
+A aprovação desse ajuste depende da CI real, não das durações anteriores.
 
 Cada arquivo pertence exatamente a uma partição. Adições/ordenação não movem
 arquivos existentes; mudar SHARDS/PINNED exige evidência e conferência da união.
 Shard inválido/vazio, arquivo fora de tests ou PYTEST_ADDOPTS herdado impedem
 sucesso. CLI não aceita filtros/ignore; `--collect-only` confere a seleção.
-Cinco coletas independentes conferiram **2971=763+682+741+785**, sem omissões,
+Cinco coletas independentes conferiram **2971=775+682+729+785**, sem omissões,
 extras ou repetição de nodeIDs. Coleta não significa execução aprovada.
 
 Localmente, executar os quatro comandos **em sequência**, nunca junto de outra

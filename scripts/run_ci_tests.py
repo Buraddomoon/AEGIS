@@ -9,12 +9,13 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SHARDS = 4
-# Run41659669266 hit18min in partitions0/1;2 passed. Keep max-parallel2
-# and spread the four heavy lifecycle/coordinator files, never individual cases.
+# Run41709790455: group0 took528s; group2 exceeded the18min job budget.
+# Move its coordinator into the available group0 capacity, keeping whole files,
+# max-parallel2, the same timeout and every collected case.
 PINNED = {
     "tests/test_runner_activation_identity_lifecycle.py": 0,
     "tests/test_runner_activation_identity_client_lifecycle.py": 1,
-    "tests/test_runner_identity_coordinator.py": 2,
+    "tests/test_runner_identity_coordinator.py": 0,
     "tests/test_runner_diagnostic_coordinator.py": 3,
 }
 
