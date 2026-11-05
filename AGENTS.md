@@ -805,3 +805,12 @@ de execução/cobertura/comparação sobre builders existentes, conforme ADR0031
 preservar semântica de hashes e avisos sintéticos, sem templates/HTML/imagens/URLs
 externos ou expressões do usuário. pypdf somente dev. Só declarar PDF operacional
 após geração/parser/API/UI testados e distinguir código da versão implantada.
+
+PDF concluído/implantado em2026-11-05: CI42100930151SUCCESS sobreefb2e6d,
+2982Python/8skip opcionais e83React; E2E4runs/16Demo/3PDFs. API18780 atualizada
+sozinha, sem migrate/seed/restart deworker/db/redis. Checks/provas em PROGRESS.
+Posteriores aefb2e6d: Markdown e docs/images/report-pdf.png; PNG é artefato de
+documentação excluído do contexto Docker. Comparar todos os inputs executáveis,
+não chamar essa diferença de somente Markdown. Isso não altera gates/autorizações
+dos ensaios reais adiados. Para PDF, testes test_pdf_reporting/test_pdf_api e
+pdf-downloads.test.tsx; não interpretar geração local como nova detecção SIEM.

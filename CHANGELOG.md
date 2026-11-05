@@ -1,5 +1,16 @@
 # Changelog
 
+## Continuidade 2026-11-05 — relatórios PDF
+
+- Exportação de execução, cobertura e comparação pela API e interface, com resumo,
+  apêndice completo e identificação de dados sintéticos em todas as páginas.
+- Geração textual local limitada, fontes incorporadas, controle de concorrência,
+  rate limit e auditoria sem conteúdo. Integridade JSON preservada; sem assinatura.
+- Testes com parser PDF independente, PostgreSQL/worker/Redis, UI e três downloads
+  reais no E2E Firefox. Procedimento, limites e captura real documentados.
+- Diagnóstico Linux de29/10 corretamente registrado como concluído; laboratório
+  adiado por decisão do usuário, preservando a rede qasrc e evidências anteriores.
+
 ## Continuidade 2026-10-29 — diagnóstico Linux sem ativação
 
 - Coordenador host-only de uso único, prazo de300s, PostgreSQL original isolado,

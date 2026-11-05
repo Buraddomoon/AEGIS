@@ -4295,3 +4295,57 @@ da fonte final ainda pendente; não reutilizar CI455º. Site18780 ainda usa imag
 anterior neste checkpoint. Próximo: validar nova imagem/atualização local e CI,
 registrando resultados reais. Linux/Wazuh/qasrc/PKI permanecem fora da operação;
 locks/pacote alterados invalidam equivalência com a imagem runner histórica.
+
+## 2026-11-05 — PDF concluído, CI aprovada e site atualizado
+
+[CI42100930151](https://github.com/Buraddomoon/AEGIS/actions/runs/42100930151)
+**SUCCESS** no commitefb2e6da6940c08a750c9dcbd780d52e49bfd6fa. Logs finais:
+
+| Grupo Python | Passaram | Opcionais pulados | Tempo pytest |
+| --- | --- | --- | --- |
+| 0 | 773 | 2 | 562,32s |
+| 1 | 681 | 1 | 684,93s |
+| 2 | 747 | 1 | 834,11s |
+| 3 | 781 | 4 | 491,86s |
+| Total | **2.982** | **8** | jobs separados |
+
+Cinco coletas confirmaram2990=775+682+748+785, sem omissão/repetição. React:
+**83passed/13arquivos**, lint/format/build/advisory passaram. Ruff/format/mypy4
+e auditoria Python passaram; DiskCache revisado permanece visível. E2E local
+anterior PASS4runs/16testesDemo/3PDFs, zeroerrosJS, conforme checkpoint acima.
+Não somar suítes locais sobrepostas à execução completa da CI.
+
+Fonte executável/configuração/locks conferidos iguais à CI. Alterações posteriores
+incluem Markdown e captura docs/images/report-pdf.png, que não entra no contexto
+Docker/runtime; não alegar igualdade de TODO arquivo não-Markdown. Source-review
+461º42101708691SUCCESS; documentação e captura foram revistas antes do push.
+
+Imagem Docker da aplicação construída, ID nativo
+sha256:bfb7fcc0fbc3ff0c6ffcf58417c75dc8c1649df6eb2db28954a5651478770b82.
+Check isolado sem rede/RO/UID10001 gerou PDF47.113bytes e confirmou pypdf ausente
+do runtime. API Demo anterior permaneceu atendendo durante o build/CI.
+
+Após CI SUCCESS, somente **aegis/api** foi recriada com imagem local já conferida,
+--no-deps/--no-build/--pull never. Sem migrate, seed, mudança de contas/segredos,
+reinício de worker/db/redis ou operação Linux/Wazuh. IDs de todos os containers
+não-API do projeto conferidos iguais antes/depois. Imagem anterior preservada;
+referência privada em .local/pdf-reporting/previous-api-image-id.txt.
+
+Verificação da implantação: localhost18780 health ready, três endpoints OpenAPI
+aceitando PDF, cinco arquivos instalados com SHA256 igual à fonte atual.
+No container efetivamente implantado, papel aegis_app e snapshot READONLY
+confirmados; relatório de execução Demo histórica gerou PDF64.674bytes. Sem criar
+campanha/usuário, mudar dados históricos ou consultar SIEM nesse check. O fluxo
+HTTP autenticado completo foi testado no E2E descartável; o check implantado usou
+renderização interna somente leitura e saúde/OpenAPI públicos. ReportLab5.1.0 e
+Pillow13.0.0 confirmados. Prova completa privada em deployed-check.json.
+
+Site pronto para os botões **Exportar PDF**, **PDF**, **Exportar recorte PDF** e
+**Exportar comparação PDF**; recarregar a SPA para obter o bundle novo. README,
+guia PDF, API, roadmap, critérios de aceite, galeria e CHANGELOG atualizados.
+Limites/PDF-A/assinatura/acessibilidade estão documentados, sem falsa promessa.
+
+Seis commits desta etapa já sincronizados,456ºeed06ab até461º590a108; este
+checkpoint fecha o sétimo,462º. Último hash/mensagem e origem são conferidos no
+Git após commit. **Etapa PDF concluída**. Laboratório continua adiado por decisão
+do usuário; qasrc e PKI preservadas, sem preparo de troca de faixa ou novo ensaio.
