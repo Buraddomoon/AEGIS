@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from aegis import analytics, queries
 from aegis.db import get_db
 from aegis.models import CampaignRun, User
+from aegis.report_downloads import pdf_download
 from aegis.reporting import (
     build_comparison_report,
     build_coverage_report,
@@ -93,6 +94,13 @@ def runs(
 
 
 def deliver(db, user, report, format):
+    pdf = (
+        pdf_download(
+            report, f"aegis-{report['kind']}-{report['integrity_sha256'][:16]}.pdf", user.id
+        )
+        if format == "pdf"
+        else None
+    )
     audit(
         db,
         user.id,
@@ -102,6 +110,8 @@ def deliver(db, user, report, format):
         format=format,
     )
     db.commit()
+    if pdf is not None:
+        return pdf
     if format == "html":
         return HTMLResponse(
             export_analysis_html(report),
@@ -112,12 +122,12 @@ def deliver(db, user, report, format):
     return report
 
 
-@router.get("/report")
+@router.get("/report", responses={200: {"content": {"application/pdf": {}}}})
 def coverage_report(
     user: Viewer,
     db: DB,
     scope: Scope,
-    format: Literal["json", "html"] = "json",
+    format: Literal["json", "html", "pdf"] = "json",
     expected_scope_sha256: ExpectedHash = None,
 ):
     rate_limit("analysis-report:" + user.id, 30, 60)
@@ -137,9 +147,9 @@ def compare(before: str, after: str, user: Viewer, db: DB):
         return queries.compare(snapshot, before, after)
 
 
-@router.get("/compare/report")
+@router.get("/compare/report", responses={200: {"content": {"application/pdf": {}}}})
 def comparison_report(
-    before: str, after: str, user: Viewer, db: DB, format: Literal["json", "html"] = "json"
+    before: str, after: str, user: Viewer, db: DB, format: Literal["json", "html", "pdf"] = "json"
 ):
     rate_limit("analysis-report:" + user.id, 30, 60)
     with analytics.read_snapshot(db) as snapshot:

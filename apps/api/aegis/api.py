@@ -49,6 +49,7 @@ from aegis.models import (
     TestDefinition,
     User,
 )
+from aegis.report_downloads import pdf_download
 from aegis.reporting import HTMLReportExporter, build_report
 from aegis.security import (
     DUMMY_HASH,
@@ -839,12 +840,18 @@ def reports(
         return {**result, "scope_sha256": scope_hash, "selection": resolved}
 
 
-@router.get("/reports/{run_id}", tags=["Reports"])
-def report(run_id: str, user: Viewer, db: DB, format: Literal["json", "html"] = "json"):
-    detail = queries.execution_detail(db, run_id)
-    data = build_report(detail)
+@router.get(
+    "/reports/{run_id}", tags=["Reports"], responses={200: {"content": {"application/pdf": {}}}}
+)
+def report(run_id: str, user: Viewer, db: DB, format: Literal["json", "html", "pdf"] = "json"):
+    with analytics.read_snapshot(db) as snapshot:
+        detail = queries.execution_detail(snapshot, run_id)
+        data = build_report(detail)
+    pdf = pdf_download(data, f"aegis-{detail['id']}.pdf", user.id) if format == "pdf" else None
     audit(db, user.id, "report.export", run_id, format=format)
     db.commit()
+    if pdf is not None:
+        return pdf
     if format == "html":
         return HTMLResponse(
             HTMLReportExporter().export(data),
