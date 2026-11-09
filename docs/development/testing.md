@@ -29,6 +29,13 @@ inspeções nativas opcionais foram puladas**; React:83 testes/13 arquivos. Essa
 execução não valida o código novo do resumo executivo de09/11; a rodada atual e
 o estado de implantação estão registrados no [checkpoint](../PROGRESS.md).
 
+Resumo executivo09/11: [run42628841047](https://github.com/Buraddomoon/AEGIS/actions/runs/42628841047)
+SUCCESS no commit26605ff: **3.025Python aprovados/8skips opcionais** e83React.
+Quatro partições executadas, sem exclusões novas; inclui43novos casos de resumo,
+parser e API. E2E Firefox local validou4runs/16testesDemo/3PDFs, zeroerrosJS.
+Diferenças posteriores: Markdown e captura documentalPNG, sem mudanças nos inputs
+executáveis. A implantação e os limites da verificação estão no checkpoint.
+
 Cada arquivo pertence exatamente a uma partição. Adições/ordenação não movem
 arquivos existentes; mudar SHARDS/PINNED exige evidência e conferência da união.
 Shard inválido/vazio, arquivo fora de tests ou PYTEST_ADDOPTS herdado impedem

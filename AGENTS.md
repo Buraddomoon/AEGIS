@@ -823,3 +823,8 @@ taxa. HTML/PDF usam o mesmo texto derivado, PDF recusa summary divergente por di
 (bool não equivale a int). Não alterar veredictos, escopos ou aprovação para corrigir
 apresentação. Testes adicionais em test_reporting_summary e test_pdf_api/reporting.
 CI/implantação desse incremento têm checkpoint próprio; CI05/11 não o valida.
+
+Retenção de imagem local: antes de build que reutilize tag, preservar a imagem
+da API em tag própria exclusiva e conferir o ID; arquivo com ID sozinho não é
+retenção. Revalidar referência após troca. Rebuild de fonte antiga deve ser
+identificado como reconstrução, nunca como mesma imagem binária preservada.

@@ -10,6 +10,15 @@ Health: `/api/v1/health/live` informa processo; `/api/v1/health/ready` verifica 
 
 Locks Python possuem hashes; imagem frontend usa npm ci. Tags de imagens recebem patches da linha 17/8/3.13/24 no build; registrar digests no processo de release antes de uso além do Demo. Não existem benchmarks ou garantia de alta disponibilidade. Não habilitamos infraestrutura paga, Wazuh completo ou publicação pública.
 
+Antes de reutilizar a tag de build, identificar a imagem efetivamente usada pela
+API e criar uma **tag local dedicada e exclusiva** para preservá-la; conferir que
+essa referência resolve para o mesmo ID. Anotar um ID em arquivo não garante que
+a imagem continuará consultável depois de retag/recriação do container. Não
+sobrescrever referências anteriores nem remover imagens/volumes para atualizar.
+Após o deploy, reconferir a referência de retorno e os serviços que deveriam
+permanecer intactos. Uma reconstrução de um commit anterior é uma nova imagem:
+registrar commit/locks/ID e validação, sem afirmar identidade binária com a antiga.
+
 Linux opt-in: seguir [escopo e instalação](../../labs/linux/README.md), usando o overlay separado com API 18785 e banco próprio. Apenas API/worker desse projeto recebem configuração/certificado cliente, sem chaves de CA. Wazuh é explicitamente vazio no overlay de ensaio. make up padrão não inicia runner nem monta chaves Linux. Não confundir autorização de ensaio anterior com autorização permanente.
 
 

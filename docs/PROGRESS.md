@@ -4388,3 +4388,67 @@ em andamento/na fila neste checkpoint; as intermediárias foram canceladas por
 redundância. Não reutilizar CI42100930151 para esse incremento. Build da imagem
 da aplicação concluído, sem substituir a API ainda. Nada de Linux/Wazuh,
 qasrc/PKI/plano/ensaio novos; sem alteração de contas ou credenciais.
+
+## 2026-11-09 — resumo executivo validado e implantado
+
+[CI42628841047](https://github.com/Buraddomoon/AEGIS/actions/runs/42628841047)
+**SUCCESS**, fonte26605ff159ddb2545371c767b67863cf419781ce. Logs concluídos:
+
+| Grupo Python | Passaram | Skips nativos opcionais | Tempo pytest |
+| --- | --- | --- | --- |
+| 0 | 773 | 2 | 883,21s |
+| 1 | 681 | 1 | 845,90s |
+| 2 | 790 | 1 | 545,21s |
+| 3 | 781 | 4 | 599,19s |
+| Total | **3.025** | **8** | jobs separados |
+
+Cada log confirma3033=passed+skipped+deselected; soma dos executados3033, sem
+exclusões novas ou mudança de particionamento. Os43casos novos passaram no grupo2.
+React83testes/13arquivos, lint/build e revisões de dependências passaram. Mantêm-se
+o advisory transitivo já revisado e o aviso Starlette/httpx; não afirmar zero
+vulnerabilidades. Não somar as rodadas locais sobrepostas ao total da CI.
+
+E2E final também PASS4runs/16testesDemo/3PDFs/zeroerrosJS. Parser independente:
+execução13páginas/67.550bytes, cobertura4/52.171, comparação27/93.921; aviso
+sintético em todas. Captura real do PDF atualizada no README/galeria, com origem
+09/11/fonte26605ff e revisão visual; demais capturas preservadas. Após fonte da
+CI só Markdown e essaPNG documental, excluída do contexto Docker/runtime.
+
+Imagem9e3fe0c86a8361520f882aaaad5928c72d3fa3633eec55bbb82c7f780c108add
+construída/conferida antes do deploy. Teste isolado network=none/RO/UID10001,
+256MiB/0,5CPU/32PIDs gerou PDF49.745bytes e comprovou pypdf ausente do runtime.
+Depois da CI, somente aegis/api foi recriada com --no-deps/--no-build/--pull never;
+DB/Redis/worker/migrate mantiveram IDs/imagens/estado. Sem migrate/seed, alteração
+de contas/credenciais, nova campanha ou operação Linux/Wazuh/qasrc/PKI.
+
+Site localhost18780 ready, DB/Redis positivos. No container implantado, arquivos
+reporting.py/pdf_reporting.py instalados têm os hashes esperados; papel aegis_app
+e snapshot READONLY confirmados. Relatório Demo existente1.2 informa4concluídos,
+1detecção/3válidos=33,3% e1excluído; PDF68.266bytes. Comparação do mesmo relatório
+antes/depois da geração permaneceu idêntica. Sem sessão de produção criada ou
+leitura/reset de senha; HTTP autenticado/browser foram testados no E2E descartável,
+enquanto o check implantado usou renderização interna RO e saúde pública.
+
+Ressalva encontrada e corrigida no procedimento: o ID salvo da imagem anterior
+bfb7fcc... não resolveu após a troca. Não foi criada tag dedicada antes do build;
+não afirmar que o registro de ID preservou a imagem original. Nenhum prune/rmi foi
+executado. Fonte anterior e700244 foi reconstruída separadamente, via git archive,
+sem checkout/branch ou troca da API atual. A imagem nova dessa fonte é
+8c04b28c674b8dcaa4abb711f9fff2a705fa48e9cec0d9a20e3e99f637bd9d53,
+tag local aegis-pdf-rollback:20261109. Teste isolado conferiu hashes dos dois
+módulos contra o Git anterior, relatório1.1 e PDF47.260bytes/2páginas lido por
+parser independente. Não é prova de identidade binária com a imagem original,
+nem ensaio de rollback HTTP/DB: essa reconstrução não foi implantada.
+
+Imagem atual recebeu tag própria aegis-report-summary-validated:20261109 e o
+procedimento/AGENTS agora exigem etiqueta exclusiva conferida antes de reutilizar
+tag de build. São etiquetas Docker locais, sem versão/tag/release GitHub nova.
+Provas privadas: .local/report-summary/ci-result.json, image-check.json,
+deployed-check.json, rollback-image-check.json e logs/capturas; nada disso entra
+no Git. Containers de verificação foram descartáveis, sem rede ou banco.
+
+Cinco commits463º5990c62 até467ºbef5bb9 já sincronizados. Este checkpoint encerra
+o sexto commit da etapa,468º; último hash/mensagem são conferidos no Git após
+commit. **Incremento do resumo executivo concluído e disponível no Demo.**
+Laboratório continua adiado; próximas evoluções devem preservar essa decisão e
+a rede qasrc, sem reutilizar autorizações consumidas de ensaios reais.
