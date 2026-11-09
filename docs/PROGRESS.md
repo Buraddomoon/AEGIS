@@ -4452,3 +4452,15 @@ o sexto commit da etapa,468º; último hash/mensagem são conferidos no Git apó
 commit. **Incremento do resumo executivo concluído e disponível no Demo.**
 Laboratório continua adiado; próximas evoluções devem preservar essa decisão e
 a rede qasrc, sem reutilizar autorizações consumidas de ensaios reais.
+
+## 2026-11-09 — próximo incremento: comparações automáticas Demo
+
+Usuário autorizou a próxima etapa sugerida. ADR0032 define snapshot automático
+para novas ocorrências emitidas, primeiro documento individual e par anterior da
+mesma autorização nas seguintes, fila transacional e artefatos imutáveis. Sem
+backfill, novos efeitos ofensivos ou alteração dos escopos/grants existentes.
+Não anunciado operacional neste checkpoint. APIs/builders existentes serão
+reutilizados; sem novos pacotes. Documentação oficial de transações/locking/
+triggers consultada. Migração aditiva requer atualizar recovery/ACL e testar
+upgrade com dados antes de considerar implantação do Demo. Linux/Wazuh/qasrc
+permanecem adiados/intactos; manter as imagens/backup da revisão anterior.
