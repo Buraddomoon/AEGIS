@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, defer
 
 from aegis import analytics, services
 from aegis.db import get_db
@@ -53,9 +53,14 @@ def list_reports(
     with analytics.read_snapshot(db) as snapshot:
         services.get_or_404(snapshot, Schedule, schedule_id)
         query = select(ScheduledReport).where(ScheduledReport.schedule_id == schedule_id)
-        total = snapshot.scalar(select(func.count()).select_from(query.subquery()))
+        total = snapshot.scalar(
+            select(func.count())
+            .select_from(ScheduledReport)
+            .where(ScheduledReport.schedule_id == schedule_id)
+        )
         rows = snapshot.scalars(
             query.order_by(ScheduledReport.created_at.desc(), ScheduledReport.id.desc())
+            .options(defer(ScheduledReport.document, raiseload=True))
             .offset(offset)
             .limit(limit)
         )

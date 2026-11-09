@@ -1,5 +1,6 @@
 """Durable requests processed against real PostgreSQL and actual Demo worker results."""
 
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 
@@ -196,3 +197,92 @@ def test_crash_before_publication_rolls_back_attempt_and_audit_then_retry_publis
     assert item.state == "PENDING" and item.attempts == 0 and item.document is None
     assert reports.process_one()
     assert saved(identifier).state == "READY" and saved(identifier).attempts == 1
+
+
+@pytest.mark.parametrize("reason", ["late", "busy"])
+def test_discarded_slots_do_not_request_or_generate_reports(admin, reason):
+    from conftest import create_queued
+
+    schedule, instant = ready(admin, max_occurrences=1)
+    if reason == "busy":
+        create_queued(admin, ["demo-shell"])
+    assert scheduling.dispatch_one(instant + timedelta(minutes=2) if reason == "late" else instant)
+    with session_factory()() as db:
+        assert db.scalar(select(func.count()).select_from(ScheduledReport)) == 0
+    assert reports.process_one() is False
+
+
+def test_source_context_drift_cannot_be_published_as_demo_evidence(admin):
+    from aegis.models import CampaignRun
+
+    schedule, instant = ready(admin, max_occurrences=1)
+    identifier, run_id = issue(schedule, instant)
+    assert claim_next() == run_id
+    process_run(run_id)
+    with session_factory()() as db:
+        run = db.get(CampaignRun, run_id)
+        run.scope = run.scope | {"mode": "linux"}
+        db.commit()
+    assert reports.process_one()
+    item = saved(identifier)
+    assert (
+        item.state == "FAILED" and item.error_code == "CONTEXT_MISMATCH" and item.document is None
+    )
+
+
+def test_report_processing_refuses_recovery_mode_before_database_work(db_ready, monkeypatch):
+    from aegis.config import settings
+
+    monkeypatch.setattr(settings(), "operating_mode", "recovery")
+    with pytest.raises(RuntimeError):
+        reports.process_one()
+
+
+def test_slow_snapshot_generation_does_not_lock_schedule_lab_or_next_dispatch(admin, monkeypatch):
+    schedule, instant = ready(admin)
+    identifier, run_id = issue(schedule, instant)
+    assert claim_next() == run_id
+    process_run(run_id)
+    entered, release = threading.Event(), threading.Event()
+    original = reports.build_document
+
+    def delayed(*args):
+        document = original(*args)
+        entered.set()
+        assert release.wait(5)
+        return document
+
+    monkeypatch.setattr(reports, "build_document", delayed)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        report_task = pool.submit(reports.process_one)
+        try:
+            assert entered.wait(5)
+            dispatch = pool.submit(scheduling.dispatch_one, instant + timedelta(seconds=60))
+            assert dispatch.result(timeout=3) is True
+        finally:
+            release.set()
+        assert report_task.result(timeout=5) is True
+    assert saved(identifier).state == "READY"
+
+
+def test_new_occurrence_can_reference_legacy_run_without_requesting_retroactive_report(
+    admin, monkeypatch
+):
+    schedule, instant = ready(admin)
+    with monkeypatch.context() as patch:
+        # Model a slot emitted before this feature existed; no report request was stored.
+        patch.setattr(reports, "request_report", lambda *args: None)
+        assert scheduling.dispatch_one(instant)
+    with session_factory()() as db:
+        old_run = db.scalar(select(ScheduleOccurrence.run_id))
+    assert claim_next() == old_run
+    process_run(old_run)
+    assert reports.process_one() is False
+    identifier, run_id = issue(schedule, instant + timedelta(seconds=60))
+    assert claim_next() == run_id
+    process_run(run_id)
+    assert reports.process_one()
+    report = saved(identifier)
+    assert report.kind == "COMPARISON" and report.previous_run_id == old_run
+    with session_factory()() as db:
+        assert db.scalar(select(func.count()).select_from(ScheduledReport)) == 1
