@@ -4524,3 +4524,35 @@ são Markdown e screenshot documental. Próximo: concluir CI, validar backup/hea
 e grants, migrar somente Demo sem seed, atualizar API/worker e conferir dados e
 funcionamento implantado. Nenhuma autorização adicional é necessária para os
 testes locais/autorizados; não reutilizar aprovações antigas Linux/Wazuh.
+
+## 2026-11-09 — validação complementar após falha da infraestrutura CI
+
+CI42671146994/tentativa2 terminou **failure** com APENAS Python partition1 criado,
+esse job SUCCESS: **681passed/1skip/2380deselected/839,88s**, total3062coletados.
+Endpoint jobs filter=all também confirma só esse job; demais três grupos e React
+não iniciaram. Check-suite contém apenas esse check verde e não fornece causa
+detalhada. Não chamar a workflow de aprovada ou atribuir erro a billing sem prova.
+Não alterar workflow/timeouts/seleção, habilitar plano pago ou repetir cegamente.
+
+Mesma fonte executável0609ad2; HEAD posterior contém somente Markdown e PNG de
+documentação. Foram iniciados localmente, EM SEQUÊNCIA, os grupos0/2/3 por
+scripts/run_ci_tests.py sem filtros, com logs e códigos de saída privados
+local-partition-{n}.log/.exit em.local/scheduled-reports. Grupo0 concluiu com
+**788passed/1skip/2273deselected/414,74s/exit0**; grupo2 iniciou em seguida.
+Não executar outro pytest usandoRedis15 junto desses processos. Conferir os
+três exits, logs, contagens e complementaridade com o grupo1 remoto antes de
+aceitar a suíte completa. Frontend local inteiro88/lint/build já aprovados.
+
+Verificação SQL adicional em banco descartável, via fixtures de recovery já
+existentes: papel runtime restrito emitiu/consumiu a ocorrência, gerou snapshot e
+baixou PDF; UPDATE de origem, DELETE e alteração de documento final negados.
+**1passed/3,94s**; clone/papel foram removidos pelo finally. A primeira execução
+desse roteiro esqueceu autorizar o NOVO DemoLab da fixture e recebeu409; corrigido
+o roteiro, sem mudar produto/grants ou reutilizar autorização restaurada. Nada
+dessa prova depende de banco/conta real ou equivale a ensaio de restauração.
+
+Revisão de dependências local concluiu mantendo somente DiskCache revisado;
+npm audit zero achados. Nova imagem e backup permanecem preparados, API/worker
+ainda não recriados nem banco Demo migrado. Source-review do commit478ºbca50af
+42673301984SUCCESS. Guardar CI remota como pendência externa explícita; validação
+local integral é alternativa verificável, sem alegar CI verde ou reduzir testes.
