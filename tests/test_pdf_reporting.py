@@ -6,7 +6,13 @@ from io import BytesIO
 import pytest
 from aegis import pdf_reporting as pdf
 from aegis.domain.validation import digest
-from aegis.reporting import build_comparison_report, build_coverage_report, build_report
+from aegis.reporting import (
+    HTMLReportExporter,
+    build_comparison_report,
+    build_coverage_report,
+    build_report,
+    execution_summary_lines,
+)
 from pypdf import PdfReader
 
 
@@ -156,3 +162,46 @@ def test_busy_renderer_is_explicit_and_never_queues_another_pdf(report):
         with pytest.raises(pdf.PDFBusyError):
             pdf.PDFReportExporter().export(report)
     parsed(report)
+
+
+@pytest.mark.parametrize("state", ["QUEUED", "COMPLETED", "CANCELLED", "CLEANUP_FAILED"])
+def test_html_and_pdf_show_same_summary_and_distinguish_partial_from_valid_results(report, state):
+    source = deepcopy(report["run"])
+    source["state"] = state
+    source["executions"].extend(
+        [
+            {
+                "test_id": "observed",
+                "state": "COMPLETED",
+                "result": {"outcome": "OBSERVED_NOT_ALERTED", "reason": "Telemetria."},
+            },
+            {"test_id": "pending", "state": "QUEUED", "result": None},
+        ]
+    )
+    selected = build_report(source)
+    document = HTMLReportExporter().export(selected)
+    _, _, text = parsed(selected)
+    for line in execution_summary_lines(source):
+        assert line in document
+        assert line in " ".join(text.split())
+    assert "Foram avaliadas" not in document and "Foram avaliadas" not in text
+    assert "Simulações no escopo: 3. Testes concluídos: 2." in text
+    assert "Estado do teste: QUEUED" in text and "<td>QUEUED</td>" in document
+    if state == "COMPLETED":
+        assert "1 em 2 testes válidos" in text and "50,0%" in text
+    else:
+        assert "Taxa não calculada" in text and "classificações parciais" in document
+
+
+@pytest.mark.parametrize("value", [99, True])
+def test_pdf_refuses_summary_not_derived_from_original_execution(report, value):
+    report["summary"]["detected_tests"] = value
+    with pytest.raises(pdf.PDFExportError, match="integrity"):
+        pdf.PDFReportExporter().export(report)
+
+
+def test_legacy_report_without_summary_can_still_render_with_recomputed_counts(report):
+    report.pop("summary")
+    report["report_version"] = "1.1"
+    _, _, text = parsed(report)
+    assert "1 em 1 testes válidos" in text and "100,0%" in text

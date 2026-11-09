@@ -36,6 +36,32 @@ def summarize_execution(run: dict) -> dict:
     }
 
 
+def execution_summary_lines(run: dict) -> list[str]:
+    summary = summarize_execution(run)
+    rate = summary["detected_percentage"]
+    lines = [
+        f"Simulações no escopo: {summary['planned_tests']}. Testes concluídos: {summary['completed_tests']}.",
+        f"Detecções na taxa: {summary['detected_tests']} em {summary['valid_tests']} testes válidos. "
+        + (
+            f"Taxa neste escopo: {rate:.1f}%.".replace(".", ",", 1)
+            if rate is not None
+            else "Taxa não calculada: nenhum teste elegível no denominador."
+        ),
+        f"Testes excluídos da taxa: {summary['excluded_tests']}.",
+        summary["denominator"],
+    ]
+    if run["state"] != "COMPLETED":
+        lines.append(
+            "A execução não está COMPLETED; classificações parciais permanecem no histórico, "
+            "mas nenhum teste desta execução participa da taxa."
+        )
+    lines.append(
+        "As classificações distinguem detecção, observação sem alerta e insuficiência de evidências. "
+        "Esta taxa não mede proteção geral de uma organização."
+    )
+    return lines
+
+
 def build_report(detail: dict) -> dict:
     # Hash exactly the JSON representation delivered to clients, including UTC dates.
     detail = jsonable_encoder(detail)
@@ -72,9 +98,10 @@ class HTMLReportExporter:
 
         run = report["run"]
         rows = "".join(
-            f"<tr><td>{escape(e['test_id'])}</td><td>{escape((e['result'] or {}).get('outcome', 'NOT_TESTED'))}</td><td>{escape((e['result'] or {}).get('reason', 'Sem conclusão'))}</td></tr>"
+            f"<tr><td>{escape(e['test_id'])}</td><td>{escape(e['state'])}</td><td>{escape((e['result'] or {}).get('outcome', 'NOT_TESTED'))}</td><td>{escape((e['result'] or {}).get('reason', 'Sem conclusão'))}</td></tr>"
             for e in run["executions"]
         )
+        summary = "".join(f"<p>{escape(line)}</p>" for line in execution_summary_lines(run))
         notice = (
             "DEMONSTRAÇÃO · EVIDÊNCIAS SINTÉTICAS"
             if report["synthetic"]
@@ -94,8 +121,8 @@ class HTMLReportExporter:
 <h2>{escape(run["campaign_name"])}</h2><p>{escape(run["objective"])}</p>
 <p>Execução: {escape(run["id"])} · Estado: {escape(run["state"])}</p><p>Data UTC: {escape(run["created_at"])} · Ambiente v{escape(run["scope"]["environment_version"])}</p>
 <p>Catálogo ATT&CK: {escape(catalog_text)}</p>
-<h2>Resumo executivo</h2><p>Foram avaliadas {len(run["executions"])} simulações neste escopo. As classificações abaixo distinguem detecção, observação sem alerta e insuficiência de evidências. Os resultados não demonstram proteção de uma organização.</p>
-<h2>Resultados técnicos</h2><table><tr><th>Simulação</th><th>Resultado</th><th>Justificativa</th></tr>{rows}</table>
+<h2>Resumo executivo</h2>{summary}
+<h2>Resultados técnicos</h2><table><tr><th>Simulação</th><th>Estado</th><th>Resultado registrado</th><th>Justificativa</th></tr>{rows}</table>
 <h2>Recomendações</h2><ul>{"".join("<li>" + escape(r) + "</li>" for r in report["recommendations"])}</ul>
 <h2>Integridade</h2><p>SHA-256 do conteúdo da execução: {escape(report["integrity_sha256"])}. Hash permite verificar alterações; não é assinatura digital.</p>
 <h2>Escopo, aprovação, evidências e trilha completa</h2><pre>{raw}</pre></html>"""

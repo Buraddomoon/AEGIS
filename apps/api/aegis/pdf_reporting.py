@@ -19,6 +19,7 @@ from reportlab.platypus import PageBreak, Paragraph, Preformatted, SimpleDocTemp
 from reportlab.platypus.doctemplate import LayoutError
 
 from aegis.domain.validation import digest
+from aegis.reporting import execution_summary_lines, summarize_execution
 
 MAX_SOURCE_BYTES = 512 * 1024
 MAX_OUTPUT_BYTES = 8 * 1024 * 1024
@@ -76,6 +77,9 @@ class PDFReportExporter:
         )
         if report["integrity_sha256"] != expected:
             raise PDFExportError("pdf_report_integrity_mismatch")
+        if "run" in report and "summary" in report:
+            if digest(report["summary"]) != digest(summarize_execution(report["run"])):
+                raise PDFExportError("pdf_report_integrity_mismatch")
         if not _RENDER_LOCK.acquire(blocking=False):
             raise PDFBusyError("pdf_renderer_busy")
         try:
@@ -157,15 +161,13 @@ class PDFReportExporter:
                 if catalog
                 else "Versão ATT&CK não registrada no escopo histórico."
             )
-            add(
-                f"{len(run['executions'])} simulações neste escopo. As classificações distinguem "
-                "detecção, observação sem alerta e insuficiência de evidências. "
-                "Resultados não demonstram proteção geral de uma organização."
-            )
+            for line in execution_summary_lines(run):
+                add(line)
             add("Resultados técnicos", heading)
             for execution in run["executions"]:
                 result = execution.get("result") or {}
                 add(f"{execution['test_id']} · {result.get('outcome', 'NOT_TESTED')}", heading)
+                add(f"Estado do teste: {execution['state']}")
                 add(result.get("reason", "Sem conclusão registrada."))
                 add(f"Evidências correlacionadas: {len(execution.get('evidence', []))}.")
             add("Recomendações", heading)
