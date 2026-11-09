@@ -51,6 +51,7 @@ from aegis.models import (
 )
 from aegis.report_downloads import pdf_download
 from aegis.reporting import HTMLReportExporter, build_report
+from aegis.scheduled_report_api import router as scheduled_report_router
 from aegis.security import (
     DUMMY_HASH,
     administrator,
@@ -68,6 +69,7 @@ from aegis.security import (
 router = APIRouter(prefix="/api/v1")
 router.include_router(catalog_router)
 router.include_router(analytics_router)
+router.include_router(scheduled_report_router)
 DB = Annotated[Session, Depends(get_db)]
 Viewer = Annotated[User, Depends(current_user)]
 Operator = Annotated[User, Depends(operator)]
