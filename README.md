@@ -86,7 +86,7 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 
 ![Filtros e exportações reais de cobertura no Demo E2E](docs/images/coverage.png)
 
-![Primeira página de um PDF gerado no E2E com dados sintéticos](docs/images/report-pdf.png)
+![PDF real do E2E: quatro simulações sintéticas, uma detecção em três testes válidos e um inconclusivo excluído da taxa](docs/images/report-pdf.png)
 
 [Relatórios PDF: uso, integridade e limites](docs/operations/pdf-reports.md).
 
