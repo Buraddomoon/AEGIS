@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from aegis import services
+from aegis import scheduled_reports, services
 from aegis.config import require_normal_operation
 from aegis.db import session_factory
 from aegis.domain.states import TERMINAL
@@ -281,16 +281,18 @@ def dispatch_one(at: datetime | None = None) -> bool:
                         "SKIPPED_BUSY",
                         "Laboratório reservado; slot descartado sem execução.",
                     )
-            db.add(
-                ScheduleOccurrence(
-                    schedule_id=item.id,
-                    authorization_id=grant.id,
-                    scheduled_for=slot,
-                    run_id=run_id,
-                    status=status,
-                    reason=reason,
-                )
+            occurrence = ScheduleOccurrence(
+                schedule_id=item.id,
+                authorization_id=grant.id,
+                scheduled_for=slot,
+                run_id=run_id,
+                status=status,
+                reason=reason,
             )
+            db.add(occurrence)
+            if run_id is not None:
+                db.flush()
+                scheduled_reports.request_report(db, occurrence)
             item.occurrences_count += 1
             item.next_due_at = item.starts_at + timedelta(
                 seconds=item.interval_seconds * item.occurrences_count

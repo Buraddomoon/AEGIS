@@ -15,15 +15,9 @@ def pending(admin):
     assert scheduling.dispatch_one(instant)
     with session_factory()() as db:
         occurrence = db.scalar(select(ScheduleOccurrence))
-        item = ScheduledReport(
-            schedule_id=schedule["id"],
-            authorization_id=occurrence.authorization_id,
-            occurrence_id=occurrence.id,
-            run_id=occurrence.run_id,
-            kind="BASELINE",
+        item = db.scalar(
+            select(ScheduledReport).where(ScheduledReport.occurrence_id == occurrence.id)
         )
-        db.add(item)
-        db.commit()
         return item.id
 
 

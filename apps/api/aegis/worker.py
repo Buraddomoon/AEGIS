@@ -28,6 +28,7 @@ from aegis.models import (
     ValidationResult,
     now,
 )
+from aegis.scheduled_reports import report_loop
 from aegis.scheduling import authorization_valid, scheduler_loop
 from aegis.security import redis_client
 from aegis.services import move, release_lab
@@ -507,6 +508,8 @@ def main() -> None:
         target=scheduler_loop, args=(stop,), name="demo-scheduler", daemon=True
     )
     scheduler.start()
+    reporter = threading.Thread(target=report_loop, args=(stop,), name="demo-reports", daemon=True)
+    reporter.start()
     while not stop.is_set():
         try:
             try:
@@ -523,6 +526,7 @@ def main() -> None:
             log.exception("Worker polling failed")
             stop.wait(2)
     scheduler.join(timeout=5)
+    reporter.join(timeout=5)
 
 
 if __name__ == "__main__":
