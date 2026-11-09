@@ -1,5 +1,6 @@
 import html
 import json
+from collections import Counter
 
 from fastapi.encoders import jsonable_encoder
 
@@ -8,6 +9,31 @@ from aegis.domain.validation import digest
 LIMITATION = "Dados sintéticos. Ausência de alerta não comprova comprometimento, vulnerabilidade explorável ou risco de negócio. Este relatório não valida proteção de ambiente real."
 
 REAL_LIMITATION = "Laboratório Linux autorizado. Comprovantes do executor confirmam somente o efeito e cleanup do teste benigno. SIEM não consultado: não há confirmação de observação ou detecção defensiva. Ausência de alerta não comprova comprometimento ou risco de negócio."
+
+
+def summarize_execution(run: dict) -> dict:
+    """Derive counts from the snapshot, with the same completed-run denominator as coverage."""
+    executions = run["executions"]
+    outcomes = Counter(
+        (item.get("result") or {}).get("outcome", "NOT_TESTED") for item in executions
+    )
+    eligible = Counter(
+        (item.get("result") or {}).get("outcome", "NOT_TESTED")
+        for item in executions
+        if run["state"] == "COMPLETED" and item["state"] == "COMPLETED"
+    )
+    valid = sum(eligible[key] for key in ("DETECTED", "OBSERVED_NOT_ALERTED", "NO_TELEMETRY"))
+    return {
+        "planned_tests": len(executions),
+        "completed_tests": sum(item["state"] == "COMPLETED" for item in executions),
+        "test_states": dict(sorted(Counter(item["state"] for item in executions).items())),
+        "outcomes": dict(sorted(outcomes.items())),
+        "valid_tests": valid,
+        "detected_tests": eligible["DETECTED"],
+        "excluded_tests": len(executions) - valid,
+        "detected_percentage": round(100 * eligible["DETECTED"] / valid, 1) if valid else None,
+        "denominator": "DETECTED + OBSERVED_NOT_ALERTED + NO_TELEMETRY, somente filhos COMPLETED de uma execução COMPLETED. Inconclusivos, falhas, pendências e demais estados ficam fora da taxa.",
+    }
 
 
 def build_report(detail: dict) -> dict:
@@ -25,9 +51,10 @@ def build_report(detail: dict) -> dict:
     )
     return {
         "product": "ÆGIS",
-        "report_version": "1.1",
+        "report_version": "1.2",
         "synthetic": detail["synthetic"],
         "run": detail,
+        "summary": summarize_execution(detail),
         "limitations": [LIMITATION if detail["synthetic"] else real_limitation],
         "recommendations": [
             "Verificar instrumentação e disponibilidade da coleta nas simulações sem telemetria.",
