@@ -18,6 +18,8 @@ from aegis.models import (
     RunnerDispatch,
     Schedule,
     ScheduleAuthorization,
+    ScheduledReport,
+    ScheduleOccurrence,
     User,
     now,
 )
@@ -203,6 +205,57 @@ def test_reconciliation_preserves_history_revokes_access_and_is_idempotent(recov
         assert audit.actor_id is None and audit.details["plan_sha256"] == plan["snapshot_sha256"]
     assert run_sql(writer, reconcile.apply_sql(plan["snapshot_sha256"], RECOVERY_ID)) == result
     assert get_inventory(writer) == after
+
+
+@pytest.mark.parametrize("state", ["PENDING", "READY"])
+def test_reconciliation_fences_pending_reports_and_preserves_finished_snapshots(
+    recovered_work, state
+):
+    from aegis.domain.validation import digest
+
+    writer, ids = recovered_work
+    document = {
+        "synthetic": True,
+        "fixture": "storage preservation test, not an operational report",
+    }
+    with Session(writer) as db:
+        grant = db.scalar(select(ScheduleAuthorization))
+        occurrence = ScheduleOccurrence(
+            schedule_id=ids["schedule"],
+            authorization_id=grant.id,
+            scheduled_for=now(),
+            run_id=ids["run"],
+            status="QUEUED",
+            reason="Test fixture",
+        )
+        db.add(occurrence)
+        db.flush()
+        request = ScheduledReport(
+            schedule_id=ids["schedule"],
+            authorization_id=grant.id,
+            occurrence_id=occurrence.id,
+            run_id=ids["run"],
+            kind="BASELINE",
+            state=state,
+            attempts=1 if state == "READY" else 0,
+            document=document if state == "READY" else None,
+            document_sha256=digest(document) if state == "READY" else None,
+            generated_at=now() if state == "READY" else None,
+        )
+        db.add(request)
+        db.commit()
+        identifier = request.id
+    plan = get_plan(writer)
+    assert plan["counts"]["pending_scheduled_reports"] == int(state == "PENDING")
+    run_sql(writer, reconcile.apply_sql(plan["snapshot_sha256"], RECOVERY_ID))
+    with Session(writer) as db:
+        restored = db.get(ScheduledReport, identifier)
+        if state == "READY":
+            assert restored.state == "READY" and restored.document == document
+            assert restored.document_sha256 == digest(document)
+        else:
+            assert restored.state == "FAILED" and restored.error_code == "RECOVERY_RECONCILED"
+            assert restored.document is None and restored.attempts == 0
 
 
 @pytest.mark.parametrize("state", sorted(set(State) - TERMINAL))

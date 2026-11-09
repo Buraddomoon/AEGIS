@@ -121,6 +121,9 @@ def review(expected_reconciliation=None):
                 "unrevoked_schedule_grants": count(
                     "SELECT count(*) FROM schedule_authorizations WHERE revoked_at IS NULL"
                 ),
+                "pending_scheduled_reports": count(
+                    "SELECT count(*) FROM scheduled_reports WHERE state='PENDING'"
+                ),
                 "runner_dispatches": count("SELECT count(*) FROM runner_dispatches"),
                 "recorded_demo_reconciliations": count(
                     "SELECT count(*) FROM audit_events WHERE action='recovery.demo.reconciled'"
@@ -158,6 +161,7 @@ def review(expected_reconciliation=None):
                             "authorized_laboratories",
                             "resumable_schedules",
                             "unrevoked_schedule_grants",
+                            "pending_scheduled_reports",
                         )
                     )
                 ):

@@ -31,6 +31,7 @@ MUTABLE = {
     "test_executions": ("state", "ended_at"),
     "schedules": ("state", "reason"),
     "schedule_authorizations": ("revoked_at",),
+    "scheduled_reports": ("state", "error_code"),
 }
 
 
@@ -93,6 +94,7 @@ def plan_sql():
         "pending_executions": f"SELECT count(*) FROM public.test_executions WHERE state NOT IN ({terminal})",
         "resumable_schedules": "SELECT count(*) FROM public.schedules WHERE state IN ('ACTIVE','PAUSED','PENDING_APPROVAL')",
         "unrevoked_grants": "SELECT count(*) FROM public.schedule_authorizations WHERE revoked_at IS NULL",
+        "pending_scheduled_reports": "SELECT count(*) FROM public.scheduled_reports WHERE state='PENDING'",
         "retained_unused_approvals": "SELECT count(*) FROM public.approvals WHERE used_at IS NULL",
     }
 
@@ -199,6 +201,8 @@ def apply_sql(expected_hash, recovery_id):
         UPDATE public.schedule_authorizations SET revoked_at=now() WHERE revoked_at IS NULL;
         UPDATE public.schedules SET state='REVOKED',reason='{REASON}'
           WHERE state IN ('ACTIVE','PAUSED','PENDING_APPROVAL');
+        UPDATE public.scheduled_reports SET state='FAILED',error_code='RECOVERY_RECONCILED'
+          WHERE state='PENDING';
         {" ".join(transitions)}
         INSERT INTO public.audit_events (id,created_at,actor_id,action,resource_id,details)
           VALUES (gen_random_uuid()::text,now(),NULL,'{ACTION}','{recovery_id}',
@@ -212,6 +216,7 @@ def apply_sql(expected_hash, recovery_id):
           OR EXISTS (SELECT 1 FROM public.test_executions WHERE state NOT IN ({literals(TERMINAL)}))
           OR EXISTS (SELECT 1 FROM public.schedule_authorizations WHERE revoked_at IS NULL)
           OR EXISTS (SELECT 1 FROM public.schedules WHERE state IN ('ACTIVE','PAUSED','PENDING_APPROVAL'))
+          OR EXISTS (SELECT 1 FROM public.scheduled_reports WHERE state='PENDING')
           THEN RAISE EXCEPTION 'Recovery postconditions failed'; END IF;
         IF EXISTS (({before}) EXCEPT ALL ({after})) OR EXISTS (({after}) EXCEPT ALL ({before}))
           OR EXISTS (SELECT row FROM recovery_original WHERE name='audit_events'
