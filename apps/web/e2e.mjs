@@ -253,7 +253,8 @@ try {
     for (const [el, value] of [
       [fields[0], format(Date.now() + 15000)],
       [fields[1], format(Date.now() + 300000)],
-      [fields[3], '1'],
+      [fields[2], '60'],
+      [fields[3], '2'],
     ]) {
       set.call(el, value)
       el.dispatchEvent(new Event('input', { bubbles: true }))
@@ -266,7 +267,6 @@ try {
   await page.click('dialog input[type="checkbox"]')
   await button('Autorizar plano Demo', 'dialog button')
   await page.waitForFunction(() => !document.querySelector('dialog[open]'))
-  await text('Limite encerrado')
   await text('Ver execução')
   await screenshot('schedules')
   await button('Ver execução', 'main a')
@@ -288,6 +288,49 @@ try {
     scheduledReport.run.schedule_plan.plan_hash,
     scheduledReport.run.schedule_authorization.plan_hash,
   )
+  const automaticScheduleId = scheduledReport.run.schedule_id
+  await navigate(`schedules/${automaticScheduleId}`)
+  // The second approved occurrence is one real 60-second cadence after the first.
+  // Keep normal UI polling and the production minimum cadence unchanged.
+  await page.waitForFunction(
+    () => {
+      const rows = [...document.querySelectorAll('tr[data-auto-report-id]')]
+      return rows.length === 2 && rows.every((row) => row.textContent.includes('Documento pronto'))
+    },
+    { timeout: 90000 },
+  )
+  await text('Limite encerrado')
+  const automaticReports = await page.evaluate(
+    async (id) => (await fetch(`/api/v1/schedules/${id}/reports`)).json(),
+    automaticScheduleId,
+  )
+  assert.equal(automaticReports.total, 2)
+  const automaticBaseline = automaticReports.items.find((item) => item.kind === 'BASELINE')
+  const automaticComparison = automaticReports.items.find((item) => item.kind === 'COMPARISON')
+  assert.ok(automaticBaseline && automaticComparison)
+  assert.equal(automaticComparison.previous_run_id, scheduledId)
+  assert.equal(automaticComparison.authorization_id, automaticBaseline.authorization_id)
+  const automaticDocument = await page.evaluate(
+    async ({ schedule, report }) =>
+      (await fetch(`/api/v1/schedules/${schedule}/reports/${report}`)).json(),
+    { schedule: automaticScheduleId, report: automaticComparison.id },
+  )
+  assert.equal(automaticDocument.comparison.comparable, true)
+  assert.equal(automaticDocument.summary.detected_rate_delta_percentage_points, 0)
+  assert.equal(automaticDocument.automation.occurrence_id, automaticComparison.occurrence_id)
+  await screenshot('scheduled-reports')
+  await exportPdf(
+    'PDF',
+    `/schedules/${automaticScheduleId}/reports/${automaticComparison.id}?`,
+    'scheduled-comparison-report',
+  )
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    true,
+    'Automatic report layout overflow',
+  )
+  await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
   const sigma = `title: AEGIS demo planning review
 id: 8b065c14-928c-4f6c-898c-aef9e9729028
 status: experimental
@@ -475,7 +518,17 @@ level: informational
   await screenshot('wazuh-preparation')
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
   await navigate('overview')
-  await text('16 testes concluídos')
+  const unchangedAutomaticDocument = await page.evaluate(
+    async ({ schedule, report }) =>
+      (await fetch(`/api/v1/schedules/${schedule}/reports/${report}`)).json(),
+    { schedule: automaticScheduleId, report: automaticComparison.id },
+  )
+  assert.deepEqual(
+    unchangedAutomaticDocument,
+    automaticDocument,
+    'Later rule changes must not regenerate frozen automatic snapshots',
+  )
+  await text('20 testes concluídos')
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     true,
@@ -486,12 +539,13 @@ level: informational
   console.log(
     JSON.stringify({
       result: 'PASS',
-      flow: 'login → catalog provenance → immutable catalog history → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → automatic run → originating grant report → Sigma static analysis → review → version change → historical analysis → retirement → historical scope comparison → blocked backend diagnostics → candidate marker field mapping',
-      runs: 4,
-      tests: 16,
+      flow: 'login → catalog provenance → immutable catalog history → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → two automatic runs → frozen baseline and comparison → automatic PDF → mobile report layout → Sigma static analysis → review → version change → historical analysis → retirement → historical scope comparison → frozen automatic snapshot unchanged → blocked backend diagnostics → candidate marker field mapping',
+      runs: 5,
+      tests: 20,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 13,
-      pdfExports: 3,
+      screenshots: 14,
+      pdfExports: 4,
+      automaticReports: 2,
       browserErrors: errors.length,
     }),
   )
