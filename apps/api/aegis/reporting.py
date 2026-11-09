@@ -31,7 +31,7 @@ def summarize_execution(run: dict) -> dict:
         "valid_tests": valid,
         "detected_tests": eligible["DETECTED"],
         "excluded_tests": len(executions) - valid,
-        "detected_percentage": round(100 * eligible["DETECTED"] / valid, 1) if valid else None,
+        "detected_percentage": round(eligible["DETECTED"] / valid * 100, 1) if valid else None,
         "denominator": "DETECTED + OBSERVED_NOT_ALERTED + NO_TELEMETRY, somente filhos COMPLETED de uma execução COMPLETED. Inconclusivos, falhas, pendências e demais estados ficam fora da taxa.",
     }
 
@@ -153,27 +153,10 @@ def build_coverage_report(metrics: dict) -> dict:
 
 def build_comparison_report(comparison: dict, before: dict, after: dict) -> dict:
     def summary(report):
-        from collections import Counter
-
-        outcomes = Counter(
-            (e.get("result") or {}).get("outcome", "NOT_TESTED")
-            for e in report["run"]["executions"]
-        )
-        completed = (
-            Counter(
-                (e.get("result") or {}).get("outcome", "NOT_TESTED")
-                for e in report["run"]["executions"]
-                if e["state"] == "COMPLETED"
-            )
-            if report["run"]["state"] == "COMPLETED"
-            else Counter()
-        )
-        valid = sum(completed[k] for k in ("DETECTED", "OBSERVED_NOT_ALERTED", "NO_TELEMETRY"))
+        counts = summarize_execution(report["run"])
         return {
-            "outcomes": dict(outcomes),
-            "valid_tests": valid,
-            "detected_tests": completed["DETECTED"],
-            "detected_percentage": round(completed["DETECTED"] / valid * 100, 1) if valid else None,
+            key: counts[key]
+            for key in ("outcomes", "valid_tests", "detected_tests", "detected_percentage")
         }
 
     old, new = summary(before), summary(after)

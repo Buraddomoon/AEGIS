@@ -121,3 +121,71 @@ def test_pdf_rate_limit_is_shared_across_report_endpoints_and_does_not_limit_jso
     limited = admin.get(path)
     assert limited.status_code == 429 and limited.headers["retry-after"] == "60"
     assert admin.get("/api/v1/coverage/report").status_code == 200
+
+
+def test_execution_summary_follows_worker_results_and_matches_coverage_without_rewriting_history(
+    admin,
+):
+    run = create_queued(admin)
+    path = f"/api/v1/reports/{run['id']}"
+    queued = admin.get(path).json()
+    assert queued["summary"]["planned_tests"] == 4
+    assert queued["summary"]["completed_tests"] == queued["summary"]["valid_tests"] == 0
+    assert queued["summary"]["detected_percentage"] is None
+    assert "Foram avaliadas" not in admin.get(path + "?format=html").text
+    response = admin.get(path + "?format=pdf")
+    assert response.status_code == 200
+    text = " ".join(
+        " ".join(page.extract_text().split()) for page in PdfReader(BytesIO(response.content)).pages
+    )
+    assert "Taxa não calculada" in text and "0 em 0 testes válidos" in text
+    assert claim_next() == run["id"]
+    process_run(run["id"])
+    report = admin.get(path).json()
+    summary = report["summary"]
+    coverage = admin.get("/api/v1/coverage").json()
+    assert summary["completed_tests"] == 4
+    assert summary["valid_tests"] == coverage["valid_tests"] == 3
+    assert summary["detected_tests"] == 1 and summary["excluded_tests"] == 1
+    assert summary["detected_percentage"] == coverage["detected_percentage"] == 33.3
+    detail = admin.get(f"/api/v1/executions/{run['id']}").json()
+    # Detail HTTP uses Z while the existing report contract encodes UTC as +00:00.
+    # Hash the exact report bytes' JSON values; independently ensure exports do not mutate history.
+    assert report["run"]["id"] == detail["id"]
+    assert report["integrity_sha256"] == digest(report["run"])
+    html = admin.get(path + "?format=html").text
+    response = admin.get(path + "?format=pdf")
+    assert response.status_code == 200
+    text = " ".join(
+        " ".join(page.extract_text().split()) for page in PdfReader(BytesIO(response.content)).pages
+    )
+    assert "1 em 3 testes válidos" in text and "33,3%" in text and "33,3%" in html
+    assert admin.get(path).json() == report
+    assert admin.get(f"/api/v1/executions/{run['id']}").json() == detail
+
+
+@pytest.mark.parametrize("terminal", ["CANCELLED", "CLEANUP_FAILED"])
+def test_unsuccessful_run_has_no_detection_rate_in_any_report_format(admin, terminal):
+    from aegis.integrations.demo import DemoExecutionAdapter
+
+    class BrokenCleanup(DemoExecutionAdapter):
+        def cleanup(self, ctx):
+            raise RuntimeError("Injected cleanup failure")
+
+    run = create_queued(admin, ["demo-shell"])
+    if terminal == "CANCELLED":
+        assert admin.post(f"/api/v1/executions/{run['id']}/cancel").status_code == 200
+    else:
+        assert claim_next() == run["id"]
+        process_run(run["id"], BrokenCleanup())
+    path = f"/api/v1/reports/{run['id']}"
+    report = admin.get(path).json()
+    assert report["run"]["state"] == terminal
+    assert report["summary"]["valid_tests"] == report["summary"]["detected_tests"] == 0
+    assert report["summary"]["detected_percentage"] is None
+    assert admin.get("/api/v1/coverage").json()["valid_tests"] == 0
+    assert "Taxa não calculada" in admin.get(path + "?format=html").text
+    response = admin.get(path + "?format=pdf")
+    assert response.status_code == 200
+    text = "\n".join(page.extract_text() for page in PdfReader(BytesIO(response.content)).pages)
+    assert "Taxa não calculada" in text and terminal in text
