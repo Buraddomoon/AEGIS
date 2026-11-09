@@ -2182,3 +2182,16 @@ td > small {
 .analysis-export-body {
   padding: 0 22px 22px;
 }
+.scheduled-report-intro {
+  margin: 0;
+  padding: 18px 22px;
+}
+.scheduled-report-links {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.scheduled-report-hash {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

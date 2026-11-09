@@ -55,6 +55,8 @@ export const labels: Record<string, string> = {
   NOT_TESTED: 'Não avaliado',
   CREATED: 'Criado',
   PENDING_APPROVAL: 'Aguardando aprovação',
+  PENDING: 'Aguardando processamento',
+  READY: 'Documento pronto',
   QUEUED: 'Na fila',
   PREPARING: 'Preparando',
   RUNNING: 'Executando',

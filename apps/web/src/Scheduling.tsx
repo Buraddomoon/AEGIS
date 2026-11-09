@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CalendarClock, Pause, Plus, ShieldCheck, XCircle } from 'lucide-react'
+import { ScheduledReports } from './ScheduledReports'
 import {
   api,
   Badge,
@@ -418,6 +419,7 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
           </Empty>
         )}
       </Panel>
+      <ScheduledReports key={id} scheduleId={id} />
       {intent && (
         <Modal
           title={

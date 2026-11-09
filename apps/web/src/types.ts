@@ -231,6 +231,22 @@ export interface ScheduleOccurrence {
   status: string
   reason: string
 }
+export interface ScheduledReport {
+  id: string
+  schedule_id: string
+  authorization_id: string
+  occurrence_id: string
+  run_id: string
+  previous_run_id: string | null
+  kind: 'BASELINE' | 'COMPARISON'
+  state: 'PENDING' | 'READY' | 'FAILED'
+  attempts: number
+  next_attempt_at: string
+  error_code: string | null
+  document_sha256: string | null
+  generated_at: string | null
+  synthetic: boolean
+}
 export interface Coverage {
   scope: string
   synthetic: boolean
