@@ -14,7 +14,9 @@ O par fica fixado na emissão, sob o lock do agendamento: ocorrência executada
 imediatamente anterior do mesmo plano e MESMA autorização. Sem anterior, produzir
 relatório individual inicial. Não atravessar uma reaprovação, escolher somente
 resultados positivos ou ignorar uma run anterior falha para obter comparabilidade.
-Descartes permanecem no histórico sem virar execução/resultado defensivo.
+Descartes permanecem no histórico sem virar execução/resultado defensivo. Um novo
+documento pode comparar com uma run anterior já existente da mesma autorização;
+isso não solicita retroativamente um documento para aquela ocorrência legada.
 
 Após a run atual atingir um estado terminal, a thread de relatórios do worker
 processa a fila com sessões próprias, uma linha por transação, FOR UPDATE OF fila

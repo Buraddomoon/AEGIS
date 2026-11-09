@@ -13,6 +13,9 @@ captura Linux anterior; nenhuma nova execução real de laboratório. A primeira
 página PDF acrescenta uma captura, totalizando15arquivos; foi atualizada em
 2026-11-09 com o resumo executivo e é rasterização de um relatório realmente
 gerado/baixado no E2E Demo, com evidências sintéticas.
+Relatórios automáticos acrescenta a captura de09/11/fonte0609ad2, total16arquivos:
+duas ocorrências aprovadas, snapshot inicial/comparativo e downloads reais, sem
+novo ensaio Linux/Wazuh. O E2E dessa extensão confirmou5runs/20testes sintéticos.
 [Política e limites da prévia](../integrations/sigma.md#prévia-de-transformação-de-campos).
 
 | Captura | Conteúdo e origem |
@@ -32,6 +35,7 @@ gerado/baixado no E2E Demo, com evidências sintéticas.
 | [Mobile](mobile.png) | Interface Demo em viewport móvel; screenshot pode excluir a barra de rolagem |
 | [Linux encerrado](linux-execution.png) | Captura histórica de 2026-10-21: campanha real autorizada, INCONCLUSIVE sem SIEM, recibo separado de detecção |
 | [Relatório PDF](report-pdf.png) | Primeira página do PDF de execução do E2E Firefox2026-11-09, fonte26605ff; 1 detecção em3testes válidos, com1inconclusivo fora da taxa. Documento completo13páginas/67.550bytes e aviso sintético em todas |
+| [Relatórios automáticos](scheduled-reports.png) | Plano Demo com duas ocorrências a60s, relatório inicial e comparação por grant; E2E Firefox09/11/fonte0609ad2, quatro PDFs e zeroerrosJS |
 
 A imagem Linux foi capturada consultando o histórico após o único ensaio integrado,
 sem repetir o marcador. Ver [escopo e encerramento](../../labs/linux/README.md).

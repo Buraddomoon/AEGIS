@@ -71,7 +71,15 @@ PDF de execução, cobertura e comparação entregue com testes de parser/API/UI
 E2E Demo, limites e avisos de origem. Estado de implantação/CI no checkpoint.
 [Uso e limites](../operations/pdf-reports.md).
 
-Extensão do agendamento aprovado para Lab Mode, após isolamento efetivo; relatórios comparativos automáticos; retenção/arquivo, backup/restore verificado, isolamento por workspace e gestão de usuários mais completa.
+Relatórios comparativos automáticos Demo: fila transacional por nova ocorrência,
+snapshot inicial e comparação com a run anterior da mesma autorização, artefatos
+imutáveis e exportação JSON/HTML/PDF. Sem backfill, novos efeitos de execução ou
+inferência de detecção por estado READY. Testes/implantação no checkpoint.
+[Operação e limites](../operations/scheduled-reports.md).
+
+Pendentes: extensão do agendamento aprovado para Lab Mode, após isolamento efetivo;
+retenção/arquivo, recuperação entre hosts, isolamento por workspace e gestão de
+usuários mais completa.
 
 Futuro: Caldera, outros SIEM/EDR, Windows em VM própria, CI/CD e assistência por IA sem controle autônomo sobre evidências/detecção/alterações críticas. Núcleo independente de IA comercial.
 

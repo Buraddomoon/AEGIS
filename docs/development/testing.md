@@ -53,6 +53,14 @@ e [matriz GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workf
 
 ## Execução local
 
+Snapshots automáticos: `pytest tests/test_scheduled_report_storage.py tests/test_scheduled_reports.py tests/test_scheduled_report_api.py tests/test_recovery_reconciliation.py -q`.
+Cobrem upgrade, constraints, publicação concorrente, rollback, backoff, fonte/par,
+reaprovação, ausência legada, estado terminal, contexto, hash, permissões e PDF.
+Frontend: `scheduled-reports.test.tsx`; E2E usa duas ocorrências com cadência real
+de60s e confere snapshots congelados após edição Sigma, PDF automático e tela390px.
+Estado da rodada integral remota em PROGRESS; resultado da CI anterior não valida
+esse incremento com nova migração/worker/API/UI.
+
 PDF: `pytest tests/test_pdf_reporting.py tests/test_pdf_api.py -q` lê documentos
 gerados com parser independente e exercita a API sobre PostgreSQL real.
 `test_reporting_summary.py` cobre todos os estados de pai/filho, ausência de

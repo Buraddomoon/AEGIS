@@ -4464,3 +4464,63 @@ reutilizados; sem novos pacotes. Documentação oficial de transações/locking/
 triggers consultada. Migração aditiva requer atualizar recovery/ACL e testar
 upgrade com dados antes de considerar implantação do Demo. Linux/Wazuh/qasrc
 permanecem adiados/intactos; manter as imagens/backup da revisão anterior.
+
+## 2026-11-09 — snapshots automáticos implementados e validados localmente
+
+Fonte final0609ad293db69c8f87822fe610037e1982f60fb2, nove commits da etapa até477º.
+Fila `scheduled_reports` criada na transação de cada nova ocorrência emitida,
+par fixado por grant, thread própria do worker e snapshot RR/READONLY. Primeira
+ocorrência sem anterior gera baseline; seguintes preservam inclusive falhas da
+run anterior. Reaprovação não cruza grants. Não há backfill de relatórios antigos,
+mas uma nova comparação pode usar run anterior legada da mesma autorização.
+
+Documento final/hash/contexto imutáveis, origem relacional, retries10s/30s até3,
+limite2MiB e auditoria atômica sem payload. Migração b7f3c2d91a06 aditiva e ACL
+por coluna. Reconciliação encerra PENDING/RECOVERY_RECONCILED e mantém snapshots
+finais. API autenticada lista só metadados (corpo deferido/raiseload), valida
+contexto/hash e exporta JSON/HTML/PDF do documento salvo. Painel real em
+Agendamentos, erro/pendência sem downloads e recusa de dados cacheados incorretos.
+READY é geração, nunca detecção. Nenhum novo efeito ofensivo/adaptador/serviço.
+
+Regressão local final **114passed/140,68s**, sete arquivos: storage, geração,
+API, agendamento, recovery/quarentena/reconciliação e migrações. Frontend inteiro:
+**88passed/14arquivos**, lint/build passaram; Ruff/format289arquivos e mypy4
+passaram. As rodadas anteriores se sobrepõem. Dois testes novos inicialmente
+falharam por import pytest ausente, corrigido e reexecutado; um teste de export
+confundia ID de relatório anterior com ID de execução, corrigido sem mudar o
+produto. Nada declarado aprovado a partir dessas rodadas falhas.
+
+E2E final na fonte completa: **PASS5runs/20testesDemo/2snapshots/4PDFs/zeroerrosJS**.
+Duas ocorrências a60s reais, worker gerando inicial/comparativo, PDF automático,
+snapshot idêntico após mudanças Sigma e ausência de overflow390px na agenda e
+Overview. Captura nova1428x2116/260.910bytes inspecionada e galeria preservada.
+Parser independente confirmou aviso sintético em todas as páginas: execução
+13p/67.521bytes, cobertura4p/52.165, comparação27p/93.897, automática28p/96.590.
+Logs/capturas completos privados em.local/scheduled-reports; schemas/processos
+E2E encerrados sem erro. Foram duas rodadas intermediárias antes da final,
+justificadas por ajuste visual/mobile e deferral da metadata; não somar contagens.
+
+Nova imagem b8abe5e44af4bad90d2e302a045f38fb9cf268932be5ea0493fc72f078657a23
+construída. Check isolado networknone/RO/UID10001/256MiB/.5CPU/32PIDs conferiu
+headb7/32tabelas de app, oito arquivos INSTALADOS iguais à fonte e pypdf ausente;
+gerou PDF sintético50.794bytes. Antes do build, imagem atual9e3fe0c... recebeu
+tag dedicada aegis-before-scheduled-reports:20261109, com ID conferido. Serviços
+Demo ainda não recriados neste checkpoint; não afirmar feature implantada.
+
+Backup pré-migração criado em.local/backups/20261109T180711Z-d3cbdc897ba24b0e99cb780b6aed1813,
+32tabelas/3.399linhas; SHA do dump conferido contra o manifesto. Status original
+created_not_yet_verified preservado: não houve ensaio de restauração dessa cópia.
+Sem upload, compra ou leitura/publicação de segredos. Linux/Wazuh/qasrc/PKI
+intactos; nenhuma migração ou autorização de ensaio real decorre deste incremento.
+
+CI42671146994 sobre0609ad2: tentativa1 terminou failure SEM jobs/check-runs,
+workflow inalterado frente à CI anterior, Actions enabled/workflows active.
+Causa detalhada não disponível pela API; não inferir billing/erro do produto.
+Uma única reexecução solicitada; tentativa2 iniciou Python partition1 e continua
+em andamento na última leitura. Exigir provas dos QUATRO grupos e React antes
+de declarar CI completa; um único job verde não basta. Não habilitar recurso
+pago ou alterar timeouts/seleção para obter sucesso. Mudanças posteriores à fonte
+são Markdown e screenshot documental. Próximo: concluir CI, validar backup/head
+e grants, migrar somente Demo sem seed, atualizar API/worker e conferir dados e
+funcionamento implantado. Nenhuma autorização adicional é necessária para os
+testes locais/autorizados; não reutilizar aprovações antigas Linux/Wazuh.

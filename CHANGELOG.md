@@ -1,5 +1,16 @@
 # Changelog
 
+## Continuidade 2026-11-09 — snapshots automáticos Demo
+
+- Solicitação transacional por nova ocorrência emitida, geração pelo worker e
+  snapshot inicial ou comparação com a ocorrência anterior da mesma autorização.
+- Documento/hash imutáveis, concorrência, tentativas limitadas, estados/erros
+  visíveis e downloads autenticados JSON/HTML/PDF dos fatos congelados.
+- Migração b7f3c2d91a06, ACL por coluna, metadata sem carregar documentos completos
+  e reconciliação que encerra pedidos restaurados sem reescrever snapshots finais.
+- E2E de duas ocorrências a60s, comparação/PDF, persistência após edição Sigma e
+  viewport390px. Sem backfill ou ampliação da autorização de execuções.
+
 ## Continuidade 2026-11-09 — precisão do resumo executivo
 
 - Relatórios individuais distinguem simulações no escopo de testes concluídos e

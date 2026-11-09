@@ -13,6 +13,7 @@ todo o roadmap. A versão do código não foi elevada para simular marcos conclu
 | Cancelamento, timeout, idempotência e cleanup | testes de claim/entrega concorrente, cancelamento ativo/fila, falha/recuperação |
 | Métricas com denominadores e histórico | teste 1/3 e E2E 2/6; técnicas catalogadas distintas das avaliadas |
 | Exportação e comparação | PDF com parser/API/UI/E2E validados, HTML escapado, JSON original e comparação de mesmo escopo |
+| Snapshots automáticos Demo | Fila por ocorrência/grant, inicial/comparativo fixados, hash/imutabilidade/retries, parser/API/UI e E2E de duas ocorrências; CI/implantação no checkpoint |
 | UI funcional e responsiva | E2E visita páginas e verifica ausência de overflow em 390px; capturas reais |
 | Catálogo oficial versionado | snapshot, referência, licença e hash de origem |
 | Integrações não configuradas explícitas | Wazuh desconectado; Linux somente por opt-in revisado; scheduler somente Demo aprovado |

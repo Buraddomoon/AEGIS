@@ -11,6 +11,11 @@ O agendamento usa as mesmas campanhas, reservas, máquina de estados, worker, co
 5. **Pausar plano** revoga a autorização corrente e cancela trabalhos na fila. Retomada exige nova aprovação de administrador, preservando o orçamento já consumido.
 6. **Revogar autorização** encerra definitivamente o plano. É possível revogar um plano sem horários restantes para cancelar uma última execução ainda ativa.
 
+**Relatórios automáticos**, nos detalhes do plano, mostra os snapshots solicitados
+pelas novas ocorrências: inicial da autorização e comparação com a execução
+anterior do mesmo grant. Worker gera após o término; JSON/HTML/PDF exportam o
+documento congelado. [Semântica, limites e erros](scheduled-reports.md).
+
 Não há botão de disparo imediato que contorne aprovação ou calendário. Uma execução manual continua exigindo sua aprovação independente.
 
 ## Limites e semântica

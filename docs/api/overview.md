@@ -62,6 +62,12 @@ não executam testes nem mudam veredictos. `/reports` compartilha os filtros,
 padrão Demo; `/{run_id}` individual mantém contrato anterior.
 [Semântica, exemplos e integridade](../operations/coverage-reports.md).
 
+Snapshots automáticos: `GET /schedules/{id}/reports` lista metadados paginados;
+`GET /schedules/{id}/reports/{report_id}?format=json|html|pdf&expected_sha256=...`
+exporta o documento salvo. Sessão de qualquer papel, par fixado por ocorrência/
+grant, integridade e limites compartilhados de exportação. READY é geração, sem
+inferência de detecção. Sem POST/retry web. [Contrato](../operations/scheduled-reports.md).
+
 Relatório individual `GET /reports/{run_id}`: `report_version=1.2` acrescenta
 `summary` com simulações no escopo, estados/resultados registrados, concluídos,
 testes válidos, detectados, excluídos e percentual. Taxa exige pai/filho COMPLETED;

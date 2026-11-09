@@ -79,6 +79,7 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 | Relatórios PDF | Execução, recorte e comparação; resumo e apêndice completo; avisos em todas as páginas | Exportação limitada, sem truncamento; sem PDF/A ou assinatura digital |
 | Sigma | Parsing pySigma, versões, vínculos revisados, análise estática, preparação e prévia restrita de campos | Conversão/implantação bloqueadas sem backend/pipeline compatíveis |
 | Agendamentos | Grants delimitados, limite de ocorrências, pausa/revogação e auditoria | Somente Demo; mínimo 60 s, até 100 horários e 90 dias por plano |
+| Relatórios automáticos | Snapshot inicial e comparação por autorização, fila durável e exportação JSON/HTML/PDF | Somente novas ocorrências Demo; sem backfill; pronto não significa detecção |
 | Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing, campanha integrada e diagnóstico histórico dos volumes | Um marcador de 43 bytes; rotação PKI/binding pendente e ensaios reais sujeitos a autorização específica |
 | Wazuh | Indexer somente leitura, TLS, binding agente/regra, paginação e coleta correlacionada | Um ensaio Linux/Wazuh 4.14.9; sem Windows/archives/outras regras |
 | Recuperação | Backup consistente, restore offline, quarentena, reconciliação e novo ciclo Demo em clone | Sem cutover, recuperação entre hosts ou RPO/RTO garantidos |
@@ -89,6 +90,9 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 ![PDF real do E2E: quatro simulações sintéticas, uma detecção em três testes válidos e um inconclusivo excluído da taxa](docs/images/report-pdf.png)
 
 [Relatórios PDF: uso, integridade e limites](docs/operations/pdf-reports.md).
+
+[Relatórios automáticos: operação, par de comparação e estados](docs/operations/scheduled-reports.md).
+[Captura real dos snapshots automáticos no Demo](docs/images/scheduled-reports.png).
 
 A prévia fica em **Regras → Preparação de conversão → Gerar prévia de campos**.
 [Subconjunto suportado e limites](docs/integrations/sigma.md#prévia-de-transformação-de-campos).

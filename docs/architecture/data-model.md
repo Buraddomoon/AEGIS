@@ -39,6 +39,11 @@ erDiagram
   ScheduleAuthorization ||--o{ ScheduleOccurrence : delimita
   ScheduleAuthorization o|--o{ Approval : deriva
   CampaignRun o|--o| ScheduleOccurrence : identifica
+  Schedule ||--o{ ScheduledReport : documenta
+  ScheduleAuthorization ||--o{ ScheduledReport : delimita
+  ScheduleOccurrence ||--o| ScheduledReport : solicita
+  CampaignRun ||--o| ScheduledReport : resultado_atual
+  CampaignRun o|--o{ ScheduledReport : comparacao_anterior
 ```
 
 Papéis são enumeração com CHECK no usuário, sem tabela artificial de permissões. Relação campanha/teste e evidência/resultado é relacional. Táticas/plataformas usam arrays PostgreSQL de strings. JSONB guarda snapshots tipados de protocolos/escopos, payload original, detalhes de auditoria e o documento externo imutável do catálogo; não substitui relacionamentos.
@@ -47,7 +52,16 @@ Unicidade: usuário; token de sessão (hash); ID externo de ativo; STIX ID; chav
 
 As datas são `timestamptz`; apresentação usa o fuso do navegador. Comparações usam versões de testes, regras, ambiente e parâmetros registrados no snapshot. Mudanças posteriores de Sigma não reescrevem resultados. Hashes asseguram verificação de conteúdo, não assinatura ou garantia contra administrador do banco.
 
-Relatórios e cobertura são projeções dos dados persistidos. Schedule, ScheduleAuthorization e ScheduleOccurrence são tabelas reais com constraints, contadores e histórico. Unicidade por plano/horário, run por ocorrência e uma autorização não revogada por plano impedem duplicação. Planos preservam scope/plan hashes; aprovações derivadas mantêm FK ao grant exato. Não existem tabelas fictícias de Report ou CoverageSnapshot; relatórios/cobertura continuam projeções. Conector é configuração de implantação, não cadastro de URLs arbitrárias via API.
+Relatórios sob demanda e cobertura são projeções dos dados persistidos. Schedule,
+ScheduleAuthorization e ScheduleOccurrence possuem constraints, contadores e
+histórico. Unicidade por plano/horário, run por ocorrência e uma autorização não
+revogada por plano impedem duplicação. Planos preservam scope/plan hashes;
+aprovações derivadas mantêm FK ao grant exato. ScheduledReport acrescenta a fila
+transacional e o snapshot automático real: FKs de plano/grant/ocorrência/run/par,
+estado/tentativas e documento JSON exportável com SHA256. Identidades e estados
+finais são imutáveis; não substitui eventos/resultados relacionais. Não há tabela
+artificial de CoverageSnapshot. Conector é configuração de implantação, sem
+cadastro de URLs arbitrárias via API. [Contrato](../operations/scheduled-reports.md).
 
 Retenção inicial: não há expurgo automático. Históricos e auditoria são mantidos; limitação de disco deve ser acompanhada. `make clean-demo` remove somente campanhas/resultados sintéticos, e planos Demo encerrados, exigindo revogar planos abertos e finalizar reservas, com confirmação local, e preserva auditoria/usuários/catalogação. Sessões vencidas deixam de autenticar, mas ainda não são expurgadas automaticamente. Antes de operar Lab Mode, definir política de retenção e arquivo externo de evidências.
 

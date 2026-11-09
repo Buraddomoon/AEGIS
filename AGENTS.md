@@ -828,3 +828,20 @@ Retenção de imagem local: antes de build que reutilize tag, preservar a imagem
 da API em tag própria exclusiva e conferir o ID; arquivo com ID sozinho não é
 retenção. Revalidar referência após troca. Rebuild de fonte antiga deve ser
 identificado como reconstrução, nunca como mesma imagem binária preservada.
+
+Snapshots automáticos Demo (ADR0032): nova ocorrência QUEUED solicita
+scheduled_reports na mesma transação; não fazer backfill nem gerar para descartes.
+Par é a ocorrência executada imediatamente anterior do MESMO grant, inclusive
+falhas; reaprovação começa outro baseline. Documento pode referenciar run legada
+sem solicitar relatório retroativo. Worker usa thread própria, lock somente da
+fila e snapshot RR/READONLY, sem runner/SIEM/execução/grant novo. READY significa
+geração, não detecção; aplicar builders existentes e preservar delta ausente.
+Artefato/hash finais e origem imutáveis; até3tentativas/esperas10s30s/JSON2MiB.
+Metadata não carrega corpo do documento. Exportações conferem contexto/hash e
+compartilham limites/auditoria existentes. Recuperação encerra PENDING como FAILED/
+RECOVERY_RECONCILED e conserva READY/FAILED históricos. Nova revisão b7f3c2d91a06
+tem33tabelas com Alembic; backups/labs a0d9c7e21b45 exigem imagem compatível, sem
+enfraquecer guards ou migrar volumes Linux/Wazuh. Testes scheduled_report_storage,
+scheduled_reports, scheduled_report_api, recovery_reconciliation e UI
+scheduled-reports.test.tsx. E2E agora5runs/20Demo/2snapshots/4PDFs; só declarar
+implantação após atualizar API/worker e migrar/grantear exclusivamente o Demo.
