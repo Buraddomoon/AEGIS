@@ -15,5 +15,7 @@ RUNTIME_PERMISSIONS = (
     "GRANT UPDATE (retired_at, retired_by) ON rule_test_links TO aegis_app",
     "GRANT UPDATE (generation) ON runner_dispatches TO aegis_app",
     "GRANT UPDATE (revoked_at) ON schedule_authorizations TO aegis_app",
+    "REVOKE UPDATE, DELETE ON scheduled_reports FROM aegis_app",
+    "GRANT UPDATE (state, attempts, next_attempt_at, error_code, document, document_sha256, generated_at) ON scheduled_reports TO aegis_app",
     "REVOKE INSERT, UPDATE, DELETE ON attack_catalog_releases, attack_catalog_state, attack_techniques FROM aegis_app",
 )

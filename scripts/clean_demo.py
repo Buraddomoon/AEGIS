@@ -11,6 +11,7 @@ from aegis.models import (
     Laboratory,
     Schedule,
     ScheduleAuthorization,
+    ScheduledReport,
     ScheduleOccurrence,
     TelemetryCollection,
     TelemetryEvent,
@@ -45,6 +46,7 @@ with session_factory()() as db:
         db.scalars(select(ValidationResult.id).where(ValidationResult.execution_id.in_(executions)))
     )
     for model, condition in [
+        (ScheduledReport, ScheduledReport.schedule_id.in_(schedule_ids)),
         (DetectionEvidence, DetectionEvidence.result_id.in_(results)),
         (ValidationResult, ValidationResult.id.in_(results)),
         (TelemetryCollection, TelemetryCollection.execution_id.in_(executions)),

@@ -414,6 +414,50 @@ class ScheduleOccurrence(Entity, Base):
     )
 
 
+class ScheduledReport(Entity, Base):
+    __tablename__ = "scheduled_reports"
+    schedule_id: Mapped[str] = mapped_column(ForeignKey("schedules.id"), index=True)
+    authorization_id: Mapped[str] = mapped_column(ForeignKey("schedule_authorizations.id"))
+    occurrence_id: Mapped[str] = mapped_column(ForeignKey("schedule_occurrences.id"), unique=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("campaign_runs.id"), unique=True)
+    previous_run_id: Mapped[str | None] = mapped_column(ForeignKey("campaign_runs.id"))
+    kind: Mapped[str] = mapped_column(String(16))
+    state: Mapped[str] = mapped_column(String(16), default="PENDING")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    next_attempt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    error_code: Mapped[str | None] = mapped_column(String(32))
+    document: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))
+    document_sha256: Mapped[str | None] = mapped_column(String(64))
+    generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        Index("ix_scheduled_report_pending", "state", "next_attempt_at"),
+        CheckConstraint("state in ('PENDING','READY','FAILED')", name="scheduled_report_state"),
+        CheckConstraint("kind in ('BASELINE','COMPARISON')", name="scheduled_report_kind"),
+        CheckConstraint(
+            "(kind='BASELINE') = (previous_run_id IS NULL)", name="scheduled_report_pair"
+        ),
+        CheckConstraint("run_id <> previous_run_id", name="scheduled_report_distinct_runs"),
+        CheckConstraint("attempts between 0 and 3", name="scheduled_report_attempts"),
+        CheckConstraint(
+            "error_code IS NULL OR error_code in ('CONTEXT_MISMATCH','SOURCE_LIMIT','GENERATION_FAILED','RECOVERY_RECONCILED')",
+            name="scheduled_report_error",
+        ),
+        CheckConstraint(
+            "state <> 'FAILED' OR error_code IS NOT NULL", name="scheduled_report_failure"
+        ),
+        CheckConstraint(
+            "(state='READY' AND document IS NOT NULL AND document_sha256 ~ '^[a-f0-9]{64}$' "
+            "AND document_sha256 IS NOT NULL AND generated_at IS NOT NULL AND error_code IS NULL AND attempts>0) "
+            "OR (state<>'READY' AND document IS NULL AND document_sha256 IS NULL AND generated_at IS NULL)",
+            name="scheduled_report_artifact",
+        ),
+        CheckConstraint(
+            "document IS NULL OR (jsonb_typeof(document)='object' AND octet_length(document::text)<=2097152)",
+            name="scheduled_report_size",
+        ),
+    )
+
+
 Index("ix_runs_state_created", CampaignRun.state, CampaignRun.created_at)
 
 
