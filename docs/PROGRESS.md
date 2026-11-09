@@ -4349,3 +4349,42 @@ Seis commits desta etapa já sincronizados,456ºeed06ab até461º590a108; este
 checkpoint fecha o sétimo,462º. Último hash/mensagem e origem são conferidos no
 Git após commit. **Etapa PDF concluída**. Laboratório continua adiado por decisão
 do usuário; qasrc e PKI preservadas, sem preparo de troca de faixa ou novo ensaio.
+
+## 2026-11-09 — precisão do resumo executivo, validação em andamento
+
+Retomada solicitada pelo usuário, mantendo laboratório adiado. Inspeção encontrou
+texto HTML que chamava todas as simulações de avaliadas, inclusive em fila. JSON
+individual agora é1.2, com summary aditivo: total no escopo, filhos concluídos,
+estados/classificações registradas, válidos/detectados/excluídos e percentual.
+Somente pai/filho COMPLETED e DETECTED/OBSERVED_NOT_ALERTED/NO_TELEMETRY entram na
+taxa; zero elegíveis retorna null. Cálculo compartilhado com comparação e mesmo
+arredondamento da cobertura. HTML/PDF usam o mesmo resumo e mostram estado de cada
+teste. Nenhuma reclassificação, alteração de escopo/evidência ou migração.
+
+Hash original permanece digest(run); o campo summary novo não é coberto por ele.
+Hash do documento completo continua disponível no PDF/cabeçalho. PDF recusa
+summary que não corresponda ao cálculo sobre run, inclusive bool/int; legado1.1
+sem summary continua renderizável. Guia operacional/API/CHANGELOG atualizados.
+
+Testes: primeira regressão após adicionar teste API teve87pass/1falha porque o
+teste comparava serializações UTC diferentes (Z do detalhe e+00:00 do relatório).
+Contrato preservado; teste agora confere hash do run exato e detalhe inalterado
+antes/depois das exportações. Regressão corrigida **88passed/46,75s**. Após extrair
+o cálculo compartilhado final: **69passed/20,45s** (gerador/resumo/analytics/
+comparação) e **11passed/15,36s** (API PDF), arquivos distintos. Não somar as rodadas
+sobrepostas. Ruff/format283arquivos/mypy4 e sintaxe/formato do harness passaram.
+Aviso Starlette/httpx já existente permanece.
+
+Primeiro E2E Firefox PASS4runs/16testesDemo/3PDFs/zeroerrosJS; parser independente
+confirmou aviso sintético em todas as páginas e resumo1/3=33,3%. Execução13páginas/
+67.516bytes, cobertura4/52.169, comparação27/93.897. Primeira página inspecionada
+visualmente. Logs/capturas privados em.local/report-summary; galeria preservada.
+Segunda rodada, após o compartilhamento final do cálculo, também PASS com
+4runs/16testesDemo/3PDFs/zeroerrosJS; cleanup do schema/processos concluiu sem erro.
+
+Três commits de código/testes463º5990c62/464ºc46e84e/465º26605ff sincronizados.
+CI final [42628841047](https://github.com/Buraddomoon/AEGIS/actions/runs/42628841047)
+em andamento/na fila neste checkpoint; as intermediárias foram canceladas por
+redundância. Não reutilizar CI42100930151 para esse incremento. Build da imagem
+da aplicação concluído, sem substituir a API ainda. Nada de Linux/Wazuh,
+qasrc/PKI/plano/ensaio novos; sem alteração de contas ou credenciais.

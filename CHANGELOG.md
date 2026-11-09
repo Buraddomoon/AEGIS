@@ -1,5 +1,14 @@
 # Changelog
 
+## Continuidade 2026-11-09 — precisão do resumo executivo
+
+- Relatórios individuais distinguem simulações no escopo de testes concluídos e
+  válidos; estado dos testes também aparece nas tabelas HTML e no texto PDF.
+- Resumo JSON1.2 aditivo, preservando `run` e seu hash. Taxa usa o mesmo denominador
+  da cobertura e permanece ausente em execuções incompletas, canceladas ou falhas.
+- Mesmo cálculo exibido em HTML/PDF, incluindo excluídos e limitações; PDF recusa
+  resumo divergente do snapshot sem reclassificar evidências.
+
 ## Continuidade 2026-11-05 — relatórios PDF
 
 - Exportação de execução, cobertura e comparação pela API e interface, com resumo,

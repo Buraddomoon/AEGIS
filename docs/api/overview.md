@@ -62,6 +62,12 @@ não executam testes nem mudam veredictos. `/reports` compartilha os filtros,
 padrão Demo; `/{run_id}` individual mantém contrato anterior.
 [Semântica, exemplos e integridade](../operations/coverage-reports.md).
 
+Relatório individual `GET /reports/{run_id}`: `report_version=1.2` acrescenta
+`summary` com simulações no escopo, estados/resultados registrados, concluídos,
+testes válidos, detectados, excluídos e percentual. Taxa exige pai/filho COMPLETED;
+sem testes elegíveis retorna null. HTML/PDF mostram o mesmo resumo. O hash anterior
+continua cobrindo somente `run`, sem mudar o histórico. [Cálculo e integridade](../operations/pdf-reports.md#resumo-da-execução).
+
 Preparação Sigma: GET `/sigma/conversion-profiles` (60/min/usuário) e GET `/rules/{id}/versions/{version_id}/conversion-readiness?profile_id=...` (30/min) permitem viewer autenticado. Retornam perfil/hash, campos candidatos, metadados revisados versus pacotes instalados e bloqueios; can_convert/conversion_performed/deployment_performed=false. Não recebem destinos, pipelines ou consultas. [Contrato completo](../integrations/sigma.md#preparação-de-conversão-e-campos-candidatos).
 
 Prévia Sigma: GET `/rules/{id}/versions/{version_id}/mapping-preview`, com

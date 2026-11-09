@@ -23,11 +23,11 @@ em528,03s/852,44s/630,61s de pytest; o grupo2 excedeu18min incluindo setup.
 O coordenador identity foi movido inteiro do2 para a capacidade livre do0.
 A aprovação desse ajuste depende da CI real, não das durações anteriores.
 
-Validação atual: [run42100930151](https://github.com/Buraddomoon/AEGIS/actions/runs/42100930151)
+Validação do marco PDF de05/11: [run42100930151](https://github.com/Buraddomoon/AEGIS/actions/runs/42100930151)
 SUCCESS no commitefb2e6d, incluindo PDFs. **2.982 testes Python passaram e oito
-inspeções nativas opcionais foram puladas**; React:83 testes/13 arquivos. As
-mudanças posteriores são documentação e captura PNG em docs/images, excluída
-do build runtime. Código/configuração/dependências permanecem iguais à CI.
+inspeções nativas opcionais foram puladas**; React:83 testes/13 arquivos. Essa
+execução não valida o código novo do resumo executivo de09/11; a rodada atual e
+o estado de implantação estão registrados no [checkpoint](../PROGRESS.md).
 
 Cada arquivo pertence exatamente a uma partição. Adições/ordenação não movem
 arquivos existentes; mudar SHARDS/PINNED exige evidência e conferência da união.
@@ -48,6 +48,11 @@ e [matriz GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workf
 
 PDF: `pytest tests/test_pdf_reporting.py tests/test_pdf_api.py -q` lê documentos
 gerados com parser independente e exercita a API sobre PostgreSQL real.
+`test_reporting_summary.py` cobre todos os estados de pai/filho, ausência de
+denominador, zero real e preservação dos dados/hash. Parser e API também conferem
+resumo HTML/PDF, rejeição de resumo adulterado, fila/cancelamento/cleanup falho e
+concordância com cobertura após o worker. O E2E confere os números do resumo JSON
+individual além de baixar os três PDFs.
 `pdf-downloads.test.tsx` verifica o download e erros; `make e2e` inclui execução,
 cobertura e comparação em PDF no Firefox. Artefatos ficam em `.local/e2e`.
 Defina `AEGIS_E2E_SCREENSHOTS` para direcionar capturas a diretório privado ao

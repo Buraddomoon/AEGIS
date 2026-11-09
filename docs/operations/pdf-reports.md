@@ -16,6 +16,34 @@ impedem exportação na UI. A API também valida o hash esperado do recorte. PDF
 disponível não significa que a run terminou: o documento identifica o estado e
 mantém resultados ausentes como NOT_TESTED.
 
+## Resumo da execução
+
+O relatório individual JSON `report_version=1.2` acrescenta `summary`, derivado do
+snapshot de `run`. HTML e PDF apresentam o mesmo cálculo:
+
+- `planned_tests`: quantidade de simulações incluídas na solicitação.
+- `completed_tests`: filhos em COMPLETED, independentemente do estado do pai.
+- `test_states` e `outcomes`: estados e classificações registradas, inclusive parciais.
+- `valid_tests`: DETECTED + OBSERVED_NOT_ALERTED + NO_TELEMETRY, somente de filhos
+  COMPLETED de uma execução COMPLETED.
+- `detected_tests`: DETECTED dentro desse denominador; `excluded_tests` é o total
+  no escopo menos os testes válidos.
+- `detected_percentage`: percentual com uma casa decimal, ou `null` quando não há
+  denominador. Sem detecções em testes válidos resulta em 0%, situação distinta.
+
+Uma execução Demo concluída com quatro classificações (uma de cada DETECTED,
+OBSERVED_NOT_ALERTED, NO_TELEMETRY e INCONCLUSIVE) informa **1/3 = 33,3%**, quatro
+concluídos e um excluído da taxa. Uma execução ainda em fila, cancelada ou com
+CLEANUP_FAILED informa taxa não calculada. Classificações parciais e evidências
+continuam no documento, sem promover execução incompleta a resultado válido.
+Essa taxa se refere ao escopo registrado e não mede proteção geral de uma empresa.
+
+O campo novo não altera `run` nem seu `integrity_sha256`; portanto esse hash não
+cobre `summary`. Para identificar o relatório inteiro use o hash JSON completo
+descrito abaixo. Antes de renderizar, o PDF verifica também se um `summary`
+fornecido corresponde ao cálculo sobre `run`. Relatórios legados sem o campo
+continuam renderizáveis; as contagens visíveis são derivadas do snapshot.
+
 ## Conteúdo e integridade
 
 Resumo executivo, resultados técnicos, escopo, limitações, recomendações quando

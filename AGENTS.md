@@ -814,3 +814,12 @@ documentação excluído do contexto Docker. Comparar todos os inputs executáve
 não chamar essa diferença de somente Markdown. Isso não altera gates/autorizações
 dos ensaios reais adiados. Para PDF, testes test_pdf_reporting/test_pdf_api e
 pdf-downloads.test.tsx; não interpretar geração local como nova detecção SIEM.
+
+Resumo de execução09/11: report_version1.2 acrescenta summary, sem modificar run
+ou o hash histórico sobre run. summarize_execution é compartilhado com comparação;
+valid_tests exige pai/filho COMPLETED e três resultados elegíveis da cobertura.
+Sem denominador, taxa null; preservar resultados parciais sem contabilizá-los na
+taxa. HTML/PDF usam o mesmo texto derivado, PDF recusa summary divergente por digest
+(bool não equivale a int). Não alterar veredictos, escopos ou aprovação para corrigir
+apresentação. Testes adicionais em test_reporting_summary e test_pdf_api/reporting.
+CI/implantação desse incremento têm checkpoint próprio; CI05/11 não o valida.
