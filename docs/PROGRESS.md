@@ -4680,3 +4680,23 @@ resultado do commit final conferido no GitHub depois do push. Nenhum novo pytest
 E2E, build, deploy, banco, usuário, segredo, laboratório ou Wazuh nesta tarefa.
 Próxima ação depende da issue que o usuário selecionar numa sessão nova; não
 iniciar outra funcionalidade automaticamente.
+
+## 2026-11-10 — issue #3: tentativa de identidade encerrada com falha
+
+#45 concluída: imagem atual selada e pacote concreto, commit02408cd;364testes
+locais passaram, CI42873241181 integral da fonte f0c95b2 e source-review42878894448
+aprovadas. #46 concluída após autorização explícita do usuário para uma tentativa
+e encerramento dos recursos próprios. Sem autorização de operação normal.
+
+Operação dd43e2f7c5fa43e6aca74ed34ae6a7f8: `identity_assay_failed_and_closed`,
+exit1, falha em cliente/start sem resultado TLS validado. Cleanup confirmado:
+dois containers e bridge removidos,17eventos/3recursos ABSENT, sem volumes
+originais montados ou removidos. Inventário posterior conferiu projeto vazio,
+metadados/PKI pública originais e qasrc preservados. A CLI de revisão integral
+recusou o conjunto; inventário de artefatos é false no recibo, sem reescrita.
+
+#47 e #3 continuam abertas; falta diagnóstico e comprovação nativa. Autorização
+consumida, sem retry. Eventual nova tentativa exige outro pacote/plano e aprovação.
+Pins, resultado real e limites na
+[evidência do ensaio](evidence/identity-assay-2026-11-10/README.md).
+Esta atualização é documental; nenhuma outra entrega foi iniciada.

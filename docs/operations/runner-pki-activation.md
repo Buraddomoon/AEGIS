@@ -4,7 +4,10 @@ Este documento descreve uma intervenção futura de ativação completa, ainda n
 executada. `runner_pki.py` oferece inspect/prepare/verify e `runner_activation.py`
 oferece **plan/recheck somente de metadados**, sem apply de rotação. O diagnóstico
 separado de banco/diário foi executado e encerrado em29/10; o ensaio identity-only
-tem CLI própria, mas não foi executado. Esses estados não equivalem à ativação.
+tem CLI própria e teve uma tentativa autorizada em10/11, com falha na etapa do
+cliente e recursos próprios removidos. A identidade nativa permanece sem
+comprovação; [resultado e limitações](../evidence/identity-assay-2026-11-10/README.md).
+Esses estados não equivalem à ativação.
 As autorizações anteriores estão consumidas; um commit/push não concede nova
 aprovação. Ver [estado consolidado](../product/roadmap.md).
 

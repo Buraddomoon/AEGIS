@@ -6,8 +6,12 @@ React. A entrega #2 alinhou o perfil à rede `192.168.253.0/29`, preservando `qa
 O bloqueio observado em05/11 referia-se à faixa antiga e permanece como histórico;
 a faixa atual exige nova inspeção local antes de qualquer efeito. Validação
 automatizada usa PKI/Git temporários, loopback e RPCs simuladas.
-**O ensaio nativo ainda não foi realizado nem autorizado.** Este documento não
-concede permissão para iniciar recursos. Os ensaios históricos não podem ser repetidos.
+Uma tentativa nativa foi autorizada em10/11 e encerrou com falha na etapa do
+cliente; os dois containers e a bridge foram removidos. **A identidade mTLS nativa
+continua sem comprovação.** A revisão integral dos artefatos também foi recusada.
+Ver [resultado e limitações](../../docs/evidence/identity-assay-2026-11-10/README.md).
+Este documento não concede permissão para iniciar recursos. A autorização foi
+consumida; o plano e os registros dessa tentativa não podem ser reutilizados.
 
 ## Objetivo e limites
 
@@ -110,7 +114,13 @@ autorização específica) e #47 (uma tentativa e seu encerramento). A correçã
 perfil entregue em #2 não comprova ausência atual de sobreposição no host.
 O pacote precisa incluir `runner_activation.py recheck` e a revisão somente
 leitura de rotas/redes, além da prova selada e da CI do código utilizado.
-Sem pacote vigente e aprovação humana específica, #46/#47 permanecem pendentes;
+Em10/11, #45 e #46 foram concluídas; a tentativa única de #47 falhou e foi
+encerrada com ausência dos recursos próprios confirmada. A causa exata da falha
+do cliente não consta no código estático do recibo; os controles TLS não foram
+confirmados. O recibo declara inventário de artefatos não verificado e a CLI de
+revisão recusa confirmação integral; não promover registros individuais válidos
+a prova completa. #47 e o pai #3 permanecem abertos para diagnóstico.
+Nova tentativa exige outro pacote/plano, rechecks e autorização específica;
 CI aprovada não substitui autorização. Não usar imports Python manuais para
 contornar o procedimento. A ativação real de PKI/binding permanece uma etapa
 separada e precisa também de imagem de aplicação atual, plano e aprovação próprios.

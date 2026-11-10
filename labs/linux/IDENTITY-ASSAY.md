@@ -4,6 +4,12 @@ Este escopo exige autorização humana específica, vinculada ao plano privado e
 seu hash de escopo. Não reutiliza autorizações dos ensaios Linux/Wazuh/diagnóstico
 anteriores. Documentação, CI ou confirmação local por hash não são autorização.
 
+O pacote apresentado em10/11 foi autorizado e consumido por uma tentativa que
+encerrou com falha no cliente e cleanup confirmado. Ver o
+[resultado preservado](../../docs/evidence/identity-assay-2026-11-10/README.md).
+Os limites abaixo não concedem outra tentativa; eventual repetição exige novo
+plano/pacote, revisão e autorização específica, sem alterar o histórico anterior.
+
 ## Precondições verificáveis
 
 - Código executável da `main` corresponde à CI aprovada: quatro jobs Python e
