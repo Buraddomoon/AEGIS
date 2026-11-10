@@ -15,7 +15,8 @@ implementar tudo. Milestones são planejamento, sem bump de versão/data/release
    [validação da fonte](https://github.com/Buraddomoon/AEGIS/issues/10).
 3. [Ativação da confiança e binding](https://github.com/Buraddomoon/AEGIS/issues/4).
 4. [Campanha Linux sob a configuração atual](https://github.com/Buraddomoon/AEGIS/issues/5).
-5. [PKI dos serviços Wazuh](https://github.com/Buraddomoon/AEGIS/issues/6) e
+5. [Duas redes Wazuh sem colisão](https://github.com/Buraddomoon/AEGIS/issues/149),
+   [PKI dos serviços Wazuh](https://github.com/Buraddomoon/AEGIS/issues/6) e
    [fluxo integrado atual](https://github.com/Buraddomoon/AEGIS/issues/7).
 
 Dependências nativas no GitHub determinam a ordem efetiva. Ensaio histórico já
@@ -28,7 +29,7 @@ existente não é autorização de repetição; cada tarefa delimita os novos ef
 | Fundação, API, frontend, persistência, migrações | Monólito e Demo executáveis | [CI integral](https://github.com/Buraddomoon/AEGIS/issues/10), [aceite/instalação/revisão](https://github.com/Buraddomoon/AEGIS/issues/12) |
 | Simulação e estados, aprovação, cleanup | Demo e marcador Linux histórico | [rede](https://github.com/Buraddomoon/AEGIS/issues/2), [identidade](https://github.com/Buraddomoon/AEGIS/issues/3), [binding](https://github.com/Buraddomoon/AEGIS/issues/4), [retomada Linux](https://github.com/Buraddomoon/AEGIS/issues/5), [mais comportamentos Linux](https://github.com/Buraddomoon/AEGIS/issues/15) |
 | Laboratórios e ativos autorizados | Demo e Linux revisado de implantação | [múltiplos labs/ativos](https://github.com/Buraddomoon/AEGIS/issues/25), [Windows opcional](https://github.com/Buraddomoon/AEGIS/issues/32) |
-| Wazuh e evidências reais | Um pipeline4.14.9/marcador/regra100200 encerrado | [certificados Wazuh](https://github.com/Buraddomoon/AEGIS/issues/6), [nova configuração integrada](https://github.com/Buraddomoon/AEGIS/issues/7), [schemas/archives](https://github.com/Buraddomoon/AEGIS/issues/8) |
+| Wazuh e evidências reais | Um pipeline4.14.9/marcador/regra100200 encerrado | [redes próprias sem colisão](https://github.com/Buraddomoon/AEGIS/issues/149), [certificados Wazuh](https://github.com/Buraddomoon/AEGIS/issues/6), [nova configuração integrada](https://github.com/Buraddomoon/AEGIS/issues/7), [schemas/archives](https://github.com/Buraddomoon/AEGIS/issues/8) |
 | Atomic Red Team | Parser seguro de metadados não executáveis | [catálogo persistente](https://github.com/Buraddomoon/AEGIS/issues/13), [primeiro Atomic allowlisted](https://github.com/Buraddomoon/AEGIS/issues/14) |
 | ATT&CK oficial e cobertura | Enterprise versionado, CLI de atualização, matriz/tabela/filtros/histórico | [revisão web](https://github.com/Buraddomoon/AEGIS/issues/19), [subtécnicas/telemetria](https://github.com/Buraddomoon/AEGIS/issues/20), [outra matriz opcional](https://github.com/Buraddomoon/AEGIS/issues/40) |
 | Validação de detecção e correlação | Outcomes, evidências, janelas/identidades e disponibilidade distintas | [novos schemas](https://github.com/Buraddomoon/AEGIS/issues/8), [validação de consultas](https://github.com/Buraddomoon/AEGIS/issues/17), [recomendações determinísticas](https://github.com/Buraddomoon/AEGIS/issues/22) |

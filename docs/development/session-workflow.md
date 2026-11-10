@@ -82,6 +82,11 @@ subissue de PKI para recuperar em clone novo, se necessário. Confira divergênc
 antes de aplicar; nunca sobrepor trabalho local. Uma sessão de outra issue deixa
 esses arquivos intactos e não os inclui no seu commit.
 
+Retomada menor: [subissue42 de PKI offline](https://github.com/Buraddomoon/AEGIS/issues/42).
+O [conflito das duas redes Wazuh](https://github.com/Buraddomoon/AEGIS/issues/149)
+é uma entrega separada: corrigir a faixa Linux não corrige automaticamente as
+faixas172.30.89/90 do Wazuh, também contidas na qasrc. Nenhuma delas foi alterada.
+
 ## Concluir uma unidade
 
 Antes de commit, revisar somente os arquivos do escopo, testes pertinentes,

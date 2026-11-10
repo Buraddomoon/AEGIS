@@ -4614,3 +4614,69 @@ atual é identidade mTLS nativa/ativação coordenada após expiração da PKI, 
 pela faixa172.30.88.0/29 dentro da qasrc172.30.0.0/16; não a ausência total de
 integração real. Próximo trabalho é remover esse conflito na configuração AEGIS,
 sem tocar redes existentes nem reaproveitar autorizações consumidas.
+
+
+## 2026-11-10 — execução transferida para issues e sessões independentes
+
+Usuário pediu converter todas as pendências em issues/subissues para retomar em
+novas sessões sem carregar o mês de conversa. Implementação do produto continua
+pausada. Fonte de execução: [índice #1](https://github.com/Buraddomoon/AEGIS/issues/1).
+Modelo de corpo/nomes consultado no memory-os/00 - padrões/Padrao-Issue.md e
+Padrao-Milestone.md; estrutura adaptada à política específica AEGIS: privado,
+somente main, Conventional Commits e push direto, sem branches/PR/promover versões.
+Nenhum conteúdo empresarial do cofre foi copiado e o cofre não foi modificado.
+
+Inventário final publicado: **41entregas +110subissues +1índice =152issues**,
+**151vínculos nativos pai/filho** e **35dependências nativas** entre entregas.
+Milestones prospectivas:V0.3/10entregas de estabilização e Lab, V0.4/10 de detecção,
+V0.5/10 de operação e V1.0/11 possibilidades opcionais. Sem data/promessa de
+release, tag ou bump: código continua0.2.0. Futuro opcional não bloqueia MVP;
+PDF/relatórios/snapshots já entregues não foram reabertos como feature faltante.
+Pais sem labels de área; subissues com uma área correspondente ao título.
+issueTypes=null no repositório pessoal: nenhum Type nativo falso nem labels
+Feature/Task criadas. O índice é organizador, não uma sessão para implementar tudo.
+
+Cada entrega/tarefa contém objetivo, contexto atual, mudança, escopo, dependências,
+aceite, referências e plano de testes; sessão termina no escopo escolhido. Efeitos
+reais, destino externo/custos e operações destrutivas permanecem condicionados a
+escopo/autorização próprios. Custódia externa continua adiada. A ordem sugerida
+começa em#2 ou na unidade menor#42, depois#3/#4/#5, respeitando CI#10 e bloqueadores.
+
+Revisão de código encontrou um bloqueio adicional concreto: além de Linux172.30.88,
+as redes Wazuh172.30.89.0/29 e172.30.90.0/29 também estão dentro de qasrc172.30/16.
+[Entrega #149](https://github.com/Buraddomoon/AEGIS/issues/149), filhos150–152,
+registra a preparação separada;#6 de PKI Wazuh agora depende dela. Nenhuma rede foi
+alterada ou ensaio iniciado. Não supor que a transição Linux resolve Wazuh.
+
+AGENTS reduzido de855para101linhas; conteúdo anterior preservado integralmente
+em docs/development/agent-history-2026-11-10.md, com aviso histórico. Guia curto
+em docs/development/session-workflow.md; README/roadmap apontam ao GitHub e
+mapa por requisitos em docs/product/backlog-sessions.md. Não exigir leitura de
+PROGRESS inteiro ou de todos os ADRs para retomar. Nenhum /compact simulado.
+
+Cinco arquivos locais de PKI/rede permanecem exatamente como foram pausados,
+sem commit de implementação. Handoff recuperável por comentário separado na
+[subissue42](https://github.com/Buraddomoon/AEGIS/issues/42#issuecomment-6774129223): patch textual14484bytes,
+SHA256 8f00a7ab6ab3ac434008d7b0d32efac09e1fcc81894cafa0e6ccf26d3e44ebc2,
+hashes dos cinco arquivos e aviso de parcialidade. git apply --check passou em
+diretório temporário com os três arquivos base; nenhum patch aplicado à fonte.
+Os66testes anteriores são evidência parcial preservada, não nova execução de
+regressão nesta etapa. Compose/receitas/probe ainda exigem conclusão na#2.
+
+Validações desta tarefa: grafo local acíclico,151títulos únicos de entrega/tarefa,
+referências existentes; consulta GraphQL paginada conferiu TODOS os152corpos,
+parent/children exatos, labels/milestones,35blockedBy, privado/main e hashes dos
+cinco arquivos. Scanner de padrões de segredos nos corpos/patch e checks do
+índice passaram; não é garantia absoluta de ausência de segredos. Provas privadas
+em.local/issue-planning/verification.json e artefatos associados, fora do Git.
+Uma requisição inicial de vínculo foi rejeitada por parâmetro antigo; corrigida
+para sub_issue_id e todos os vínculos foram depois conferidos nativamente, sem
+substituir por checklists ou criar duplicatas. Publicação retomada do checkpoint
+após interrupção do processo, preservando os objetos já existentes.
+
+Somente documentação versionada:9f9a016/9cb587d e este fechamento, três commits
+nesta tarefa, com checks e pushes próprios. Source-review de9f9a016 passou;
+resultado do commit final conferido no GitHub depois do push. Nenhum novo pytest,
+E2E, build, deploy, banco, usuário, segredo, laboratório ou Wazuh nesta tarefa.
+Próxima ação depende da issue que o usuário selecionar numa sessão nova; não
+iniciar outra funcionalidade automaticamente.
