@@ -22,6 +22,13 @@ com ambos os inventários/hash. Preservar três UUIDs, paths internos e todos os
 arquivos originais; gerar quatro chaves distintas sem reutilizar as antigas.
 Renovação comum conserva endpoint. Não aplicar arquivos ou binding implicitamente.
 
+Implementação de PKI: `scripts/runner_pki.py prepare --migrate-linux-network`
+gera somente um candidato offline no formato `/2`; sem essa flag, `prepare`
+renova as chaves e conserva o endpoint existente. A opção recusa fontes novas,
+Wazuh e qualquer outro perfil. `verify` valida ambos os formatos sem ativar
+material. O default de `scripts/init_linux_lab.py` usa o runner Linux novo;
+endereços históricos precisam ser solicitados explicitamente.
+
 Novo plano/perfil e protocolo do probe de identidade têm versão própria para
 evitar interpretar pedidos anteriores sob outro IP. Planos antigos não permitem
 efeitos atuais; sua leitura histórica para cleanup continua possível com política

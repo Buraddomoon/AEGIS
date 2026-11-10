@@ -7,6 +7,8 @@ import subprocess
 from pathlib import Path
 from uuid import UUID, uuid4
 
+from aegis.lab_runner.network_profile import LEGACY_LINUX_IP, LINUX_RUNNER_IP, WAZUH_RUNNER_IP
+
 
 def openssl(*args: str):
     subprocess.run(
@@ -20,10 +22,10 @@ def openssl(*args: str):
 
 
 def initialize(
-    output: Path, *, server_ip: str = "172.30.88.2", identifiers: dict[str, str] | None = None
+    output: Path, *, server_ip: str = LINUX_RUNNER_IP, identifiers: dict[str, str] | None = None
 ) -> Path:
-    if server_ip not in {"172.30.88.2", "172.30.89.2"}:
-        raise ValueError("Endereço fora das duas redes de laboratório revisadas.")
+    if server_ip not in {LEGACY_LINUX_IP, LINUX_RUNNER_IP, WAZUH_RUNNER_IP}:
+        raise ValueError("Endereço fora dos perfis de laboratório revisados.")
     names = ("runner_id", "laboratory_id", "asset_id")
     if identifiers is None:
         identifiers = {name: str(uuid4()) for name in names}

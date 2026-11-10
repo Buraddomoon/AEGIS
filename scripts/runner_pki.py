@@ -15,9 +15,11 @@ from uuid import UUID, uuid4
 
 from aegis.domain.validation import digest
 from aegis.integrations.linux_runner import RunnerConnection
+from aegis.lab_runner.network_profile import LEGACY_LINUX_URL, LINUX_URL, WAZUH_URL
 from init_linux_lab import initialize
 
 FORMAT = "aegis-runner-pki-candidate/1"
+TRANSITION_FORMAT = "aegis-runner-pki-candidate/2"
 PUBLIC = (
     "connection.json",
     "server-ca.crt",
@@ -230,7 +232,7 @@ def inventory(source: Path, *, current: bool = False) -> tuple[dict, dict]:
     }
     if any(connection[key] != value for key, value in expected_paths.items()) or connection[
         "url"
-    ] not in {"https://172.30.88.2:8443", "https://172.30.89.2:8443"}:
+    ] not in {LEGACY_LINUX_URL, LINUX_URL, WAZUH_URL}:
         raise PKIError("unreviewed_runner_configuration")
     certs = {role: certificate(public[role + ".crt"], role, connection) for role in ROLES}
     if len({value["spki_sha256"] for value in certs.values()}) != 4:
@@ -288,13 +290,25 @@ def inspect(source: Path) -> dict:
     }
 
 
-def validate_new(source: dict, target: Path) -> dict:
+def target_connection(source: dict, *, migrate_linux_network: bool = False) -> dict:
+    if type(migrate_linux_network) is not bool:
+        raise PKIError("explicit_network_transition_required")
+    connection = dict(source["connection"])
+    if migrate_linux_network:
+        if connection["url"] != LEGACY_LINUX_URL:
+            raise PKIError("legacy_linux_source_required")
+        connection["url"] = LINUX_URL
+    return connection
+
+
+def validate_new(source: dict, target: Path, *, migrate_linux_network: bool = False) -> dict:
     if set(os.listdir(target)) not in (FILES, FILES | {"rotation.json"}):
         raise PKIError("unexpected_candidate_artifacts")
     for name in FILES:
         read(target / name, modes=(0o444, 0o600))
     new, validity = inventory(target, current=True)
-    if new["connection"] != source["connection"] or not all(validity.values()):
+    expected = target_connection(source, migrate_linux_network=migrate_linux_network)
+    if new["connection"] != expected or not all(validity.values()):
         raise PKIError("candidate_identity_or_validity_mismatch")
     old_keys = {value["spki_sha256"] for value in source["certificates"].values()}
     instant = clock()
@@ -333,10 +347,13 @@ def sync(path: Path):
         os.close(fd)
 
 
-def prepare(source: Path, expected_sha256: str, output_root: Path) -> dict:
+def prepare(
+    source: Path, expected_sha256: str, output_root: Path, *, migrate_linux_network: bool = False
+) -> dict:
     original, _ = inventory(source)
     if not re.fullmatch(r"[a-f0-9]{64}", expected_sha256) or digest(original) != expected_sha256:
         raise PKIError("source_inventory_drift")
+    connection = target_connection(original, migrate_linux_network=migrate_linux_network)
     output_root = absolute(output_root)
     if output_root == absolute(source) or absolute(source) in output_root.parents:
         raise PKIError("candidate_must_be_separate_from_source")
@@ -347,14 +364,14 @@ def prepare(source: Path, expected_sha256: str, output_root: Path) -> dict:
     target = output_root / identifier
     initialize(
         target,
-        server_ip=urlsplit(original["connection"]["url"]).hostname,
+        server_ip=urlsplit(connection["url"]).hostname,
         identifiers={name: original["connection"][name] for name in IDS},
     )
-    new = validate_new(original, target)
+    new = validate_new(original, target, migrate_linux_network=migrate_linux_network)
     if inventory(source)[0] != original:
         raise PKIError("source_changed_during_preparation")
     manifest = {
-        "format": FORMAT,
+        "format": TRANSITION_FORMAT if migrate_linux_network else FORMAT,
         "id": identifier,
         "created_at": clock().isoformat(),
         "source": original,
@@ -405,7 +422,7 @@ def verify(source: Path, candidate: Path, expected_sha256: str) -> dict:
     if created_at.utcoffset() != timedelta(0):
         raise PKIError("utc_manifest_time_required")
     if (
-        manifest["format"] != FORMAT
+        manifest["format"] not in {FORMAT, TRANSITION_FORMAT}
         or manifest["id"] != candidate.name
         or UUID(hex=manifest["id"]).hex != manifest["id"]
         or manifest["activation_performed"] is not False
@@ -414,11 +431,13 @@ def verify(source: Path, candidate: Path, expected_sha256: str) -> dict:
     original, _ = inventory(source)
     if original != manifest["source"]:
         raise PKIError("source_inventory_drift")
-    new = validate_new(original, candidate)
+    new = validate_new(
+        original, candidate, migrate_linux_network=manifest["format"] == TRANSITION_FORMAT
+    )
     if new != manifest["candidate"] or new["descriptor_sha256"] == original["descriptor_sha256"]:
         raise PKIError("candidate_inventory_drift")
     return {
-        "format": FORMAT,
+        "format": manifest["format"],
         "id": manifest["id"],
         "manifest_sha256": expected_sha256,
         "status": "offline_candidate_verified_not_activated",
@@ -441,6 +460,11 @@ def main() -> int:
             command.add_argument("--expected-sha256", required=True)
         if name == "prepare":
             command.add_argument("--output-root", type=Path, default=Path(".local/pki-candidates"))
+            command.add_argument(
+                "--migrate-linux-network",
+                action="store_true",
+                help="Offline candidate only: reviewed legacy Linux address to current fixed profile.",
+            )
         if name == "verify":
             command.add_argument("--candidate", type=Path, required=True)
     args = parser.parse_args()
@@ -448,7 +472,12 @@ def main() -> int:
         if args.command == "inspect":
             result = inspect(args.source)
         elif args.command == "prepare":
-            result = prepare(args.source, args.expected_sha256, args.output_root)
+            result = prepare(
+                args.source,
+                args.expected_sha256,
+                args.output_root,
+                migrate_linux_network=args.migrate_linux_network,
+            )
         else:
             result = verify(args.source, args.candidate, args.expected_sha256)
         print(json.dumps(result, sort_keys=True, indent=2))

@@ -13,12 +13,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 pki = runpy.run_path("scripts/runner_pki.py")
 
 
-@pytest.fixture(scope="module")
-def certificates(tmp_path_factory):
+@pytest.fixture(scope="module", params=[False, True], ids=["rotation", "network_transition"])
+def certificates(tmp_path_factory, request):
     root = tmp_path_factory.mktemp("pki-handshake")
-    old = pki["initialize"](root / "old")
+    old = pki["initialize"](
+        root / "old", server_ip="172.30.88.2" if request.param else "192.168.253.2"
+    )
     initial = pki["inspect"](old)
-    new = pki["prepare"](old, initial["inventory_sha256"], root / "candidates")
+    new = pki["prepare"](
+        old,
+        initial["inventory_sha256"],
+        root / "candidates",
+        migrate_linux_network=request.param,
+    )
     candidate = Path(new["candidate_path"])
     assert (
         pki["verify"](old, candidate, new["manifest_sha256"])["status"]
@@ -69,7 +76,8 @@ def test_new_mutual_tls_pair_works_and_old_trust_or_client_fails(certificates, s
         def exchange():
             with socket.create_connection(address, timeout=3) as raw:
                 # TCP always stays on loopback; SAN verification uses the real pinned lab IP.
-                with client.wrap_socket(raw, server_hostname="172.30.88.2") as secured:
+                hostname = pki["inventory"](new)[0]["connection"]["url"].split("/")[2].split(":")[0]
+                with client.wrap_socket(raw, server_hostname=hostname) as secured:
                     secured.sendall(b"?")
                     assert secured.recv(1) == b"!"
 

@@ -1,0 +1,11 @@
+"""Reviewed fixed lab addresses; never derive targets from API/user input."""
+
+LINUX_SUBNET = "192.168.253.0/29"
+LINUX_GATEWAY = "192.168.253.1"
+LINUX_RUNNER_IP = "192.168.253.2"
+LINUX_CLIENT_IP = "192.168.253.3"
+LINUX_URL = "https://192.168.253.2:8443"
+LEGACY_LINUX_IP = "172.30.88.2"
+LEGACY_LINUX_URL = "https://172.30.88.2:8443"
+WAZUH_RUNNER_IP = "172.30.89.2"
+WAZUH_URL = "https://172.30.89.2:8443"
