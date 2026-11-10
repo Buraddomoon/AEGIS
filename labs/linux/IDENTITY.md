@@ -7,8 +7,10 @@ O bloqueio observado em05/11 referia-se à faixa antiga e permanece como histór
 a faixa atual exige nova inspeção local antes de qualquer efeito. Validação
 automatizada usa PKI/Git temporários, loopback e RPCs simuladas.
 Uma tentativa nativa foi autorizada em10/11 e encerrou com falha na etapa do
-cliente; os dois containers e a bridge foram removidos. **A identidade mTLS nativa
-continua sem comprovação.** A revisão integral dos artefatos também foi recusada.
+cliente; os dois containers e a bridge foram removidos. A segunda, com novo
+pacote/autorização, autenticou com os certificados novos e encerrou os recursos,
+mas teve controle sem cliente inconclusivo e falha no inventário. **A confirmação
+integral do ensaio e de seus registros permanece pendente.**
 Ver [resultado e limitações](../../docs/evidence/identity-assay-2026-11-10/README.md).
 Este documento não concede permissão para iniciar recursos. A autorização foi
 consumida; o plano e os registros dessa tentativa não podem ser reutilizados.
@@ -124,6 +126,11 @@ O [diagnóstico posterior](../../docs/development/identity-assay-diagnostics.md)
 descreve a correção do parsing repetido e dos códigos descartados. Recibos
 novos /2 incluem diagnósticos fechados; a revisão mantém compatibilidade com /1
 e explica inventário declarado não verificado, sem aprovar o histórico recusado.
+A [segunda tentativa autorizada](../../docs/evidence/identity-assay-2026-11-10/second-authorized-attempt.md)
+autenticou com os certificados novos, com controle sem cliente inconclusivo por
+EOF. Terminou com cleanup confirmado e falha no inventário; o diagnóstico
+identificou enumeração vazia pelo descritor antigo no Btrfs. O leitor foi
+corrigido e validado sem outro start; os recibos históricos continuam recusados.
 Nova tentativa exige outro pacote/plano, rechecks e autorização específica;
 CI aprovada não substitui autorização. Não usar imports Python manuais para
 contornar o procedimento. A ativação real de PKI/binding permanece uma etapa

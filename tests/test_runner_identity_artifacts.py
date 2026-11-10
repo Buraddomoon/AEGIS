@@ -139,6 +139,39 @@ def test_normalized_review_larger_than_docker_metadata_cap_round_trips(records):
     assert value.inventory()["client-lifecycle"] == expected
 
 
+def test_inventory_does_not_use_the_empty_view_of_a_long_lived_directory_fd(records, monkeypatch):
+    value, _, _ = records
+    expected = value.write("cleanup", {"operation_closed": False})
+    listdir = artifacts.os.listdir
+
+    def observed(path):
+        # Model Btrfs readdir on a descriptor opened before any records existed.
+        return [] if path == value.fd else listdir(path)
+
+    monkeypatch.setattr(artifacts.os, "listdir", observed)
+    result = value.inventory()
+    assert result["cleanup"] == expected
+    assert "requested" in result
+
+
+def test_inventory_rejects_membership_changes_between_fresh_directory_reads(records, monkeypatch):
+    value, _, _ = records
+    read = value.read
+    changed = False
+
+    def added(name):
+        nonlocal changed
+        result = read(name)
+        if not changed:
+            changed = True
+            value.write("cleanup", {"operation_closed": False})
+        return result
+
+    monkeypatch.setattr(value, "read", added)
+    with pytest.raises(artifacts.ActivationError, match="inventory_changed"):
+        value.inventory()
+
+
 @pytest.mark.parametrize("scene", ["symlink", "hardlink", "fifo", "permissions", "truncated"])
 def test_unsafe_and_partial_records_cannot_pass_review(records, tmp_path, scene):
     value, _, _ = records

@@ -21,6 +21,8 @@ INVENTORY_FAILURE_CODES = frozenset(
         "identity_artifact_store_closed",
         "identity_artifact_operation_or_directory_changed",
         "identity_artifact_unexpected_inventory",
+        "identity_artifact_empty_inventory",
+        "identity_artifact_inventory_changed",
         "identity_artifact_unsafe_file",
         "identity_artifact_size_exceeded",
         "identity_artifact_json_invalid",
@@ -268,7 +270,28 @@ class IdentityArtifacts:
 
     def inventory(self):
         self._check()
-        names = os.listdir(self.fd)
-        if not names or any(name not in {_name(key) for key in NAMES} for name in names):
+        names = self._names()
+        if not names:
+            raise ActivationError("identity_artifact_empty_inventory")
+        if any(name not in {_name(key) for key in NAMES} for name in names):
             raise ActivationError("identity_artifact_unexpected_inventory")
-        return {name[:-5]: digest(self.read(name[:-5])) for name in sorted(names)}
+        result = {name[:-5]: digest(self.read(name[:-5])) for name in names}
+        if self._names() != names:
+            raise ActivationError("identity_artifact_inventory_changed")
+        return result
+
+    def _names(self):
+        self._check()
+        # The pinned descriptor was opened while the directory was empty.
+        # Btrfs can retain that older enumeration view on the same open file
+        # description even after openat writes/fsync. Open a fresh reader rooted
+        # at the pinned directory; never reopen/adopt a path supplied by a caller.
+        fd = os.open(
+            ".", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=self.fd
+        )
+        try:
+            names = sorted(os.listdir(fd))
+        finally:
+            os.close(fd)
+        self._check()
+        return names

@@ -37,9 +37,25 @@ fence START_REQUESTED.
 
 O recibo original declara inventário não verificado; a revisão integral continua
 recusando esse recibo. Uma reconstrução somente do leitor, sem confirmação/lease,
-writer ou adaptador nativo, conseguiu ler os13 envelopes preservados. A causa
-transitória da falha original do inventário não foi reproduzida nem inferida a
-partir dessa leitura posterior.
+writer ou adaptador nativo, conseguiu ler os13 envelopes preservados. A primeira
+tentativa não guardou o código exato da falha do inventário.
+
+Na [segunda tentativa autorizada](../evidence/identity-assay-2026-11-10/second-authorized-attempt.md),
+o diagnóstico novo identificou `identity_artifact_unexpected_inventory`. O cliente
+concluiu os controles, mas a enumeração pelo descritor mantido desde a criação da
+pasta retornou uma visão vazia no Btrfs do host. Um fixture somente de filesystem
+reproduziu o problema, sem containers: abrir a pasta vazia, gravar14arquivos,
+fsync e listar pelo mesmo descritor retornou0; uma nova abertura retornou14.
+No tmpfs, ambas as leituras retornaram14. A leitura posterior da pasta por path
+também abria outro descritor, explicando por que a inspeção inicial via /tmp/path
+não reproduzia a falha do escritor nativo.
+
+O inventário agora abre um leitor novo de `.` relativo ao descritor original
+fixado, com O_DIRECTORY/NOFOLLOW/CLOEXEC, sem adotar outro caminho. Mantém as
+checagens de inode/owner/permissões/operação e a allowlist; duas enumerações novas
+cercam a validação dos registros e mudanças de membership são recusadas. Códigos
+distintos separam inventário vazio, desconhecido e alterado durante a leitura.
+Nenhum dos recibos já emitidos é reescrito para remover sua falha histórica.
 
 Recibos novos usam `aegis-identity-assay-receipt/2` com failure_code e
 artifact_inventory_failure_code. Os valores pertencem a listas fechadas; erros
