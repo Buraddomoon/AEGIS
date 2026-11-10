@@ -298,6 +298,91 @@ def test_uncertain_client_cleanup_retains_parents_and_never_reports_success(worl
     assert "runner_stop" not in world.effects and "network-isolated_remove" not in world.effects
 
 
+def test_failed_client_preserves_a_reviewable_inventory_without_promoting_tls(world):
+    world.scene = "bad_wire"
+    result = world.execute()
+    assert result["status"] == "identity_assay_failed_and_closed"
+    assert result["artifact_inventory_verified"] is True
+    assert result["artifacts"] is not None
+    report = saved_review.review(
+        world.c.operation,
+        world.c.begin_sha256,
+        world.c.plan_sha256,
+        world.c.scope,
+        coordinator.digest(result),
+        root=world.root,
+    )
+    assert report["recorded_tls_controls_verified"] is False
+    assert report["recorded_assay_status"] == "identity_assay_failed_and_closed"
+
+
+def test_gate_expiring_in_driver_keeps_the_reason_and_cleans_without_start_or_retry(
+    world, monkeypatch
+):
+    command = coordinator.client.driver.command
+
+    def delayed(kind, reviews, known_id=None):
+        args = command(kind, reviews, known_id)
+        if kind == "start":
+            checked = coordinator.client.gates.datetime.fromisoformat(
+                reviews._last_gate["checked_at"]
+            )
+            # Disposable fixture clock models time spent preparing the command.
+            monkeypatch.setattr(
+                coordinator.network.plan.pki,
+                "clock",
+                lambda: checked + timedelta(seconds=10.1),
+            )
+        return args
+
+    monkeypatch.setattr(coordinator.client.driver, "command", delayed)
+    result = world.execute()
+    assert result["status"] == "identity_assay_failed_and_closed"
+    assert result["failure_code"] == "journal_probe_gate_stale"
+    assert result["artifact_inventory_verified"] is True
+    assert result["artifact_inventory_failure_code"] is None
+    assert "client_start" not in world.effects
+    assert result["managed_resources_absence_verified"] is True
+    assert world.c.store.review()["closed"] is True
+    report = saved_review.review(
+        world.c.operation,
+        world.c.begin_sha256,
+        world.c.plan_sha256,
+        world.c.scope,
+        coordinator.digest(result),
+        root=world.root,
+    )
+    assert report["recorded_tls_controls_verified"] is False
+
+
+def test_inventory_os_error_is_classified_without_secret_text_or_false_saved_review(
+    world, monkeypatch
+):
+    import errno
+
+    monkeypatch.setattr(
+        coordinator.IdentityArtifacts,
+        "inventory",
+        lambda self: (_ for _ in ()).throw(PermissionError(errno.EACCES, SECRET, SECRET)),
+    )
+    world.scene = "network_ambiguous"
+    result = world.execute()
+    assert result["artifact_inventory_verified"] is False
+    assert result["artifact_inventory_failure_code"] == "identity_artifact_permission_denied"
+    assert result["tls_controls_verified"] is False
+    assert result["managed_resources_absence_verified"] is True
+    assert SECRET not in json.dumps(result)
+    with pytest.raises(saved_review.ActivationError, match="saved_artifacts_unconfirmed"):
+        saved_review.review(
+            world.c.operation,
+            world.c.begin_sha256,
+            world.c.plan_sha256,
+            world.c.scope,
+            coordinator.digest(result),
+            root=world.root,
+        )
+
+
 def test_interruption_cleans_then_saves_receipt_and_propagates_without_retry(world):
     world.scene = "interrupt"
     with pytest.raises(KeyboardInterrupt):

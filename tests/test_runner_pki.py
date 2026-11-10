@@ -67,6 +67,51 @@ def test_public_inspection_and_candidate_keep_identity_and_source_untouched(sour
     } == before
 
 
+def test_cached_public_parsing_does_not_cache_trust_time_or_private_key_checks(
+    source, staged, monkeypatch
+):
+    expected = pki.verify(source, *staged)
+    execute, commands = pki.openssl, []
+
+    def observed(*args, **kwargs):
+        commands.append(args)
+        return execute(*args, **kwargs)
+
+    monkeypatch.setattr(pki, "openssl", observed)
+    assert pki.verify(source, *staged) == expected
+    assert all(args[0] != "x509" for args in commands)
+    assert {args[args.index("-purpose") + 1] for args in commands if args[0] == "verify"} == {
+        "sslserver",
+        "sslclient",
+    }
+    assert any(args[0] == "pkey" and "-passin" in args for args in commands)
+    future = pki.clock() + timedelta(days=3)
+    monkeypatch.setattr(pki, "clock", lambda: future)
+    with pytest.raises(pki.PKIError):
+        pki.verify(source, *staged)
+
+
+def test_public_parse_cache_is_bound_to_role_identity_endpoint_and_actual_bytes(source):
+    public, _ = pki.inventory(source)
+    connection = public["connection"]
+    payload = pki.read(source / "runner-server.crt")
+    expected = pki.certificate(payload, "runner-server", connection)
+    expected["der_sha256"] = "caller-mutation"
+    assert pki.certificate(payload, "runner-server", connection)["der_sha256"] != "caller-mutation"
+    for role, context, material in (
+        ("runner-client", connection, payload),
+        (
+            "runner-server",
+            {**connection, "runner_id": "00000000-0000-0000-0000-000000000001"},
+            payload,
+        ),
+        ("runner-server", {**connection, "url": "https://192.168.253.3:8443"}, payload),
+        ("runner-server", connection, payload.replace(b"CERTIFICATE", b"PRIVATE KEY")),
+    ):
+        with pytest.raises(pki.PKIError):
+            pki.certificate(material, role, context)
+
+
 def test_prepare_does_not_need_or_read_source_keys_or_journal(tmp_path, monkeypatch):
     source = pki.initialize(tmp_path / "source")
     for name in pki.ROLES:

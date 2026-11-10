@@ -29,6 +29,26 @@ FAILURE_CODES = frozenset(
         "database_reader_mount_mismatch",
     }
 )
+IDENTITY_FAILURE_CODES = frozenset(
+    {
+        "journal_probe_gate_stale",
+        "identity_client_gate_mismatch",
+        "identity_client_computed_recent_gate_required",
+        "identity_client_started_recipe_required",
+        "identity_client_driver_context_changed",
+        "identity_client_driver_budget_or_context_changed",
+        "identity_client_create_outcome_unconfirmed",
+        "identity_client_capture_outcome_unconfirmed",
+        "identity_client_output_profile_mismatch",
+    }
+)
+IDENTITY_ASSAY_FAILURE_CODES = IDENTITY_FAILURE_CODES | frozenset(
+    {
+        "identity_assay_stage_unconfirmed",
+        "identity_assay_execution_unconfirmed",
+        "identity_assay_interrupted",
+    }
+)
 
 
 def fresh(gate):
@@ -152,7 +172,13 @@ def run(
     ) as caught:
         error = prefix + "_execution_unconfirmed"
         failure_phase = phase
-        codes = FAILURE_CODES | (FAILURE_REASONS if role in DATABASE_REVIEW_ROLES else frozenset())
+        codes = FAILURE_CODES | (
+            FAILURE_REASONS
+            if role in DATABASE_REVIEW_ROLES
+            else IDENTITY_FAILURE_CODES
+            if role == IDENTITY_CLIENT_ROLE
+            else frozenset()
+        )
         if (
             isinstance(caught, ActivationError)
             and len(caught.args) in {1, 2}

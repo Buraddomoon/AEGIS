@@ -11,6 +11,7 @@ from aegis.domain.validation import digest
 from aegis.lab_runner import identity_probe as probe
 from runner_activation_intents import _hash, _identifier
 from runner_activation_metadata import ActivationError
+from runner_activation_owned_probe import IDENTITY_ASSAY_FAILURE_CODES as FAILURE_CODES
 
 FLAGS = frozenset(
     {
@@ -49,6 +50,9 @@ FIELDS = frozenset(
         "cleanup_expires_at",
         *FLAGS,
     }
+)
+REJECTION_REASONS = frozenset(
+    {"recorded_artifact_inventory_unverified", "artifact_integrity_or_policy_unconfirmed"}
 )
 
 
@@ -116,21 +120,40 @@ def _gates(records, anchor):
 
 def _receipt(records, anchor, expected_sha256):
     result = records["receipt"]["body"]
+    version = result.get("format")
+    diagnostic_fields = {"failure_code", "artifact_inventory_failure_code"}
     if (
-        set(result) != FIELDS
-        or result["format"] != "aegis-identity-assay-receipt/1"
+        version not in {"aegis-identity-assay-receipt/1", "aegis-identity-assay-receipt/2"}
+        or set(result)
+        != FIELDS | (diagnostic_fields if version == "aegis-identity-assay-receipt/2" else set())
         or digest(result) != expected_sha256
         or any(result[key] != value for key, value in anchor.items())
-        or result["artifact_inventory_verified"] is not True
         or not isinstance(result["stages"], dict)
         or not set(result["stages"]) <= {"network", "server", "client"}
         or type(result["tls_controls_verified"]) is not bool
         or type(result["managed_resources_absence_verified"]) is not bool
         or any(result[key] is not False for key in FLAGS)
-        or result["artifacts"]
-        != {name: digest(item) for name, item in records.items() if name != "receipt"}
     ):
         raise ActivationError("identity_saved_receipt_mismatch")
+    if result["artifact_inventory_verified"] is False:
+        raise ActivationError("identity_saved_recorded_inventory_unverified")
+    if result["artifact_inventory_verified"] is not True or result["artifacts"] != {
+        name: digest(item) for name, item in records.items() if name != "receipt"
+    }:
+        raise ActivationError("identity_saved_receipt_mismatch")
+    if version == "aegis-identity-assay-receipt/2" and (
+        (
+            result["failure_code"] is not None
+            and (
+                type(result["failure_code"]) is not str
+                or result["failure_code"] not in FAILURE_CODES
+            )
+        )
+        or (result["error"] is None and result["failure_code"] is not None)
+        or result["artifact_inventory_failure_code"] is not None
+    ):
+        # A failed inventory is never promoted to a complete saved review.
+        raise ActivationError("identity_saved_diagnostics_mismatch")
     _hash(result["plan_use_sha256"])
     _hash(result["intent_summary_sha256"])
     for role, expected in result["stages"].items():
@@ -235,8 +258,14 @@ def review(
                 != content
             ):
                 raise ActivationError("identity_saved_record_changed")
-    except (ValueError, OSError, TypeError, KeyError, AttributeError, RecursionError):
-        raise ActivationError("identity_saved_artifacts_unconfirmed") from None
+    except (ValueError, OSError, TypeError, KeyError, AttributeError, RecursionError) as error:
+        reason = (
+            "recorded_artifact_inventory_unverified"
+            if isinstance(error, ActivationError)
+            and error.args == ("identity_saved_recorded_inventory_unverified",)
+            else "artifact_integrity_or_policy_unconfirmed"
+        )
+        raise ActivationError("identity_saved_artifacts_unconfirmed", reason) from None
     return {
         "format": "aegis-identity-saved-review/1",
         **anchor,
@@ -270,12 +299,21 @@ def main(argv=None):
             args.scope_sha256,
             args.receipt_body_sha256,
         )
-    except (ValueError, OSError):
+    except (ValueError, OSError) as error:
+        reason = (
+            error.args[1]
+            if isinstance(error, ActivationError)
+            and len(error.args) == 2
+            and type(error.args[1]) is str
+            and error.args[1] in REJECTION_REASONS
+            else "artifact_integrity_or_policy_unconfirmed"
+        )
         print(
             json.dumps(
                 {
                     "status": "rejected",
                     "error": "identity_saved_artifacts_unconfirmed",
+                    "reason": reason,
                     "native_runtime_rechecked": False,
                     "normal_operation_permitted": False,
                 }

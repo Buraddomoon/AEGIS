@@ -9,6 +9,7 @@ import stat
 import subprocess
 import tempfile
 from datetime import UTC, datetime, timedelta
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
@@ -153,6 +154,15 @@ def date(value: str) -> datetime:
 
 
 def certificate(content: bytes, role: str, connection: dict) -> dict:
+    # Cache only immutable PUBLIC certificate parsing, keyed by the actual
+    # bytes and every identity input used below. Each caller gets its own dict.
+    # File/permission reads, chain verification, clock/lifetime checks and all
+    # candidate private-key comparisons still run on every inventory/verify.
+    return dict(_certificate(content, role, connection["runner_id"], connection["url"]))
+
+
+@lru_cache(maxsize=32)
+def _certificate(content: bytes, role: str, runner_id: str, url: str) -> tuple:
     if (
         content.count(b"-----BEGIN CERTIFICATE-----") != 1
         or not content.strip().startswith(b"-----BEGIN CERTIFICATE-----")
@@ -184,7 +194,7 @@ def certificate(content: bytes, role: str, connection: dict) -> dict:
         raise PKIError("reviewed_curve_required")
     if not is_ca:
         purpose = role.removeprefix("runner-")
-        if values["subject"].strip() != f"CN=aegis-{purpose}-{connection['runner_id']}":
+        if values["subject"].strip() != f"CN=aegis-{purpose}-{runner_id}":
             raise PKIError("certificate_identity_mismatch")
         _, eku = extension(content, "extendedKeyUsage")
         if eku != (
@@ -194,18 +204,18 @@ def certificate(content: bytes, role: str, connection: dict) -> dict:
         ):
             raise PKIError("certificate_purpose_mismatch")
         _, san = extension(content, "subjectAltName")
-        expected = (
-            f"IP Address:{urlsplit(connection['url']).hostname}" if purpose == "server" else ""
-        )
+        expected = f"IP Address:{urlsplit(url).hostname}" if purpose == "server" else ""
         if san != expected:
             raise PKIError("certificate_san_mismatch")
-    return {
-        "pem_sha256": hashlib.sha256(content).hexdigest(),
-        "der_sha256": hashlib.sha256(der).hexdigest(),
-        "spki_sha256": hashlib.sha256(spki).hexdigest(),
-        "not_before": start.isoformat(),
-        "not_after": end.isoformat(),
-    }
+    return tuple(
+        {
+            "pem_sha256": hashlib.sha256(content).hexdigest(),
+            "der_sha256": hashlib.sha256(der).hexdigest(),
+            "spki_sha256": hashlib.sha256(spki).hexdigest(),
+            "not_before": start.isoformat(),
+            "not_after": end.isoformat(),
+        }.items()
+    )
 
 
 def descriptor(connection: dict, certs: dict) -> dict:

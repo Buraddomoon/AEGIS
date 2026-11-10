@@ -1,5 +1,6 @@
 """Private durable records with real temporary plans/PKI/intents; no native Docker."""
 
+import errno
 import json
 import os
 import stat
@@ -13,6 +14,38 @@ from test_runner_activation_network_gates import material as material
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import runner_identity_artifacts as artifacts  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    "error,expected",
+    [
+        (
+            artifacts.ActivationError("identity_artifact_unsafe_file"),
+            "identity_artifact_unsafe_file",
+        ),
+        (
+            PermissionError(errno.EACCES, "private-sensitive-sentinel"),
+            "identity_artifact_permission_denied",
+        ),
+        (
+            FileNotFoundError(errno.ENOENT, "private-sensitive-sentinel"),
+            "identity_artifact_missing",
+        ),
+        (OSError(errno.EIO, "private-sensitive-sentinel"), "identity_artifact_io_unconfirmed"),
+        (ValueError("private-sensitive-sentinel"), "identity_artifact_inventory_unconfirmed"),
+        (
+            artifacts.ActivationError("private-sensitive-sentinel"),
+            "identity_artifact_inventory_unconfirmed",
+        ),
+        (
+            TypeError({"private-sensitive-sentinel": True}),
+            "identity_artifact_inventory_unconfirmed",
+        ),
+    ],
+)
+def test_inventory_diagnostics_use_only_closed_codes_and_never_exception_text(error, expected):
+    assert artifacts.inventory_failure_code(error) == expected
+    assert "private-sensitive-sentinel" not in artifacts.inventory_failure_code(error)
 
 
 @pytest.fixture

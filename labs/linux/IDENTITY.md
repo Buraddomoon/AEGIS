@@ -120,6 +120,10 @@ do cliente não consta no código estático do recibo; os controles TLS não for
 confirmados. O recibo declara inventário de artefatos não verificado e a CLI de
 revisão recusa confirmação integral; não promover registros individuais válidos
 a prova completa. #47 e o pai #3 permanecem abertos para diagnóstico.
+O [diagnóstico posterior](../../docs/development/identity-assay-diagnostics.md)
+descreve a correção do parsing repetido e dos códigos descartados. Recibos
+novos /2 incluem diagnósticos fechados; a revisão mantém compatibilidade com /1
+e explica inventário declarado não verificado, sem aprovar o histórico recusado.
 Nova tentativa exige outro pacote/plano, rechecks e autorização específica;
 CI aprovada não substitui autorização. Não usar imports Python manuais para
 contornar o procedimento. A ativação real de PKI/binding permanece uma etapa

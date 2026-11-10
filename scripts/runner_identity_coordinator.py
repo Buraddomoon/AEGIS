@@ -11,7 +11,9 @@ import runner_activation_network_gates as network
 import runner_identity_recorded_gates as recorded
 from aegis.domain.validation import digest
 from runner_activation_metadata import IMAGES, ActivationError
-from runner_identity_artifacts import ROOT, IdentityArtifacts
+from runner_activation_owned_probe import IDENTITY_ASSAY_FAILURE_CODES as FAILURE_CODES
+from runner_activation_owned_probe import IDENTITY_FAILURE_CODES
+from runner_identity_artifacts import ROOT, IdentityArtifacts, inventory_failure_code
 from runner_identity_budget import IdentityBudget, IdentityNativeAdapters
 
 
@@ -73,13 +75,18 @@ def execute(context, build_inputs, *, adapters=None, root=ROOT):
     images = {key: c.artifact["metadata"]["images"][key]["id"] for key in IMAGES}
     with IdentityArtifacts(c, root=root) as records:
         stages, failed, interrupted, cleanup = {}, None, None, None
+        failed_code, inventory_error = None, None
         phase, failure_phase = "network", None
         result = None
 
         def record(name, report, complete):
+            nonlocal failed_code
             stages[name] = report
             records.write(name + "-lifecycle", report)
             if complete is not True:
+                code = report.get("failure_code")
+                if type(code) is str and code in IDENTITY_FAILURE_CODES:
+                    failed_code = code
                 raise ActivationError("identity_assay_stage_unconfirmed")
             c._guard()
 
@@ -143,11 +150,16 @@ def execute(context, build_inputs, *, adapters=None, root=ROOT):
             )
             result = probe["result"]
             c._guard()
-        except ERRORS:
+        except ERRORS as error:
             failed, failure_phase = "identity_assay_execution_unconfirmed", phase
+            code = error.args[0] if isinstance(error, ActivationError) and error.args else None
+            failed_code = failed_code or (
+                code if type(code) is str and code in FAILURE_CODES else failed
+            )
         except BaseException as error:
             interrupted = error
             failed, failure_phase = "identity_assay_interrupted", phase
+            failed_code = failed
         finally:
             # Expired normal admission never blocks owned cleanup. Native drivers
             # still refuse further RPC when the original hard300s budget expires.
@@ -177,8 +189,9 @@ def execute(context, build_inputs, *, adapters=None, root=ROOT):
         )
         try:
             inventory = records.inventory()
-        except ERRORS:
+        except ERRORS as error:
             inventory = None
+            inventory_error = inventory_failure_code(error)
             failed = failed or "identity_assay_artifact_inventory_unconfirmed"
         try:
             budget.remaining()
@@ -187,7 +200,7 @@ def execute(context, build_inputs, *, adapters=None, root=ROOT):
         concluded = failed is None and result is not None and closed
         verified = concluded and result["status"] == "identity_tls_controls_verified"
         receipt = {
-            "format": "aegis-identity-assay-receipt/1",
+            "format": "aegis-identity-assay-receipt/2",
             "operation_id": c.operation,
             "begin_sha256": c.begin_sha256,
             "plan_sha256": c.plan_sha256,
@@ -202,6 +215,8 @@ def execute(context, build_inputs, *, adapters=None, root=ROOT):
             else "identity_assay_cleanup_unconfirmed",
             "error": failed,
             "failure_phase": failure_phase,
+            "failure_code": failed_code,
+            "artifact_inventory_failure_code": inventory_error,
             "stages": {key: digest(value) for key, value in stages.items()},
             "artifacts": inventory,
             "artifact_inventory_verified": inventory is not None,

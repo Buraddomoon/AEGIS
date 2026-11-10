@@ -1,5 +1,6 @@
 """Private one-use identity-assay records; storage is not authorization or TLS proof."""
 
+import errno
 import json
 import os
 import stat
@@ -15,6 +16,29 @@ from runner_activation_metadata import ActivationError, _unique
 ROOT = Path(__file__).resolve().parents[1] / ".local/pki-identity-runtime"
 FORMAT = "aegis-identity-assay-artifact/1"
 MAX_BYTES = 256 * 1024
+INVENTORY_FAILURE_CODES = frozenset(
+    {
+        "identity_artifact_store_closed",
+        "identity_artifact_operation_or_directory_changed",
+        "identity_artifact_unexpected_inventory",
+        "identity_artifact_unsafe_file",
+        "identity_artifact_size_exceeded",
+        "identity_artifact_json_invalid",
+        "identity_artifact_integrity_mismatch",
+        "identity_artifact_encoding_mismatch",
+        "private_directory_required",
+        "unsafe_path",
+        "intent_session_not_writable",
+        "intent_lock_or_directory_changed",
+        "intent_history_changed",
+        "intent_partial_or_unexpected_history",
+        "intent_history_invalid",
+        "identity_artifact_permission_denied",
+        "identity_artifact_missing",
+        "identity_artifact_io_unconfirmed",
+        "identity_artifact_inventory_unconfirmed",
+    }
+)
 NAMES = frozenset(
     {
         "requested",
@@ -33,6 +57,24 @@ NAMES = frozenset(
         "receipt",
     }
 )
+
+
+def inventory_failure_code(error):
+    """Closed diagnostics only; never serialize paths or arbitrary exception text."""
+    if (
+        isinstance(error, (ActivationError, pki.PKIError))
+        and len(error.args) == 1
+        and type(error.args[0]) is str
+        and error.args[0] in INVENTORY_FAILURE_CODES
+    ):
+        return error.args[0]
+    if isinstance(error, OSError):
+        if error.errno in {errno.EACCES, errno.EPERM}:
+            return "identity_artifact_permission_denied"
+        if error.errno == errno.ENOENT:
+            return "identity_artifact_missing"
+        return "identity_artifact_io_unconfirmed"
+    return "identity_artifact_inventory_unconfirmed"
 
 
 def _encode(value):

@@ -49,6 +49,55 @@ def test_historical_inspection_uses_no_lease_pki_docker_intents_or_writes(saved,
     assert before == {p.name: (p.read_bytes(), p.stat().st_mtime_ns) for p in folder.iterdir()}
 
 
+def test_original_v1_receipts_remain_reviewable_without_invented_diagnostics(saved):
+    world, _, pins = saved
+    path = world.root / world.c.operation / "receipt.json"
+    record = json.loads(path.read_bytes())
+    record["body"]["format"] = "aegis-identity-assay-receipt/1"
+    record["body"].pop("failure_code")
+    record["body"].pop("artifact_inventory_failure_code")
+    record["body_sha256"] = pins[-1] = review.digest(record["body"])
+    path.write_bytes(review.artifacts._encode(record))
+    result = review.review(*pins, root=world.root)
+    assert result["recorded_assay_status"] == "identity_assay_failed_and_closed"
+    assert result["recorded_tls_controls_verified"] is False
+
+
+@pytest.mark.parametrize("field", ["failure_code", "artifact_inventory_failure_code"])
+def test_unreviewed_diagnostics_cannot_be_published_by_rehashing_receipt(saved, field):
+    world, _, pins = saved
+    path = world.root / world.c.operation / "receipt.json"
+    record = json.loads(path.read_bytes())
+    record["body"][field] = "private-sensitive-sentinel"
+    record["body_sha256"] = pins[-1] = review.digest(record["body"])
+    path.write_bytes(review.artifacts._encode(record))
+    with pytest.raises(review.ActivationError, match="saved_artifacts_unconfirmed"):
+        review.review(*pins, root=world.root)
+
+
+def test_cli_explains_a_pinned_unverified_inventory_without_rewriting_or_approving_it(
+    saved, monkeypatch, capsys
+):
+    world, _, pins = saved
+    path = world.root / world.c.operation / "receipt.json"
+    record = json.loads(path.read_bytes())
+    record["body"]["artifact_inventory_verified"] = False
+    record["body"]["artifacts"] = None
+    record["body"]["artifact_inventory_failure_code"] = "identity_artifact_io_unconfirmed"
+    record["body_sha256"] = pins[-1] = review.digest(record["body"])
+    path.write_bytes(review.artifacts._encode(record))
+    before = path.read_bytes()
+    original = review.review
+    monkeypatch.setattr(review, "review", lambda *args: original(*args, root=world.root))
+    names = ("operation-id", "begin-sha256", "plan-sha256", "scope-sha256", "receipt-body-sha256")
+    args = [arg for name, value in zip(names, pins, strict=True) for arg in ("--" + name, value)]
+    assert review.main(args) == 1
+    output = json.loads(capsys.readouterr().out)
+    assert output["reason"] == "recorded_artifact_inventory_unverified"
+    assert output["native_runtime_rechecked"] is False
+    assert path.read_bytes() == before
+
+
 @pytest.mark.parametrize("index", range(5))
 def test_another_operation_scope_or_retained_hash_cannot_be_substituted(saved, index):
     world, _, pins = saved
