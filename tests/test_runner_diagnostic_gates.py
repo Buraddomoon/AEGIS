@@ -6,6 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from aegis.lab_runner.network_profile import LEGACY_LINUX_IP
 from test_build_review_runner import prepared as prepared
 from test_runner_activation_database_inspection import Docker as Database
 from test_runner_activation_image_source import repository as repository
@@ -23,13 +24,13 @@ from runner_activation_intents import ActivationIntents  # noqa: E402
 @pytest.fixture
 def public_identity(monkeypatch, bundle):
     original = gates.facts.plan.pki.initialize
-    monkeypatch.setattr(
-        gates.facts.plan.pki,
-        "initialize",
-        lambda path: original(
-            path, identifiers={key: bundle["identity"][key] for key in gates.facts.plan.pki.IDS}
-        ),
-    )
+
+    def initialize(path, **kwargs):
+        kwargs.setdefault("server_ip", LEGACY_LINUX_IP)
+        kwargs["identifiers"] = {key: bundle["identity"][key] for key in gates.facts.plan.pki.IDS}
+        return original(path, **kwargs)
+
+    monkeypatch.setattr(gates.facts.plan.pki, "initialize", initialize)
 
 
 @pytest.fixture

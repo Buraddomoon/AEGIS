@@ -13,6 +13,7 @@ import runner_activation_metadata as metadata
 import runner_pki as pki
 import runner_postgres_origin as pg_origin
 from aegis.domain.validation import digest
+from aegis.lab_runner.network_profile import LEGACY_LINUX_URL
 from runner_activation_intents import _hash, _identifier
 from runner_activation_metadata import ActivationError
 
@@ -116,7 +117,7 @@ def snapshot(
     commit = _current_source(repo, reviewed)
     origin = repo / ".local/linux-lab"
     public, _validity = pki.inventory(origin, current=False)
-    if public["connection"]["url"] != "https://172.30.88.2:8443":
+    if public["connection"]["url"] != LEGACY_LINUX_URL:
         raise ActivationError("diagnostic_integrated_linux_identity_required")
     before = metadata.metadata(images, docker=docker)
     after = metadata.metadata(images, docker=docker)

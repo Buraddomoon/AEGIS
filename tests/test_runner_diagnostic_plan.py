@@ -27,7 +27,7 @@ def diagnostic(prepared, repository, tmp_path, monkeypatch):
     git(repository, "add", ".gitignore")
     git(repository, "commit", "-m", "test: ignore private diagnostic artifacts")
     origin = repository / ".local/linux-lab"
-    plan.pki.initialize(origin)
+    plan.pki.initialize(origin, server_ip="172.30.88.2")
     simulate_build(built, monkeypatch, "native_annotation_only")
     image = plan.image_build.build(built.folder, built.report["plan_sha256"])
     monkeypatch.setattr(plan.image_build, "ROOT", built.folder.parent)

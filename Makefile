@@ -94,7 +94,8 @@ verify-recovered-cycle:
 	@test -n "$(BACKUP_ID)" || (echo 'Use make verify-recovered-cycle BACKUP_ID=<id>'; exit 2)
 	$(VENV)/python scripts/demo_backup.py verify-recovered-cycle "$(BACKUP_ID)"
 
-# Linux lab is opt-in; never started by make up or make test.
+# Linux lab is opt-in; never started by make up or make test. Current Linux
+# address profile is centralized in aegis.lab_runner.network_profile.
 LAB = docker compose --env-file .local/linux-lab/ids.env -f labs/linux/compose.yml
 .PHONY: lab-init lab-config lab-build lab-up lab-preflight lab-inspect lab-smoke lab-down
 lab-init:
@@ -184,12 +185,16 @@ backup-vault-plan:
 # Host-only runner PKI candidates. These commands never activate or start a lab.
 PKI_SOURCE ?= .local/linux-lab
 PKI_OUTPUT ?= .local/pki-candidates
-.PHONY: runner-pki-inspect runner-pki-prepare runner-pki-verify test-runner-pki
+.PHONY: runner-pki-inspect runner-pki-prepare runner-pki-transition runner-pki-verify test-runner-pki
 runner-pki-inspect:
 	$(VENV)/python scripts/runner_pki.py inspect --source "$(PKI_SOURCE)"
 runner-pki-prepare:
 	@test -n "$(PKI_SHA256)" || (echo 'Set PKI_SHA256 from the reviewed public inventory'; exit 2)
 	$(VENV)/python scripts/runner_pki.py prepare --source "$(PKI_SOURCE)" --expected-sha256 "$(PKI_SHA256)" --output-root "$(PKI_OUTPUT)"
+# Offline candidate from legacy Linux .2 to reviewed 192.168.253.2; never applies it.
+runner-pki-transition:
+	@test -n "$(PKI_SHA256)" || (echo 'Set PKI_SHA256 from the reviewed public inventory'; exit 2)
+	$(VENV)/python scripts/runner_pki.py prepare --source "$(PKI_SOURCE)" --expected-sha256 "$(PKI_SHA256)" --output-root "$(PKI_OUTPUT)" --migrate-linux-network
 runner-pki-verify:
 	@test -n "$(PKI_CANDIDATE)" -a -n "$(PKI_SHA256)" || (echo 'Set PKI_CANDIDATE and reviewed manifest PKI_SHA256'; exit 2)
 	$(VENV)/python scripts/runner_pki.py verify --source "$(PKI_SOURCE)" --candidate "$(PKI_CANDIDATE)" --expected-sha256 "$(PKI_SHA256)"

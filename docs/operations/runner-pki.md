@@ -50,6 +50,8 @@ Revise IDs/URL/certificados e guarde o `inventory_sha256`. Depois:
 ```bash
 make runner-pki-prepare PKI_SOURCE=.local/linux-lab PKI_SHA256=HASH_DO_INVENTARIO
 # Retorna candidate_path e manifest_sha256, nunca uma chave privada.
+make runner-pki-transition PKI_SOURCE=.local/linux-lab PKI_SHA256=HASH_DO_INVENTARIO
+# Somente transição explícita legacy Linux .2 → 192.168.253.2; ainda offline.
 make runner-pki-verify PKI_SOURCE=.local/linux-lab \
   PKI_CANDIDATE=.local/pki-candidates/ID_RETORNADO PKI_SHA256=HASH_DO_MANIFESTO
 ```
