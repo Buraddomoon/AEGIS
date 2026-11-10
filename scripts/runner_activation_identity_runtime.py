@@ -6,12 +6,13 @@ from pathlib import Path
 import runner_activation as plan
 import runner_activation_isolated_network as network
 import runner_activation_probe_runtime as probe
+from aegis.lab_runner.network_profile import LINUX_RUNNER_IP
 from aegis.lab_runner.protocol import RunnerIdentity
 from runner_activation_intents import resource
 from runner_activation_metadata import ActivationError, image_id
 from runner_activation_ownership import identifier
 
-IP = "172.30.88.2"
+IP = LINUX_RUNNER_IP
 TMPFS = "rw,noexec,nosuid,nodev,size=16m,mode=0700,uid=10001,gid=10001"
 SECRETS = {
     "/run/secrets/runner_server_key": "runner-server.key",

@@ -4,13 +4,14 @@ import subprocess
 
 import runner_activation_probe_runtime as projection
 from aegis.domain.validation import digest
+from aegis.lab_runner.network_profile import LINUX_GATEWAY, LINUX_SUBNET
 from runner_activation_intents import resource
 from runner_activation_metadata import ActivationError, _execute, document
 from runner_activation_ownership import LABELS, identifier, observe
 
 ROLE = "network-isolated"
-SUBNET = "172.30.88.0/29"
-GATEWAY = "172.30.88.1"
+SUBNET = LINUX_SUBNET
+GATEWAY = LINUX_GATEWAY
 OPTIONS = {"com.docker.network.bridge.gateway_mode_ipv4": "isolated"}
 FORMAT = (
     projection._projection(

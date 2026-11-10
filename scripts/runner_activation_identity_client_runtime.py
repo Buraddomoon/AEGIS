@@ -6,12 +6,13 @@ from pathlib import Path
 import runner_activation as plan
 import runner_activation_identity_runtime as server
 from aegis.domain.validation import digest
+from aegis.lab_runner.network_profile import LINUX_CLIENT_IP
 from runner_activation_intents import IDENTITY_CLIENT_ROLE as ROLE
 from runner_activation_intents import _hash, _identity_parents, resource
 from runner_activation_metadata import ActivationError, image_id
 from runner_activation_ownership import identifier
 
-IP = "172.30.88.3"
+IP = LINUX_CLIENT_IP
 SECRETS = {
     "/run/secrets/controller_server_ca": "server-ca.crt",
     "/run/secrets/controller_client_cert": "runner-client.crt",

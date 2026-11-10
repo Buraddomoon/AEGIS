@@ -191,7 +191,7 @@ def test_closed_result_cannot_upgrade_legacy_claim_activation_hide_uncertainty_o
 ):
     result = probe._result(request_context, "connection_closed_without_tls_reason")
     if scene == "legacy":
-        result["format"] = "aegis-identity-tls-probe/1"
+        result["format"] = "aegis-identity-tls-probe/2"
     elif scene == "integer_bool":
         result["candidate_client_certificate_verified"] = 1
     elif scene == "activation":
@@ -488,7 +488,7 @@ def test_context_is_closed_hashed_and_never_accepts_arbitrary_endpoint_or_execut
     if scene == "url":
         value["url"] = "https://external.invalid/"
     elif scene == "legacy":
-        value["format"] = "aegis-identity-tls-request/1"
+        value["format"] = "aegis-identity-tls-request/2"
     elif scene == "tests":
         value["identity"]["tests"] = ["linux-file-marker/v1"]
     elif scene == "unknown_identity_field":

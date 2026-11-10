@@ -41,6 +41,7 @@ def _snapshot(confirmation):
     old, _ = plan.pki.inventory(source, current=False)
     new, _ = plan.pki.inventory(candidate, current=True)
     manifest = document(plan.pki.read(candidate / "rotation.json", modes=(0o600,)))
+    network_transition = old["connection"]["url"] != new["connection"]["url"]
     if (
         digest(manifest) != artifact["pki"]["manifest_sha256"]
         or manifest.get("source") != old
@@ -54,7 +55,14 @@ def _snapshot(confirmation):
             for key in plan.pki.IDS
         )
         or new["connection"]["url"] != plan.profile()["runner_url"]
-        or old["connection"]["url"] != new["connection"]["url"]
+        or (
+            network_transition
+            and (
+                manifest.get("format") != plan.pki.TRANSITION_FORMAT
+                or old["connection"]["url"] != plan.pki.LEGACY_LINUX_URL
+                or new["connection"]["url"] != plan.pki.LINUX_URL
+            )
+        )
     ):
         raise ActivationError("identity_request_public_pki_drift")
     return old, new

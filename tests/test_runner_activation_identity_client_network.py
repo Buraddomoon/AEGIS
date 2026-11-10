@@ -52,7 +52,7 @@ class World:
                 "Name": self.spec["name"],
                 "EndpointID": "f" * 64,
                 "MacAddress": "02:42:ac:1e:58:03",
-                "IPv4Address": "172.30.88.3/29",
+                "IPv4Address": "192.168.253.3/29",
                 "IPv6Address": "",
             }
         ready.owners["network-isolated"].details["member_count"] = len(self.item["containers"])
@@ -144,13 +144,13 @@ def test_counts_never_substitute_for_exact_owned_members_and_endpoint_configurat
     elif scene == "client_name":
         client["Name"] = "foreign"
     elif scene == "client_ip":
-        client["IPv4Address"] = "172.30.88.4/29"
+        client["IPv4Address"] = "192.168.253.4/29"
     elif scene == "ipv6":
         client["IPv6Address"] = "2001:db8::1/64"
     elif scene == "duplicate_endpoint":
         client["EndpointID"] = runner["EndpointID"]
     elif scene == "server_ip":
-        runner["IPv4Address"] = "172.30.88.3/29"
+        runner["IPv4Address"] = "192.168.253.3/29"
     elif scene == "member_count":
         ready.owners["network-isolated"].details["member_count"] = 1
     elif scene == "client_running":

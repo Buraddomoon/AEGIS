@@ -15,13 +15,14 @@ from pathlib import Path
 from uuid import UUID
 
 from aegis.domain.validation import digest
+from aegis.lab_runner.network_profile import LINUX_RUNNER_IP
 from aegis.lab_runner.protocol import RunnerIdentity
 
-HOST, PORT = "172.30.88.2", 8443
+HOST, PORT = LINUX_RUNNER_IP, 8443
 MAX_INPUT, MAX_RESPONSE = 16384, 32768
 MAX_OUTPUT = 4096
-REQUEST_FORMAT = "aegis-identity-tls-request/2"
-RESULT_FORMAT = "aegis-identity-tls-probe/2"
+REQUEST_FORMAT = "aegis-identity-tls-request/3"
+RESULT_FORMAT = "aegis-identity-tls-probe/3"
 DEADLINE_SECONDS = 12
 FILES = {
     "candidate_server_ca": Path("/run/secrets/controller_server_ca"),

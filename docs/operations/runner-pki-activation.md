@@ -18,7 +18,7 @@ continuidade do volume. Ver [ADR0030](../architecture/decisions/0030-runner-iden
 ## Perfil inicial delimitado
 
 Priorizar o Linux integrado, projeto **aegis-linux-lab**, API loopback18785,
-runner172.30.88.2, arquivos Compose root → linux/compose.yml → linux/platform.yml.
+runner192.168.253.2, arquivos Compose root → linux/compose.yml → linux/platform.yml.
 Não iniciar simultaneamente standalone/integrado com os mesmos IDs/volume.
 Demo18780 e Wazuh ficam fora da intervenção. Primeiro ensaio deve verificar
 confiança/identidade/diário **sem criar marcador**, sem nova campanha/start.
@@ -144,7 +144,7 @@ Substitua os placeholders por hashes reais distintos. Alternativa direta:
 separado da origem/candidato, padrão `.local/pki-activation-plans`; sem exclusões.
 Make sem variáveis completas é recusado, sem tentar descobrir/baixar imagens.
 
-O formato `aegis-runner-activation-plan/2` fixa manifesto/descritores/IDs PKI,
+O formato `aegis-runner-activation-plan/3` fixa manifesto/descritores/IDs PKI,
 hashes dos três Compose, origens esperadas dos secrets individuais, daemon,
 imagens e os dois volumes. Exige ausência de containers **inclusive parados**,
 redes do projeto/nome reservado e consumidores dos volumes de qualquer projeto.
@@ -157,8 +157,10 @@ vincula formato, ID único, criação/expiração, perfil e snapshot completo (i
 commit/PKI/Compose/imagens/daemon/volumes/mounts). Planos iguais com outro ID têm
 escopo diferente. Código alterado/commit novo ou escopo diferente no intent bloqueiam
 recheck; `.env` ignorada não é lida/hasheada pelo planejamento. Campos faltantes no
-snapshot não podem omitir verificações. /1 permanece histórico e não é convertido
-ou reaproveitado como autorização /2, mesmo se alguém recalcular hash externo.
+snapshot não podem omitir verificações. O formato `/2` anterior só pode ser lido
+pelo caminho de cleanup histórico, com integridade/política exatas; nunca compila
+efeitos atuais nem é rehashado para `/3`. Pedidos/resultados do probe também são
+versão `/3` e recusam o formato `/2` anterior.
 
 Cada consulta tem10s e64KiB somados stdout/stderr; excesso/falha mata e recolhe
 somente o filho CLI. Projeções nunca retornam Config.Env, Mountpoint ou inspect

@@ -209,7 +209,7 @@ def test_host_environment_secret_and_network_drift_fail_closed(spec, scene):
     elif scene == "network_id":
         item["endpoints"][0]["id"] = "f" * 64
     elif scene == "ip":
-        item["endpoints"][0]["ip"] = "172.30.88.3"
+        item["endpoints"][0]["ip"] = "192.168.253.3"
     elif scene == "ipv6":
         item["endpoints"][0]["ipv6"] = "2001:db8::1"
     elif scene == "other_network":

@@ -13,6 +13,7 @@ from uuid import UUID, uuid4
 import runner_activation_image_source as tool_source
 import runner_pki as pki
 from aegis.domain.validation import digest
+from aegis.lab_runner.network_profile import LINUX_URL
 from runner_activation_metadata import (
     IMAGES,
     PROJECT,
@@ -23,7 +24,8 @@ from runner_activation_metadata import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-FORMAT = "aegis-runner-activation-plan/2"
+FORMAT = "aegis-runner-activation-plan/3"
+LEGACY_FORMAT = "aegis-runner-activation-plan/2"
 COMPOSE = ("docker-compose.yml", "labs/linux/compose.yml", "labs/linux/platform.yml")
 TTL = timedelta(minutes=15)
 FLAGS = {
@@ -87,15 +89,24 @@ def snapshot_matches(artifact, current):
 
 def profile():
     return {
-        "id": "linux-integrated-pki/1",
+        "id": "linux-integrated-pki/2",
         "project": PROJECT,
         "api_origin": "http://localhost:18785",
-        "runner_url": "https://172.30.88.2:8443",
+        "runner_url": LINUX_URL,
         "compose_files": list(COMPOSE),
         "worker_must_remain_stopped": True,
         "marker_permitted": False,
         "wazuh_permitted": False,
         "executor_implemented": False,
+    }
+
+
+def legacy_profile():
+    """Exact v2 profile retained only for integrity-checked historical cleanup."""
+    return {
+        **profile(),
+        "id": "linux-integrated-pki/1",
+        "runner_url": "https://172.30.88.2:8443",
     }
 
 
@@ -262,10 +273,11 @@ def _load_plan(path, expected_sha256, *, current):
             "scope_sha256",
             *FLAGS,
         }
-        or artifact["format"] != FORMAT
+        or artifact["format"] not in ({FORMAT} if current else {FORMAT, LEGACY_FORMAT})
         or artifact["id"] != path.parent.name
         or UUID(hex=artifact["id"]).hex != artifact["id"]
-        or digest(artifact["profile"]) != digest(profile())
+        or digest(artifact["profile"])
+        != digest(profile() if artifact["format"] == FORMAT else legacy_profile())
         or artifact["status"] != "metadata_plan_requires_authorized_runtime_review"
         or artifact["pending_gates"] != PENDING
         or any(artifact[name] is not False for name in FLAGS)

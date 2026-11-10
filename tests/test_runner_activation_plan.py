@@ -92,6 +92,23 @@ def test_scope_pins_exact_clean_main_commit_and_ignores_untracked_secret_configu
     )
 
 
+def test_new_plan_uses_transitioned_profile_and_old_plan_is_cleanup_only(material, code, tmp_path):
+    prepared, _ = prepare(material, tmp_path)
+    path = Path(prepared["plan_path"])
+    artifact = activation.load_plan(path, prepared["plan_sha256"])
+    assert artifact["format"] == "aegis-runner-activation-plan/3"
+    assert artifact["profile"]["runner_url"] == "https://192.168.253.2:8443"
+
+    artifact["format"] = activation.LEGACY_FORMAT
+    artifact["profile"] = activation.legacy_profile()
+    artifact["scope_sha256"] = activation.scope_digest(artifact)
+    path.write_text(json.dumps(artifact))
+    historical_sha = activation.digest(artifact)
+    assert activation.load_for_cleanup(path, historical_sha) == artifact
+    with pytest.raises(activation.ActivationError, match="plan_policy_mismatch"):
+        activation.load_plan(path, historical_sha)
+
+
 def test_dirty_executor_source_blocks_plan_before_pki_or_daemon_reads(
     material, code, tmp_path, monkeypatch
 ):

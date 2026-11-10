@@ -66,7 +66,7 @@ def test_two_stable_snapshots_have_no_overlap_and_return_only_counts_hashes_and_
     assert "198.51.100.1" not in encoded and "127.0.0.0" not in encoded and OBJECT not in encoded
 
 
-@pytest.mark.parametrize("destination", ["172.30.88.0/29", "172.30.88.2/32", "172.30.0.0/16"])
+@pytest.mark.parametrize("destination", ["192.168.253.0/29", "192.168.253.2/32", "192.168.0.0/16"])
 def test_any_matching_docker_subnet_or_host_route_blocks_without_echo(destination):
     docker = Docker()
     docker.item["config"][0]["Subnet"] = destination
@@ -77,6 +77,13 @@ def test_any_matching_docker_subnet_or_host_route_blocks_without_echo(destinatio
     with pytest.raises(review.ActivationError, match="host_route_overlap") as caught:
         review.review(docker=Docker(), routes=routes)
     assert SECRET not in str(caught.value) and destination not in str(caught.value)
+
+
+def test_existing_qasrc_range_does_not_overlap_the_reviewed_linux_subnet():
+    docker, routes = Docker(), Routes()
+    docker.item["config"][0]["Subnet"] = "172.30.0.0/16"
+    result = review.review(docker=docker, routes=routes)
+    assert result["observed_ipv4_overlap_absent"]
 
 
 @pytest.mark.parametrize(

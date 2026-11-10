@@ -143,7 +143,7 @@ def test_live_overlap_denies_gate_without_create_even_after_an_older_clear_revie
     if source == "docker":
         value.subnet_docker.item["config"] = [{"Subnet": gates.network.SUBNET}]
     else:
-        value.routes.items.append({"dst": "172.30.88.2/32", "table": 101})
+        value.routes.items.append({"dst": "192.168.253.2/32", "table": 101})
     with pytest.raises(gates.ActivationError, match="overlap_observed"):
         invoke(context)
     assert value.evidence == [] and world.effects == []

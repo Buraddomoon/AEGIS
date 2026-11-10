@@ -34,7 +34,7 @@ def test_recipe_only_mounts_three_candidate_files_without_journal_or_execution_c
     store, path, expected_sha = context
     before = store.summary()
     spec = runtime.recipe(store, path, expected_sha)
-    assert spec["identity"]["tests"] == [] and spec["ipv4_address"] == "172.30.88.2"
+    assert spec["identity"]["tests"] == [] and spec["ipv4_address"] == "192.168.253.2"
     assert spec["network_resource_id"] == NETWORK
     assert spec["environment"]["AEGIS_RUNNER_IDENTITY_ONLY"] == "true"
     assert len(spec["mount_sources"]) == 3
@@ -55,7 +55,7 @@ def test_compiler_uses_owned_network_id_fixed_ip_and_readonly_leaf_mounts_withou
     args = runtime.create_arguments(store, path, expected_sha)
     assert args[:2] == ("container", "create")
     assert args[args.index("--network") + 1] == NETWORK
-    assert args[args.index("--ip") + 1] == "172.30.88.2"
+    assert args[args.index("--ip") + 1] == "192.168.253.2"
     assert args[args.index("--pull") + 1] == "never"
     mounts = [args[index + 1] for index, value in enumerate(args) if value == "--mount"]
     assert len(mounts) == 3 and all(value.startswith("type=bind,") for value in mounts)

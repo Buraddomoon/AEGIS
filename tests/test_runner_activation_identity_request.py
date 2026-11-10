@@ -185,8 +185,8 @@ def test_host_request_probe_and_decoder_use_actual_pinned_certificates_over_loop
 
     async def routed(host, requested_port, **kwargs):
         # Test-only TCP route: preserve production TLS name/SAN and both DER pins.
-        assert (host, requested_port) == ("172.30.88.2", 8443)
-        assert kwargs["server_hostname"] == "172.30.88.2"
+        assert (host, requested_port) == ("192.168.253.2", 8443)
+        assert kwargs["server_hostname"] == "192.168.253.2"
         connections.append((host, requested_port))
         return await native_open("127.0.0.1", port, **kwargs)
 

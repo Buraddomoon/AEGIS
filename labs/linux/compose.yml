@@ -11,7 +11,7 @@ services:
       AEGIS_RUNNER_ASSET_ID: ${AEGIS_RUNNER_ASSET_ID:?Run make lab-init}
     networks:
       isolated:
-        ipv4_address: 172.30.88.2
+        ipv4_address: 192.168.253.2
     volumes: [journal:/state]
     tmpfs: ['/work:rw,noexec,nosuid,nodev,size=1m,mode=0700,uid=10001,gid=10001']
     secrets: [runner_server_key, runner_server_cert, runner_client_ca]
@@ -43,7 +43,7 @@ networks:
     driver_opts:
       com.docker.network.bridge.gateway_mode_ipv4: isolated
     ipam:
-      config: [{subnet: 172.30.88.0/29}]
+      config: [{subnet: 192.168.253.0/29, gateway: 192.168.253.1}]
 volumes:
   journal:
 secrets:

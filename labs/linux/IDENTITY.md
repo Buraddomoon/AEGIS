@@ -18,9 +18,9 @@ Somente três recursos próprios do projeto `aegis-linux-lab`:
 
 | Recurso | Perfil fixo |
 | --- | --- |
-| Rede isolada | Bridge interna IPv4 `172.30.88.0/29`, modo `isolated`, sem IPv6 ou portas publicadas. Rotas e redes existentes precisam estar sem sobreposição observada. |
-| Servidor | `172.30.88.2:8443`, UID/GID10001, modo identity-only, allowlist vazia e somente GET de identidade. Três binds RO: chave/certificado do servidor candidato e CA cliente candidata. |
-| Cliente | `172.30.88.3`, processo Python fixo e stdin privado sem TTY. Quatro binds RO: CA servidor/certificado/chave cliente candidatos e somente CA servidor antiga pública. |
+| Rede isolada | Bridge interna IPv4 `192.168.253.0/29`, gateway `.1`, modo `isolated`, sem IPv6 ou portas publicadas. Rotas e redes existentes precisam estar sem sobreposição observada. |
+| Servidor | `192.168.253.2:8443`, UID/GID10001, modo identity-only, allowlist vazia e somente GET de identidade. Três binds RO: chave/certificado do servidor candidato e CA cliente candidata. |
+| Cliente | `192.168.253.3`, processo Python fixo e stdin privado sem TTY. Quatro binds RO: CA servidor/certificado/chave cliente candidatos e somente CA servidor antiga pública. |
 
 Ambos os containers: rootfs RO, capabilities removidas, no-new-privileges,
 192MiB/0,5CPU/16PIDs, tmpfs16MiB, sem restart/healthcheck/volumes anônimos/portas

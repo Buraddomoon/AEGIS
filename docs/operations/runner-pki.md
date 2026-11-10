@@ -9,15 +9,18 @@ reiniciar. Os ensaios Linux/Wazuh anteriores continuam encerrados/autorização 
 
 - Inventário dos quatro certificados e do connection.json, com fingerprints,
   SPKIs públicos, validade UTC, IDs/URL e hash do descritor do backend.
-- Candidato com duas CAs novas e quatro chaves novas/distintas, preservando IDs,
-  endpoint e nomes dos secrets. Nenhuma chave privada antiga é lida/reutilizada.
+- Candidato com duas CAs novas e quatro chaves novas/distintas, preservando IDs
+  e nomes dos secrets. Renovação comum conserva endpoint; a transição explícita
+  move apenas o runner Linux legado para `192.168.253.2`. Nenhuma chave privada
+  antiga é lida/reutilizada.
 - Validação OpenSSL de assinaturas/cadeias, constraints, EKU, SAN/IP/CN, curvaP-256,
   pares privados/públicos e validade. Não há consulta a CA/OCSP/CRL externos.
 - Manifesto privado, canônico/hash, publicação após flush/fsync e verificação
   explícita de drift do material. Nenhum recibo concede operação normal.
 
-A mesma ferramenta aceita a PKI do runner independente172.30.88.2 ou do runner
-no overlay Wazuh172.30.89.2. **Não rotaciona certificados do Indexer, manager,
+A mesma ferramenta aceita PKI do Linux legado172.30.88.2, do runner atual
+192.168.253.2 ou do runner no overlay Wazuh172.30.89.2. **Não rotaciona
+certificados do Indexer, manager,
 agente ou Filebeat**, senhas de integração ou PKI de outros serviços.
 
 ## Requisitos e comandos

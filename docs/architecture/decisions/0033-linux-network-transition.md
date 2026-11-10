@@ -29,6 +29,12 @@ Wazuh e qualquer outro perfil. `verify` valida ambos os formatos sem ativar
 material. O default de `scripts/init_linux_lab.py` usa o runner Linux novo;
 endereços históricos precisam ser solicitados explicitamente.
 
+O Compose Linux integrado, o compilador de rede/runner/cliente e o probe de
+identidade usam o mesmo perfil fixo. Planos de ativação usam formato `/3` e
+pedidos/resultados do probe usam `/3`; o leitor de cleanup aceita o plano `/2`
+original exclusivamente para verificar e encerrar recursos já próprios. O
+preflight de sub-rede continua sendo obrigatório e reavalia redes e rotas atuais.
+
 Novo plano/perfil e protocolo do probe de identidade têm versão própria para
 evitar interpretar pedidos anteriores sob outro IP. Planos antigos não permitem
 efeitos atuais; sua leitura histórica para cleanup continua possível com política

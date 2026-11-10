@@ -95,7 +95,7 @@ def test_client_profile_rejects_shells_unsafe_mounts_networks_or_configuration(s
         else:
             value["mounts"].append({**entry, "target": "/run/secrets/previous_client_key"})
     elif scene in {"ip", "ipv6"}:
-        value["endpoints"][0][scene] = "172.30.88.2" if scene == "ip" else "2001:db8::1"
+        value["endpoints"][0][scene] = "192.168.253.2" if scene == "ip" else "2001:db8::1"
     else:
         value["environment"].append({"key": "SSLKEYLOGFILE", "valid": True})
     with pytest.raises(inspection.ActivationError):
@@ -108,7 +108,7 @@ def test_client_retains_fixed_configuration_when_operational_address_is_released
     inspection.validate(spec, value, CLIENT_ID, "created")
     value["status"] = "exited"
     inspection.validate(spec, value, CLIENT_ID, "exited")
-    value["endpoints"][0]["configured_ip"] = "172.30.88.4"
+    value["endpoints"][0]["configured_ip"] = "192.168.253.4"
     with pytest.raises(inspection.ActivationError, match="network_mismatch"):
         inspection.validate(spec, value, CLIENT_ID, "exited")
 

@@ -32,10 +32,10 @@ fictícia ou declarar runtime verificado. Chaves e senhas não entram no pacote.
 
 Somente o projeto próprio `aegis-linux-lab` e os três papéis dedicados:
 
-1. Uma bridge interna isolada `172.30.88.0/29`, sem IPv6 ou portas publicadas.
-2. Um servidor identity-only em `172.30.88.2:8443`, com allowlist vazia e sem abrir
+1. Uma bridge interna isolada `192.168.253.0/29`, sem IPv6 ou portas publicadas.
+2. Um servidor identity-only em `192.168.253.2:8443`, com allowlist vazia e sem abrir
    runner normal, workspace ou diário.
-3. Um cliente fixo em `172.30.88.3`, para quatro conexões TLS1.3 GET de identidade:
+3. Um cliente fixo em `192.168.253.3`, para quatro conexões TLS1.3 GET de identidade:
    material candidato; sem certificado cliente; CA servidor antiga pública;
    material candidato novamente.
 

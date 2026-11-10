@@ -62,7 +62,7 @@ def test_member_count_alone_cannot_adopt_foreign_or_changed_endpoints(spec, brid
     elif scene == "name":
         entry["Name"] = "foreign-container"
     elif scene == "address":
-        entry["IPv4Address"] = "172.30.88.3/29"
+        entry["IPv4Address"] = "192.168.253.3/29"
     elif scene == "ipv6":
         entry["IPv6Address"] = "2001:db8::1/64"
     elif scene == "endpoint":

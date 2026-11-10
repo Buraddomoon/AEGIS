@@ -37,7 +37,7 @@ def test_recipe_mounts_only_candidate_client_and_previous_public_ca_on_fixed_ip(
     before = ready.store.summary()
     spec = client.recipe(ready.store, ready.path, ready.sha, CONTEXT)
     artifact = client.plan.load_plan(ready.path, ready.sha)
-    assert spec["ipv4_address"] == "172.30.88.3"
+    assert spec["ipv4_address"] == "192.168.253.3"
     assert spec["network_resource_id"] == "c" * 64
     assert spec["image"] == artifact["metadata"]["images"]["runner"]["id"]
     assert spec["stdin_open"] is True and spec["user"] == "10001:10001"
@@ -66,7 +66,7 @@ def test_compiler_requires_new_role_and_produces_fixed_pipe_without_tty_or_free_
     ready.store.request(client.ROLE)
     args = invoke(ready)
     assert args[:2] == ("container", "create")
-    assert args[args.index("--ip") + 1] == "172.30.88.3"
+    assert args[args.index("--ip") + 1] == "192.168.253.3"
     assert args[args.index("--network") + 1] == "c" * 64
     assert "--interactive" in args and args[args.index("--pull") + 1] == "never"
     assert not {"--tty", "--publish", "--volume", "--env-file", "--privileged", "--init"} & set(

@@ -73,8 +73,8 @@ def test_compiler_requires_new_intent_and_has_no_configurable_network_surface(st
     for option, value in (
         ("--driver", "bridge"),
         ("--scope", "local"),
-        ("--subnet", "172.30.88.0/29"),
-        ("--gateway", "172.30.88.1"),
+        ("--subnet", "192.168.253.0/29"),
+        ("--gateway", "192.168.253.1"),
         ("--ipam-driver", "default"),
     ):
         assert args[args.index(option) + 1] == value

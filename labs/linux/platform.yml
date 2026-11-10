@@ -20,14 +20,14 @@ services:
     networks:
       backend: {}
       ingress: {}
-      isolated: {ipv4_address: 172.30.88.4}
+      isolated: {ipv4_address: 192.168.253.4}
     restart: 'no'
   worker:
     environment: *linux-env
     secrets: [controller_server_ca, controller_client_cert, controller_client_key, controller_connection]
     networks:
       backend: {}
-      isolated: {ipv4_address: 172.30.88.5}
+      isolated: {ipv4_address: 192.168.253.5}
     restart: 'no'
   db:
     restart: 'no'
