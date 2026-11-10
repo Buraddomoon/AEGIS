@@ -13,6 +13,11 @@ identificadores e limites da análise, para que outra pessoa consiga verificá-l
 marcador benigno; pipeline Wazuh validado em um ensaio próprio encerrado. O
 repositório permanece **privado**. Não é SIEM, EDR ou shell remoto.
 
+Para desenvolver em sessões independentes, escolha uma entrega no
+[índice de issues](https://github.com/Buraddomoon/AEGIS/issues/1) e use o
+[guia de sessão](docs/development/session-workflow.md). O chat anterior não é
+necessário; cada issue delimita a entrega, subissues, dependências e aceite.
+
 ![Dashboard real do Demo, com dados sintéticos identificados](docs/images/overview.png)
 
 ## Executar localmente
