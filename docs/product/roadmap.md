@@ -3,6 +3,12 @@
 Código atual0.2.0. Os números abaixo organizam marcos funcionais; não são tags ou
 GitHub Releases publicadas. Ver [aceite por escopo](acceptance-criteria.md).
 
+Pendências inventariadas em10/11/2026 agora são executadas por
+[issues/subissues independentes](https://github.com/Buraddomoon/AEGIS/issues/1).
+Use o [mapa por requisito](backlog-sessions.md) e o
+[guia de sessão](../development/session-workflow.md). Trechos datados abaixo
+preservam a evolução histórica; decisões novas e bloqueadores ficam nas issues.
+
 ## 0.1 — Demo persistente
 
 Fundação, fluxo completo, evidências, interface, relatórios e comparações. Testes locais e de navegador, Compose e documentação. O aceite é desse escopo, não de toda a plataforma futura.
