@@ -4556,3 +4556,61 @@ npm audit zero achados. Nova imagem e backup permanecem preparados, API/worker
 ainda não recriados nem banco Demo migrado. Source-review do commit478ºbca50af
 42673301984SUCCESS. Guardar CI remota como pendência externa explícita; validação
 local integral é alternativa verificável, sem alegar CI verde ou reduzir testes.
+
+
+## 2026-11-10 — relatórios automáticos concluídos e implantados
+
+Fonte executável0609ad2, alterações posteriores documentais/PNG fora do runtime.
+Validação complementar dos3062casos, mesmo particionador e sem filtros:
+
+| Grupo | Ambiente | Passaram | Skips opcionais | Tempo pytest |
+| --- | --- | --- | --- | --- |
+| 0 | local | 788 | 1 | 414,74s |
+| 1 | GitHub | 681 | 1 | 839,88s |
+| 2 | local | 801 | 0 | 421,58s |
+| 3 | local | 790 | 0 | 376,84s |
+| Total | complementar | **3060** | **2** | execução local sequencial |
+
+Logs/exits0 conferidos em.local/scheduled-reports/full-test-result.json.
+React88/14arquivos, lint/build e E2E5runs/20Demo/2snapshots/4PDFs/zeroerrosJS
+já aprovados nessa fonte; não somar regressões sobrepostas. Prova adicional do
+papel SQL runtime em banco descartável:1passed/3,94s, incluindo publicação/PDF e
+negação de DELETE/UPDATE de origem/documento final. Auditoria mantém o achado
+DiskCache revisado; npm sem achados. Não afirmar ausência de vulnerabilidades.
+
+CI42671146994 permanece FAILURE, só grupo1 executado. Usuário confirmou aviso
+“Internal server error”, correlationID e6a1e75e-97aa-4415-982b-f6da9520983e.
+Demais grupos foram complementados localmente; não reduzir checks ou declarar
+workflow aprovada. Source-review42676081615 sobre d475e02 passou.
+
+Backup pré-migração32tabelas/3399linhas preservado, dumpSHA conferido. Essa cópia
+continua created_not_yet_verified: não foi ensaiada sua restauração. Migração
+aditiva b7f3c2d91a06 e grants apenas da tabela nova aplicados exclusivamente ao
+Demo. Inventários RR/READONLY antes/depois:33tabelas/3399linhas, dados existentes
+idênticos salvo alembic_version, tabela nova vazia; sem seed/reset de contas.
+
+API e worker atualizados para imagem
+b8abe5e44af4bad90d2e302a045f38fb9cf268932be5ea0493fc72f078657a23.
+Check implantado salvo em.local/scheduled-reports/deployed-check.json: nove
+módulos instalados iguais à fonte, rotas OpenAPI novas presentes, JS servido
+igual ao da imagem, ACL restrita conferida, heartbeat worker e readiness DB/Redis.
+As23runsCOMPLETED antigas permanecem; PDF histórico68266bytes gerado em snapshot
+somente leitura sem alterar o relatório. Não foi criada campanha/conta no Demo
+em uso; fluxo autenticado completo foi exercitado pelo E2E descartável.
+DB/Redis/migrate mantiveram IDs/imagens/estado. Readiness reconferido em10/11.
+
+Imagem anterior9e3fe0c... preservada nas tags locais dedicadas já registradas;
+nova tag aegis-scheduled-reports-validated:20261109 aponta para b8abe5e....
+Container de smoke ausente; nenhum volume Linux/Wazuh migrado, nenhuma rede qasrc,
+PKI/binding ou autorização real alterada. Relatórios disponíveis em
+Agendamentos → Detalhes → Relatórios automáticos, para novas ocorrências, sem
+backfill. **Etapa encerrada**,12commits desde468º; hash final conferido no Git.
+
+Usuário pediu concluir esta pendência e retomar laboratório real. A retomada
+permite implementação/preparação, preservando qasrc; novos efeitos reais exigem
+escopo específico. Corrigida a comunicação anterior: já existe ensaio Wazuh real
+COMPLETED/DETECTED/CLEANED em22/10 (docs/evidence/wazuh-2026-10-22). A pendência
+atual é identidade mTLS nativa/ativação coordenada após expiração da PKI, bloqueada
+pela faixa172.30.88.0/29 dentro da qasrc172.30.0.0/16; não a ausência total de
+integração real. Próximo trabalho é remover esse conflito na configuração AEGIS,
+sem tocar redes existentes nem reaproveitar autorizações consumidas.

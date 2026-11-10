@@ -1,6 +1,9 @@
 # ADR0032 — Relatórios automáticos de ocorrências Demo
 
-Data:2026-11-09. Estado: em implementação. Sem nova dependência, serviço, acesso
+Data:2026-11-09. Estado: implementado, testado e implantado no Demo; fechamento
+em2026-11-10. Validação complementar local/GitHub registrada no PROGRESS;
+a workflow remota integral falhou por erro interno e não é declarada aprovada.
+Sem nova dependência, serviço, acesso
 SIEM, execução Linux ou mudança dos limites/aprovações do agendamento.
 
 Cada ocorrência Demo efetivamente emitida solicita um documento na mesma transação

@@ -58,8 +58,11 @@ Cobrem upgrade, constraints, publicação concorrente, rollback, backoff, fonte/
 reaprovação, ausência legada, estado terminal, contexto, hash, permissões e PDF.
 Frontend: `scheduled-reports.test.tsx`; E2E usa duas ocorrências com cadência real
 de60s e confere snapshots congelados após edição Sigma, PDF automático e tela390px.
-Estado da rodada integral remota em PROGRESS; resultado da CI anterior não valida
-esse incremento com nova migração/worker/API/UI.
+Fechamento10/11 na fonte0609ad2:3060passaram/2skips opcionais, complementando
+grupo1 no GitHub com grupos0/2/3 locais sequenciais pelo mesmo particionador,
+sem filtros. React88/14arquivos; E2E5runs/20Demo/2snapshots/4PDFs/zeroerrosJS.
+Workflow42671146994 integral permanece failure por erro interno; não chamar esse
+resultado misto de CI verde. Contagens/tempos e implantação constam no PROGRESS.
 
 PDF: `pytest tests/test_pdf_reporting.py tests/test_pdf_api.py -q` lê documentos
 gerados com parser independente e exercita a API sobre PostgreSQL real.
