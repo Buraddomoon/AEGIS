@@ -1,5 +1,13 @@
 # ÆGIS — instruções de engenharia
 
+Escopo mais recente10/11: usuário pediu encerrar relatórios automáticos e retomar
+laboratório real. Preparar/testar transição do Linux para192.168.253.0/29 conforme
+ADR0033 está autorizado; qasrc permanece intacta. A decisão anterior de adiar não
+impede esse trabalho de código. Não iniciar ensaio por essa mensagem genérica;
+pacote/plano/CI e aprovação específica continuam necessários. Preservar PKI,
+volumes, evidências, fences e leitura histórica de cleanup; nenhum schema Lab
+migrado nem aplicação Demo nova sobre banco Lab antigo implicitamente.
+
 Estado de autorização em 2026-10-22: o único ensaio Wazuh autorizado foi
 **executado e encerrado**, run 987bd48f-fafc-4a34-bf2a-2d310e7ca794. COMPLETED/
 DETECTED/CLEANED, uma execução; laboratório revogado, contas desativadas, senhas
