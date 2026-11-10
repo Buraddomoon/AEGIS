@@ -40,9 +40,13 @@ Somente o projeto próprio `aegis-linux-lab` e os três papéis dedicados:
    material candidato novamente.
 
 Imagem runner fixada:
-`sha256:526267ad8a54df12ffe130724874bb79bcdbb6ecb61345afe3a1ddc1d3085be5`.
-Build `5ccbca482dd649b58f90b89d85c4d885`, recibo canônico
-`dfa0b726b3c21ab35610bbd2af86c15c03ec45426ce81ca0b12e644f550d8e70`.
+`sha256:b5ae5340f417ef3fce7ce25f8ec07d2dd92545b3a34d6db1982ac37fb108c593`.
+Build `d5ec67c458cd4553bafc4e9aeee6bb4a`, plano de build canônico
+`7aeffb3551ffe321e58a458d1e00a7a253be12557b1fffd9a680dcd63194833e`, recibo canônico
+`6b68d3e97c4150b4afd5dc6218c20f21aa7bf66f0bf28654b2c65bdf076fefac`.
+Fonte executável `f0c95b2f6cdb62fb7da219cbe93a18807838758d`, com
+[evidência de preparação](../../docs/evidence/identity-image-2026-11-10/README.md).
+Imagem e recibo de30/10 permanecem preservados como histórico.
 Isso é prova local de build/fonte, sem assinatura de publisher ou prova TLS nativa.
 
 Containers UID/GID10001, rootfs RO, caps removidas, no-new-privileges, limite de

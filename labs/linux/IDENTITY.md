@@ -1,11 +1,13 @@
 # Ensaio de identidade mTLS antes da rotação
 
-Estado em 2026-11-05: coordenador e CLIs de execução/revisão/cleanup implementados;
-CI42091266302 aprovada. Validação automatizada usa PKI/Git temporários e RPCs
-simuladas. **O ensaio nativo ainda não foi realizado nem autorizado.** O preflight
-recusou sobreposição com a rede Docker `qasrc`; o usuário determinou preservá-la
-e concluir somente as correções. Este documento não concede permissão para
-iniciar recursos. Os ensaios históricos não podem ser repetidos.
+Estado em 2026-11-10: coordenador e CLIs de execução/revisão/cleanup implementados;
+CI42873241181 aprovada para a fonte f0c95b2, incluindo quatro partições Python e
+React. A entrega #2 alinhou o perfil à rede `192.168.253.0/29`, preservando `qasrc`.
+O bloqueio observado em05/11 referia-se à faixa antiga e permanece como histórico;
+a faixa atual exige nova inspeção local antes de qualquer efeito. Validação
+automatizada usa PKI/Git temporários, loopback e RPCs simuladas.
+**O ensaio nativo ainda não foi realizado nem autorizado.** Este documento não
+concede permissão para iniciar recursos. Os ensaios históricos não podem ser repetidos.
 
 ## Objetivo e limites
 
@@ -39,8 +41,9 @@ aplicação Demo e os recursos de outros projetos permanecem preservados.
 3. Candidato PKI novo e válido, separado da origem, com IDs e URL fixos. Não
    reutilizar o candidato expirado ou modificar arquivos de ensaios anteriores.
 4. Imagem runner selada e revisada, com pacote/dependências correspondentes ao
-   código atual. O build histórico disponível está registrado na
-   [evidência da imagem](../../docs/evidence/identity-image-2026-10-30/README.md);
+   código atual. O build preparado para a issue #45 está registrado na
+   [evidência da imagem atual](../../docs/evidence/identity-image-2026-11-10/README.md);
+   a [imagem de30/10](../../docs/evidence/identity-image-2026-10-30/README.md) é histórica;
    build verificado não comprova runtime mTLS.
 5. Projeto sem recursos preexistentes, nomes reservados livres e consumidores
    globais dos dois volumes originais ausentes. Imagens/daemon/volumes conferidos
@@ -102,10 +105,13 @@ protocolo nos testes não são evidência de TLS nativo.
 
 ## O que permanece pendente
 
-O ensaio nativo está bloqueado pela sobreposição de rede observada em 05/11.
-Nenhuma alteração da rede ou do subnet está autorizada nesta rodada. Uma futura
-intervenção exige decisão sobre esse bloqueio, material/plano atuais e autorização
-específica; CI aprovada não a substitui. Não usar imports Python manuais para
+As subissues seguem a ordem #45 (imagem e pacote concreto), #46 (revisão e
+autorização específica) e #47 (uma tentativa e seu encerramento). A correção de
+perfil entregue em #2 não comprova ausência atual de sobreposição no host.
+O pacote precisa incluir `runner_activation.py recheck` e a revisão somente
+leitura de rotas/redes, além da prova selada e da CI do código utilizado.
+Sem pacote vigente e aprovação humana específica, #46/#47 permanecem pendentes;
+CI aprovada não substitui autorização. Não usar imports Python manuais para
 contornar o procedimento. A ativação real de PKI/binding permanece uma etapa
 separada e precisa também de imagem de aplicação atual, plano e aprovação próprios.
 
@@ -208,3 +214,6 @@ inspeção/intervenção próprio; não contorne os checks com Docker rm manual.
 Escopo operacional para revisão humana:
 [ensaio único de identidade](IDENTITY-ASSAY.md). Pacote privado com candidato,
 plano, hashes e CI precisa ser concluído antes da solicitação de autorização.
+O plano tem validade de15min. Se expirar durante a revisão humana, preservar o
+plano e preparar outro pacote, com novos hashes e nova revisão, antes de executar;
+não renovar o TTL ou reaproveitar aprovação de outro escopo.
