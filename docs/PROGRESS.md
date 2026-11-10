@@ -4700,3 +4700,30 @@ consumida, sem retry. Eventual nova tentativa exige outro pacote/plano e aprova�
 Pins, resultado real e limites na
 [evidência do ensaio](evidence/identity-assay-2026-11-10/README.md).
 Esta atualização é documental; nenhuma outra entrega foi iniciada.
+
+## 2026-11-10 — identidade nova observada e encerramento conferido (#3)
+
+Corrigidos parsing público repetido/diagnósticos descartados (f49f987) e enumeração
+vazia do descritor aberto antes das gravações no Btrfs (fd729fd).345testes locais
+na primeira correção e90relacionados na última, sem somar repetições. CI integral
+42889684349 do código fd729fd e source-review42889684314 aprovadas, incluindo os
+quatro jobs Python e React; sem filtros/exclusões ou aumento dos prazos.
+
+Tentativa final recebeu novo pacote e aprovação humana própria. Operação
+99102954ab604580ac570878325855c4: cliente/servidor autenticaram com certificados
+novos em TLS1.3, identidade/DER conferidos e positivo repetido; CA anterior
+recusada. Controle sem certificado terminou em EOF sem razão TLS verificável,
+mantido **inconclusivo**. Recibo `identity_assay_inconclusive_and_closed`, exit1,
+error=null, artifact_inventory_verified=true. Revisão dos14registros passou,
+sem transformar esse exit0 de integridade em aprovação de todos os controles TLS.
+
+Cleanup confirmado: dois containers e bridge removidos,18eventos/3recursos ABSENT,
+projeto vazio e volumes sem consumidores. Metadados de volumes/imagens, PKI pública
+original, qasrc e Demo preservados. Sem marker, DB/Wazuh, montagem dos volumes,
+ativação de PKI/binding ou operação normal. Registros/fences anteriores preservados.
+Aceite da entrega restrito à identidade positiva demonstrada e encerramento,
+mantendo explicitamente o controle negativo inconclusivo. Nenhuma outra entrega
+iniciada; autorizações consumidas, sem outra tentativa.
+
+Pins, testes, limites e recibo proporcional às evidências:
+[resultado final](evidence/identity-assay-2026-11-10/final-authorized-attempt.md).

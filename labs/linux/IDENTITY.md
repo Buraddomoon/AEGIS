@@ -1,19 +1,19 @@
 # Ensaio de identidade mTLS antes da rotação
 
 Estado em 2026-11-10: coordenador e CLIs de execução/revisão/cleanup implementados;
-CI42873241181 aprovada para a fonte f0c95b2, incluindo quatro partições Python e
+CI42889684349 aprovada para a fonte fd729fd, incluindo quatro partições Python e
 React. A entrega #2 alinhou o perfil à rede `192.168.253.0/29`, preservando `qasrc`.
 O bloqueio observado em05/11 referia-se à faixa antiga e permanece como histórico;
 a faixa atual exige nova inspeção local antes de qualquer efeito. Validação
 automatizada usa PKI/Git temporários, loopback e RPCs simuladas.
-Uma tentativa nativa foi autorizada em10/11 e encerrou com falha na etapa do
-cliente; os dois containers e a bridge foram removidos. A segunda, com novo
-pacote/autorização, autenticou com os certificados novos e encerrou os recursos,
-mas teve controle sem cliente inconclusivo e falha no inventário. **A confirmação
-integral do ensaio e de seus registros permanece pendente.**
-Ver [resultado e limitações](../../docs/evidence/identity-assay-2026-11-10/README.md).
-Este documento não concede permissão para iniciar recursos. A autorização foi
-consumida; o plano e os registros dessa tentativa não podem ser reutilizados.
+Após corrigir duas falhas, a tentativa final autorizada autenticou cliente e
+servidor com os certificados novos em TLS1.3, confirmou os14 registros e removeu
+os dois containers e a bridge. Resultado `identity_assay_inconclusive_and_closed`:
+o controle sem cliente terminou em EOF sem motivo TLS verificável e permanece
+inconclusivo. Não apresentar esse resultado como todos os controles verificados.
+Ver [evidência final e limites](../../docs/evidence/identity-assay-2026-11-10/final-authorized-attempt.md).
+Este documento não concede permissão para iniciar recursos. As autorizações foram
+consumidas; planos e registros dessas tentativas não podem ser reutilizados.
 
 ## Objetivo e limites
 
@@ -109,19 +109,13 @@ Registro parcial ou armazenamento falho nunca autoriza avançar/repetir. Hash n�
 é assinatura nem proteção contra um proprietário local malicioso. Fixtures de
 protocolo nos testes não são evidência de TLS nativo.
 
-## O que permanece pendente
+## Resultado da entrega e limites
 
 As subissues seguem a ordem #45 (imagem e pacote concreto), #46 (revisão e
 autorização específica) e #47 (uma tentativa e seu encerramento). A correção de
 perfil entregue em #2 não comprova ausência atual de sobreposição no host.
 O pacote precisa incluir `runner_activation.py recheck` e a revisão somente
 leitura de rotas/redes, além da prova selada e da CI do código utilizado.
-Em10/11, #45 e #46 foram concluídas; a tentativa única de #47 falhou e foi
-encerrada com ausência dos recursos próprios confirmada. A causa exata da falha
-do cliente não consta no código estático do recibo; os controles TLS não foram
-confirmados. O recibo declara inventário de artefatos não verificado e a CLI de
-revisão recusa confirmação integral; não promover registros individuais válidos
-a prova completa. #47 e o pai #3 permanecem abertos para diagnóstico.
 O [diagnóstico posterior](../../docs/development/identity-assay-diagnostics.md)
 descreve a correção do parsing repetido e dos códigos descartados. Recibos
 novos /2 incluem diagnósticos fechados; a revisão mantém compatibilidade com /1
@@ -131,6 +125,13 @@ autenticou com os certificados novos, com controle sem cliente inconclusivo por
 EOF. Terminou com cleanup confirmado e falha no inventário; o diagnóstico
 identificou enumeração vazia pelo descritor antigo no Btrfs. O leitor foi
 corrigido e validado sem outro start; os recibos históricos continuam recusados.
+Depois dessa correção, outro pacote recebeu autorização própria. A tentativa
+final confirmou autenticação com material novo e integridade dos14 registros;
+cleanup e inventário posterior confirmaram ausência dos recursos. O recibo final
+mantém controle sem certificado inconclusivo por EOF, error=null e inventário
+verificado. #47/#3 entregam essa comprovação positiva delimitada, sem atestar
+todos os controles TLS ou permitir operação normal. As falhas anteriores foram
+preservadas e não são promovidas a registros íntegros por esse resultado novo.
 Nova tentativa exige outro pacote/plano, rechecks e autorização específica;
 CI aprovada não substitui autorização. Não usar imports Python manuais para
 contornar o procedimento. A ativação real de PKI/binding permanece uma etapa

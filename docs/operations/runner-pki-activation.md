@@ -4,18 +4,19 @@ Este documento descreve uma intervenção futura de ativação completa, ainda n
 executada. `runner_pki.py` oferece inspect/prepare/verify e `runner_activation.py`
 oferece **plan/recheck somente de metadados**, sem apply de rotação. O diagnóstico
 separado de banco/diário foi executado e encerrado em29/10; o ensaio identity-only
-tem CLI própria e teve uma tentativa autorizada em10/11, com falha na etapa do
-cliente e recursos próprios removidos. A identidade nativa permanece sem
-comprovação; [resultado e limitações](../evidence/identity-assay-2026-11-10/README.md).
+tem CLI própria e concluiu uma tentativa final autorizada em10/11 com autenticação
+dos certificados novos, registros íntegros e recursos removidos. O controle sem
+cliente permaneceu inconclusivo por EOF; não declarar todos os controles TLS
+verificados. [Resultado e limites](../evidence/identity-assay-2026-11-10/final-authorized-attempt.md).
 Esses estados não equivalem à ativação.
 As autorizações anteriores estão consumidas; um commit/push não concede nova
 aprovação. Ver [estado consolidado](../product/roadmap.md).
 
 Para a conferência mTLS inicial, o servidor agora oferece um modo de identidade
-sem Runner/Journal/Workspace, sem rotas de jobs e com allowlist vazia. Ainda não
-foi implantado nem validado em container próprio. Sua imagem e coordenador já
-foram preparados/testados; em05/11, o preflight foi bloqueado por sobreposição de
-rede e o usuário determinou preservá-la. Não confundir identidade com prontidão de execução ou
+sem Runner/Journal/Workspace, sem rotas de jobs e com allowlist vazia. Foi validado
+em containers próprios temporários, já removidos, sem implantação operacional.
+O bloqueio de sobreposição observado em05/11 foi tratado pelo perfil novo, mantendo
+qasrc. Não confundir identidade com prontidão de execução ou
 continuidade do volume. Ver [ADR0030](../architecture/decisions/0030-runner-identity-only.md).
 
 ## Perfil inicial delimitado

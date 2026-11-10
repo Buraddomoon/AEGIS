@@ -10,6 +10,12 @@ encerrou com falha no cliente e cleanup confirmado. Ver o
 Os limites abaixo não concedem outra tentativa; eventual repetição exige novo
 plano/pacote, revisão e autorização específica, sem alterar o histórico anterior.
 
+Uma tentativa final recebeu pacote/autorização próprios após as correções e
+confirmou autenticação com certificados novos, integridade dos14 registros e
+cleanup. Resultado inconclusivo para o controle sem cliente por EOF, mantido sem
+promoção; [evidência final](../../docs/evidence/identity-assay-2026-11-10/final-authorized-attempt.md).
+Todas as autorizações estão consumidas; este escopo não libera outra tentativa.
+
 ## Precondições verificáveis
 
 - Código executável da `main` corresponde à CI aprovada: quatro jobs Python e
