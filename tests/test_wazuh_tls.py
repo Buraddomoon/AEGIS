@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import httpx
 import pytest
 from aegis.integrations.wazuh import WazuhIndexerProvider
+from aegis.lab_runner.network_profile import LINUX_RUNNER_IP
 from httpcore._backends.anyio import AnyIOBackend
 
 initialize = runpy.run_path("scripts/init_linux_lab.py")["initialize"]
@@ -64,7 +65,7 @@ def indexer_tls(tmp_path, monkeypatch):
 @pytest.mark.parametrize("condition", ["trusted", "untrusted_ca", "wrong_hostname"])
 def test_default_httpx_transport_verifies_ca_and_original_sni(indexer_tls, condition):
     port, pki = indexer_tls
-    hostname = "indexer.invalid" if condition == "wrong_hostname" else "172.30.88.2"
+    hostname = "indexer.invalid" if condition == "wrong_hostname" else LINUX_RUNNER_IP
     ca = None if condition == "untrusted_ca" else str(pki / "server-ca.crt")
     provider = WazuhIndexerProvider(
         f"https://{hostname}:{port}",
