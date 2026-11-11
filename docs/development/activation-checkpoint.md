@@ -10,14 +10,15 @@ Trabalho em `/home/IVPTER/AEGIS`; os cinco arquivos locais da outra cópia
 | Issue | Estado desta sessão |
 |---|---|
 | #48 | Preparação/testes entregues; aberta, falta backup/restore/upgrade em clone do original |
-| #49 | Revisão SQL/diário e núcleo de coordenação entregues; aberta, falta factory nativa de runtime/lifecycle após #48 |
+| #49 | Núcleo e executor nativo implementados/testados; fechamento técnico após revisão/CI do complemento; execução depende de #48/#51 |
 | #50 | Implementação API/UI concluída e fechada com evidência de testes; sem binding/preflight original implantado |
 | #51 | Procedimento/casos de falha preparados; aberta, falta ensaio nativo autorizado |
 | #4 | Aberta, aguardando gates anteriores e aceite conjunto |
 
-O núcleo não expõe CLI apply. O perfil continua executor_implemented=false.
-Callback/runtime de fixture não prova mount físico, isolamento ou ownership.
-Sucesso interno não concede activation_verified ou normal_operation_permitted.
+O plano de metadados anterior continua executor_implemented=false; o executor
+nativo tem CLI/pacote próprios, sem ampliar autorizações antigas. Seu código
+verifica mounts, isolamento e ownership; testes com daemon simulado não comprovam
+ensaio real. O núcleo interno anterior continua sem prova de runtime nativo.
 
 ## Commits sincronizados
 
@@ -27,8 +28,9 @@ Sucesso interno não concede activation_verified ou normal_operation_permitted.
 - `8399ad3`: `feat(runner): coordinate one-use rotation review and revoked binding (Refs #49, Refs #51)`.
 - `19c9eec`: `test(linux): preserve populated receipts and approvals through restore (Refs #48)`.
 
-Última fonte executável:8399ad3.19c9eec só reforça os documentos de teste de
-schema. Nenhum build/deploy de imagem do Lab ou Demo foi feito; build frontend
+Na primeira etapa, a fonte executável era8399ad3;19c9eec reforçou os documentos de
+teste de schema. O complemento nativo inclui295b8b8 e a consolidação seguinte.
+Até este checkpoint, nenhum build/deploy de imagem do Lab ou Demo foi feito; build frontend
 foi somente validação local. Imagens históricas, PKI, volumes, journals, candidatos
 e fences preservados. Nenhum Linux/Wazuh/marker real iniciado ou qasrc alterada.
 
@@ -74,7 +76,16 @@ da #48”, e [compatibilidade](../operations/linux-schema-compatibility.md).
 em mount read-only, iniciar PostgreSQL somente nos clones e testar restore/upgrade
 ali. A issue genérica não autoriza essa intervenção; os originais não foram
 abertos nesta sessão. Não iniciar a rotação real antes dessa evidência e da
-factory nativa revisada. O diário original nem entra nessa primeira proposta.
+pacote nativo revisado. O diário original nem entra nessa primeira proposta.
+
+O complemento da #49 está em `scripts/runner_rotation.py` (prepare/run/cleanup),
+`runner_rotation_native.py` (lifecycle concreto), `runner_rotation_package.py`
+(pins, evidência de clone e confirmação), `runner_rotation_runtime.py` (receitas e
+inspeção projetada) e `aegis.lab_runner.rotation_probe` (cinco fases fechadas).
+Os testes usam revisores SQL/SQLite reais em temporários e Docker/TLS simulados;
+o controle de trust anterior distingue issuer/path de expiração/EOF. Ver
+[operação nativa](../operations/runner-native-rotation.md). Não afirmar execução
+nativa a partir de resultados de fixtures ou da disponibilidade da CLI.
 
 Comentários por unidade preservam evidências e limites:
 [#48](https://github.com/Buraddomoon/AEGIS/issues/48#issuecomment-6805894478),

@@ -68,6 +68,10 @@ def recipe(c, role, context_sha256=None, *, policy_root):
     candidate = c.artifact["candidate_path"]
     selected = SERVER_SECRETS if runner else SECRETS
     mounts = {target: candidate + "/" + name for target, name in selected.items()}
+    if role == "rotation-identity-before":
+        mounts["/run/secrets/rotation_previous_server_ca"] = (
+            c.artifact["source_path"] + "/server-ca.crt"
+        )
     if any(any(ch in source for ch in (",", "\n", "\r", "\0")) for source in mounts.values()):
         raise ActivationError("rotation_runtime_secret_path_invalid")
     environment = {"LANG": "C.UTF-8", "TMPDIR": "/tmp"}

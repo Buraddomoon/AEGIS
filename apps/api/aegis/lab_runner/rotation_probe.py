@@ -3,6 +3,8 @@
 import argparse
 import json
 import os
+import socket
+import ssl
 import stat
 import sys
 from datetime import UTC, datetime
@@ -20,6 +22,22 @@ MODES = ("review-before", "identity-before", "binding", "preflight", "review-aft
 LIMIT = 4 * 1024**2
 STATE = Path("/state")
 CONNECTION = Path("/run/secrets/controller_connection")
+PREVIOUS_CA = Path("/run/secrets/rotation_previous_server_ca")
+
+
+def previous_trust_rejected(config):
+    """Only an issuer/path rejection proves this control; expiry/EOF are insufficient."""
+    context = ssl.create_default_context(cafile=str(PREVIOUS_CA))
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    context.load_cert_chain(str(config.client_cert), str(config.client_key))
+    try:
+        with socket.create_connection(("192.168.253.2", 8443), timeout=2) as raw:
+            with context.wrap_socket(raw, server_hostname="192.168.253.2"):
+                return False
+    except ssl.SSLCertVerificationError as error:
+        # OpenSSL path-building failures; do not attribute certificate expiry,
+        # transport errors or an ambiguous EOF to rejection of the old trust.
+        return error.verify_code in {18, 19, 20, 21}
 
 
 def decode(raw, expected):
@@ -171,10 +189,16 @@ def execute(value):
         try:
             if remote.preflight() != identity:
                 raise ValueError("rotation_admin_remote_identity_mismatch")
+            if not previous_trust_rejected(linux_labs.connection()):
+                raise ValueError("rotation_admin_previous_trust_unconfirmed")
         finally:
             remote.close()
         _guard(value)
-        return {"candidate_identity_verified": True, "jobs_requested": False}
+        return {
+            "candidate_identity_verified": True,
+            "previous_server_trust_rejected": True,
+            "jobs_requested": False,
+        }
     engine = _engine(value["database_password"], mode in {"binding", "preflight"})
     try:
         with engine.connect() as connection:

@@ -212,7 +212,17 @@ test-linux-schema-compatibility:
 # Internal core only: disposable PG/SQLite and fixture runtime/TLS. No Lab startup.
 .PHONY: test-runner-rotation
 test-runner-rotation:
-	$(VENV)/pytest tests/test_runner_rotation_coordinator.py tests/test_runner_activation_review.py tests/test_linux_binding_rotation.py -q
+	$(VENV)/pytest tests/test_runner_rotation_coordinator.py tests/test_runner_rotation_native.py tests/test_runner_activation_review.py tests/test_linux_binding_rotation.py -q
+
+# Preparation reads metadata/provenance only; run is a separate specifically authorized action.
+.PHONY: runner-rotation-prepare runner-rotation-run runner-rotation-cleanup
+runner-rotation-prepare:
+	$(VENV)/python scripts/runner_rotation.py prepare --base-plan "$(ACTIVATION_PLAN)" --base-sha256 "$(ACTIVATION_SHA256)" --review-input "$(ROTATION_REVIEW_INPUT)"
+runner-rotation-run:
+	@test "$(ROTATION_CONFIRM_NATIVE)" = yes
+	$(VENV)/python scripts/runner_rotation.py run --package "$(ROTATION_PACKAGE)" --expected-sha256 "$(ROTATION_SHA256)" --authorized-package-sha256 "$(ROTATION_AUTHORIZED_SHA256)" --confirm-native-rotation
+runner-rotation-cleanup:
+	$(VENV)/python scripts/runner_rotation.py cleanup --package "$(ROTATION_PACKAGE)" --expected-sha256 "$(ROTATION_SHA256)" --operation-id "$(ROTATION_OPERATION_ID)" --begin-sha256 "$(ROTATION_BEGIN_SHA256)"
 
 # Read-only host metadata planning. No activation/lifecycle command is exposed.
 .PHONY: runner-activation-plan runner-activation-recheck test-runner-activation

@@ -11,7 +11,9 @@ verificados. [Resultado e limites](../evidence/identity-assay-2026-11-10/final-a
 Esses estados não equivalem à ativação.
 O [procedimento de ensaio](../../labs/linux/ACTIVATION-ASSAY.md) registra o
 núcleo interno de rotação, os gates nativos ainda ausentes e a intervenção
-de clone que precisa antecedê-los. Não existe CLI apply nativa de rotação.
+de clone que precisa antecedê-los. A CLI separada `runner_rotation.py` agora
+implementa o executor nativo sob pacote/escopo próprios; permanece sem ensaio
+real autorizado. [Gates, fluxo e limites](runner-native-rotation.md).
 Compatibilidade a0/b7, estratégia de clone/backup e limites de rollback:
 [revisão de schema Linux](linux-schema-compatibility.md). A preparação testada
 não substitui backup atual dos volumes originais nem autoriza sua abertura.
@@ -75,7 +77,8 @@ parcial deve falhar mTLS, sem verify=false ou confiança dupla como fallback.
 
 Os targets Make de lifecycle ainda selecionam o ids.env original. **Não usar up/smoke
 como executor de rotação.** Plan/recheck já fixam hashes/perfil/ambiente e verificam
-metadados; falta implementar o executor com gates internos e fechamento no finally.
+metadados. A CLI separada de rotação calcula gates internos e fecha no finally;
+não há ativação implícita nos targets existentes.
 Não sobrepor lab.env Wazuh com ids.env Linux: os projetos têm PKIs/segredos distintos.
 
 ## Ordem e pontos de interrupção
@@ -121,8 +124,9 @@ de handshake/diário não é evidência de detecção, ingestão SIEM ou retomad
 Estado atual: diagnóstico separado dos volumes originais foi **verificado e
 encerrado em2026-10-29**, conforme [evidência](../evidence/diagnostic-2026-10-29/README.md).
 É uma revisão histórica, não uma licença permanente para ativar PKI. Contratos de
-rede/lifecycle/preflight estão implementados, sem create nativo; integração do
-executor completo, gates e ensaio de rotação continuam pendentes.
+rede/lifecycle/preflight e executor nativo estão implementados/testados por
+fixtures; pacote operacional, compatibilidade do original e ensaio real continuam
+pendentes. Nenhum create nativo de rotação foi executado nesta sessão.
 
 ## Harness de metadados executável
 
@@ -355,11 +359,12 @@ observada antes da tentativa de create fica em CONFLICT durável, sem adoção o
 cleanup posterior, inclusive após resume. Sem desbloqueio automático ou edição
 do histórico. Start ambíguo não é repetido, e interrupção mantém cleanup próprio.
 
-Ainda faltam coordenador completo e implementação real dos gates/transporte do
-snapshot PostgreSQL,
-vínculo físico do banco original, mTLS novo/recusa do trust anterior, registro
-revogado e escopo específico de um ensaio. Não executar componentes manualmente
-para contornar esses gates. [ADR0023](../architecture/decisions/0023-journal-probe-runtime.md).
+Esses contratos históricos foram integrados ao executor nativo com gates de
+ownership/runtime/PKI e helpers administrativos fechados. Sua implementação não
+substitui a compatibilidade/backup do original e o escopo específico do ensaio.
+Não executar componentes manualmente para contornar gates; usar o pacote próprio
+da [rotação nativa](runner-native-rotation.md).
+[ADR0023](../architecture/decisions/0023-journal-probe-runtime.md).
 
 Rechecagem durante a operação está disponível somente como componente interno:
 `runner_activation_active_plan.recheck` mantém PKI/Compose/inventário fixados e

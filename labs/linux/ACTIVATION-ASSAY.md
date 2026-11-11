@@ -1,20 +1,22 @@
 # Ensaio de ativação — preparação da issue4
 
-Estado em11/11/2026: **não executado nem autorizado**. O núcleo interno já pode
-ser exercitado em fixtures, mas não existe factory nativa de runtime de rotação
-revisada. Não invocar helpers de lifecycle manualmente para contornar esse gate.
-`runner_activation.py` continua expondo somente plan/recheck e seu perfil mantém
-`executor_implemented=false`. Nenhuma autorização da issue3 é reaproveitável.
+Estado em11/11/2026: **não executado nem autorizado**. O núcleo e a adaptação
+nativa têm código/testes; a CLI separada `runner_rotation.py` exige pacote próprio
+aprovado, evidência real da #48 e banco já compatível. Não invocar helpers de
+lifecycle manualmente para contornar gates. O plano antigo `runner_activation.py`
+continua somente plan/recheck, sem ampliar autorizações retroativamente. Nenhuma
+autorização da issue3 é reaproveitável. Ver
+[coordenador nativo](../../docs/operations/runner-native-rotation.md).
 
 ## Dependências, em ordem
 
 1. #48: [compatibilidade a0/b7](../../docs/operations/linux-schema-compatibility.md).
    Upgrade, restore e grants de fixture passaram. Falta backup atual do original,
    restore/upgrade em clone dele e revisão de proveniência da imagem administrativa.
-2. #49: integração SQL/diário e núcleo `runner_rotation_coordinator.execute`
-   implementados; factory nativa de runtime/mounts/lifecycle ainda pendente.
-   Essa factory depende da estratégia validada na #48. Não substituir gates por
-   JSON ou chamar `PreparedRuntime` de evidência física.
+2. #49: integração SQL/diário, núcleo e executor nativo com gates de
+   runtime/mounts/lifecycle implementados/testados. Preparação do pacote operacional
+   depende da prova real de clone da #48 e de schema/grants compatíveis no alvo.
+   Não substituir gates por JSON ou chamar fixture de evidência física.
 3. #50: registro transacional revogado, comparação da revisão sob lock, preflight
    sensível a mudança concorrente e fingerprints na UI implementados/testados.
    Binding real do Lab não foi modificado. Aprovações, scopes e provas preservados.
@@ -83,8 +85,8 @@ Escopo proposto para aprovação específica posterior:
    não remover volumes, qasrc ou serviços alheios. Falha não concede retry.
 
 Sem aprovação específica dessa intervenção, o bloqueio permanece registrado nas
-issues. Depois da evidência da #48 será possível fixar factory/imagem/schema do
-ensaio de rotação e apresentar seu pacote próprio. Não aprovar implicitamente
+issues. Depois da evidência da #48 será possível fixar imagem/schema e preparar
+o pacote próprio do executor nativo. Não aprovar implicitamente
 etapas posteriores nem migrar o original para satisfazer os testes.
 
 ## Ensaio nativo de rotação posterior
