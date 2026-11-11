@@ -209,6 +209,11 @@ test-binding-review:
 test-linux-schema-compatibility:
 	$(VENV)/pytest tests/test_linux_schema_compatibility.py -q
 
+# Internal core only: disposable PG/SQLite and fixture runtime/TLS. No Lab startup.
+.PHONY: test-runner-rotation
+test-runner-rotation:
+	$(VENV)/pytest tests/test_runner_rotation_coordinator.py tests/test_runner_activation_review.py tests/test_linux_binding_rotation.py -q
+
 # Read-only host metadata planning. No activation/lifecycle command is exposed.
 .PHONY: runner-activation-plan runner-activation-recheck test-runner-activation
 runner-activation-plan:
