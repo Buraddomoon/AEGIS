@@ -16,6 +16,17 @@ from runner_activation_metadata import PROJECT, ActivationError, document
 FORMAT = "aegis-activation-resource-event/1"
 DATABASE_REVIEW_ROLES = frozenset({"database-review-before", "database-review-after"})
 IDENTITY_CLIENT_ROLE = "identity-client"
+ROTATION_HELPERS = frozenset(
+    "rotation-" + mode
+    for mode in (
+        "review-before",
+        "identity-before",
+        "binding",
+        "preflight",
+        "review-after",
+    )
+)
+ROTATION_RUNNERS = frozenset({"rotation-runner-before", "rotation-runner-after"})
 ROLES = frozenset(
     (
         "db",
@@ -26,6 +37,8 @@ ROLES = frozenset(
         "journal-before",
         "journal-after",
         *DATABASE_REVIEW_ROLES,
+        *ROTATION_HELPERS,
+        *ROTATION_RUNNERS,
         "network-backend",
         "network-ingress",
         "network-isolated",
@@ -83,7 +96,11 @@ def _dependents(role, owned):
     if role.startswith("network-"):
         return {key for key in owned if not key.startswith("network-")}
     if role == "db":
-        return {"api", *DATABASE_REVIEW_ROLES}
+        return {"api", *DATABASE_REVIEW_ROLES, *ROTATION_HELPERS}
+    if role == "rotation-runner-before":
+        return {"rotation-identity-before"}
+    if role == "rotation-runner-after":
+        return {"rotation-preflight"}
     if role == "runner":
         return {"api", IDENTITY_CLIENT_ROLE}
     return {"api"} if role == "redis" else set()
@@ -128,6 +145,22 @@ def _apply(state, event, identifier):
         return
     if state["header"] is None:
         raise ActivationError("intent_header_required")
+    if kind == "rotation_scope_confirmed":
+        if (
+            "rotation_scope" in state
+            or state["resources"]
+            or set(data) != {"package_sha256", "expires_at"}
+        ):
+            raise ActivationError("intent_rotation_scope_invalid_or_replay")
+        _hash(data["package_sha256"])
+        stamp = datetime.fromisoformat(data["expires_at"])
+        at = datetime.fromisoformat(event["at"])
+        if stamp.utcoffset() != timedelta(0) or not timedelta(0) < stamp - at <= timedelta(
+            seconds=240
+        ):
+            raise ActivationError("intent_rotation_scope_expiration_invalid")
+        state["rotation_scope"] = data
+        return
     owned = state["resources"]
     if kind == "closed":
         if set(data) != {"evidence_sha256"} or any(
@@ -146,6 +179,8 @@ def _apply(state, event, identifier):
         # New work must not resurrect dependents during/after their dependency's
         # cleanup. Journal probes are network=none in the future fixed profile.
         parents = {"db", "redis", "runner"} if role == "api" else set()
+        if role in ROTATION_HELPERS | ROTATION_RUNNERS and "rotation_scope" not in state:
+            raise ActivationError("intent_rotation_scope_required")
         if role == IDENTITY_CLIENT_ROLE:
             _identity_parents(owned)
             parents |= {"runner", "network-isolated"}
@@ -158,7 +193,15 @@ def _apply(state, event, identifier):
             ):
                 raise ActivationError("intent_observed_database_required")
             parents.add("db")
-        if role in {"db", "redis", "api", "runner"}:
+        if role in ROTATION_HELPERS:
+            database = owned.get("db", {})
+            if (
+                database.get("state") != "OBSERVED"
+                or database.get("start", {}).get("mode") != "rotation"
+            ):
+                raise ActivationError("intent_rotation_database_required")
+            parents.add("db")
+        if role in {"db", "redis", "api", "runner", *ROTATION_RUNNERS}:
             parents |= {key for key in owned if key.startswith("network-")}
         if any(
             key in owned and owned[key]["state"] in {"REMOVAL_REQUESTED", "ABSENT", "CONFLICT"}
@@ -194,6 +237,35 @@ def _apply(state, event, identifier):
         if item["state"] == "REQUESTED":
             item["state"] = "OBSERVED"
         item["resource_id"] = data["resource_id"]
+    elif kind == "rotation_start_requested":
+        if (
+            role not in {"db", *ROTATION_HELPERS, *ROTATION_RUNNERS}
+            or "rotation_scope" not in state
+            or set(data) != {"role", "recipe_sha256", "gates_sha256"}
+            or item["state"] != "OBSERVED"
+            or item["resource_id"] is None
+            or "start" in item
+        ):
+            raise ActivationError("intent_rotation_start_invalid_or_replay")
+        _hash(data["recipe_sha256"])
+        _hash(data["gates_sha256"])
+        item["state"] = "START_REQUESTED"
+        item["start"] = {
+            "mode": "rotation",
+            "recipe_sha256": data["recipe_sha256"],
+            "gates_sha256": data["gates_sha256"],
+        }
+    elif kind == "rotation_runtime_observed":
+        if (
+            role not in {"db", *ROTATION_HELPERS, *ROTATION_RUNNERS}
+            or set(data) != {"role", "runtime_evidence_sha256"}
+            or item["state"] != "START_REQUESTED"
+            or item.get("start", {}).get("mode") != "rotation"
+        ):
+            raise ActivationError("intent_rotation_runtime_invalid")
+        _hash(data["runtime_evidence_sha256"])
+        item["state"] = "OBSERVED"
+        item["runtime_evidence_sha256"] = data["runtime_evidence_sha256"]
     elif kind == "database_start_requested":
         if (
             set(data) != {"role", "recipe_sha256", "gates_sha256", "policy_sha256"}

@@ -3,10 +3,19 @@
 import subprocess
 
 from aegis.domain.validation import digest
-from runner_activation_intents import ROLES, resource
+from runner_activation_intents import ROLES, ROTATION_HELPERS, ROTATION_RUNNERS, resource
 from runner_activation_metadata import IMAGES, ActivationError, _execute, image_id
 from runner_activation_ownership import identifier, observe
 
+ROTATION_ORDER = (
+    "rotation-review-after",
+    "rotation-preflight",
+    "rotation-binding",
+    "rotation-identity-before",
+    "rotation-review-before",
+    "rotation-runner-after",
+    "rotation-runner-before",
+)
 ORDER = (
     "identity-client",
     "api",
@@ -22,6 +31,7 @@ ORDER = (
     "network-isolated",
 )
 IMAGE_ROLE = {
+    **dict.fromkeys(ROTATION_HELPERS | ROTATION_RUNNERS, "runner"),
     "identity-client": "runner",
     "api": "application",
     "runner": "runner",
@@ -115,7 +125,7 @@ def cleanup(store, images, *, roles=None, close_operation=True, docker=None, own
             reconciled.append({"role": role, "effect": kind})
         return after
 
-    for role in ORDER:
+    for role in (*ROTATION_ORDER, *ORDER):
         if role not in selected:
             continue
         try:

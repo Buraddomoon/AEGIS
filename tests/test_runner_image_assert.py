@@ -219,6 +219,7 @@ runner_image_assert.probe_imports()
 assert 'aegis.config' not in sys.modules
 assert 'aegis.models' not in sys.modules
 assert 'aegis.lab_runner.identity_probe' in sys.modules
+assert 'aegis.lab_runner.rotation_probe' in sys.modules
 assert 'aegis.lab_runner.server' in sys.modules
 assert 'aegis.lab_runner.tls_peer' in sys.modules
 """,

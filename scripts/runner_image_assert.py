@@ -147,6 +147,7 @@ def probe_imports():
         "aegis.lab_runner.journal_probe",
         "aegis.lab_runner.persisted_probe",
         "aegis.lab_runner.identity_probe",
+        "aegis.lab_runner.rotation_probe",
         "aegis.lab_runner.server",
     ):
         importlib.import_module(module)
