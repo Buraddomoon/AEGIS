@@ -16,13 +16,21 @@ from aegis.lab_runner import activation_review as reviews
 from aegis.lab_runner.persisted_probe import _unique
 from aegis.lab_runner.protocol import TEST_ID, RunnerIdentity
 
-FORMAT = "aegis-rotation-admin-request/2"
-RESULT = "aegis-rotation-admin-result/2"
+FORMAT = "aegis-rotation-admin-request/3"
+RESULT = "aegis-rotation-admin-result/3"
 MODES = ("review-before", "identity-before", "binding", "preflight", "review-after")
 LIMIT = 4 * 1024**2
 STATE = Path("/state")
 CONNECTION = Path("/run/secrets/controller_connection")
 PREVIOUS_CA = Path("/run/secrets/rotation_previous_server_ca")
+TABLES = frozenset(
+    "alembic_version approvals assets attack_techniques audit_events campaign_runs "
+    "campaign_tests campaigns detection_evidence detection_rules execution_steps "
+    "lab_verifications laboratories linux_lab_bindings rule_versions runner_cleanups "
+    "runner_dispatches runner_receipts schedule_authorizations schedule_occurrences "
+    "schedules sessions telemetry_events test_definitions test_executions users "
+    "validation_results".split()
+)
 
 
 def previous_trust_rejected(config):
@@ -202,11 +210,11 @@ def execute(value):
     engine = _engine(value["database_password"], mode in {"binding", "preflight"})
     try:
         with engine.connect() as connection:
-            # This closed entrypoint uses only a0 relations. It is not a general
-            # current API/worker image and must never query b7 scheduling tables.
+            # The actual retained Lab predates a0: exactly the d446 relation set.
+            # These closed helpers do not load the normal API/worker entrypoints.
             _require_schema(connection, "public")
-            if "scheduled_reports" in inspect(connection).get_table_names():
-                raise ValueError("rotation_admin_a0_profile_required")
+            if set(inspect(connection).get_table_names()) != TABLES:
+                raise ValueError("rotation_admin_d446_profile_required")
         descriptor = (
             value["new_descriptor_sha256"]
             if mode in {"preflight", "review-after"}

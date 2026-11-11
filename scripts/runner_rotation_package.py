@@ -16,8 +16,7 @@ from runner_activation_intents import _hash
 from runner_activation_metadata import ActivationError
 
 ROOT = base.ROOT / ".local/pki-rotation-packages"
-FORMAT = "aegis-native-rotation-package/2"
-LEGACY_FORMAT = "aegis-native-rotation-package/1"
+FORMAT = "aegis-native-rotation-package/3"
 PROFILE_B7 = {
     "id": "linux-native-pki-rotation/1",
     "executor_implemented": True,
@@ -39,16 +38,25 @@ PROFILE_B7 = {
     "seed_permitted": False,
     "normal_operation_permitted": False,
 }
-PROFILE = PROFILE_B7 | {
+PROFILE_A0 = PROFILE_B7 | {
     "id": "linux-native-pki-rotation/2",
     "schema_required": "a0d9c7e21b45",
     "compatibility": "closed-administrative-helpers-only",
     "normal_api_supported": False,
     "worker_supported": False,
 }
+PROFILE = PROFILE_A0 | {
+    "id": "linux-native-pki-rotation/3",
+    "schema_required": "d4465b7aca2a",
+}
+PROFILES = {
+    "aegis-native-rotation-package/1": PROFILE_B7,
+    "aegis-native-rotation-package/2": PROFILE_A0,
+    FORMAT: PROFILE,
+}
 
 
-def backup_evidence(value, expected_sha256, artifact):
+def backup_evidence(value, expected_sha256, artifact, *, source_schema="d4465b7aca2a"):
     _hash(expected_sha256)
     fields = {
         "format",
@@ -69,7 +77,7 @@ def backup_evidence(value, expected_sha256, artifact):
         or digest(value) != expected_sha256
         or value["format"] != "aegis-linux-schema-clone-evidence/1"
         or value["source_volume_sha256"] != digest(artifact["metadata"]["volumes"]["postgres-data"])
-        or value["source_schema"] != "a0d9c7e21b45"
+        or value["source_schema"] != source_schema
         or value["clone_schema"] != "b7f3c2d91a06"
         or any(
             value[k] is not True
@@ -153,8 +161,8 @@ def load(path, expected, *, current=True):
             "actor_id",
             "registration",
         }
-        or value["format"] not in ({FORMAT} if current else {FORMAT, LEGACY_FORMAT})
-        or digest(value["profile"]) != digest(PROFILE if value["format"] == FORMAT else PROFILE_B7)
+        or value["format"] not in ({FORMAT} if current else PROFILES)
+        or digest(value["profile"]) != digest(PROFILES[value["format"]])
         or UUID(hex=value["id"]).hex != value["id"]
         or path.parent.name != value["id"]
         or path.name != "package.json"
@@ -162,7 +170,12 @@ def load(path, expected, *, current=True):
         raise ActivationError("rotation_package_integrity_or_profile_invalid")
     loader = base.load_plan if current else base.load_for_cleanup
     artifact = loader(Path(value["base_plan_path"]), value["base_plan_sha256"])
-    backup_evidence(value["clone_evidence"], value["clone_evidence_sha256"], artifact)
+    backup_evidence(
+        value["clone_evidence"],
+        value["clone_evidence_sha256"],
+        artifact,
+        source_schema="d4465b7aca2a" if value["format"] == FORMAT else "a0d9c7e21b45",
+    )
     if value["expires_at"] != artifact["expires_at"]:
         raise ActivationError("rotation_package_deadline_changed")
     schemas.LinuxRegistration.model_validate(value["registration"])

@@ -20,6 +20,7 @@ from test_binding_review import history
 
 OLD = "a0d9c7e21b45"
 CURRENT = "b7f3c2d91a06"
+HISTORICAL = "d4465b7aca2a"
 
 
 def receipt_history(identity):
@@ -122,6 +123,47 @@ def test_populated_a0_upgrade_is_additive_and_original_proofs_remain_valid(bindi
             result = binding_review.review(db, lab)
             assert result["blockers"] == [] and result["dispatches_examined"] == 2
             assert not lab.authorized
+    finally:
+        command.upgrade(config, "head")
+
+
+def test_actual_historical_schema_upgrade_preserves_every_original_column(binding_lab, pg_engine):
+    _, identity = binding_lab
+    receipt_history(identity)
+    config = Config("alembic.ini")
+    command.downgrade(config, HISTORICAL)
+    try:
+        with pg_engine.connect() as connection:
+            before = inventory(connection)
+            assert len(before) == 26  # Actual retained Lab: 27 including Alembic.
+            columns = {
+                table: {c["name"] for c in inspect(connection).get_columns(table)}
+                for table in before
+            }
+            grants = [row for row in privileges(connection) if row[0] in before]
+        command.upgrade(config, CURRENT)
+        command.check(config)
+        with pg_engine.connect() as connection:
+            for table, rows in before.items():
+                extra = sorted(
+                    {c["name"] for c in inspect(connection).get_columns(table)} - columns[table]
+                )
+                expression = "(to_jsonb(t)-CAST(:extra AS text[]))::text"
+                actual = (
+                    connection.execute(
+                        text(f'SELECT {expression} FROM ONLY "{table}" t ORDER BY {expression}'),
+                        {"extra": extra},
+                    )
+                    .scalars()
+                    .all()
+                )
+                assert actual == rows
+            after = inventory(connection)
+            assert all(not after[table] for table in after.keys() - before.keys())
+            assert [row for row in privileges(connection) if row[0] in before] == grants
+        with session_factory()() as db:
+            lab = db.get(Laboratory, identity["laboratory_id"])
+            assert binding_review.review(db, lab)["blockers"] == []
     finally:
         command.upgrade(config, "head")
 

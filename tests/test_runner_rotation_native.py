@@ -35,7 +35,7 @@ def native_package(world, tmp_path):
     evidence = {
         "format": "aegis-linux-schema-clone-evidence/1",
         "source_volume_sha256": digest(artifact["metadata"]["volumes"]["postgres-data"]),
-        "source_schema": "a0d9c7e21b45",
+        "source_schema": "d4465b7aca2a",
         "clone_schema": "b7f3c2d91a06",
         "backup_sha256": "a" * 64,
         "restored_inventory_sha256": "b" * 64,
@@ -390,7 +390,7 @@ def daemon(world, monkeypatch, tmp_path):
     from alembic.config import Config
 
     config = Config("alembic.ini")
-    command.downgrade(config, "a0d9c7e21b45")
+    command.downgrade(config, "d4465b7aca2a")
     try:
         yield Daemon(world, monkeypatch, tmp_path)
     finally:
@@ -617,11 +617,12 @@ def test_native_help_does_not_run_or_prepare_anything(monkeypatch):
     assert result.value.code == 0
 
 
-def test_a0_native_profile_refuses_b7_without_implicit_downgrade(daemon):
+@pytest.mark.parametrize("revision", ["a0d9c7e21b45", "b7f3c2d91a06"])
+def test_d446_native_profile_refuses_newer_schema_without_implicit_downgrade(daemon, revision):
     from alembic import command
     from alembic.config import Config
 
-    command.upgrade(Config("alembic.ini"), "head")
+    command.upgrade(Config("alembic.ini"), revision)
     report = daemon.client.execute()
     assert not report["activation_verified"]
     assert report["binding_commit_state"] == "not_requested"
@@ -658,6 +659,22 @@ def test_native_profile_rejects_integer_substitution_even_with_recomputed_outer_
     value = json.loads(path.read_bytes())
     value["profile"]["executor_implemented"] = 1
     path.write_text(json.dumps(value))
+    with pytest.raises(native.ActivationError, match="profile_invalid"):
+        package.load(path, digest(value))
+
+
+@pytest.mark.parametrize("version,profile", [(1, package.PROFILE_B7), (2, package.PROFILE_A0)])
+def test_historical_profiles_are_cleanup_only_without_rewriting_their_scope(
+    world, tmp_path, version, profile
+):
+    path, _ = native_package(world, tmp_path)
+    value = json.loads(path.read_bytes())
+    value["format"] = f"aegis-native-rotation-package/{version}"
+    value["profile"] = profile
+    value["clone_evidence"]["source_schema"] = "a0d9c7e21b45"
+    value["clone_evidence_sha256"] = digest(value["clone_evidence"])
+    path.write_text(json.dumps(value))
+    assert package.load(path, digest(value), current=False)[0] == value
     with pytest.raises(native.ActivationError, match="profile_invalid"):
         package.load(path, digest(value))
 

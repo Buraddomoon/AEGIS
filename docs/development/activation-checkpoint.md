@@ -1,104 +1,76 @@
 # Checkpoint da issue4 — 11/11/2026
 
-Escopo: #4 e seus quatro filhos nativos, sem descendentes adicionais. Dependência
-nativa #3 confirmada fechada. Somente main, commits pequenos e push direto.
-Trabalho em `/home/IVPTER/AEGIS`; os cinco arquivos locais da outra cópia
-`/home/IVPTER/codes/aegis` foram preservados e não entraram nos commits.
+Escopo: #4 e seus quatro filhos nativos, sem descendentes adicionais. #3 fechada.
+Trabalho em `/home/IVPTER/AEGIS`, main com push direto; os cinco arquivos da outra
+cópia `/home/IVPTER/codes/aegis` permanecem intactos.
 
-## Entregue e pendente
+## Estado atual
 
-| Issue | Estado desta sessão |
+| Issue | Evidência e pendência |
 |---|---|
-| #48 | Preparação/testes entregues; aberta, falta backup/restore/upgrade em clone do original |
-| #49 | Núcleo e executor nativo implementados/testados; fechamento técnico após revisão/CI do complemento; execução depende de #48/#51 |
-| #50 | Implementação API/UI concluída e fechada com evidência de testes; sem binding/preflight original implantado |
-| #51 | Procedimento/casos de falha preparados; aberta, falta ensaio nativo autorizado |
-| #4 | Aberta, aguardando gates anteriores e aceite conjunto |
+| #48 | Backup frio real, restore/upgrade em clone e grants verificados; versão real d446/27tabelas, corrigindo inventário a0 anterior |
+| #49 | Núcleo, executor concreto e perfil fechado v3/d446 implementados/testados; aguardar CI final |
+| #50 | API/UI concluídas e issue fechada; registro mantém revogação e preflight separado |
+| #51 | Preparação em andamento; falta executar e revisar ensaio nativo com pacote próprio |
+| #4 | Aberta até aceite do conjunto, sem avançar para outra entrega |
 
-O plano de metadados anterior continua executor_implemented=false; o executor
-nativo tem CLI/pacote próprios, sem ampliar autorizações antigas. Seu código
-verifica mounts, isolamento e ownership; testes com daemon simulado não comprovam
-ensaio real. O núcleo interno anterior continua sem prova de runtime nativo.
+## Evidência real da #48
 
-## Commits sincronizados
+Autorização desta conversa após apresentar o escopo de cópia read-only e clones.
+O original `aegis-linux-lab_postgres-data` foi montado somente RO/nocopy por um
+helper sem rede. Cópia fria51.434.896bytes/1.439entradas, inventários fonte e
+backup idênticos. Original nunca iniciou PostgreSQL nem recebeu migração.
+Journal original não foi montado nessa etapa.
 
-- `df5f5ef`: `test(linux): rehearse a0 to b7 upgrade and isolated restore (Refs #48)`.
-- `9f31e48`: `feat(runner): join persisted and journal continuity reviews (Refs #49)`.
-- `c99e14d`: `feat(linux): retain revoked bindings and show current trust (Refs #50)`.
-- `8399ad3`: `feat(runner): coordinate one-use rotation review and revoked binding (Refs #49, Refs #51)`.
-- `19c9eec`: `test(linux): preserve populated receipts and approvals through restore (Refs #48)`.
+A revisão real encontrou `d4465b7aca2a`,27tabelas, em vez de a0 presumido.
+Dump custom PG17 privado397.998bytes, SHA256
+`4ef1bc67cdb7013198c76890685eab8f59785683226aa32b001900379ef5e969`.
+Restore preservou todas as linhas/colunas, contas, verificadores e ACLs efetivas.
+Upgrade explícito somente no clone para b7/33tabelas, `alembic check`, seis novas
+tabelas vazias e todas as colunas/valores antigos preservados. Grants mínimos
+verificados somente no clone, sem alteração de senha.
 
-Na primeira etapa, a fonte executável era8399ad3;19c9eec reforçou os documentos de
-teste de schema. O complemento nativo inclui295b8b8 e a consolidação seguinte.
-Até este checkpoint, nenhum build/deploy de imagem do Lab ou Demo foi feito; build frontend
-foi somente validação local. Imagens históricas, PKI, volumes, journals, candidatos
-e fences preservados. Nenhum Linux/Wazuh/marker real iniciado ou qasrc alterada.
+Evidência canônica SHA256
+`f6ded75cdfe08dbdc3d24d439681babd749869d0dda44d0d1209bbd11da2635a`.
+Recibo privado em `.local/linux-schema-clones/1947140a2cd4411d81b9e686ff21358c`;
+dump/globals em bce29bd182564212ad88173d4b9fe61f. Preparações intermediárias
+falharam de forma fechada (normalização CAP_CHOWN, hipótese de schema, bootstrap
+PG/ACL e envelope stdout Alembic). Ledgers/volumes preservados; nenhuma nova cópia
+do original após a primeira cópia verificada. Cleanup final comprovado, intents
+fechados, ambos originais sem consumidores. Ver
+[compatibilidade](../operations/linux-schema-compatibility.md).
 
-## Verificações reais
+## Código e verificações
 
-Todas as suítes PostgreSQL/Redis15 foram sequenciais, com configuração de
-desenvolvimento existente fornecida ao processo. O `.env` desta cópia tinha
-credencial desatualizada; o primeiro teste falhou em autenticação antes de criar
-schema. Não houve reset/rotação de senha nem alteração do arquivo para contornar.
+Commits anteriores sincronizados: df5f5ef,9f31e48,c99e14d,8399ad3,19c9eec,
+54f61b0,295b8b8,5e91afc,0c08332. O complemento atual fixa pacote/perfil v3/d446,
+sem API normal, worker ou migração. Pacotes v1/b7 e v2/a0 só permitem cleanup
+histórico, sem conversão de escopo. Imagem de fonte0c08332 foi apenas preparada,
+ainda não construída; preparar nova fonte após commit do perfil real.
 
-- `pytest tests/test_linux_schema_compatibility.py -q`: **3passed/4,10s**, última
-  rodada, dump/restore PG17 executado, sem skip. Schema aleatório/populado com
-  scopes, aprovação usada, recibo e cleanup; comparação de todas as linhas e
-  ACLs antigas, migração aditiva e grants em papel NOLOGIN descartável.
-- `pytest tests/test_runner_rotation_coordinator.py tests/test_runner_activation_review.py tests/test_linux_binding_rotation.py tests/test_linux_schema_compatibility.py tests/test_runner_diagnostic_gates.py tests/test_runner_diagnostic_coordinator.py -q`:
-  **70passed/65,31s**. A rodada de schema acima reforçou depois a fixture de
-  receipts/approvals; não somar os casos repetidos.
-- `pytest tests/test_linux_binding_rotation.py tests/test_binding_review.py tests/test_linux_campaigns.py -q`:
-  **72passed/72,43s**. Sobrepõe os seis casos de binding do grupo anterior.
-- `pytest tests/test_runner_pki_generation.py tests/test_runner_pki.py tests/test_runner_pki_tls.py tests/test_runner_journal_continuity.py tests/test_runner_persisted_review.py tests/test_runner_journal_probe.py tests/test_runner_persisted_probe.py -q`:
-  **229passed/23,55s**, incluindo TLS de loopback e continuidade em temporários.
-- React: suíte completa **91passed/15arquivos**; tipos/build/format aprovados.
-  Rodada dirigida de21casos é subconjunto, não contagem adicional.
-- Ruff lint/format globais, mypy, diff e scripts check_staged/check_release
-  aprovados. Aviso upstream Starlette/TestClient-httpx continua visível.
+PG/Redis15 sequenciais, credenciais existentes fornecidas somente ao processo;
+`.env` da cópia ativa desatualizado não foi alterado/resetado.
 
-CI de c99e14d: [43089994373](https://github.com/Buraddomoon/AEGIS/actions/runs/43089994373)
-SUCCESS, quatro Python e React conferidos:3.107Python passaram/9opcionais pulados,
-91React. A revisão de fonte43089994371 também passou. Isso não cobre sozinho o
-núcleo posterior. CI final exata de19c9eec:
-[43091653314](https://github.com/Buraddomoon/AEGIS/actions/runs/43091653314)
-**SUCCESS**, quatro Python e React conferidos: **3.120Python passaram/9opcionais
-pulados,91React**. Inclui todos os casos novos, sem filtro/exclusão adicional.
-O dump/restore da fixture foi efetivo localmente; na CI, sem o container de
-desenvolvimento, esse caso é um dos skips explícitos. As execuções intermediárias
-canceladas não são workflow verde. O handoff seguinte altera somente Markdown.
+- Executor sobre schema d446 descartável: **44passed/101,69s**, inclui recusa de
+  a0/b7; mais **2casos distintos** de cleanup histórico v1/v2 no grupo seguinte.
+- Compatibilidade4casos (a0, d446, dump/restore, grants) e os2casos de cleanup
+  anteriores: **6passed/7,40s**, dump local executado, sem skips.
+- Rodada anterior a0:43passed/94,63s, substituída pelo perfil d446 real.
+- Grupos anteriores:239passaram no complemento nativo; núcleo70, binding72,
+  PKI/TLS/continuidade229 e React91. Há sobreposição: não somar essas rodadas.
+- CI19c9eec: [43091653314](https://github.com/Buraddomoon/AEGIS/actions/runs/43091653314)
+  SUCCESS, quatro Python e React conferidos,3120Python/9skips,91React.
+- CI5e91afc43099786692 falhou em3casos nativos por introspecção do schema de
+  fixture; corrigido em0c08332. A CI do perfil atual ainda precisa ser conferida
+  integralmente, sem filtros ou exclusões adicionais.
 
-## Retomar pelo bloqueio concreto
+## Próximo passo dentro da #4
 
-Ler [ACTIVATION-ASSAY](../../labs/linux/ACTIVATION-ASSAY.md), seção “somente clone
-da #48”, e [compatibilidade](../operations/linux-schema-compatibility.md).
-É necessária aprovação específica para ler/copiar a frio o PostgreSQL original
-em mount read-only, iniciar PostgreSQL somente nos clones e testar restore/upgrade
-ali. A issue genérica não autoriza essa intervenção; os originais não foram
-abertos nesta sessão. Não iniciar a rotação real antes dessa evidência e da
-pacote nativo revisado. O diário original nem entra nessa primeira proposta.
-
-O complemento da #49 está em `scripts/runner_rotation.py` (prepare/run/cleanup),
-`runner_rotation_native.py` (lifecycle concreto), `runner_rotation_package.py`
-(pins, evidência de clone e confirmação), `runner_rotation_runtime.py` (receitas e
-inspeção projetada) e `aegis.lab_runner.rotation_probe` (cinco fases fechadas).
-Os testes usam revisores SQL/SQLite reais em temporários e Docker/TLS simulados;
-o controle de trust anterior distingue issuer/path de expiração/EOF. Ver
-[operação nativa](../operations/runner-native-rotation.md). Não afirmar execução
-nativa a partir de resultados de fixtures ou da disponibilidade da CLI.
-
-Complemento de compatibilidade: pacote/perfil v2 fixa a0 para os cinco helpers
-administrativos, sem migração do original, API normal ou worker. O ensaio de
-clone continua a0→b7. Cleanup aceita v1 histórico sem converter seu escopo.
-`pytest tests/test_runner_rotation_native.py -q --tb=short`: **43passed/94,63s**,
-com lifecycle em schema a0 descartável e recusa de b7. A CI43099786692 de5e91afc
-falhou em três casos desse arquivo: introspecção usava `public` em vez do schema
-da fixture. A correção usa o search_path da conexão; produção o fixa em public.
-Não considerar esse workflow verde; aguardar a CI do complemento.
-
-Comentários por unidade preservam evidências e limites:
-[#48](https://github.com/Buraddomoon/AEGIS/issues/48#issuecomment-6805894478),
-[#49](https://github.com/Buraddomoon/AEGIS/issues/49#issuecomment-6805895280),
-[#50](https://github.com/Buraddomoon/AEGIS/issues/50#issuecomment-6805896079),
-[#51](https://github.com/Buraddomoon/AEGIS/issues/51#issuecomment-6805896568).
-Não avançar para outra entrega. Não fechar o pai com gates/filhos pendentes.
+Preparar build revisado da fonte atual, PKI candidata nova e plano/pacote nativo
+com prova real de clone. Não reaproveitar candidatos/autorizações expirados.
+Executar apenas o procedimento delimitado de identidade, binding revogado,
+preflight, continuidade e cleanup, sem marker/campanha/Wazuh/operação normal.
+Preservar PKI, qasrc, volumes, imagens, backups e fences; nunca repetir efeito
+ambíguo ou limpar uma reserva para obter nova tentativa. Ver
+[executor](../operations/runner-native-rotation.md) e
+[ensaio](../../labs/linux/ACTIVATION-ASSAY.md).

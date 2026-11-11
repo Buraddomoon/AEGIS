@@ -2,7 +2,7 @@
 
 Estado em11/11/2026: **não executado nem autorizado**. O núcleo e a adaptação
 nativa têm código/testes; a CLI separada `runner_rotation.py` exige pacote próprio
-aprovado, evidência real da #48 e banco a0 compatível com os helpers fechados v2.
+aprovado, evidência real da #48 e banco d446 compatível com os helpers fechados v3.
 Esse perfil não inicia API normal/worker nem migra o original. Não invocar helpers de
 lifecycle manualmente para contornar gates. O plano antigo `runner_activation.py`
 continua somente plan/recheck, sem ampliar autorizações retroativamente. Nenhuma
@@ -12,8 +12,9 @@ autorização da issue3 é reaproveitável. Ver
 ## Dependências, em ordem
 
 1. #48: [compatibilidade a0/b7](../../docs/operations/linux-schema-compatibility.md).
-   Upgrade, restore e grants de fixture passaram. Falta backup atual do original,
-   restore/upgrade em clone dele e revisão de proveniência da imagem administrativa.
+   Backup frio do original, restore e upgrade d446→b7 no clone verificados.
+   Original comprovado em d446/27tabelas; imagens e perfis devem respeitar isso.
+   Conferir a evidência real no documento de compatibilidade.
 2. #49: integração SQL/diário, núcleo e executor nativo com gates de
    runtime/mounts/lifecycle implementados/testados. Preparação do pacote operacional
    depende da prova real de clone da #48 e de schema/grants compatíveis no alvo.
@@ -52,7 +53,7 @@ Os testes não são prova de ativação, implantação, detecção ou operação
 
 ## Próxima intervenção proposta: somente clone da #48
 
-Esta proposta é a primeira dependência operacional, **não autorização vigente**.
+Esta etapa foi autorizada pelo usuário nesta conversa e executada em11/11.
 Uma execução não inclui rotação, registro, preflight real ou migração original.
 
 Metadados lidos em11/11, sem abrir os volumes:
@@ -66,7 +67,7 @@ Metadados lidos em11/11, sem abrir os volumes:
   `sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24`.
   Presença/RepoDigest não substituem revisão de origem oficial antes de usá-lo.
 
-Escopo proposto para aprovação específica posterior:
+Escopo autorizado e executado:
 
 1. Revalidar projeto vazio, labels/consumidores, imagem PostgreSQL existente e
    proveniência. Fixar nonce, nomes/labels de helpers/clone e manifesto privado
@@ -85,8 +86,8 @@ Escopo proposto para aprovação específica posterior:
    e ausência. Preservar backup e volumes novos para revisão, além dos originais;
    não remover volumes, qasrc ou serviços alheios. Falha não concede retry.
 
-Sem aprovação específica dessa intervenção, o bloqueio permanece registrado nas
-issues. Depois da evidência da #48 será possível fixar imagem/schema e preparar
+A evidência desta intervenção está no documento de compatibilidade. Falhas de
+preparação foram encerradas com cleanup; originais não foram remigrados. Preparar
 o pacote próprio do executor nativo. Não aprovar implicitamente
 etapas posteriores nem migrar o original para satisfazer os testes.
 
