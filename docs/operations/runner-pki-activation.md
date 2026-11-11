@@ -195,6 +195,21 @@ leitura complementa testes e não é pentest nem validação do volume original.
 
 ## Componentes de continuidade implementados
 
+`aegis.lab_runner.activation_review.collect` integra duas leituras SQL próprias
+com duas revisões WAL-aware do diário. Exige mesmo inventário e todas as provas
+persistidas idênticas, exceto timestamp da revisão. O resultado existe somente
+no processo; `require_current` reconstrói/compara o bundle inteiro sob o lock
+do laboratório antes de registrar binding. Mudança de binding/versão/ativo,
+reserva, pendência ou prova bloqueia; não altera diário, scopes ou aprovações.
+Essa integração usa engine/diretório explicitamente fornecidos pelo executor;
+não comprova de qual volume vieram. O coordenador nativo ainda deve montar e
+verificar os recursos e PKI sob um escopo específico. Não chamar sobre o
+original para validar desenvolvimento.
+
+O orçamento dos gates de diagnóstico fica limitado ao begin durável+300s,
+inclusive ao reconstruir gates depois de resume. Recuo de relógio também
+bloqueia novos efeitos; cleanup próprio continua independente da admissão.
+
 `aegis.lab_runner.persisted_review.collect` recebe engine explicitamente do
 chamador e identidade/hash do binding antigo fixados pelo plano. Não descobre
 credenciais, não usa banco Demo como fallback e não consulta runner/SIEM. Cria

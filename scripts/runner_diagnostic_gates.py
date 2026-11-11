@@ -45,9 +45,16 @@ class DiagnosticGates:
         self.scope = authorized_scope_sha256
         self.expires = datetime.fromisoformat(authorization_expires_at)
         now = facts.plan.pki.clock()
-        if self.expires.utcoffset() != timedelta(0) or not timedelta(
-            0
-        ) < self.expires - now <= timedelta(seconds=300):
+        store.review()
+        self.origin = store.summary()
+        self.started_at = datetime.fromisoformat(store.events[0]["at"])
+        self.confirmed_at = now
+        if (
+            self.expires.utcoffset() != timedelta(0)
+            or not timedelta(0) < self.expires - now <= timedelta(seconds=300)
+            or not self.started_at <= now < self.expires
+            or self.expires > self.started_at + timedelta(seconds=300)
+        ):
             raise ActivationError("diagnostic_authorization_interval_invalid")
         self.deadline = time.monotonic() + (self.expires - now).total_seconds()
         self.repo, self.policy_root, self.capture_root = repo, policy_root, capture_root
@@ -80,6 +87,10 @@ class DiagnosticGates:
             }
             or time.monotonic() >= self.deadline
             or now >= self.expires
+            or now < self.confirmed_at
+            or now < datetime.fromisoformat(self.store.events[-1]["at"])
+            or self.store.summary()["id"] != self.origin["id"]
+            or self.store.summary()["begin_sha256"] != self.origin["begin_sha256"]
             or facts.plan.load(self.folder, self.plan_sha256) != self.artifact
         ):
             raise ActivationError("diagnostic_scope_or_budget_unconfirmed")

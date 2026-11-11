@@ -68,6 +68,33 @@ def setup(material, store, tmp_path, role, phase):
     return context, world, runtime, spec
 
 
+def test_reconstructing_diagnostic_gates_cannot_renew_original_operation_budget(
+    material, tmp_path, monkeypatch
+):
+    with ActivationIntents(tmp_path / "intents") as store:
+        context, _, _, _ = setup(material, store, tmp_path, "db", "create")
+        later = context.started_at + timedelta(seconds=120)
+        monkeypatch.setattr(gates.facts.plan.pki, "clock", lambda: later)
+        with pytest.raises(gates.ActivationError, match="authorization_interval_invalid"):
+            gates.DiagnosticGates(
+                context.folder,
+                context.plan_sha256,
+                store,
+                context.scope,
+                (later + timedelta(seconds=290)).isoformat(),
+            )
+
+
+def test_diagnostic_clock_rollback_blocks_effects(material, tmp_path, monkeypatch):
+    with ActivationIntents(tmp_path / "intents") as store:
+        context, _, _, spec = setup(material, store, tmp_path, "db", "create")
+        monkeypatch.setattr(
+            gates.facts.plan.pki, "clock", lambda: context.confirmed_at - timedelta(seconds=1)
+        )
+        with pytest.raises(gates.ActivationError, match="scope_or_budget_unconfirmed"):
+            context.before_server("create", spec)
+
+
 @pytest.mark.parametrize("phase", ["create", "start", "ready"])
 def test_server_gate_derives_facts_and_policy_and_checks_physical_runtime(
     material, tmp_path, phase
