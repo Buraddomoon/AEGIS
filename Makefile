@@ -205,6 +205,10 @@ test-runner-pki:
 test-binding-review:
 	$(VENV)/pytest tests/test_binding_review.py -q
 
+.PHONY: test-linux-schema-compatibility
+test-linux-schema-compatibility:
+	$(VENV)/pytest tests/test_linux_schema_compatibility.py -q
+
 # Read-only host metadata planning. No activation/lifecycle command is exposed.
 .PHONY: runner-activation-plan runner-activation-recheck test-runner-activation
 runner-activation-plan:

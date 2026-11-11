@@ -9,6 +9,9 @@ dos certificados novos, registros íntegros e recursos removidos. O controle sem
 cliente permaneceu inconclusivo por EOF; não declarar todos os controles TLS
 verificados. [Resultado e limites](../evidence/identity-assay-2026-11-10/final-authorized-attempt.md).
 Esses estados não equivalem à ativação.
+Compatibilidade a0/b7, estratégia de clone/backup e limites de rollback:
+[revisão de schema Linux](linux-schema-compatibility.md). A preparação testada
+não substitui backup atual dos volumes originais nem autoriza sua abertura.
 As autorizações anteriores estão consumidas; um commit/push não concede nova
 aprovação. Ver [estado consolidado](../product/roadmap.md).
 
