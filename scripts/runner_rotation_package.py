@@ -16,8 +16,9 @@ from runner_activation_intents import _hash
 from runner_activation_metadata import ActivationError
 
 ROOT = base.ROOT / ".local/pki-rotation-packages"
-FORMAT = "aegis-native-rotation-package/1"
-PROFILE = {
+FORMAT = "aegis-native-rotation-package/2"
+LEGACY_FORMAT = "aegis-native-rotation-package/1"
+PROFILE_B7 = {
     "id": "linux-native-pki-rotation/1",
     "executor_implemented": True,
     "project": "aegis-linux-lab",
@@ -37,6 +38,13 @@ PROFILE = {
     "migrate_permitted": False,
     "seed_permitted": False,
     "normal_operation_permitted": False,
+}
+PROFILE = PROFILE_B7 | {
+    "id": "linux-native-pki-rotation/2",
+    "schema_required": "a0d9c7e21b45",
+    "compatibility": "closed-administrative-helpers-only",
+    "normal_api_supported": False,
+    "worker_supported": False,
 }
 
 
@@ -62,7 +70,7 @@ def backup_evidence(value, expected_sha256, artifact):
         or value["format"] != "aegis-linux-schema-clone-evidence/1"
         or value["source_volume_sha256"] != digest(artifact["metadata"]["volumes"]["postgres-data"])
         or value["source_schema"] != "a0d9c7e21b45"
-        or value["clone_schema"] != PROFILE["schema_required"]
+        or value["clone_schema"] != "b7f3c2d91a06"
         or any(
             value[k] is not True
             for k in ("clone_restore_verified", "old_rows_preserved", "grants_verified")
@@ -145,8 +153,8 @@ def load(path, expected, *, current=True):
             "actor_id",
             "registration",
         }
-        or value["format"] != FORMAT
-        or digest(value["profile"]) != digest(PROFILE)
+        or value["format"] not in ({FORMAT} if current else {FORMAT, LEGACY_FORMAT})
+        or digest(value["profile"]) != digest(PROFILE if value["format"] == FORMAT else PROFILE_B7)
         or UUID(hex=value["id"]).hex != value["id"]
         or path.parent.name != value["id"]
         or path.name != "package.json"

@@ -6,7 +6,7 @@ PostgreSQL/SQLite descartáveis e cliente TLS de fixture; **não executada sobre
 Lab original**. Testes não autorizam a intervenção nem comprovam runtime nativo.
 
 O plano de metadados existente mantém seu formato/perfil e não ganha poderes
-retroativos. Um pacote separado `aegis-native-rotation-package/1` fixa o hash do
+retroativos. Um pacote separado `aegis-native-rotation-package/2` fixa o hash do
 plano original, perfil executável, build revisado, origem PostgreSQL, evidência
 do clone, administrador e dados de registro. Precisa de aprovação específica do
 seu hash. Hash é integridade relativa ao pin, não assinatura ou serviço de aprovação.
@@ -22,10 +22,13 @@ seu hash. Hash é integridade relativa ao pin, não assinatura ou serviço de ap
   inventário antigo preservado e grants verificados. `prepare` recusa ausência ou
   hash/volume/perfil divergente. O objeto de evidência não produz um backup por
   preencher flags: deve ser derivado e revisado a partir do procedimento real.
-- **Banco alvo já em b7** e grants mínimos. O helper confere capacidade b7 e
-  perfil SQL antes de registrar qualquer binding. A execução recusa a0 e não
-  migra/seed/bootstrap implicitamente. Migração do original exige escopo próprio;
-  um clone b7 não muda a versão do original.
+- **Banco alvo a0**, com perfil fechado `linux-native-pki-rotation/2`. Os cinco
+  helpers usam somente relações a0 e conferem esse conjunto antes do binding;
+  a presença de `scheduled_reports` recusa este perfil. A compatibilidade vale
+  apenas para esses entrypoints administrativos, sem API normal ou worker.
+  O clone comprova separadamente restore/upgrade b7; o original permanece a0.
+  Não há migração, seed ou bootstrap implícitos. O pacote v1/b7 fica disponível
+  somente para cleanup histórico, sem conversão ou nova autorização.
 - Laboratório original revogado, nenhuma reserva/pai/filho/cleanup pendente,
   histórico íntegro completo e diário sem ambiguidade. Falha mantém quarentena.
 

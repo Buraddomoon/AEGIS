@@ -386,7 +386,15 @@ class Daemon:
 
 @pytest.fixture
 def daemon(world, monkeypatch, tmp_path):
-    return Daemon(world, monkeypatch, tmp_path)
+    from alembic import command
+    from alembic.config import Config
+
+    config = Config("alembic.ini")
+    command.downgrade(config, "a0d9c7e21b45")
+    try:
+        yield Daemon(world, monkeypatch, tmp_path)
+    finally:
+        command.upgrade(config, "head")
 
 
 def test_native_adapter_runs_every_phase_with_real_reviewers_and_preserves_revocation(daemon):
@@ -607,6 +615,17 @@ def test_native_help_does_not_run_or_prepare_anything(monkeypatch):
     with pytest.raises(SystemExit) as result:
         cli.main(["--help"])
     assert result.value.code == 0
+
+
+def test_a0_native_profile_refuses_b7_without_implicit_downgrade(daemon):
+    from alembic import command
+    from alembic.config import Config
+
+    command.upgrade(Config("alembic.ini"), "head")
+    report = daemon.client.execute()
+    assert not report["activation_verified"]
+    assert report["binding_commit_state"] == "not_requested"
+    assert daemon.world.calls == 0
 
 
 def test_cleanup_uses_historical_pins_after_package_and_authorization_expire(

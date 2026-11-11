@@ -2,7 +2,8 @@
 
 Estado em11/11/2026: **não executado nem autorizado**. O núcleo e a adaptação
 nativa têm código/testes; a CLI separada `runner_rotation.py` exige pacote próprio
-aprovado, evidência real da #48 e banco já compatível. Não invocar helpers de
+aprovado, evidência real da #48 e banco a0 compatível com os helpers fechados v2.
+Esse perfil não inicia API normal/worker nem migra o original. Não invocar helpers de
 lifecycle manualmente para contornar gates. O plano antigo `runner_activation.py`
 continua somente plan/recheck, sem ampliar autorizações retroativamente. Nenhuma
 autorização da issue3 é reaproveitável. Ver

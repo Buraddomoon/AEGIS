@@ -9,6 +9,7 @@ usa histórico sintético em schema PostgreSQL descartável, não um backup do L
 | Perfil | Schema | Uso permitido |
 |---|---|---|
 | Lab histórico | `a0d9c7e21b45`,32tabelas com Alembic | Leitor diagnóstico limitado às tabelas antigas; sem API/worker atuais |
+| Rotação administrativa v2 | `a0d9c7e21b45` | Cinco helpers fechados de continuidade/binding/preflight; sem API normal ou worker |
 | Aplicação atual | `b7f3c2d91a06`,33tabelas com Alembic | API administrativa somente após upgrade explícito e revisão dos grants |
 
 `b7` acrescenta `scheduled_reports`, índices, checks e trigger/função de
@@ -16,8 +17,11 @@ imutabilidade. Não transforma tabelas antigas. A aplicação atual consulta ess
 tabela; trocar a imagem não migra o banco nem concede seus privilégios.
 
 Estratégia escolhida: backup e restore em clone isolado, upgrade aditivo a0→b7
-no clone, revisão de inventário/grants e só então proposta separada para o
-original. Não executar o serviço Compose `migrate`: ele também faz seed e muda
+no clone e revisão de inventário/grants. Para a rotação, usar a imagem revisada
+somente nos cinco entrypoints administrativos compatíveis com a0; não migrar o
+original. Testes de lifecycle rodam sobre schema a0 descartável, e o perfil
+recusa b7. Isso não torna API normal/worker atuais compatíveis com a0.
+Não executar o serviço Compose `migrate`: ele também faz seed e muda
 o segredo do papel runtime. Aplicar Alembic com credencial owner apenas durante
 a intervenção aprovada; grants com o segredo existente, sem rotação implícita.
 Sem seed, bootstrap, worker, scheduler ou campanha.

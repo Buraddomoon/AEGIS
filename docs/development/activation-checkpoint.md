@@ -87,6 +87,15 @@ o controle de trust anterior distingue issuer/path de expiração/EOF. Ver
 [operação nativa](../operations/runner-native-rotation.md). Não afirmar execução
 nativa a partir de resultados de fixtures ou da disponibilidade da CLI.
 
+Complemento de compatibilidade: pacote/perfil v2 fixa a0 para os cinco helpers
+administrativos, sem migração do original, API normal ou worker. O ensaio de
+clone continua a0→b7. Cleanup aceita v1 histórico sem converter seu escopo.
+`pytest tests/test_runner_rotation_native.py -q --tb=short`: **43passed/94,63s**,
+com lifecycle em schema a0 descartável e recusa de b7. A CI43099786692 de5e91afc
+falhou em três casos desse arquivo: introspecção usava `public` em vez do schema
+da fixture. A correção usa o search_path da conexão; produção o fixa em public.
+Não considerar esse workflow verde; aguardar a CI do complemento.
+
 Comentários por unidade preservam evidências e limites:
 [#48](https://github.com/Buraddomoon/AEGIS/issues/48#issuecomment-6805894478),
 [#49](https://github.com/Buraddomoon/AEGIS/issues/49#issuecomment-6805895280),

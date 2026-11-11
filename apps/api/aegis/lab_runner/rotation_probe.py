@@ -16,8 +16,8 @@ from aegis.lab_runner import activation_review as reviews
 from aegis.lab_runner.persisted_probe import _unique
 from aegis.lab_runner.protocol import TEST_ID, RunnerIdentity
 
-FORMAT = "aegis-rotation-admin-request/1"
-RESULT = "aegis-rotation-admin-result/1"
+FORMAT = "aegis-rotation-admin-request/2"
+RESULT = "aegis-rotation-admin-result/2"
 MODES = ("review-before", "identity-before", "binding", "preflight", "review-after")
 LIMIT = 4 * 1024**2
 STATE = Path("/state")
@@ -202,10 +202,11 @@ def execute(value):
     engine = _engine(value["database_password"], mode in {"binding", "preflight"})
     try:
         with engine.connect() as connection:
-            # This is a capability gate in addition to host-reviewed a0/b7 provenance.
+            # This closed entrypoint uses only a0 relations. It is not a general
+            # current API/worker image and must never query b7 scheduling tables.
             _require_schema(connection, "public")
-            if "scheduled_reports" not in inspect(connection).get_table_names(schema="public"):
-                raise ValueError("rotation_admin_b7_required")
+            if "scheduled_reports" in inspect(connection).get_table_names():
+                raise ValueError("rotation_admin_a0_profile_required")
         descriptor = (
             value["new_descriptor_sha256"]
             if mode in {"preflight", "review-after"}
