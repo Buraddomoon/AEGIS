@@ -58,6 +58,22 @@ após erro/atualização. Requisitos persistidos satisfeitos continuam com
 runner_contacted/journal_verified/activation_permitted/normal_operation_permitted
 **false**. A API não recebe certificados, paths, endpoints, comandos ou bypasses.
 
+O painel Linux também mostra os fingerprints SHA256 do descritor do vínculo
+revisado e da implantação atual, além da data da última auditoria de registro.
+Correspondência desses fingerprints significa apenas mesma configuração pública;
+preflight vigente e autorização continuam separados. Divergência ou confiança
+ausente pede nova revisão. Nenhuma chave, conteúdo de certificado ou path é
+publicado. Campos de auditoria novos registram versão e `authorized=false`;
+auditorias antigas continuam intactas.
+
+Registro atualiza a versão sob lock, recarregando o objeto mesmo se a sessão já
+o conhecia, e mantém autorização revogada. O coordenador interno pode fornecer
+um `ContinuityReview` do próprio processo: a transação reconstrói/compara as
+provas completas antes da escrita. Esse objeto não é um parâmetro da API nem
+comprova sozinho o mount físico. Preflight revalida versão/binding depois do
+handshake sob o mesmo lock; alteração concorrente gera verificação sem sucesso.
+Preflights e aprovações antigos são preservados, sem reativação ou reescrita.
+
 ## Testes
 
 `pytest tests/test_binding_review.py tests/test_linux_campaigns.py

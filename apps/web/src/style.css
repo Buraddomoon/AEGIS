@@ -982,6 +982,12 @@ tbody tr:hover {
 .notice svg {
   margin-top: 2px;
 }
+.linux-trust-notice {
+  overflow-wrap: anywhere;
+}
+.linux-trust-notice > div {
+  min-width: 0;
+}
 .danger {
   background: #2e1d23 !important;
   border-color: #65414b !important;

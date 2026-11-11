@@ -18,6 +18,7 @@ from aegis.lab_runner.protocol import TEST_ID, JobSpec, JobView
 from aegis.models import (
     Approval,
     Asset,
+    AuditEvent,
     CampaignRun,
     Laboratory,
     LabVerification,
@@ -97,13 +98,54 @@ def verified(db: Session, lab: Laboratory) -> bool:
     )
 
 
-def register(db: Session, data, actor: User) -> Laboratory:
+def trust_status(db: Session, lab: Laboratory) -> dict | None:
+    """Public fingerprints and last explicit review; no paths, keys or PKI contents."""
+    if lab.kind != "linux":
+        return None
+    binding = db.get(LinuxLabBinding, lab.id)
+    current = configured_hash()
+    review = db.scalar(
+        select(AuditEvent)
+        .where(AuditEvent.action == "lab.linux_register", AuditEvent.resource_id == lab.id)
+        .order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc())
+        .limit(1)
+    )
+    return {
+        "configuration_hash": binding.configuration_hash if binding else None,
+        "deployment_configuration_hash": current,
+        "matches_deployment": bool(binding and current and binding.configuration_hash == current),
+        "reviewed_by": binding.reviewed_by if binding else None,
+        "reviewed_at": review.created_at.isoformat() if review else None,
+    }
+
+
+def register(db: Session, data, actor: User, *, continuity_review=None) -> Laboratory:
     identity = descriptor()
     lab = db.scalar(
-        select(Laboratory).where(Laboratory.id == identity["laboratory_id"]).with_for_update()
+        select(Laboratory)
+        .where(Laboratory.id == identity["laboratory_id"])
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     if lab:
         binding_review.require_review(db, lab)
+    if continuity_review is not None:
+        from aegis.lab_runner.activation_review import require_current
+        from aegis.lab_runner.continuity import ContinuityError
+
+        if lab is None:
+            raise HTTPException(409, "Ativação exige o laboratório original preservado.")
+        try:
+            require_current(db, lab, continuity_review)
+            if any(
+                identity[key] != str(getattr(continuity_review.identity, key))
+                for key in ("runner_id", "laboratory_id", "asset_id")
+            ):
+                raise ContinuityError("activation_identity_changed")
+        except ContinuityError:
+            raise HTTPException(
+                409, "Continuidade mudou; preserve o vínculo original e revise."
+            ) from None
     if lab is None:
         lab = Laboratory(
             id=identity["laboratory_id"],
@@ -134,13 +176,22 @@ def register(db: Session, data, actor: User) -> Laboratory:
             )
         lab.name, lab.owner, lab.isolation = data.name, data.owner, data.isolation_review
         lab.environment_version += 1
+    lab.authorized = False
     binding = db.get(LinuxLabBinding, lab.id)
     if binding is None:
         binding = LinuxLabBinding(laboratory_id=lab.id)
         db.add(binding)
     binding.runner_id, binding.configuration_hash = identity["runner_id"], digest(identity)
     binding.reviewed_by, binding.isolation_review = actor.id, data.isolation_review
-    audit(db, actor.id, "lab.linux_register", lab.id, configuration_hash=binding.configuration_hash)
+    audit(
+        db,
+        actor.id,
+        "lab.linux_register",
+        lab.id,
+        configuration_hash=binding.configuration_hash,
+        environment_version=lab.environment_version,
+        authorized=False,
+    )
     db.commit()
     return lab
 
@@ -167,6 +218,23 @@ def preflight(db: Session, lab: Laboratory, actor: User) -> LabVerification:
     finally:
         if remote:
             remote.close()
+    # Network IO does not hold a laboratory lock. Refresh under the same lock
+    # as registration before recording success, so a concurrent rotation cannot
+    # publish a successful preflight for the environment it replaced.
+    current = db.scalar(
+        select(Laboratory)
+        .where(Laboratory.id == lab.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if (
+        current is None
+        or current.environment_version != version
+        or configured_hash() != fingerprint
+        or not binding_valid(db, current)
+    ):
+        success = False
+        reason = "Ambiente ou confiança mudou durante o preflight; repita a revisão atual."
     verification = LabVerification(
         laboratory_id=lab.id,
         checked_by=actor.id,

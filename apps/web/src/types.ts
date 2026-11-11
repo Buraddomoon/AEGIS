@@ -23,6 +23,13 @@ export interface Lab {
   execution_capability: string
   connection_status: string
   synthetic: boolean
+  trust?: {
+    configuration_hash: string | null
+    deployment_configuration_hash: string | null
+    matches_deployment: boolean
+    reviewed_by: string | null
+    reviewed_at: string | null
+  } | null
 }
 export interface Test {
   id: string

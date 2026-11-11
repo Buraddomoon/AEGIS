@@ -186,6 +186,7 @@ def labs(user: Viewer, db: DB) -> dict:
                 if lab.kind == "demo"
                 else ("linux-marker-only" if linux_labs.binding_valid(db, lab) else "disabled"),
                 "telemetry_source": "aegis-demo" if lab.kind == "demo" else None,
+                "trust": linux_labs.trust_status(db, lab),
             }
             for lab in items
         ]

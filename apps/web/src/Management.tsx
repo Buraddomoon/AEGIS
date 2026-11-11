@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LinuxRegistration } from './LinuxRegistration'
 import { BindingReview } from './BindingReview'
+import { LinuxTrust } from './LinuxTrust'
 import { WazuhBinding } from './WazuhBinding'
 import { RuleTestLinks } from './RuleTestLinks'
 import { RuleAnalysis } from './RuleAnalysis'
@@ -100,6 +101,7 @@ export function Laboratories({ user }: { user: User }) {
               {l.isolation}
             </div>
             <p className="mono muted-text">ID {l.id}</p>
+            {!l.synthetic && <LinuxTrust lab={l} />}
             {!l.synthetic && (
               <button className="button" onClick={() => setTelemetryLab(l)}>
                 Revisar coleta Wazuh
