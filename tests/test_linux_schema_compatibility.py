@@ -1,21 +1,77 @@
 """Populated a0 -> b7 rehearsal on the fixture schema, never original Lab volumes."""
 
+import hashlib
 import subprocess
+from datetime import timedelta
 from uuid import uuid4
 
 import pytest
 from aegis import binding_review
 from aegis.db import session_factory
-from aegis.models import Laboratory
+from aegis.domain.validation import digest
+from aegis.lab_runner.protocol import ExecutionReceipt, JobState, JobView
+from aegis.models import Approval, CampaignRun, Laboratory, RunnerCleanup, RunnerReceipt, User, now
 from aegis.operations.runtime_grants import RUNTIME_PERMISSIONS
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, select, text
 from test_binding_review import binding_lab as binding_lab
 from test_binding_review import history
 
 OLD = "a0d9c7e21b45"
 CURRENT = "b7f3c2d91a06"
+
+
+def receipt_history(identity):
+    """Synthetic documents only; no marker, process or runner is executed."""
+    run_id, item_id = history(identity)
+    with session_factory()() as db:
+        cleanup = db.scalar(select(RunnerCleanup).where(RunnerCleanup.execution_id == item_id))
+        view = JobView.model_validate(cleanup.content)
+        synthetic_bytes = (view.spec.marker + "\n").encode()
+        receipt = ExecutionReceipt(
+            **{
+                name: getattr(view.spec, name)
+                for name in (
+                    "job_id",
+                    "runner_id",
+                    "laboratory_id",
+                    "asset_id",
+                    "marker",
+                    "scope_hash",
+                )
+            },
+            artifact_sha256=hashlib.sha256(synthetic_bytes).hexdigest(),
+            artifact_bytes=len(synthetic_bytes),
+            started_at=now(),
+            ended_at=now(),
+        )
+        content = receipt.model_dump(mode="json")
+        db.add(RunnerReceipt(execution_id=item_id, content=content, sha256=digest(content)))
+        updated = view.model_copy(
+            update={
+                "state": JobState.SUCCEEDED,
+                "receipt": receipt,
+                "receipt_sha256": digest(content),
+            }
+        )
+        cleanup.content = updated.model_dump(mode="json")
+        cleanup.sha256 = digest(cleanup.content)
+        run = db.get(CampaignRun, run_id)
+        operator = db.scalar(select(User).where(User.username == "operator"))
+        administrator = db.scalar(select(User).where(User.username == "administrator"))
+        run.requested_by = operator.id
+        db.add(
+            Approval(
+                run_id=run_id,
+                approved_by=administrator.id,
+                scope_hash=run.scope_hash,
+                expires_at=now() + timedelta(minutes=5),
+                max_duration_seconds=60,
+                used_at=now(),
+            )
+        )
+        db.commit()
 
 
 def inventory(connection):
@@ -42,7 +98,7 @@ def privileges(connection):
 
 def test_populated_a0_upgrade_is_additive_and_original_proofs_remain_valid(binding_lab, pg_engine):
     _, identity = binding_lab
-    history(identity)
+    receipt_history(identity)
     history(identity, parent="CLEANUP_FAILED", child="CLEANUP_FAILED")
     config = Config("alembic.ini")
     command.downgrade(config, OLD)
@@ -52,6 +108,7 @@ def test_populated_a0_upgrade_is_additive_and_original_proofs_remain_valid(bindi
             assert len(before) == 31  # 32 including Alembic.
             assert connection.scalar(text("SELECT version_num FROM alembic_version")) == OLD
             assert "scheduled_reports" not in before
+            assert len(before["runner_receipts"]) == len(before["approvals"]) == 1
         command.upgrade(config, CURRENT)
         command.check(config)
         with pg_engine.connect() as connection:
@@ -93,7 +150,7 @@ def test_a0_dump_restores_only_its_disposable_schema_before_upgrade(binding_lab,
     if result.stdout.strip() != b"aegis":
         pytest.skip("Local development PostgreSQL identity differs")
     _, identity = binding_lab
-    history(identity)
+    receipt_history(identity)
     config = Config("alembic.ini")
     command.downgrade(config, OLD)
     try:
