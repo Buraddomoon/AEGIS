@@ -99,7 +99,7 @@ def _cidr(value):
         raise ActivationError("subnet_address_metadata_invalid") from None
 
 
-def _network(raw, known_id):
+def _network(raw, known_id, *, planned=(SUBNET,)):
     item = metadata.document(raw)
     if (
         not isinstance(item, dict)
@@ -128,13 +128,15 @@ def _network(raw, known_id):
         if not isinstance(entry, dict) or "Subnet" not in entry:
             raise ActivationError("subnet_network_profile_unsupported")
         subnet = _cidr(entry["Subnet"])
-        if subnet.version == 4 and subnet.overlaps(ipaddress.ip_network(SUBNET)):
+        if subnet.version == 4 and any(
+            subnet.overlaps(ipaddress.ip_network(value)) for value in planned
+        ):
             raise ActivationError("subnet_docker_overlap_observed")
         subnets.append(str(subnet))
     return {"id": known_id, "driver": "bridge", "subnets": sorted(subnets)}
 
 
-def _routes(raw):
+def _routes(raw, *, planned=(SUBNET,)):
     items = metadata.document(raw)
     if not isinstance(items, list) or len(items) > 2048:
         raise ActivationError("subnet_route_inventory_invalid")
@@ -147,7 +149,7 @@ def _routes(raw):
             raise ActivationError("subnet_route_inventory_invalid")
         if subnet.prefixlen == 0:
             defaults += 1
-        elif subnet.overlaps(ipaddress.ip_network(SUBNET)):
+        elif any(subnet.overlaps(ipaddress.ip_network(value)) for value in planned):
             raise ActivationError("subnet_host_route_overlap_observed")
         table, kind = item.get("table", "main"), item.get("type", "unicast")
         if type(table) not in (str, int) or not isinstance(kind, str):
@@ -163,6 +165,10 @@ def _routes(raw):
 
 
 def review(*, docker=None, routes=None):
+    return _review((SUBNET,), docker=docker, routes=routes)
+
+
+def _review(planned, *, docker=None, routes=None):
     """Two fresh local snapshots, no owned-network exclusion and no execution grant.
 
     Intended before network creation. An existing matching subnet blocks even if
@@ -180,9 +186,10 @@ def review(*, docker=None, routes=None):
     def snapshot():
         ids = _ids(docker.query(timeout=budget()))
         networks = [
-            _network(docker.query(known_id, timeout=budget()), known_id) for known_id in ids
+            _network(docker.query(known_id, timeout=budget()), known_id, planned=planned)
+            for known_id in ids
         ]
-        routing = _routes(routes.query(timeout=budget()))
+        routing = _routes(routes.query(timeout=budget()), planned=planned)
         if _ids(docker.query(timeout=budget())) != ids:
             raise ActivationError("subnet_network_membership_changed")
         return {"networks": networks, "routes": routing}
@@ -193,7 +200,7 @@ def review(*, docker=None, routes=None):
         raise ActivationError("subnet_snapshot_changed")
     return {
         "format": "aegis-local-subnet-preflight/1",
-        "subnet": SUBNET,
+        "subnet": planned[0],
         "status": "no_observed_fixed_ipv4_subnet_overlap",
         "networks_reviewed": len(after["networks"]),
         "routes_reviewed": after["routes"]["count"],

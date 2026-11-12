@@ -1,0 +1,33 @@
+# ADR0034. Last network overlay, before a reviewed service-PKI overlay.
+# A definition only: source/SAN/inspection alignment and preflight remain required.
+services:
+  runner:
+    networks:
+      isolated: {ipv4_address: 192.168.253.10}
+  controller:
+    networks:
+      isolated: {ipv4_address: 192.168.253.11}
+  api:
+    networks:
+      isolated: {ipv4_address: 192.168.253.12}
+      telemetry: {ipv4_address: 192.168.253.21}
+  worker:
+    networks:
+      isolated: {ipv4_address: 192.168.253.13}
+      telemetry: {ipv4_address: 192.168.253.22}
+  wazuh.indexer:
+    networks:
+      telemetry: {ipv4_address: 192.168.253.18}
+  wazuh.manager:
+    networks:
+      telemetry: {ipv4_address: 192.168.253.19}
+  wazuh.agent:
+    networks:
+      telemetry: {ipv4_address: 192.168.253.20}
+networks:
+  isolated:
+    ipam:
+      config: !override [{subnet: 192.168.253.8/29, gateway: 192.168.253.9}]
+  telemetry:
+    ipam:
+      config: !override [{subnet: 192.168.253.16/29, gateway: 192.168.253.17}]
