@@ -19,13 +19,16 @@ Gates atuais de recursos, redes, imagens, metadados, candidato e plano passaram.
 Imagens oficiais Wazuh4.14.9/amd64 fixadas em `labs/wazuh/images.json` e leitor
 local por ID; sem pull/build. Candidato/plano novos, sem reutilizar o primeiro.
 
-| Artefato host-only | SHA256 |
+| Artefato host-only | SHA256 (JSON canônico; operador: bytes) |
 |---|---|
 | Manifesto do candidato9dbcf74494ae45caa53eff0e8df00abe | `a05e0b87d6716ac1d17c60dd48c442c7d53605173ea937c952ce15a6c9872892` |
 | Plano16e48a04fb284dad92d6fbe5ba201cd1 | `68718347d623c8ee74ef7f73809b90b7ddacf8111388cd9a3a8247fecc0772d0` |
 | Pacote de autorização final | `2bacd56149a32192c4e9ede86804818edb97b05b7f79ab3fa340e633bb3957cb` |
 | Operador congelado antes do efeito | `5bc22b148747dc7aa2b3dfb6cb13c7ecb9864dc79e11100b3ef15482a8bba577` |
 
+JSON canônico: UTF-8 de `json.dumps(value, sort_keys=True, separators=(",", ":"))`,
+sem newline. O arquivo de autorização formatado tem SHA256 dos bytes
+`f891f595a7df16d89e8ae1bff875701e165c0e569d0277258be6e8a7ee7d59b9`.
 Os hashes identificam os artefatos, sem equivaler a assinatura ou autorização.
 Arquivos privados, Compose com credenciais, chaves e logs não foram publicados.
 
