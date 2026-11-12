@@ -112,4 +112,5 @@ backup, diário/fences e pacotes consumidos preservados. Não iniciar outro ensa
 ou outra entrega a partir desse checkpoint. Conferir CI final e comentários.
 
 Entrega #6: [checkpoint PKI Wazuh](wazuh-pki-checkpoint.md). #55/#56 offline
-concluídas; #57/pai abertos por rede #149, recursos e autorização específica.
+concluídas; #149 incluída sob autorização somente offline e preparada com suas subissues;
+#57/pai abertos por recursos e autorização específica de ensaio real.

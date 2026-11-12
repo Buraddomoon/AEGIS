@@ -12,6 +12,13 @@ from uuid import UUID, uuid4
 
 import wazuh_pki as pki
 from aegis.domain.validation import digest
+from aegis.lab_runner.wazuh_network_profile import (
+    ADDRESSES,
+    GATEWAYS,
+    INDEXER_IP,
+    INDEXER_URL,
+    SUBNETS,
+)
 
 FORMAT = "aegis-wazuh-pki-rotation/2"
 SECRET_FILES = {
@@ -81,9 +88,53 @@ def validate_rendered(original: dict, changed: dict, candidate: Path):
         expected["secrets"][name]["file"] = str(candidate / "pki" / filename)
     if changed != expected:
         raise pki.fs.PKIError("rotation_compose_changes_outside_five_secret_files")
+    for name, cidr in SUBNETS.items():
+        network = changed.get("networks", {}).get(name, {})
+        if (
+            network.get("ipam", {}).get("config") != [{"subnet": cidr, "gateway": GATEWAYS[name]}]
+            or network.get("internal") is not True
+            or network.get("enable_ipv6", False) is not False
+            or network.get("driver_opts", {}).get("com.docker.network.bridge.gateway_mode_ipv4")
+            != "isolated"
+        ):
+            raise pki.fs.PKIError("rotation_fixed_network_overlay_required")
+    for (name, network), address in ADDRESSES.items():
+        if name == "controller" and name not in changed["services"]:
+            continue
+        if (
+            changed["services"]
+            .get(name, {})
+            .get("networks", {})
+            .get(network, {})
+            .get("ipv4_address")
+            != address
+        ):
+            raise pki.fs.PKIError("rotation_fixed_endpoint_required")
+    for name in ("api", "worker"):
+        environment = changed["services"][name].get("environment", {})
+        if (
+            environment.get("WAZUH_ALLOWED_IP") != INDEXER_IP
+            or environment.get("WAZUH_URL") != INDEXER_URL
+        ):
+            raise pki.fs.PKIError("rotation_fixed_collector_destination_required")
+    if (
+        changed["services"]["wazuh.manager"]
+        .get("environment", {})
+        .get("FILEBEAT_SSL_VERIFICATION_MODE")
+        != "full"
+    ):
+        raise pki.fs.PKIError("rotation_full_tls_verification_required")
     for name, service in changed["services"].items():
         if name != "api" and service.get("ports"):
             raise pki.fs.PKIError("rotation_published_service_port")
+        if service.get("network_mode") == "host" or service.get("privileged"):
+            raise pki.fs.PKIError("rotation_privileged_or_host_network")
+        if any(
+            "docker.sock" in str(mount.get("source", ""))
+            or "docker.sock" in str(mount.get("target", ""))
+            for mount in service.get("volumes", [])
+        ):
+            raise pki.fs.PKIError("rotation_docker_socket_mount")
     ports = changed["services"]["api"].get("ports", [])
     if (
         len(ports) != 1

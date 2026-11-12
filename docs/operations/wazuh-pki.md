@@ -25,6 +25,8 @@ execução192.168.253.8/29 e telemetria192.168.253.16/29. O overlay fixo
 `labs/wazuh/network.yml` atualiza também o destino permitido API/worker, sem editar
 o lab.env original. Candidato/plano não autorizam criar redes ou iniciar serviços.
 Preflight fresco, recursos e aprovação específica continuam obrigatórios.
+`native_blockers=[]` significa compatibilidade do perfil, sem comprovar esses
+gates ou autorizar efeitos; todos os resultados mantêm `activation_performed=false`.
 
 Inventário conserva os perfis públicos exatos antigo e atual, sem reescrever
 hashes/manifestos. O perfil antigo/SAN172.30.90.2 é histórico e recusado pelo

@@ -1,24 +1,28 @@
 # Ensaio de renovação TLS Wazuh — #6/#57
 
-**Estado em12/11/2026: preparado documentalmente, bloqueado, não executado e não
-implantado.** A #55 e a #56 entregaram somente inventário/candidato e procedimento
-offline. A #57 e o pai #6 permanecem abertos. O [ensaio de22/10](ASSAY.md) está
+**Estado em12/11/2026: preparação offline concluída; ensaio real bloqueado, não
+executado e não implantado.** #55/#56 e a dependência #149 entregaram código,
+testes e procedimentos offline. A #57 e o pai #6 permanecem abertos. O [ensaio de22/10](ASSAY.md) está
 encerrado e sua autorização não pode ser reutilizada.
 
 ## Bloqueios comprovados antes de pedir startup
 
-- Dependência #149 aberta. `wazuh_lab.network_gate()` consultou somente metadados
-  do daemon local e recusou conflito das sub-redes atuais com rede existente.
-  Não criou/removeu redes nem alterou qasrc. Resolver a dependência é outro escopo;
-  ela não é uma subissue da #6. Após sua aceitação, revisar perfil/SAN/destinos,
-  inspeção independente e fixtures antes de gerar candidato/plano novos.
-- `scripts/wazuh_host_preflight.py` retornou exit1:16CPUs, MemAvailable
-  **6.495.100.928 bytes (~6,05GiB)**, espaço Docker415.473.455.104bytes,
-  vm.max_map_count1048576. São necessários8GiB MemAvailable; swap não conta.
-  Leitura pontual, não reserva. Não parar outros projetos nem mudar sysctl.
-- Não existe autorização específica para abrir esses volumes e iniciar estes
-  serviços nesta retomada. A ordem genérica de implementar a issue não é essa
-  autorização, conforme o corpo da #57 e AGENTS.md.
+- Rede: a preparação #149/#150/#151/#152 removeu o conflito **na configuração**.
+  ADR0034 fixa execução192.168.253.8/29 e telemetria192.168.253.16/29. O target
+  `make wazuh-network-preflight` passou por leitura:20redes/61rotas, dois snapshots,
+  SHA256 `57bbdfc13bc8705d36c7ac7b922d2a3b280e4cdb25221973be13772fed726f62`.
+  Não criou/removeu redes, não reservou IPs nem validou runtime. Repetir o gate
+  imediatamente antes de qualquer efeito futuro. O material antigo requer
+  transição explícita/versionada e novo plano, não mera edição de hash.
+- Recursos: `scripts/wazuh_host_preflight.py` retornou exit1 na leitura mais
+  recente:16CPUs, MemAvailable **5.307.334.656bytes (~4,94GiB)**, espaço Docker
+  415.276.077.056bytes, vm.max_map_count1048576. São necessários8GiB MemAvailable;
+  swap não conta. A leitura inicial tinha6,05GiB, também insuficiente. Não parar
+  outros projetos nem mudar sysctl para liberar o ensaio.
+- Autorização: o usuário ampliou explicitamente a tarefa para incluir #149
+  **somente offline**. Não autorizou abrir volumes ou iniciar serviços. A ordem
+  de continuar preserva essa restrição. O corpo da #57 e AGENTS.md exigem um
+  escopo atual revisado e autorização específica posterior, sem reutilizar22/10.
 
 Não gerar candidato real que expire durante o bloqueio, abrir/migrar volumes ou
 iniciar serviços para completar um formulário. Arquivos públicos da PKI antiga
@@ -30,7 +34,7 @@ Resultados antigos e fixtures não provam TLS renovado no laboratório.
 Um único ensaio de startup/leitura/TLS, projeto exato `aegis-wazuh-lab`, sem
 simulação ofensiva. Antes da solicitação, anexar privadamente IDs atuais,
 labels/volumes/redes/mounts, imagens reais/digests e hashes do candidato/plano;
-verificar que correspondem ao perfil pós-#149 e ao código disponível. Nenhum
+verificar que correspondem ao perfil ADR0034 e ao código disponível. Nenhum
 placeholder de ID/hash deste documento concede permissão.
 
 | Recurso/efeito proposto | Limite |
@@ -94,11 +98,20 @@ quarentena e acesso à recuperação; a #57 fica aberta até reconciliação com
 
 ## Evidências já disponíveis e limite
 
-Na fonte `0b65f70`,132testes locais passaram: certificados reais em temporários,
+Na fonte `6c2b637`,244testes locais passaram: certificados reais em temporários,
 SAN/cadeia/permissões/drift, lifecycle/rollback por fixture, Compose renderizado
 sem startup e TLS real de echo em loopback aceitando o novo par e recusando
 CA/cliente antigos, hostname incorreto e ausência de cliente. Ruff completo,
-format/mypy e checks staged/release passaram. Aviso Starlette/httpx conhecido.
+format/mypy e checks staged/release passaram. A validação final da #152 ampliou
+`make test-wazuh-preparation`:114+84=198execuções aprovadas, incluindo o Compose de
+origem antiga com destino novo e recusas de baseline incorreto. `make test-wazuh`:
+60aprovações com schemas PostgreSQL descartáveis e Redis15, sequenciais; o erro
+inicial de configuração de credencial local foi resolvido apenas no ambiente do
+processo, sem mudar contas/grants/arquivos. `make lint` completo passou. Esses
+conjuntos têm sobreposição; não somar como testes únicos. Aviso Starlette/httpx
+conhecido. A CI integral de `6c2b637` passou nos quatro jobs Python e React:
+https://github.com/Buraddomoon/AEGIS/actions/runs/43245368974 . A rodada final da
+#152 deve ser conferida separadamente; ver comentário da issue para o hash/run.
 
 Nada disso é um ensaio Wazuh nativo. O teste de echo exige mTLS como fixture de
 pares/trust; não afirma que o HTTP do Indexer exija certificado de cliente nessa

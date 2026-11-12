@@ -155,6 +155,7 @@ wazuh-lab-preflight:
 	$(VENV)/python scripts/wazuh_host_preflight.py
 test-wazuh-preparation:
 	$(VENV)/pytest tests/test_wazuh_host_preflight.py tests/test_wazuh_lab_preparation.py tests/test_wazuh_lab_lifecycle.py tests/test_wazuh_runtime_inspection.py tests/test_wazuh_assay_guard.py tests/test_marker_log.py tests/test_marker_observer.py -q
+	$(VENV)/pytest tests/test_wazuh_network_profile.py tests/test_wazuh_network_transition.py tests/test_wazuh_pki.py tests/test_wazuh_pki_rotation.py -q
 wazuh-lab-pull:
 	$(VENV)/python scripts/wazuh_lab.py pull --confirm-local-wazuh
 wazuh-lab-hash-users:
@@ -182,6 +183,11 @@ test-wazuh-pki:
 .PHONY: test-wazuh-pki-rotation
 test-wazuh-pki-rotation:
 	$(VENV)/pytest tests/test_wazuh_pki_rotation.py -q
+
+# Queries only Docker metadata and host IPv4 routes; never changes either.
+.PHONY: wazuh-network-preflight
+wazuh-network-preflight:
+	$(VENV)/python scripts/wazuh_network_preflight.py
 
 # Encryption is host-only. Private identities are never accepted on the command line.
 .PHONY: backup-tools backup-keygen seal-backup verify-sealed-backup backup-vault-plan

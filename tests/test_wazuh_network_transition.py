@@ -148,3 +148,22 @@ def test_initializer_new_wazuh_runner_is_exact_and_keeps_other_profiles_closed(t
         with pytest.raises(ValueError):
             pki.fs.initialize(tmp_path / "unreviewed", server_ip=address)
     assert not (tmp_path / "unreviewed").exists()
+
+
+def test_real_render_of_legacy_source_uses_new_network_and_candidate_without_editing_source(
+    transition, tmp_path
+):
+    from test_wazuh_pki_rotation import render
+
+    source, candidate, sha, before = transition
+    prepared = rotation.prepare(source, candidate, sha, tmp_path / "plans")
+    plan = Path(prepared["plan_path"])
+    original, changed = render(source), render(source, plan / "compose.pki.json")
+    rotation.validate_rendered(original, changed, candidate)
+    for name in ("api", "worker"):
+        assert changed["services"][name]["environment"]["WAZUH_ALLOWED_IP"] == INDEXER_IP
+    assert {
+        str(path.relative_to(source)): (path.read_bytes(), path.stat().st_mtime_ns)
+        for path in source.rglob("*")
+        if path.is_file()
+    } == before

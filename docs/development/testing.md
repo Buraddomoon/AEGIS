@@ -457,3 +457,21 @@ opcionais inseguros e expõe ambiente apenas como chave/booleano, nunca valor.
 Config.User omitido na imagem é aceito; runtime ainda exige70:70. GOSU_VERSION e
 DOCKER_PG_LLVM_DEPS são metadados oficiais fechados, não prefixos de env liberados.
 Ausência do Demo/daemon significa skip; fixtures e projeção não provam o Lab real.
+
+## Preparação das redes e PKI Wazuh — #149/#6
+
+`make test-wazuh-preparation` inclui duas execuções sequenciais: os contratos
+anteriores de preparação/inspeção/observador e os novos casos de perfil fixo,
+transição explícita, PKI e plano/rollback. Só arquivos temporários, Compose
+renderizado e TLS de echo em loopback, sem startup do laboratório. A transição de
+serviços usa manifesto `/2`; origem e manifesto legados permanecem intactos.
+`make wazuh-network-preflight` consulta20redes/61rotas na observação12/11, sem
+sobreposição nas duas faixas ADR0034; repetir antes de criação futura, sem reserva.
+
+Validação final local #152:114+84aprovações de preparação e60 no target
+`make test-wazuh`; conjuntos sobrepostos. Integração usou a infraestrutura PG/Redis
+já existente, schemas descartáveis/DB15 e execução sequencial. A configuração
+inicial deste checkout não autenticava no PG; seleção apenas no ambiente do
+processo resolveu o problema, sem modificar contas/grants/arquivos. `make lint`
+completo passou. Os resultados não comprovam TLS/ACL/agente Wazuh reais nem
+implantação. Ensaio #57 segue sem autorização de startup e com MemAvailable<8GiB.

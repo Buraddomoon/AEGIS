@@ -308,3 +308,52 @@ def test_candidate_tls_loopback_rejects_old_trust_and_client(prepared, condition
         listener.close()
         assert not thread.is_alive()
     assert accepted == ([True] if condition == "new-pair" else [])
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "legacy-network",
+        "endpoint",
+        "destination",
+        "hostname",
+        "tls",
+        "gateway",
+        "siem-port",
+        "host-network",
+        "docker-socket",
+    ],
+)
+def test_matching_bad_baseline_cannot_bypass_current_profile_checks(prepared, rendered, kind):
+    _, candidate, _, _, _ = prepared
+    original, captured = copy.deepcopy(rendered)
+    for config in (original, captured):
+        if kind == "legacy-network":
+            config["networks"]["isolated"]["ipam"]["config"] = [
+                {"subnet": "172.30.89.0/29", "gateway": "172.30.89.1"}
+            ]
+        elif kind == "endpoint":
+            config["services"]["wazuh.indexer"]["networks"]["telemetry"]["ipv4_address"] = (
+                "172.30.90.2"
+            )
+        elif kind in {"destination", "hostname"}:
+            key = "WAZUH_ALLOWED_IP" if kind == "destination" else "WAZUH_URL"
+            config["services"]["api"]["environment"][key] = (
+                "172.30.90.2" if kind == "destination" else "https://unreviewed.example:9200"
+            )
+        elif kind == "tls":
+            config["services"]["wazuh.manager"]["environment"]["FILEBEAT_SSL_VERIFICATION_MODE"] = (
+                "none"
+            )
+        elif kind == "gateway":
+            config["networks"]["telemetry"]["ipam"]["config"][0]["gateway"] = "192.168.253.1"
+        elif kind == "siem-port":
+            config["services"]["wazuh.indexer"]["ports"] = [{"published": "9200"}]
+        elif kind == "host-network":
+            config["services"]["wazuh.manager"]["network_mode"] = "host"
+        else:
+            config["services"]["wazuh.agent"]["volumes"].append(
+                {"type": "bind", "source": "/var/run/docker.sock", "target": "/var/run/docker.sock"}
+            )
+    with pytest.raises(ValueError):
+        rotation.validate_rendered(original, captured, candidate)
