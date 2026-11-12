@@ -97,27 +97,14 @@ def test_shell_environment_cannot_override_private_destination(lifecycle, monkey
 
 
 def test_subnet_collision_fails_before_any_creation(lifecycle, monkeypatch):
-    responses = iter(
-        [
-            "other-network",
-            json.dumps(
-                [
-                    {
-                        "Labels": {"com.docker.compose.project": "other-project"},
-                        "IPAM": {"Config": [{"Subnet": "172.30.89.0/24"}]},
-                    }
-                ]
-            ),
-        ]
-    )
     calls = []
 
-    def docker_read(command, **kwargs):
-        calls.append(command)
-        return subprocess.CompletedProcess(command, 0, next(responses), "")
+    def collision():
+        calls.append("read-only-network-preflight")
+        raise ValueError("subnet_docker_overlap_observed")
 
-    monkeypatch.setattr(lifecycle, "execute", docker_read)
-    with pytest.raises(ValueError, match="conflita"):
+    monkeypatch.setattr(lifecycle.wazuh_network_preflight, "review", collision)
+    monkeypatch.setattr(lifecycle, "execute", lambda *args, **kwargs: pytest.fail("No creation"))
+    with pytest.raises(ValueError, match="docker_overlap"):
         lifecycle.network_gate()
-    assert len(calls) == 2
-    assert not any("create" in command or "up" in command for command in calls)
+    assert calls == ["read-only-network-preflight"]

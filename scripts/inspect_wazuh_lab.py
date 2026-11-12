@@ -10,6 +10,8 @@ import re
 import subprocess
 from pathlib import Path
 
+from aegis.lab_runner.wazuh_network_profile import ADDRESSES as PROFILE_ADDRESSES
+from aegis.lab_runner.wazuh_network_profile import GATEWAYS, SUBNETS
 from wazuh_lab import DOCKER, IMAGES, PRIVATE, PROJECT, ROOT, execute
 
 MIB = 1024**2
@@ -45,16 +47,7 @@ LIMITS = {
     "wazuh.agent": (128, 500_000_000),
 }
 HARDENED = {"runner", "observer", "api", "worker", "wazuh.indexer"}
-ADDRESSES = {
-    ("runner", "isolated"): "172.30.89.2",
-    ("api", "isolated"): "172.30.89.4",
-    ("worker", "isolated"): "172.30.89.5",
-    ("wazuh.indexer", "telemetry"): "172.30.90.2",
-    ("wazuh.manager", "telemetry"): "172.30.90.3",
-    ("wazuh.agent", "telemetry"): "172.30.90.4",
-    ("api", "telemetry"): "172.30.90.5",
-    ("worker", "telemetry"): "172.30.90.6",
-}
+ADDRESSES = {key: value for key, value in PROFILE_ADDRESSES.items() if key[0] != "controller"}
 
 
 def expected_mounts(private: Path) -> dict[str, dict[str, tuple[str, str, bool]]]:
@@ -283,9 +276,9 @@ def validate(
             checks["network." + name + ".gateway"] = (item.get("Options") or {}).get(
                 "com.docker.network.bridge.gateway_mode_ipv4"
             ) == "isolated"
-            checks["network." + name + ".subnet"] = [
-                entry.get("Subnet") for entry in (item.get("IPAM") or {}).get("Config", [])
-            ] == ["172.30.89.0/29" if name == "isolated" else "172.30.90.0/29"]
+            checks["network." + name + ".subnet"] = (item.get("IPAM") or {}).get("Config", []) == [
+                {"Subnet": SUBNETS[name], "Gateway": GATEWAYS[name]}
+            ]
     expected_volumes = {
         spec[1] for service in mounts.values() for spec in service.values() if spec[0] == "volume"
     }

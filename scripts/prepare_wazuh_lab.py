@@ -7,6 +7,7 @@ import re
 import secrets
 from pathlib import Path
 
+from aegis.lab_runner.wazuh_network_profile import INDEXER_IP, INDEXER_URL, RUNNER_IP
 from init_linux_lab import initialize, openssl
 
 
@@ -17,7 +18,7 @@ def prepare(output: Path):
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
     previous = os.umask(0o077)
     try:
-        runner = initialize(output / "runner", server_ip="172.30.89.2")
+        runner = initialize(output / "runner", server_ip=RUNNER_IP)
         connection = json.loads((runner / "connection.json").read_text())
         pki = output / "pki"
         pki.mkdir(mode=0o700)
@@ -59,7 +60,11 @@ def prepare(output: Path):
             config.write_text(
                 "basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\n"
                 f"extendedKeyUsage={eku}\n"
-                + ("subjectAltName=DNS:wazuh.indexer,IP:172.30.90.2\n" if name == "indexer" else "")
+                + (
+                    f"subjectAltName=DNS:wazuh.indexer,IP:{INDEXER_IP}\n"
+                    if name == "indexer"
+                    else ""
+                )
             )
             openssl(
                 "x509",
@@ -116,8 +121,8 @@ def prepare(output: Path):
             "POSTGRES_PASSWORD": secrets.token_hex(32),
             "APP_DB_PASSWORD": secrets.token_hex(32),
             "REDIS_PASSWORD": secrets.token_hex(32),
-            "WAZUH_URL": "https://wazuh.indexer:9200",
-            "WAZUH_ALLOWED_IP": "172.30.90.2",
+            "WAZUH_URL": INDEXER_URL,
+            "WAZUH_ALLOWED_IP": INDEXER_IP,
             "WAZUH_USERNAME": "aegis_reader",
             "WAZUH_PASSWORD": credentials["aegis_reader"],
             "WAZUH_CA_BUNDLE": "/run/secrets/wazuh_ca",

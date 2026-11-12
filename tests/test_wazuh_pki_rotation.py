@@ -40,7 +40,7 @@ def prepared(tmp_path_factory):
 def test_plan_is_private_offline_coherent_and_does_not_copy_credentials(prepared):
     source, candidate, _, plan, sha = prepared
     result = rotation.recheck(plan, sha)
-    assert result["status"] == "offline_procedure_verified_native_blocked"
+    assert result["status"] == "offline_procedure_verified_authorization_required"
     assert result["activation_performed"] is result["normal_operation_permitted"] is False
     document = json.loads((plan / "compose.pki.json").read_bytes())
     assert set(document) == {"secrets"}

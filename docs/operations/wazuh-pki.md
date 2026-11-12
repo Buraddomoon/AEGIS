@@ -14,16 +14,24 @@ um inventário novo não aprova automaticamente outra versão/configuração.
 
 | Consumidor | Identidade/trust efetivos |
 |---|---|
-| Indexer HTTP9200 e transporte interno | `indexer.pem`, DN `O=AEGIS Lab,OU=AEGIS,CN=wazuh.indexer`; SAN DNS `wazuh.indexer`, IP `172.30.90.2`; EKU servidor/cliente; CA pública própria |
+| Indexer HTTP9200 e transporte interno | `indexer.pem`, DN `O=AEGIS Lab,OU=AEGIS,CN=wazuh.indexer`; SAN DNS `wazuh.indexer`, IP `192.168.253.18`; EKU servidor/cliente; CA pública própria |
 | Filebeat no manager | `filebeat.pem`, DN `O=AEGIS Lab,OU=AEGIS,CN=aegis-filebeat`, EKU cliente; validação `full` do Indexer; login separado `aegis_ingest` |
 | Coletor API/worker | CA pública e usuário `aegis_reader`, sem chave privada de serviços; CA/SNI, destino fixo e ACL continuam obrigatórios |
 | Agente→manager1514/TCP | Protocolo seguro Wazuh/AES com `client.keys` pré-provisionado; não é um canal X.509 a renovar |
 | API de gestão55000 | Loopback dentro do manager, fora do coletor; certificados internos do volume não são inventariados/rotacionados por esta ferramenta |
 
-As redes antigas `172.30.89/90.0/29` conflitam com qasrc. **#149 permanece
-bloqueadora de qualquer ativação.** O candidato deste perfil é apenas offline;
-a transição de rede exigirá reavaliar SAN, destino e perfil antes de gerar outro
-candidato. Não alterar qasrc nem aplicar este candidato para contornar a dependência.
+O [ADR0034](../architecture/decisions/0034-wazuh-network-transition.md) define
+execução192.168.253.8/29 e telemetria192.168.253.16/29. O overlay fixo
+`labs/wazuh/network.yml` atualiza também o destino permitido API/worker, sem editar
+o lab.env original. Candidato/plano não autorizam criar redes ou iniciar serviços.
+Preflight fresco, recursos e aprovação específica continuam obrigatórios.
+
+Inventário conserva os perfis públicos exatos antigo e atual, sem reescrever
+hashes/manifestos. O perfil antigo/SAN172.30.90.2 é histórico e recusado pelo
+lifecycle atual. Renovação comum conserva o endpoint; para antiga→nova exigir
+`prepare --migrate-wazuh-network`, formato `/2`, origem antiga exata e candidato
+com SAN192.168.253.18. Transição repetida/inversa, flag não booleana ou downgrade
+do formato são recusados. Nenhuma alteração implícita da PKI separada do runner.
 
 ```bash
 .venv/bin/python scripts/wazuh_pki.py inspect --source /caminho/privado/wazuh-lab
@@ -52,6 +60,9 @@ Isso não demonstra conectividade TLS atual ou conteúdo de volumes.
   --expected-sha256 <manifest_sha256-revisado>
 make test-wazuh-pki
 ```
+
+Se a origem usar o SAN antigo, acrescentar `--migrate-wazuh-network` ao prepare.
+Não aplicar esse flag a uma origem atual.
 
 Diretórios0700 de propriedade do usuário; CA privada0600 e folhas/chaves de
 serviços0444 para mounts individuais de leitura, como no perfil original. Nenhum

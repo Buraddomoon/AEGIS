@@ -1,15 +1,19 @@
 """Opt-in lifecycle of the separate local Wazuh lab. Never executes a marker."""
 
 import argparse
-import ipaddress
 import json
 import platform
 import re
 import socket
 import subprocess
+from datetime import datetime, timedelta
 from pathlib import Path
 
+import runner_pki
+import wazuh_network_preflight
+import wazuh_pki
 import yaml
+from aegis.lab_runner.wazuh_network_profile import INDEXER_IP, RUNNER_URL
 from wazuh_host_preflight import failures, inspect, local_environment
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +26,7 @@ for file in (
     "labs/linux/compose.yml",
     "labs/linux/platform.yml",
     "labs/wazuh/compose.yml",
+    "labs/wazuh/network.yml",
 ):
     COMPOSE.extend(["-f", str(ROOT / file)])
 IMAGES = json.loads((ROOT / "labs/wazuh/images.json").read_text())["images"]
@@ -48,31 +53,8 @@ def resource_gate():
 
 
 def network_gate():
-    identifiers = execute(
-        [*DOCKER, "network", "ls", "-q"], capture_output=True, text=True, timeout=10
-    ).stdout.split()
-    if identifiers:
-        networks = json.loads(
-            execute(
-                [*DOCKER, "network", "inspect", *identifiers],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            ).stdout
-        )
-        planned = [ipaddress.ip_network(item) for item in ("172.30.89.0/29", "172.30.90.0/29")]
-        for network in networks:
-            own = (network.get("Labels") or {}).get("com.docker.compose.project") == PROJECT
-            for config in (network.get("IPAM") or {}).get("Config") or []:
-                if not config.get("Subnet"):
-                    continue
-                subnet = ipaddress.ip_network(config["Subnet"])
-                if not own and any(
-                    subnet.version == item.version and subnet.overlaps(item) for item in planned
-                ):
-                    raise ValueError(
-                        "Sub-rede do ensaio conflita com rede existente; não alterar redes."
-                    )
+    # Startup gate only: no ownership exemption, no repair/removal on collisions.
+    wazuh_network_preflight.review()
     with socket.socket() as port:
         try:
             port.bind(("127.0.0.1", 18786))
@@ -140,17 +122,16 @@ def hash_users():
 
 
 def certificates_gate():
-    for name in (
-        "pki/indexer.pem",
-        "pki/filebeat.pem",
-        "runner/runner-server.crt",
-        "runner/runner-client.crt",
+    services = wazuh_pki.inventory(PRIVATE, current=True)
+    runner, _ = runner_pki.inventory(PRIVATE / "runner", current=True)
+    if services["profile"]["indexer_ip"] != INDEXER_IP or runner["connection"]["url"] != RUNNER_URL:
+        raise ValueError("PKI histórica não permite startup no perfil ADR0034.")
+    if any(
+        datetime.fromisoformat(info["not_after"]) <= wazuh_pki.fs.clock() + timedelta(minutes=10)
+        for record in (services, runner)
+        for info in record["certificates"].values()
     ):
-        execute(
-            ["openssl", "x509", "-checkend", "600", "-noout", "-in", str(PRIVATE / name)],
-            capture_output=True,
-            timeout=5,
-        )
+        raise ValueError("PKI sem validade restante suficiente; não iniciar.")
     if not (PRIVATE / "internal_users.yml").is_file():
         raise ValueError(
             "Preparação dos hashes ainda pendente; não iniciar com credenciais default."

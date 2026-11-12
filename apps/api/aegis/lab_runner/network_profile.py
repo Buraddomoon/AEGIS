@@ -1,5 +1,7 @@
 """Reviewed fixed lab addresses; never derive targets from API/user input."""
 
+from aegis.lab_runner.wazuh_network_profile import RUNNER_IP, RUNNER_URL
+
 LINUX_SUBNET = "192.168.253.0/29"
 LINUX_GATEWAY = "192.168.253.1"
 LINUX_RUNNER_IP = "192.168.253.2"
@@ -9,5 +11,5 @@ LINUX_WORKER_IP = "192.168.253.5"
 LINUX_URL = "https://192.168.253.2:8443"
 LEGACY_LINUX_IP = "172.30.88.2"
 LEGACY_LINUX_URL = "https://172.30.88.2:8443"
-WAZUH_RUNNER_IP = "172.30.89.2"
-WAZUH_URL = "https://172.30.89.2:8443"
+WAZUH_RUNNER_IP = RUNNER_IP
+WAZUH_URL = RUNNER_URL

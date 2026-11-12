@@ -44,7 +44,7 @@ def test_policy_and_runner_share_new_identity_not_original_lab(prepared):
     runner = json.loads((path / "runner/connection.json").read_text())
     assert policy.laboratory_id == UUID(runner["laboratory_id"])
     assert policy.asset_id == UUID(runner["asset_id"])
-    assert runner["url"] == "https://172.30.89.2:8443"
+    assert runner["url"] == "https://192.168.253.10:8443"
     assert policy.archives_index is None
     assert (path / "client.keys").read_text().split()[:3] == ["001", "aegis-marker", "any"]
 
@@ -52,8 +52,8 @@ def test_policy_and_runner_share_new_identity_not_original_lab(prepared):
 @pytest.mark.parametrize(
     ("leaf", "ca", "address"),
     [
-        ("pki/indexer.pem", "pki/root-ca.pem", "172.30.90.2"),
-        ("runner/runner-server.crt", "runner/server-ca.crt", "172.30.89.2"),
+        ("pki/indexer.pem", "pki/root-ca.pem", "192.168.253.18"),
+        ("runner/runner-server.crt", "runner/server-ca.crt", "192.168.253.10"),
     ],
 )
 def test_generated_certificates_verify_real_new_addresses(prepared, leaf, ca, address):
@@ -128,6 +128,7 @@ def test_rendered_compose_preserves_isolation_and_secret_boundaries(prepared):
         "labs/linux/compose.yml",
         "labs/linux/platform.yml",
         "labs/wazuh/compose.yml",
+        "labs/wazuh/network.yml",
     ):
         command.extend(["-f", file])
     result = subprocess.run(
@@ -165,6 +166,8 @@ def test_rendered_compose_preserves_isolation_and_secret_boundaries(prepared):
     assert "/work" not in agent_mounts
     assert agent_mounts["/var/log/aegis"]["read_only"]
     for name in ("api", "worker"):
+        assert services[name]["environment"]["WAZUH_ALLOWED_IP"] == "192.168.253.18"
+        assert services[name]["environment"]["WAZUH_URL"] == "https://wazuh.indexer:9200"
         sources = {item["source"] for item in services[name]["secrets"]}
         assert not sources.intersection({"indexer_key", "filebeat_key"})
         assert services[name]["environment"]["WAZUH_USERNAME"] == "aegis_reader"

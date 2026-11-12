@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 import wazuh_pki as pki
 from aegis.domain.validation import digest
 
-FORMAT = "aegis-wazuh-pki-rotation/1"
+FORMAT = "aegis-wazuh-pki-rotation/2"
 SECRET_FILES = {
     "wazuh_ca": "root-ca.pem",
     "indexer_cert": "indexer.pem",
@@ -38,6 +38,7 @@ BASE_COMPOSE = (
     "labs/linux/compose.yml",
     "labs/linux/platform.yml",
     "labs/wazuh/compose.yml",
+    "labs/wazuh/network.yml",
 )
 # Ordered, bounded manual procedure, not a catalog of commands accepted from users.
 STEPS = (
@@ -112,7 +113,7 @@ def snapshot(source: Path) -> dict:
         "AEGIS_WAZUH_CONFIG_DIR": str(source),
         "AEGIS_LAB_CONFIG_DIR": str(source / "runner"),
         "WAZUH_URL": "https://wazuh.indexer:9200",
-        "WAZUH_ALLOWED_IP": "172.30.90.2",
+        "WAZUH_ALLOWED_IP": pki.inventory(source)["profile"]["indexer_ip"],
         **{
             f"AEGIS_WAZUH_{name.upper()}_IMAGE": value
             for name, value in pki.profile()["images"]["images"].items()
@@ -141,6 +142,8 @@ def snapshot(source: Path) -> dict:
 def prepare(source: Path, candidate: Path, candidate_sha256: str, output_root: Path) -> dict:
     source, candidate = pki.fs.absolute(source), pki.fs.absolute(candidate)
     checked = pki.verify(source, candidate, candidate_sha256)
+    if checked["native_blockers"]:
+        raise pki.fs.PKIError("legacy_candidate_cannot_enter_current_rotation")
     output_root = pki.separate(candidate, pki.separate(source, output_root))
     before = snapshot(source)
     output_root = pki.fs.private_directory(output_root, create=True)
@@ -206,13 +209,14 @@ def recheck(directory: Path, expected_sha256: str) -> dict:
         or plan["activation_performed"] is not False
         or plan["steps"] != list(STEPS)
         or plan["rollback_steps"] != list(ROLLBACK_STEPS)
-        or plan["native_blockers"] != [149]
+        or plan["native_blockers"] != []
     ):
         raise pki.fs.PKIError("invalid_rotation_plan")
     source, candidate = Path(plan["source"]), Path(plan["candidate"])
     pki.separate(source, directory)
     pki.separate(candidate, directory)
-    pki.verify(source, candidate, plan["candidate_sha256"])
+    if pki.verify(source, candidate, plan["candidate_sha256"])["native_blockers"]:
+        raise pki.fs.PKIError("legacy_candidate_cannot_enter_current_rotation")
     if (
         digest(pki.inventory(source)) != plan["source_inventory_sha256"]
         or snapshot(source) != plan["snapshot"]
@@ -222,9 +226,9 @@ def recheck(directory: Path, expected_sha256: str) -> dict:
     if document != overlay(candidate) or digest(document) != plan["overlay_sha256"]:
         raise pki.fs.PKIError("rotation_overlay_drift")
     return {
-        "status": "offline_procedure_verified_native_blocked",
+        "status": "offline_procedure_verified_authorization_required",
         "plan_sha256": expected_sha256,
-        "native_blockers": [149],
+        "native_blockers": [],
         "activation_performed": False,
         "normal_operation_permitted": False,
     }

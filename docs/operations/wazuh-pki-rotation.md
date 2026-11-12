@@ -1,7 +1,7 @@
 # Troca coordenada e rollback da PKI Wazuh
 
 Entrega #6/#56, procedimento offline. **Nenhum comando deste documento concede
-permissão de startup.** A #149 ainda bloqueia as redes e a #57 exige autorização
+permissão de startup.** A #149 prepara as redes offline e a #57 exige autorização
 específica para o ensaio TLS. O ensaio de22/10 continua encerrado. Não reutilizar
 seus intents, contas, bindings ou fences.
 
@@ -21,7 +21,9 @@ somente um plano privado e um overlay Compose; não chama Docker:
 make test-wazuh-pki-rotation
 ```
 
-O pacote fixa candidato, origem, scripts, Compose base, hashes de credenciais,
+O plano `/2` exige candidato do perfil ADR0034. Planos `/1` ficam históricos e
+não são aceitos para uso atual, sem conversão por rehash. O pacote fixa candidato,
+origem, scripts, Compose base mais network.yml, hashes de credenciais,
 política e identidades do runner. Somente o preparo de plano lê esses arquivos
 privados de configuração; nenhum deles é copiado para o candidato ou impresso.
 Não lê chaves antigas ou volumes. `lab.env` deve apontar exatamente para a origem,
@@ -46,8 +48,8 @@ sem daemon/startup, e conferem também o retorno aos caminhos originais.
 
 ## Pré-condições para a execução manual posterior
 
-1. Resolver e aceitar #149; revisar SAN/IP/configuração e regenerar candidato/plano
-   para o perfil aceito. Este perfil antigo é deliberadamente bloqueado. Não
+1. Aceitar #149 e revisar SAN/IP/configuração; gerar candidato/plano
+   atuais no perfil ADR0034. O perfil antigo é deliberadamente bloqueado. Não
    remover ou substituir qasrc, redes de terceiros ou volumes para fazê-lo passar.
 2. Ter preflight atual aprovado:8GiB MemAvailable,4CPUs,50GiB livres no Docker,
    vm.max_map_count>=262144 e imagem/digest/arquitetura previstos. Não alterar

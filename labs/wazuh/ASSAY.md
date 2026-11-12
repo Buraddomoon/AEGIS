@@ -2,7 +2,7 @@
 
 Para a entrega #6, seguir [inventário/candidato](../../docs/operations/wazuh-pki.md)
 e [troca/rollback](../../docs/operations/wazuh-pki-rotation.md). São preparação
-offline; #149 bloqueia a rede antiga e #57 exige escopo/aprovação próprios de TLS
+offline; o ADR0034 prepara redes novas e #57 exige escopo/aprovação próprios de TLS
 sem marcador. O procedimento histórico abaixo não é autorização dessa renovação.
 Ver [escopo TLS e bloqueios da #57](TLS-ASSAY.md) antes de qualquer retomada.
 

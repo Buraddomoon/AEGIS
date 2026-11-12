@@ -8,10 +8,16 @@ services:
     networks:
       isolated: {ipv4_address: 192.168.253.11}
   api:
+    environment:
+      WAZUH_URL: https://wazuh.indexer:9200
+      WAZUH_ALLOWED_IP: 192.168.253.18
     networks:
       isolated: {ipv4_address: 192.168.253.12}
       telemetry: {ipv4_address: 192.168.253.21}
   worker:
+    environment:
+      WAZUH_URL: https://wazuh.indexer:9200
+      WAZUH_ALLOWED_IP: 192.168.253.18
     networks:
       isolated: {ipv4_address: 192.168.253.13}
       telemetry: {ipv4_address: 192.168.253.22}

@@ -17,6 +17,7 @@ from uuid import UUID, uuid4
 from aegis.domain.validation import digest
 from aegis.integrations.linux_runner import RunnerConnection
 from aegis.lab_runner.network_profile import LEGACY_LINUX_URL, LINUX_URL, WAZUH_URL
+from aegis.lab_runner.wazuh_network_profile import LEGACY_RUNNER_URL
 from init_linux_lab import initialize
 
 FORMAT = "aegis-runner-pki-candidate/1"
@@ -242,7 +243,7 @@ def inventory(source: Path, *, current: bool = False) -> tuple[dict, dict]:
     }
     if any(connection[key] != value for key, value in expected_paths.items()) or connection[
         "url"
-    ] not in {LEGACY_LINUX_URL, LINUX_URL, WAZUH_URL}:
+    ] not in {LEGACY_LINUX_URL, LINUX_URL, WAZUH_URL, LEGACY_RUNNER_URL}:
         raise PKIError("unreviewed_runner_configuration")
     certs = {role: certificate(public[role + ".crt"], role, connection) for role in ROLES}
     if len({value["spki_sha256"] for value in certs.values()}) != 4:

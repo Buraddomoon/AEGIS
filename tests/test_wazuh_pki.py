@@ -47,7 +47,7 @@ def test_source_public_inventory_and_candidate_preserve_every_original_file(sour
     assert all(public["valid_now"].values())
     assert verified["status"] == "offline_candidate_verified_not_activated"
     assert verified["lab_started"] is verified["activation_performed"] is False
-    assert verified["native_blockers"] == [149]
+    assert verified["native_blockers"] == []
     assert "not-x509" in public["public"]["profile"]["agent_transport"]
     assert {
         str(path.relative_to(source)): (path.read_bytes(), path.stat().st_mtime_ns)
@@ -258,7 +258,7 @@ def test_actual_certificate_with_wrong_san_is_rejected(tmp_path):
         "-addext",
         "extendedKeyUsage=serverAuth,clientAuth",
         "-addext",
-        "subjectAltName=DNS:unreviewed.example,IP:172.30.90.2",
+        "subjectAltName=DNS:unreviewed.example,IP:192.168.253.18",
     )
     with pytest.raises(ValueError, match="san_mismatch"):
         pki.certificate(certificate.read_bytes(), "indexer.pem")

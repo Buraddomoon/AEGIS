@@ -13,9 +13,11 @@ from uuid import UUID, uuid4
 
 import runner_pki as fs
 from aegis.domain.validation import digest
+from aegis.lab_runner.wazuh_network_profile import INDEXER_IP, LEGACY_INDEXER_IP
 
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT = "aegis-wazuh-pki-candidate/1"
+TRANSITION_FORMAT = "aegis-wazuh-pki-candidate/2"
 PUBLIC = ("root-ca.pem", "indexer.pem", "filebeat.pem")
 KEYS = {
     "root-ca.pem": "ca-key.pem",
@@ -40,11 +42,17 @@ PROFILE_FILES = (
 )
 
 
-def profile() -> dict:
-    files = {name: hashlib.sha256(fs.read(ROOT / name)).hexdigest() for name in PROFILE_FILES}
-    # The legacy network is still blocked by #149. A network/config transition
-    # requires an explicit profile review; never silently mint for a changed SAN/trust.
-    if digest(files) != "d89a5089f6d88b7668fb2ca16107566edfb0a418287d0deb86c63c4acba08357":
+def profile(*, legacy: bool = False) -> dict:
+    names = PROFILE_FILES if legacy else (*PROFILE_FILES, "labs/wazuh/network.yml")
+    files = {name: hashlib.sha256(fs.read(ROOT / name)).hexdigest() for name in names}
+    expected = (
+        "d89a5089f6d88b7668fb2ca16107566edfb0a418287d0deb86c63c4acba08357"
+        if legacy
+        else "198d1a6feb3514d244902c41a8f31b6a730ba48a005abb7de12c036f3d6ce510"
+    )
+    # Both exact profiles are reviewed. The old public record stays byte-for-byte
+    # comparable; it cannot be used by the current lifecycle/rotation procedure.
+    if digest(files) != expected:
         raise fs.PKIError("unreviewed_wazuh_profile")
     # Only the already reviewed 4.14.9 amd64 manifests; this tool never discovers/upgrades images.
     if (
@@ -56,14 +64,16 @@ def profile() -> dict:
         "files": files,
         "images": json.loads(fs.read(ROOT / "labs/wazuh/images.json")),
         "indexer_dns": "wazuh.indexer",
-        "indexer_ip": "172.30.90.2",
+        "indexer_ip": LEGACY_INDEXER_IP if legacy else INDEXER_IP,
         "agent_transport": "wazuh-secure-aes-client.keys-not-x509",
         "management_api": "container-loopback-not-collector",
-        "native_blockers": [149],
+        "native_blockers": [149] if legacy else [],
     }
 
 
-def certificate(content: bytes, name: str) -> dict:
+def certificate(content: bytes, name: str, *, indexer_ip: str = INDEXER_IP) -> dict:
+    if indexer_ip not in {INDEXER_IP, LEGACY_INDEXER_IP}:
+        raise fs.PKIError("unreviewed_wazuh_address")
     if (
         content.count(b"-----BEGIN CERTIFICATE-----") != 1
         or not content.strip().startswith(b"-----BEGIN CERTIFICATE-----")
@@ -98,7 +108,7 @@ def certificate(content: bytes, name: str) -> dict:
     if eku != expected_eku:
         raise fs.PKIError("wazuh_certificate_purpose_mismatch")
     _, san = fs.extension(content, "subjectAltName")
-    if san != ("DNS:wazuh.indexer, IP Address:172.30.90.2" if name == "indexer.pem" else ""):
+    if san != (f"DNS:wazuh.indexer, IP Address:{indexer_ip}" if name == "indexer.pem" else ""):
         raise fs.PKIError("wazuh_certificate_san_mismatch")
     public = fs.openssl("x509", "-pubkey", "-noout", data=content)
     if not fs.openssl("pkey", "-pubin", "-text_pub", "-noout", data=public).startswith(
@@ -127,7 +137,16 @@ def inventory(source: Path, *, current: bool = False) -> dict:
     source = fs.private_directory(source)
     directory = fs.private_directory(source / "pki")
     public = {name: fs.read(directory / name) for name in PUBLIC}
-    certs = {name: certificate(content, name) for name, content in public.items()}
+    # Only two fixed exact SAN profiles. Do not infer arbitrary IPs from a certificate.
+    _, san = fs.extension(public["indexer.pem"], "subjectAltName")
+    indexer_ip = (
+        LEGACY_INDEXER_IP
+        if san == f"DNS:wazuh.indexer, IP Address:{LEGACY_INDEXER_IP}"
+        else INDEXER_IP
+    )
+    certs = {
+        name: certificate(content, name, indexer_ip=indexer_ip) for name, content in public.items()
+    }
     if len({info["spki_sha256"] for info in certs.values()}) != 3:
         raise fs.PKIError("distinct_wazuh_keys_required")
     with tempfile.TemporaryDirectory(prefix="aegis-wazuh-public-") as folder:
@@ -155,8 +174,8 @@ def inventory(source: Path, *, current: bool = False) -> dict:
         ):
             extra = ["-verify_hostname", "wazuh.indexer"] if purpose == "sslserver" else []
             fs.openssl(*base, "-purpose", purpose, *extra, str(root / name))
-        fs.openssl(*base, "-verify_ip", "172.30.90.2", str(root / "indexer.pem"))
-    return {"profile": profile(), "certificates": certs}
+        fs.openssl(*base, "-verify_ip", indexer_ip, str(root / "indexer.pem"))
+    return {"profile": profile(legacy=indexer_ip == LEGACY_INDEXER_IP), "certificates": certs}
 
 
 def inspect(source: Path) -> dict:
@@ -187,7 +206,7 @@ def separate(source: Path, target: Path) -> Path:
     return target
 
 
-def generate(target: Path):
+def generate(target: Path, *, indexer_ip: str = INDEXER_IP):
     """New service keys only; never invoke prepare_wazuh_lab/recreate credentials or runner IDs."""
     directory = target / "pki"
     directory.mkdir(mode=0o700)
@@ -237,7 +256,7 @@ def generate(target: Path):
                     + f"extendedKeyUsage={eku}\n"
                 )
                 if name == "indexer":
-                    extensions += "subjectAltName=DNS:wazuh.indexer,IP:172.30.90.2\n"
+                    extensions += f"subjectAltName=DNS:wazuh.indexer,IP:{indexer_ip}\n"
                 (root / "extensions.cnf").write_text(extensions)
                 fs.openssl(
                     "x509",
@@ -264,7 +283,7 @@ def generate(target: Path):
         os.umask(previous)
 
 
-def validate_new(original: dict, target: Path) -> dict:
+def validate_new(original: dict, target: Path, *, migrate_wazuh_network: bool = False) -> dict:
     fs.private_directory(target)
     if set(os.listdir(target / "pki")) != FILES or set(os.listdir(target)) not in (
         {"pki"},
@@ -274,7 +293,11 @@ def validate_new(original: dict, target: Path) -> dict:
     for name in FILES:
         fs.read(target / "pki" / name, modes=(0o600,) if name == "ca-key.pem" else (0o444,))
     new = inventory(target, current=True)
-    if new["profile"] != original["profile"]:
+    if type(migrate_wazuh_network) is not bool or (
+        migrate_wazuh_network and original["profile"]["indexer_ip"] != LEGACY_INDEXER_IP
+    ):
+        raise fs.PKIError("explicit_legacy_wazuh_transition_required")
+    if new["profile"] != (profile() if migrate_wazuh_network else original["profile"]):
         raise fs.PKIError("wazuh_profile_drift")
     old_keys = {info["spki_sha256"] for info in original["certificates"].values()}
     instant = fs.clock()
@@ -306,19 +329,28 @@ def write_json(path: Path, value: dict):
     fs.sync(path.parent)
 
 
-def prepare(source: Path, expected_sha256: str, output_root: Path) -> dict:
+def prepare(
+    source: Path, expected_sha256: str, output_root: Path, *, migrate_wazuh_network: bool = False
+) -> dict:
     original = inventory(source)
     if not re.fullmatch(r"[a-f0-9]{64}", expected_sha256) or digest(original) != expected_sha256:
         raise fs.PKIError("source_inventory_drift")
+    if type(migrate_wazuh_network) is not bool or (
+        migrate_wazuh_network and original["profile"]["indexer_ip"] != LEGACY_INDEXER_IP
+    ):
+        raise fs.PKIError("explicit_legacy_wazuh_transition_required")
     output_root = fs.private_directory(separate(source, output_root), create=True)
     target = output_root / uuid4().hex
     target.mkdir(mode=0o700)
-    generate(target)
-    new = validate_new(original, target)
+    generate(
+        target,
+        indexer_ip=INDEXER_IP if migrate_wazuh_network else original["profile"]["indexer_ip"],
+    )
+    new = validate_new(original, target, migrate_wazuh_network=migrate_wazuh_network)
     if inventory(source) != original:
         raise fs.PKIError("source_changed_during_preparation")
     manifest = {
-        "format": FORMAT,
+        "format": TRANSITION_FORMAT if migrate_wazuh_network else FORMAT,
         "id": target.name,
         "created_at": fs.clock().isoformat(),
         "source": original,
@@ -335,7 +367,7 @@ def prepare(source: Path, expected_sha256: str, output_root: Path) -> dict:
         "candidate_path": str(target),
         "manifest_sha256": digest(manifest),
         "status": "prepared_not_activated",
-        "native_blockers": [149],
+        "native_blockers": new["profile"]["native_blockers"],
         "activation_performed": False,
     }
 
@@ -348,7 +380,7 @@ def verify(source: Path, candidate: Path, expected_sha256: str) -> dict:
     if (
         set(manifest)
         != {"format", "id", "created_at", "source", "candidate", "activation_performed"}
-        or manifest["format"] != FORMAT
+        or manifest["format"] not in {FORMAT, TRANSITION_FORMAT}
         or manifest["id"] != candidate.name
         or UUID(hex=manifest["id"]).hex != manifest["id"]
         or manifest["activation_performed"] is not False
@@ -358,7 +390,9 @@ def verify(source: Path, candidate: Path, expected_sha256: str) -> dict:
     original = inventory(source)
     if original != manifest["source"]:
         raise fs.PKIError("source_inventory_drift")
-    new = validate_new(original, candidate)
+    new = validate_new(
+        original, candidate, migrate_wazuh_network=manifest["format"] == TRANSITION_FORMAT
+    )
     if new != manifest["candidate"]:
         raise fs.PKIError("candidate_inventory_drift")
     # Recheck time after all IO and key comparisons, never accept a stale successful parse.
@@ -368,11 +402,11 @@ def verify(source: Path, candidate: Path, expected_sha256: str) -> dict:
     ):
         raise fs.PKIError("candidate_lifetime_outside_policy")
     return {
-        "format": FORMAT,
+        "format": manifest["format"],
         "status": "offline_candidate_verified_not_activated",
         "manifest_sha256": expected_sha256,
         "candidate": new,
-        "native_blockers": [149],
+        "native_blockers": new["profile"]["native_blockers"],
         "activation_performed": False,
         "lab_started": False,
     }
@@ -387,6 +421,7 @@ def main() -> int:
         if name != "inspect":
             command.add_argument("--expected-sha256", required=True)
         if name == "prepare":
+            command.add_argument("--migrate-wazuh-network", action="store_true")
             command.add_argument(
                 "--output-root", type=Path, default=Path(".local/wazuh-pki-candidates")
             )
@@ -397,7 +432,12 @@ def main() -> int:
         if args.command == "inspect":
             result = inspect(args.source)
         elif args.command == "prepare":
-            result = prepare(args.source, args.expected_sha256, args.output_root)
+            result = prepare(
+                args.source,
+                args.expected_sha256,
+                args.output_root,
+                migrate_wazuh_network=args.migrate_wazuh_network,
+            )
         else:
             result = verify(args.source, args.candidate, args.expected_sha256)
         print(json.dumps(result, sort_keys=True, indent=2))

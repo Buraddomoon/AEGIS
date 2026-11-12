@@ -101,7 +101,10 @@ def snapshot(inspector):
                 "Options": {"com.docker.network.bridge.gateway_mode_ipv4": "isolated"},
                 "IPAM": {
                     "Config": [
-                        {"Subnet": "172.30.89.0/29" if name == "isolated" else "172.30.90.0/29"}
+                        {
+                            "Subnet": inspector.SUBNETS.get(name, "192.0.2.0/24"),
+                            "Gateway": inspector.GATEWAYS.get(name, "192.0.2.1"),
+                        }
                     ]
                 },
                 "Containers": {
@@ -196,6 +199,22 @@ def test_port_exposure_is_checked_in_requested_and_effective_state(inspector, sn
     else:
         item["ports"] = {"8080/tcp": [{"HostIp": "::", "HostPort": "18786"}]}
     assert not inspector.validate(*snapshot)["api.ports"]
+
+
+@pytest.mark.parametrize("name", ["isolated", "telemetry"])
+@pytest.mark.parametrize("change", ["legacy", "broader", "gateway", "extra-address"])
+def test_fixed_current_ipam_rejects_legacy_or_generic_networks(inspector, snapshot, name, change):
+    network = next(item for item in snapshot[1] if item["Name"] == inspector.PROJECT + "_" + name)
+    entry = network["IPAM"]["Config"][0]
+    if change == "legacy":
+        entry["Subnet"] = "172.30.89.0/29" if name == "isolated" else "172.30.90.0/29"
+    elif change == "broader":
+        entry["Subnet"] = "192.168.253.0/24"
+    elif change == "gateway":
+        entry["Gateway"] = "192.168.253.1"
+    else:
+        entry["AuxiliaryAddresses"] = {"unreviewed": "192.168.253.23"}
+    assert not inspector.validate(*snapshot)["network." + name + ".subnet"]
 
 
 @pytest.mark.parametrize(
