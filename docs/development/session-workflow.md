@@ -90,8 +90,9 @@ faixas172.30.89/90 do Wazuh, também contidas na qasrc. Nenhuma delas foi altera
 ## Concluir uma unidade
 
 Para retomar especificamente a issue4, o
-[checkpoint de ativação](activation-checkpoint.md) registra código/testes desta
-sessão, #50 concluída e os gates nativos ainda abertos de #48/#49/#51.
+[checkpoint de ativação](activation-checkpoint.md) registra o aceite conjunto das
+#48/#49/#50/#51 e o ensaio nativo encerrado em12/11. Essa entrega não autoriza
+nova execução nem replay; não iniciar outra feature a partir desse checkpoint.
 
 Antes de commit, revisar somente os arquivos do escopo, testes pertinentes,
 staged/segredos e checks do AGENTS. Referenciar a subissue; não fechar pai antes

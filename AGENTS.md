@@ -43,8 +43,9 @@ Sem microsserviços/abstrações extras ou comandos livres de API.
   são reescritos para corrigir apresentação ou fazer gates passarem. Hash não é
   assinatura. Comparação exige contexto/manifesto conhecido; denominador explícito.
 - Migrações Alembic explícitas, constraints e grants mínimos por operação/coluna.
-  Schema atual Demo b7f3c2d91a06 tem33tabelas incluindo Alembic; Lab/backups antigos
-  a0d9c7e21b45 exigem código/imagem compatíveis, sem migração implícita.
+  Schema Demo b7f3c2d91a06 tem33tabelas incluindo Alembic. Lab verificado na #48:
+  d4465b7aca2a/27tabelas; a0d9c7e21b45/32tabelas era hipótese anterior e segue em
+  fixtures/perfis intermediários. Exigir código/imagem compatíveis, sem migração implícita.
 - RBAC no backend, CSRF nas mutações com sessão, origem exata, Argon2id, limites,
   logs sem secrets. TLS/SNI/CA verificados, IP/destino revisados, sem proxies ou
   redirects ambientais em conectores. Importação YAML é dado, nunca instrução.
@@ -66,8 +67,9 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   e revogação não dispensam limpeza; falha deve mostrar recuperação segura.
 - Linux exige aprovação por administrador ativo diferente do solicitante,
   preflight mTLS vigente e autorização do lab. Identidade TLS não libera operação.
-- ADR0033 planeja Linux192.168.253.0/29, mantendo qasrc; código local está
-  parcial, sem configuração/ativação real. Revisar a issue antes de continuar.
+- Receitas Linux usam192.168.253.0/29 sob ADR0033, mantendo qasrc. Ensaio nativo
+  da #4 em12/11/2026 encerrado: binding revogado, preflight/continuidade e cleanup
+  confirmados, sem operação normal. Ver checkpoint; não reutilizar seu pacote.
 - Wazuh histórico22/10 foi COMPLETED/DETECTED/CLEANED, limitado a um marcador e
   regra própria100200, zero técnicas ATT&CK. Não generalizar eficácia de SIEM/EDR.
 
