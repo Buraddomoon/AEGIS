@@ -111,6 +111,9 @@ contas próprias inativas/zero sessões próprias e recursos encerrados. Histór
 backup, diário/fences e pacotes consumidos preservados. Não iniciar outro ensaio
 ou outra entrega a partir desse checkpoint. Conferir CI final e comentários.
 
-Entrega #6: [checkpoint PKI Wazuh](wazuh-pki-checkpoint.md). #55/#56 offline
-concluídas; #149 incluída sob autorização somente offline e preparada com suas subissues;
-#57/pai abertos por recursos e autorização específica de ensaio real.
+Entrega #6: [checkpoint PKI Wazuh](wazuh-pki-checkpoint.md). #55/#56 e dependência
+#149 entregues; [ensaio real #57 verificado e encerrado](../evidence/wazuh-tls-2026-11-12/VERIFIED.md)
+após autorização específica e reconciliação sem replay. Laboratório parado,
+volumes/configuração antiga preservados; ambas as autorizações consumidas.
+Sem novo marcador ou operação normal. Conferir CI final e comentários das issues;
+não iniciar outra entrega.

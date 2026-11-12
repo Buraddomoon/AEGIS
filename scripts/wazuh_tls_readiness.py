@@ -3,6 +3,38 @@
 import re
 
 
+def reader_identity(value: dict, *, review_id: str, image_id: str) -> dict:
+    """Identify the explicit probe command, retaining inherited build labels.
+
+    Runtime limits, mounts, source hash and results require separate checks.
+    A cached Compose-built image can carry service=migrate even when Docker run
+    explicitly overrides its entrypoint with the read-only probe.
+    """
+    if (
+        not isinstance(review_id, str)
+        or not re.fullmatch(r"[a-f0-9]{32}", review_id)
+        or not isinstance(image_id, str)
+        or not re.fullmatch(r"sha256:[a-f0-9]{64}", image_id)
+    ):
+        raise ValueError("reader_review_identity_invalid")
+    if (
+        not isinstance(value, dict)
+        or value.get("name") != "/aegis-wazuh-tls-reader-" + review_id
+        or value.get("project") != "aegis-wazuh-lab"
+        or value.get("assay") != review_id
+        or value.get("image_id") != image_id
+        or value.get("entrypoint") != ["python"]
+        or value.get("command") != ["/review/probe.py"]
+        or value.get("service") not in {None, "", "migrate"}
+    ):
+        raise ValueError("reader_identity_or_command_mismatch")
+    return {
+        "role": "tls-reader",
+        "identity_verified": True,
+        "inherited_service_label": value.get("service"),
+    }
+
+
 def agent_control(value: dict) -> dict:
     if not isinstance(value, dict) or type(value.get("error")) is not int or value["error"] != 0:
         raise ValueError("agent_control_unconfirmed")

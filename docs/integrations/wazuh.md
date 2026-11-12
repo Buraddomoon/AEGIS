@@ -4,9 +4,12 @@ Renovação de serviços (#6): [inventário/candidato offline](../operations/waz
 e [troca/rollback coordenados](../operations/wazuh-pki-rotation.md). Não renovam a
 PKI do runner nem autorizam startup. A #149 preparou o perfil ADR0034 e recusas
 de rede/SAN antigos. O [ensaio TLS sem marcador](../../labs/wazuh/TLS-ASSAY.md)
-(#57) aguarda recursos/autorização e é separado do resultado histórico abaixo.
+(#57) foi verificado e encerrado em12/11/2026, com autorização específica,
+TLS renovado e leitura reais, sem novo marcador. [Relatório e reconciliação](../evidence/wazuh-tls-2026-11-12/VERIFIED.md).
+Laboratório parado, volumes/configuração antiga preservados; autorizações
+consumidas. Esse aceite é separado do resultado defensivo histórico abaixo.
 
-**Estado real:** em 2026-10-22 foi concluído o único ensaio Wazuh próprio autorizado: uma campanha, um marcador real de 43 bytes, um alerta original 100200, COMPLETED/DETECTED/CLEANED com synthetic=false. [Evidências e limites](../evidence/wazuh-2026-10-22/README.md). Sem associação ATT&CK, archives ou alegação de eficácia de EDR.
+**Estado real:** em 2026-10-22 foi concluído o ensaio Wazuh próprio com marcador autorizado: uma campanha, um marcador real de 43 bytes, um alerta original 100200, COMPLETED/DETECTED/CLEANED com synthetic=false. [Evidências e limites](../evidence/wazuh-2026-10-22/README.md). Sem associação ATT&CK, archives ou alegação de eficácia de EDR.
 
 O [ensaio próprio](../../labs/wazuh/ASSAY.md) usou imagens oficiais4.14.9 fixadas,
 PKI própria, TLS 1.3, agente 001 Active, regra validada em sandbox, mounts efetivos,

@@ -1,5 +1,9 @@
 # Checkpoint da entrega #6 e dependência #149 — 12/11/2026
 
+**Estado final:** ensaio renovado verificado e encerrado; ver o aceite ao final e
+o [relatório final](../evidence/wazuh-tls-2026-11-12/VERIFIED.md). As entradas
+abaixo conservam cronologicamente os bloqueios e resultados anteriores.
+
 - #55 concluída: `6d42701`, inventário/candidato offline dos serviços Wazuh,
   sem chaves antigas/credenciais/runner/volumes. Perfil4.14.9/amd64/digests fixados.
 - #56 concluída: `0b65f70`, plano/overlay de cinco arquivos, recheck e diário de
@@ -96,3 +100,26 @@ retidos; não reiniciar o pacote nem remover/recriar arquivos para liberar repla
 #57/#6 abertas. Helpers de prontidão passam a separar fatos e aceitar API de gestão
 ausente sem afirmar liveness; exposição LAN permanece recusada. Nova tentativa
 necessita pacote/gates/autorização próprios, preservando este resultado parcial.
+
+
+## Aceite final da #57/#6 — 2026-11-12T21:02:45.156948+00:00
+
+O usuário autorizou separadamente um segundo ensaio único16e48a04, condicionado
+a CI/preflight aprovados. CI integral0acf359 e gates passaram. Nova folha
+Indexer/CA/SNI/IP, Filebeat TLSv1.3/full, agente001/aegis-marker Active/connected,
+API de gestão em loopback e leitor real com principal/ACL de leitura verificados.
+Sem escrita de teste, marcador ou banco. Não comprova negação de escrita nem
+DETECTED/ATT&CK/eficácia. [Evidências finais](../evidence/wazuh-tls-2026-11-12/VERIFIED.md).
+
+O label de build `migrate` herdado pela imagem do leitor causou classificação
+conservadora incorreta após o probe terminar exit0. Reconciliação confirmou
+comando/imagem/identidade/mounts/limites e recuperou a saída do container original,
+sem novo start/probe. Outcome inicial intacto e reconciliação adicional
+VERIFIED_AFTER_RECONCILIATION/CLEANED retidos. SHA256 dos bytes da reconciliação:
+`a1a7b5576eae836705e3471528c6ce23c1ce723b9ea62348647a7a9b8bc3f933`.
+
+Zero containers/consumidores, rede própria removida, nove volumes e configuração
+antiga preservados. As duas autorizações estão consumidas; sem operação normal
+ou novo ensaio. Validação final `make test-wazuh-tls-review`:114passaram. #55/#56
+entregues e #57 com evidência de aceite; registrar fechamento dos filhos antes do
+pai e conferir a CI final/comentários das issues. Parar ao concluir a #6.

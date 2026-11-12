@@ -474,4 +474,14 @@ já existente, schemas descartáveis/DB15 e execução sequencial. A configuraç
 inicial deste checkout não autenticava no PG; seleção apenas no ambiente do
 processo resolveu o problema, sem modificar contas/grants/arquivos. `make lint`
 completo passou. Os resultados não comprovam TLS/ACL/agente Wazuh reais nem
-implantação. Ensaio #57 segue sem autorização de startup e com MemAvailable<8GiB.
+implantação. Esses eram os limites da preparação offline; o
+[ensaio real posterior da #57](../evidence/wazuh-tls-2026-11-12/VERIFIED.md) foi
+autorizado separadamente, verificado e encerrado.
+
+`make test-wazuh-tls-review`:114aprovações finais. Inclui escopo mínimo com
+volumes externos, probe de GETs fixos/CA/SNI/fingerprint e negativas de ACL,
+prontidão independente do agente/API de gestão e identificação do comando do
+leitor apesar de label de build herdado. Fixtures/Compose/TLS real de loopback,
+sem startup Wazuh. Aviso conhecido Starlette/httpx. O helper de identidade foi
+também aplicado offline ao runtime salvo; mounts/limites/hashes são checks
+separados. Testes automatizados não substituem o ensaio nativo do relatório.

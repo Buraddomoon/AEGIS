@@ -84,3 +84,47 @@ def test_missing_duplicate_or_executable_state_input_is_rejected(state):
 def test_unavailable_or_malformed_listener_inventory_cannot_be_called_absent(content):
     with pytest.raises(ValueError):
         readiness.management_listeners(content)
+
+
+def reader():
+    return {
+        "name": "/aegis-wazuh-tls-reader-" + "a" * 32,
+        "project": "aegis-wazuh-lab",
+        "assay": "a" * 32,
+        "image_id": "sha256:" + "b" * 64,
+        "service": "migrate",
+        "entrypoint": ["python"],
+        "command": ["/review/probe.py"],
+    }
+
+
+def test_inherited_image_build_label_does_not_change_the_verified_probe_command():
+    value = reader()
+    original = copy.deepcopy(value)
+    result = readiness.reader_identity(value, review_id="a" * 32, image_id="sha256:" + "b" * 64)
+    assert result == {
+        "role": "tls-reader",
+        "identity_verified": True,
+        "inherited_service_label": "migrate",
+    }
+    assert value == original
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("name", "/other-reader"),
+        ("project", "other-project"),
+        ("assay", "c" * 32),
+        ("image_id", "sha256:" + "c" * 64),
+        ("entrypoint", ["alembic"]),
+        ("command", ["upgrade", "head"]),
+        ("command", ["/review/probe.py", "--unreviewed"]),
+        ("service", "worker"),
+    ],
+)
+def test_reader_identity_never_accepts_actual_migration_or_unreviewed_resources(field, value):
+    item = reader()
+    item[field] = value
+    with pytest.raises(ValueError):
+        readiness.reader_identity(item, review_id="a" * 32, image_id="sha256:" + "b" * 64)
