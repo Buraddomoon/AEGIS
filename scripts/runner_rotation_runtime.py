@@ -49,7 +49,8 @@ def recipe(c, role, context_sha256=None, *, policy_root):
         spec["network_name"] = resource(c.operation, c.plan_sha256, NETWORK_ROLE)["name"]
         spec["ipv4_address"] = "192.168.253.4"
         # The server exposes only loopback to administrative namespace sharers.
-        # Original schema/grants must already be b7; this never runs a migration.
+        # Schema capabilities are fixed by the rotation package and its helpers;
+        # this server never runs a migration or grants privileges.
         args = spec["arguments"]
         args[args.index("default_transaction_read_only=on")] = "default_transaction_read_only=off"
         return spec

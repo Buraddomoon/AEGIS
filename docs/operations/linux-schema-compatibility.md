@@ -1,7 +1,7 @@
 # Compatibilidade do banco Linux na ativação
 
 Evidência da #48, conferida em11/11/2026. O PostgreSQL original foi copiado a frio
-em mount read-only/nocopy, sem iniciar servidor sobre ele. Restore e upgrade
+em mount read-only/nocopy, sem iniciar servidor sobre ele nessa etapa de backup. Restore e upgrade
 foram executados somente nos clones; os resultados reais constam abaixo.
 Os testes automatizados continuam usando histórico sintético descartável.
 
@@ -96,6 +96,15 @@ de preparação/validação intermediárias, registradas nos ledgers; nenhuma ge
 nova cópia do original. Todos os containers próprios foram removidos e fences
 fechados após conferir ausência. Volumes intermediários, backup, journal, PKI,
 qasrc e imagens históricos preservados. A evidência não autoriza migração original.
+
+Para consumo pelo pacote, foi derivada evidência canônica
+`03fcbe5979e75a719300318ce2e6c735142a96ebfa8722320e0ea3585d12f935`: somente o
+hash dos metadados do volume normaliza options null→{}, como o inventário
+`runner_activation_metadata.inventory`. A evidência original e um recibo separado
+dessa normalização permanecem preservados; nenhum dado/backup foi alterado.
+O [ensaio nativo posterior](../../labs/linux/ROTATION-2026-11-12.md) abriu PostgreSQL
+no original exclusivamente para conta temporária, binding/preflight e verificação;
+o schema original continuou d446, sem grants ou senhas existentes alterados.
 
 ## Verificação executável sem Lab
 

@@ -2,8 +2,11 @@
 
 Implementação da #49, com CLI host-only `scripts/runner_rotation.py` e helpers
 fechados em `aegis.lab_runner.rotation_probe`. Validada com daemon simulado,
-PostgreSQL/SQLite descartáveis e cliente TLS de fixture; **não executada sobre o
-Lab original**. Testes não autorizam a intervenção nem comprovam runtime nativo.
+PostgreSQL/SQLite descartáveis e cliente TLS de fixture; execução real sobre o
+original concluída em12/11/2026 sob autorização específica, com binding revogado,
+preflight/continuidade e cleanup confirmados. Ver o
+[relatório nativo](../../labs/linux/ROTATION-2026-11-12.md). Fixtures continuam
+separadas da evidência real e não autorizam uma nova intervenção.
 
 O plano de metadados existente mantém seu formato/perfil e não ganha poderes
 retroativos. Um pacote separado `aegis-native-rotation-package/3` fixa o hash do
