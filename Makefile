@@ -184,6 +184,11 @@ test-wazuh-pki:
 test-wazuh-pki-rotation:
 	$(VENV)/pytest tests/test_wazuh_pki_rotation.py -q
 
+# Contract tests and loopback TLS only. Never starts the native Wazuh assay.
+.PHONY: test-wazuh-tls-review
+test-wazuh-tls-review:
+	$(VENV)/pytest tests/test_wazuh_tls_scope.py tests/test_wazuh_tls_probe.py tests/test_wazuh_tls.py tests/test_wazuh_collection.py -q
+
 # Queries only Docker metadata and host IPv4 routes; never changes either.
 .PHONY: wazuh-network-preflight
 wazuh-network-preflight:

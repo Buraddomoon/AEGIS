@@ -58,3 +58,25 @@ vm.max_map_count1048576. Redes20/rotas61 sem sobreposição;
 mesmo hash de observação anterior. O usuário foi informado da necessidade de
 recursos; aprovação de startup ainda não solicitada/concedida. #57/#6 abertas.
 Essa retomada é inspeção real de metadados; nenhum teste de TLS nativo executado.
+
+
+## Recursos liberados e preparação concreta da #57
+
+Sob instrução explícita do usuário, Firefox/Slack e seus descendentes foram
+encerrados com SIGTERM; zero sobreviventes, sem SIGKILL. Preflight passou:
+MemAvailable9.553.633.280bytes (~8,90GiB). Nenhum projeto Docker foi parado.
+
+Candidato `0dfb54bbe5c54423ad37ef2309ae369d` criado separadamente com transição
+explícita; manifesto `c38691e29f46429e230bcdb73a528b74164ced98275ce54932ba98ea192e1a6d`.
+Plano `5175cd2f7c0f4ef68a1ef52f8d124df5`, SHA256
+`374d60c68d0e10ae42bb7702f4193d2555d154857e667f119a4f51b22a26562a`.
+Ambos verificados, não ativados. Origem permanece intacta. Preparação privada em
+`.local/wazuh-pki-plans/5175cd2f7c0f4ef68a1ef52f8d124df5-assay/preparation.json`.
+Revalidar TTL/recursos/metadados; hashes não são autorização.
+
+Leitor fixo `scripts/wazuh_tls_probe.py` e projeção TLS-only em
+`scripts/wazuh_tls_scope.py` preparados/testados sem containers reais. Leitor usa
+GETs fixos, CA/SNI/IP/fingerprint, principal exato, ACL de leitura, saída redigida e
+credenciais stdin. Não testa escrita. A projeção usa só três serviços, rede
+telemetria e seis volumes externos existentes; nenhum runner/observador/DB/API.
+O ensaio real #57/#6 ainda depende de autorização específica do pacote final.

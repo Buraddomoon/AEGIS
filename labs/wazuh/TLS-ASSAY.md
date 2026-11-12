@@ -1,7 +1,7 @@
 # Ensaio de renovação TLS Wazuh — #6/#57
 
-**Estado em12/11/2026: preparação offline concluída; ensaio real bloqueado, não
-executado e não implantado.** #55/#56 e a dependência #149 entregaram código,
+**Estado em12/11/2026: candidato/plano preparados; ensaio real aguardando autorização,
+não executado e não implantado.** #55/#56 e a dependência #149 entregaram código,
 testes e procedimentos offline. A #57 e o pai #6 permanecem abertos. O [ensaio de22/10](ASSAY.md) está
 encerrado e sua autorização não pode ser reutilizada.
 
@@ -14,11 +14,12 @@ encerrado e sua autorização não pode ser reutilizada.
   Não criou/removeu redes, não reservou IPs nem validou runtime. Repetir o gate
   imediatamente antes de qualquer efeito futuro. O material antigo requer
   transição explícita/versionada e novo plano, não mera edição de hash.
-- Recursos: `scripts/wazuh_host_preflight.py` retornou exit1 na leitura mais
-  recente:16CPUs, MemAvailable **4.190.216.192bytes (~3,90GiB)**, espaço Docker
-  414.918.975.488bytes, vm.max_map_count1048576. São necessários8GiB MemAvailable;
-  swap não conta. As leituras anteriores tinham6,05/4,94GiB, também insuficientes. Não parar
-  outros projetos nem mudar sysctl para liberar o ensaio.
+- Recursos: após o usuário autorizar encerrar Firefox/Slack, os processos foram
+  encerrados e o preflight passou com16CPUs, MemAvailable9.553.633.280bytes
+  (~8,90GiB), Docker livre415.040.958.464bytes e vm.max_map_count1048576.
+  O gate continua exigindo8GiB e deve passar novamente antes do startup; não
+  reutilizar essa observação como reserva. As leituras insuficientes anteriores
+  permanecem registradas no checkpoint e na revisão de metadados.
 - Autorização: o usuário ampliou explicitamente a tarefa para incluir #149
   **somente offline**. Não autorizou abrir volumes ou iniciar serviços. A ordem
   de continuar preserva essa restrição. O corpo da #57 e AGENTS.md exigem um
@@ -34,12 +35,51 @@ Nove volumes confirmados por nome/labels/driver/data de criação e zero
 consumidores, em dois inventários coerentes. Não foram lidos conteúdos de volumes
 ou chaves antigas; a origem pública preserva o SHA256 anterior. A revisão só fixa
 escopo/identidades: não gera certificados, não é plano de ativação e não autoriza
-startup. Candidato/plano concretos serão gerados somente após recursos suficientes.
+startup. Essa revisão antecedeu a liberação de recursos; o candidato/plano
+concretos preparados depois estão identificados abaixo.
 
 Não gerar candidato real que expire durante o bloqueio, abrir/migrar volumes ou
 iniciar serviços para completar um formulário. Arquivos públicos da PKI antiga
 foram inventariados sem leitura de chaves: folhas expiradas23/10 e CA28/10.
 Resultados antigos e fixtures não provam TLS renovado no laboratório.
+
+
+## Candidato e plano preparados após o preflight aprovado
+
+Candidato host-only `0dfb54bbe5c54423ad37ef2309ae369d`, manifesto
+`c38691e29f46429e230bcdb73a528b74164ced98275ce54932ba98ea192e1a6d`.
+Transição explícita antiga→ADR0034, pares/cadeia/SAN/validade e origem intacta
+verificados. Plano host-only `5175cd2f7c0f4ef68a1ef52f8d124df5`, SHA256
+`374d60c68d0e10ae42bb7702f4193d2555d154857e667f119a4f51b22a26562a`,
+recheck aprovado. Nenhum deles foi aplicado; revalidar prazo e metadados antes
+de qualquer efeito. Não montar a CA privada ou publicar esses arquivos no Git.
+
+`scripts/wazuh_tls_scope.py` deriva uma composição privada com apenas os três
+serviços Wazuh, uma rede de telemetria e seis volumes **external=true**: se um
+original desaparecer, falha em vez de criar substituto. Remove depends_on do
+agente para impedir startup do observador; mantém a ordem explicitamente.
+Labels vinculam os recursos ao ID do ensaio. Não inicia nada.
+
+`scripts/wazuh_tls_probe.py` é o leitor fixo: CA/SNI/IP e fingerprint DER exato
+antes de enviar credenciais, somente aegis_reader por stdin, apenas cinco GETs
+fixos e resposta pública redigida. Verifica principal/role, falta de acesso à API
+Security, busca size=0 completa e negativa403 do índice de segurança. O resultado
+expõe `write_acl_verified=false`: não comprova proibição de escrita nem envia uma
+requisição de escrita. Erro/esquema incompleto/drift é inconclusivo; nenhuma
+credencial, documento de alerta ou traceback é impresso.
+
+Referências de contrato: [authinfo](https://docs.opensearch.org/3.9/security/api/authentication/auth-info/)
+e [permissionsinfo](https://docs.opensearch.org/3.9/security/api/authentication/permissions-info/).
+Permissions Info avalia acesso à API Security, sem equivaler a uma auditoria de
+permissões de dados. A compatibilidade com o Indexer fixado será observada no
+ensaio; endpoint indisponível não é convertido em sucesso.
+
+`make test-wazuh-tls-review`:82aprovações em fixtures/Compose renderizado e TLS
+real de loopback. Cobre projeção sem dependências, volumes externos, expansões de
+rede/portas/privilégios/secrets, principal incorreto, shard parcial, negativas
+401/404/500 recusadas, CA/hostname/fingerprint inválidos e redaction. Ruff completo,
+format/mypy e staged/release-check aprovados antes de commit. Nenhum container
+Wazuh ou leitor real foi iniciado por esses testes.
 
 ## Escopo a apresentar para autorização depois dos gates
 
