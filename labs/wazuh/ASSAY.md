@@ -4,6 +4,7 @@ Para a entrega #6, seguir [inventário/candidato](../../docs/operations/wazuh-pk
 e [troca/rollback](../../docs/operations/wazuh-pki-rotation.md). São preparação
 offline; #149 bloqueia a rede antiga e #57 exige escopo/aprovação próprios de TLS
 sem marcador. O procedimento histórico abaixo não é autorização dessa renovação.
+Ver [escopo TLS e bloqueios da #57](TLS-ASSAY.md) antes de qualquer retomada.
 
 **Estado: executado e encerrado em 2026-10-22.** Campanha
 `987bd48f-fafc-4a34-bf2a-2d310e7ca794`: uma execução, marcador43 bytes,

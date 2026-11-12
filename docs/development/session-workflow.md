@@ -110,3 +110,6 @@ adicional, uma campanha real43bytes COMPLETED/INCONCLUSIVE/CLEANED. Lab revogado
 contas próprias inativas/zero sessões próprias e recursos encerrados. Histórico,
 backup, diário/fences e pacotes consumidos preservados. Não iniciar outro ensaio
 ou outra entrega a partir desse checkpoint. Conferir CI final e comentários.
+
+Entrega #6: [checkpoint PKI Wazuh](wazuh-pki-checkpoint.md). #55/#56 offline
+concluídas; #57/pai abertos por rede #149, recursos e autorização específica.
