@@ -1,6 +1,9 @@
 # Escopo adicional: registro do catálogo e campanha única
 
-**Aguardando autorização específica. Nenhuma operação deste pacote executada.**
+**Pacote aprovado pelo usuário (“pode”), consumido e encerrado. Não reutilizar.**
+[Resultado final](CAMPAIGN-VERIFIED-2026-11-12.md): uma campanha real, cleanup
+confirmado, UI/relatórios conferidos, lab revogado e contas próprias inativas.
+As seções seguintes preservam a proposta original.
 A [tentativa anterior](CAMPAIGN-2026-11-12.md) terminou sem campanha/marker, com
 backup/upgrade original concluídos e cleanup confirmado. O pacote anterior
 continua consumido e não autoriza o bootstrap abaixo.

@@ -69,9 +69,10 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   preflight mTLS vigente e autorização do lab. Identidade TLS não libera operação.
 - Receitas Linux usam192.168.253.0/29 sob ADR0033, mantendo qasrc. Ensaio nativo
   da #4 em12/11/2026 encerrado: binding revogado, preflight/continuidade e cleanup
-  confirmados, sem operação normal. Tentativa da #5 também encerrada antes de
-  campanha: catálogo versionado ausente; contas próprias inativas/lab revogado.
-  Ver relatórios; não reutilizar os pacotes consumidos.
+  confirmados, sem operação normal. Campanha única da #5 verificada e encerrada
+  em12/11: marcador43bytes, COMPLETED/INCONCLUSIVE/CLEANED; catálogo inicializado
+  sob escopo adicional, lab revogado e contas próprias inativas. Ver relatório
+  CAMPAIGN-VERIFIED-2026-11-12; não reutilizar pacotes consumidos.
 - Wazuh histórico22/10 foi COMPLETED/DETECTED/CLEANED, limitado a um marcador e
   regra própria100200, zero técnicas ATT&CK. Não generalizar eficácia de SIEM/EDR.
 

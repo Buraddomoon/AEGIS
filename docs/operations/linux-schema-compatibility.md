@@ -2,8 +2,9 @@
 
 Estado atual: o original foi migrado explicitamente d446→b7 sob aprovação da #5
 em12/11/2026. [Relatório e encerramento](../../labs/linux/CAMPAIGN-2026-11-12.md):
-33tabelas, histórico/senhas preservados; catálogo versionado ainda vazio, sem
-seed/bootstrap e sem campanha nova. O restante desta seção preserva a evidência
+33tabelas, histórico/senhas preservados. O [ensaio posterior aprovado](../../labs/linux/CAMPAIGN-VERIFIED-2026-11-12.md)
+registrou somente a versão do catálogo, preservando706técnicas, e concluiu uma
+campanha real43bytes com cleanup e encerramento, sem seed geral. O restante desta seção preserva a evidência
 da #48, conferida em11/11/2026. O PostgreSQL original foi copiado a frio
 em mount read-only/nocopy, sem iniciar servidor sobre ele nessa etapa de backup. Restore e upgrade
 foram executados somente nos clones; os resultados reais constam abaixo.
