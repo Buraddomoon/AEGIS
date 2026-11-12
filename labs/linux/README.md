@@ -5,7 +5,10 @@ Runner e adaptador para **um marcador benigno**, integrados à API/worker/UI por
 ## Retomada após a rotação de12/11/2026
 
 A entrega #5 usa o [pacote de campanha](CAMPAIGN-ASSAY.md) e o overlay
-`campaign.yml`. O banco original continua d446; a aplicação atual exige b7.
+`campaign.yml`. O banco original já foi migrado explicitamente para b7 na tentativa da #5.
+A [tentativa foi encerrada](CAMPAIGN-2026-11-12.md) antes de campanha por catálogo
+versionado ausente; o [escopo adicional](CAMPAIGN-CATALOG-REQUEST-2026-11-12.md)
+aguarda autorização para inicialização restrita e nova tentativa.
 O startup renovado somente verifica schema/grants em leitura e bloqueia até
 uma intervenção explicitamente aprovada. A renovação da #4 não autorizou
 campanha. As receitas históricas abaixo não substituem esse pacote.

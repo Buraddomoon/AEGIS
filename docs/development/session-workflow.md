@@ -109,3 +109,7 @@ original migrado explicitamente para b7, backup/clone/histórico preservados, ma
 zero campanhas novas. Tentativa consumida; catálogo versionado vazio bloqueia
 escopos. Lab revogado e contas próprias inativas, zero sessões próprias. Não
 repetir pacote/migração nem executar seed/bootstrap sob a autorização consumida.
+
+Próximo gate da #5: [escopo adicional do catálogo](../../labs/linux/CAMPAIGN-CATALOG-REQUEST-2026-11-12.md),
+SHA2563c6f96b1…, tentativa nova c657ef60…. Aprovação específica ainda pendente;
+bootstrap restrito não estava incluído no pacote anterior.
