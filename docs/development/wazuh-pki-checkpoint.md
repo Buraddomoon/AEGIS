@@ -80,3 +80,19 @@ GETs fixos, CA/SNI/IP/fingerprint, principal exato, ACL de leitura, saída redig
 credenciais stdin. Não testa escrita. A projeção usa só três serviços, rede
 telemetria e seis volumes externos existentes; nenhum runner/observador/DB/API.
 O ensaio real #57/#6 ainda depende de autorização específica do pacote final.
+
+## Tentativa nativa5175cd2f encerrada — INCONCLUSIVE/CLEANED
+
+O usuário autorizou somente essa tentativa. CI `db403e2` integral e gates passaram.
+Indexer apresentou a nova folha esperada; Filebeat TLSv1.3/cadeia habilitada/full
+passaram; agente001/aegis-marker chegou a Active em25consultas. A verificação
+conjunta de estado local/listener não concluiu em60s e não salvou entradas
+suficientes para determinar qual condição faltou. O leitor não foi iniciado.
+[Provas, horários, hashes e limites](../evidence/wazuh-tls-2026-11-12/README.md).
+
+Cleanup confirmou zero containers/consumidores, rede própria removida, nove
+volumes e configuração antiga preservados. Autorização consumida, estado/intents
+retidos; não reiniciar o pacote nem remover/recriar arquivos para liberar replay.
+#57/#6 abertas. Helpers de prontidão passam a separar fatos e aceitar API de gestão
+ausente sem afirmar liveness; exposição LAN permanece recusada. Nova tentativa
+necessita pacote/gates/autorização próprios, preservando este resultado parcial.

@@ -170,3 +170,18 @@ pares/trust; não afirma que o HTTP do Indexer exija certificado de cliente ness
 configuração. Nenhum alerta, marcador, resultado DETECTED ou alegação de eficácia
 é produzido por esta entrega. O relatório final real deve registrar aprovação,
 hashes/IDs, horários, observações, falhas e cleanup antes do fechamento da #57/#6.
+
+## Tentativa5175cd2f consumida
+
+[Resultado nativo e limites](../../docs/evidence/wazuh-tls-2026-11-12/README.md):
+INCONCLUSIVE/CLEANED. Nova folha Indexer e Filebeat TLSv1.3/full verificados;
+agente001/aegis-marker Active observado, condição complementar não concluída.
+Coletor não iniciado. Nenhuma escrita de teste, marcador ou banco.
+
+Não reutilizar a autorização/estado dessa tentativa. A instrumentação corrigida
+em `wazuh_tls_readiness.py` separa as três observações e a próxima operação deve
+salvar suas entradas antes de avaliar prontidão. Um listener55000 em LAN continua
+bloqueado; ausência da API não deve ser apresentada como API funcionando, nem
+forçar startup de um endpoint desnecessário ao coletor.
+Referência do estado do agente:
+[Wazuh agentd.state](https://documentation.wazuh.com/current/user-manual/reference/statistics-files/wazuh-agentd-state.html).
