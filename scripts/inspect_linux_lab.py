@@ -1,14 +1,18 @@
 """Read-only verification of this project's running Linux runner, never probe targets."""
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
+from dotenv import dotenv_values
+
+IDS_ENV = os.environ.get("LINUX_IDS_ENV", ".local/linux-lab/ids.env")
 COMPOSE = [
     "docker",
     "compose",
     "--env-file",
-    ".local/linux-lab/ids.env",
+    IDS_ENV,
     "-f",
     "labs/linux/compose.yml",
 ]
@@ -63,7 +67,8 @@ def main():
     network = json.loads(
         subprocess.check_output(["docker", "network", "inspect", "aegis-linux-lab_isolated"])
     )[0]
-    checks = validate(container, network, Path(".local/linux-lab"))
+    configuration = Path(dotenv_values(IDS_ENV)["AEGIS_LAB_CONFIG_DIR"])
+    checks = validate(container, network, configuration)
     print(
         json.dumps(
             {

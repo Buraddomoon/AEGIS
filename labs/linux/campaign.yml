@@ -1,0 +1,20 @@
+# Renewal overlay: never migrate/seed/change a password implicitly.
+# Use after platform.yml. Image IDs and candidate ids.env are reviewed separately.
+services:
+  migrate:
+    image: ${LINUX_APPLICATION_IMAGE:?Set the reviewed immutable application image ID}
+    build: !reset null
+    command: [python, -m, aegis.operations.linux_campaign_readiness]
+  api:
+    image: ${LINUX_APPLICATION_IMAGE:?Set the reviewed immutable application image ID}
+  worker:
+    image: ${LINUX_APPLICATION_IMAGE:?Set the reviewed immutable application image ID}
+  runner:
+    image: ${LINUX_RUNNER_IMAGE:?Set the reviewed immutable runner image ID}
+    build: !reset null
+  controller:
+    image: ${LINUX_RUNNER_IMAGE:?Set the reviewed immutable runner image ID}
+  db:
+    image: ${LINUX_POSTGRES_IMAGE:?Set the reviewed immutable PostgreSQL image ID}
+  redis:
+    image: ${LINUX_REDIS_IMAGE:?Set the reviewed immutable Redis image ID}

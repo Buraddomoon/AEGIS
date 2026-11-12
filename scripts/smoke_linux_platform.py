@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import secrets
 import subprocess
 import time
@@ -9,14 +10,18 @@ import uuid
 from pathlib import Path
 
 import httpx
+from dotenv import dotenv_values
 
+IDS_ENV = os.environ.get("LINUX_IDS_ENV", ".local/linux-lab/ids.env")
 COMPOSE = [
     "docker",
     "compose",
     "--env-file",
     ".env",
     "--env-file",
-    ".local/linux-lab/ids.env",
+    IDS_ENV,
+    "--env-file",
+    os.environ.get("LINUX_CAMPAIGN_ENV", ".local/linux-campaign/images.env"),
     "-p",
     "aegis-linux-lab",
     "-f",
@@ -25,6 +30,8 @@ COMPOSE = [
     "labs/linux/compose.yml",
     "-f",
     "labs/linux/platform.yml",
+    "-f",
+    "labs/linux/campaign.yml",
 ]
 
 
@@ -32,9 +39,9 @@ def local_accounts(accounts: list[dict], disable: bool = False):
     # Trusted fixed administration code; credentials travel through stdin, never shell/argv/logs.
     code = """
 import json, sys
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 from aegis.db import session_factory
-from aegis.models import User
+from aegis.models import LoginSession, User
 from aegis.security import hasher, audit
 accounts = json.load(sys.stdin)
 with session_factory()() as db:
@@ -50,6 +57,7 @@ with session_factory()() as db:
         if item.get('disable'):
             if user:
                 user.active = False
+                db.execute(delete(LoginSession).where(LoginSession.user_id == user.id))
                 audit(db, user.id, 'test.linux_account_disabled', user.id)
         else:
             assert user is None
@@ -66,6 +74,7 @@ with session_factory()() as db:
         text=True,
         capture_output=True,
         check=False,
+        timeout=45,
     )
     if result.returncode:
         raise RuntimeError(
@@ -73,13 +82,49 @@ with session_factory()() as db:
         )
 
 
+def finish_assay(accounts, revoke):
+    """Attempt both independent cleanup actions, even after a failed verification."""
+    errors = []
+    try:
+        revoke()
+    except Exception:
+        errors.append(
+            RuntimeError("Lab revocation unconfirmed; preserve quarantine and inspect locally.")
+        )
+    try:
+        local_accounts(accounts, disable=True)
+    except Exception:
+        errors.append(
+            RuntimeError("Temporary account/session cleanup unconfirmed; inspect locally.")
+        )
+    if errors:
+        raise ExceptionGroup("Integrated assay cleanup requires recovery", errors)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--confirm-integrated-marker", action="store_true")
     parser.add_argument("--capture-ui", action="store_true")
+    parser.add_argument("--attempt-id", type=uuid.UUID, required=True)
     args = parser.parse_args()
     if not args.confirm_integrated_marker:
         parser.error("Exige autorização específica e --confirm-integrated-marker.")
+    evidence_dir = Path(".local/linux-lab")
+    evidence_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    attempt_path = evidence_dir / f"campaign-attempt-{args.attempt_id}.jsonl"
+    # Consumed before account creation or an HTTP mutation. A failed attempt is
+    # preserved and cannot be retried by re-running this same package.
+    with open(attempt_path, "x", opener=lambda name, flags: os.open(name, flags, 0o600)) as stream:
+        stream.write(
+            json.dumps({"event": "attempt_consumed", "attempt_id": str(args.attempt_id)}) + "\n"
+        )
+        stream.flush()
+        os.fsync(stream.fileno())
+    directory = os.open(evidence_dir, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
     accounts = [
         {
             "username": "linux-assay-" + uuid.uuid4().hex[:12],
@@ -88,44 +133,47 @@ def main():
         }
         for role in ("administrator", "operator")
     ]
-    local_accounts(accounts)
-    try:
-        with httpx.Client(
-            base_url="http://localhost:18785/api/v1", timeout=10, trust_env=False
-        ) as client:
+    identities = dotenv_values(IDS_ENV)
+    lab_id = str(uuid.UUID(identities["AEGIS_RUNNER_LABORATORY_ID"]))
+    with httpx.Client(
+        base_url="http://localhost:18785/api/v1", timeout=10, trust_env=False
+    ) as client:
 
-            def request(method, path, body=None):
-                response = (
-                    client.request(method, path, json=body)
-                    if body is not None
-                    else client.request(method, path)
-                )
-                response.raise_for_status()
-                return response.json()
+        def request(method, path, body=None):
+            response = (
+                client.request(method, path, json=body)
+                if body is not None
+                else client.request(method, path)
+            )
+            response.raise_for_status()
+            return response.json()
 
-            def login(account):
-                response = client.post(
-                    "/auth/login",
-                    json={k: account[k] for k in ("username", "password")},
-                    headers={"x-aegis-request": "browser"},
-                )
-                response.raise_for_status()
-                client.headers["x-csrf-token"] = response.json()["csrf_token"]
+        def login(account):
+            response = client.post(
+                "/auth/login",
+                json={k: account[k] for k in ("username", "password")},
+                headers={"x-aegis-request": "browser"},
+            )
+            response.raise_for_status()
+            client.headers["x-csrf-token"] = response.json()["csrf_token"]
 
+        def revoke():
             login(accounts[0])
-            lab = request(
-                "POST",
-                "/labs/linux/register",
-                {
-                    "name": "Linux Lab · ensaio integrado",
-                    "owner": "Operação local autorizada",
-                    "isolation_review": "Runner UID 10001, rede internal isolated sem portas host, rootfs read-only, tmpfs 1 MiB e teste fixo revisados no ensaio local.",
-                    "confirm_isolation_review": True,
-                },
+            request("PATCH", f"/labs/{lab_id}/authorization", {"authorized": False})
+
+        try:
+            local_accounts(accounts)
+            login(accounts[0])
+            labs = request("GET", "/labs")["items"]
+            lab = next(item for item in labs if item["id"] == lab_id)
+            assert lab["kind"] == "linux" and not lab["authorized"]
+            assert lab["trust"]["matches_deployment"], (
+                "Current binding differs; do not re-register."
             )
             verification = request("POST", f"/labs/{lab['id']}/preflight", {"confirm": True})
             assert verification["success"], verification["reason"]
             request("PATCH", f"/labs/{lab['id']}/authorization", {"authorized": True})
+            demo_before = request("GET", "/coverage?mode=demo")
             login(accounts[1])
             campaign = request(
                 "POST",
@@ -140,6 +188,20 @@ def main():
             run = request(
                 "POST", f"/campaigns/{campaign['id']}/runs", {"idempotency_key": uuid.uuid4().hex}
             )
+            with attempt_path.open("a") as stream:
+                stream.write(
+                    json.dumps(
+                        {
+                            "event": "run_requested",
+                            "run_id": run["id"],
+                            "scope_hash": run["scope_hash"],
+                        }
+                    )
+                    + "\n"
+                )
+                stream.flush()
+                os.fsync(stream.fileno())
+            print("Single authorized run:", run["id"], flush=True)
             login(accounts[0])
             request(
                 "POST",
@@ -177,17 +239,24 @@ def main():
             assert "COMPROVANTES DO EXECUTOR" in html.text
             real = request("GET", "/coverage?mode=linux")
             demo = request("GET", "/coverage?mode=demo")
-            assert real["completed_tests"] >= 1 and demo["completed_tests"] == 0
+            assert real["completed_tests"] >= 1
+            assert demo == demo_before, "Linux campaign changed Demo metrics."
             request("PATCH", f"/labs/{lab['id']}/authorization", {"authorized": False})
-            path = Path(".local/linux-lab/platform-assay.json")
-            path.write_text(
-                json.dumps(
-                    {"run_id": run["id"], "synthetic": False, "report": report, "coverage": real},
-                    ensure_ascii=False,
-                    indent=2,
+            path = Path(".local/linux-lab") / f"platform-assay-{run['id']}.json"
+            path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+            with open(path, "x", opener=lambda name, flags: os.open(name, flags, 0o600)) as stream:
+                stream.write(
+                    json.dumps(
+                        {
+                            "run_id": run["id"],
+                            "synthetic": False,
+                            "report": report,
+                            "coverage": real,
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    )
                 )
-            )
-            path.chmod(0o600)
             if args.capture_ui:
                 subprocess.run(
                     ["node", "linux-preview.mjs"],
@@ -201,13 +270,14 @@ def main():
                     ),
                     text=True,
                     check=True,
+                    timeout=120,
                 )
             print(
                 "PASS: segregated approval + queue + real mTLS + 43 bytes + cleanup + immutable receipts + INCONCLUSIVE + mode separation + reports; local evidence:",
                 path,
             )
-    finally:
-        local_accounts(accounts, disable=True)
+        finally:
+            finish_assay(accounts, revoke)
 
 
 if __name__ == "__main__":

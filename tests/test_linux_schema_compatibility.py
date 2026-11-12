@@ -90,7 +90,12 @@ def inventory(connection):
 
 def privileges(connection):
     return connection.execute(
-        text("""SELECT c.relname, c.relacl::text FROM pg_catalog.pg_class c
+        # pg_restore can represent the owner's default ACL as NULL. Compare
+        # canonical privileges, preserving every non-owner grant/revocation.
+        text("""SELECT c.relname, ARRAY(
+          SELECT item::text FROM unnest(COALESCE(c.relacl, acldefault('r', c.relowner))) item
+          ORDER BY item::text
+        ) FROM pg_catalog.pg_class c
         JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
         WHERE n.nspname=current_schema() AND c.relkind='r'
         AND c.relname NOT IN ('alembic_version','scheduled_reports') ORDER BY c.relname""")

@@ -2,6 +2,14 @@
 
 Runner e adaptador para **um marcador benigno**, integrados à API/worker/UI por opt-in. Sem integração operacional Wazuh; comprovantes do executor não são evidências defensivas. `make up` continua iniciando somente Demo. As seções iniciais descrevem o runner standalone; o segundo incremento integrado e seu escopo estão abaixo.
 
+## Retomada após a rotação de12/11/2026
+
+A entrega #5 usa o [pacote de campanha](CAMPAIGN-ASSAY.md) e o overlay
+`campaign.yml`. O banco original continua d446; a aplicação atual exige b7.
+O startup renovado somente verifica schema/grants em leitura e bloqueia até
+uma intervenção explicitamente aprovada. A renovação da #4 não autorizou
+campanha. As receitas históricas abaixo não substituem esse pacote.
+
 ## Escopo concreto do ensaio
 
 Projeto Compose `aegis-linux-lab`, imagem `aegis-linux-runner:local`, serviço `runner` e um `controller` temporário. Rede dedicada `192.168.253.0/29`, gateway `.1`, interna, com gateway mode **isolated** e sem portas publicadas. Runner fixo `.2`; o bridge não recebe endereço do host. Nenhum container é conectado às redes da aplicação, da empresa ou de outros projetos; sem socket Docker, volumes de dados/diretórios do host ou host networking. Somente arquivos específicos de certificados/configuração são montados read-only como secrets; chaves de CA não são montadas.
@@ -76,11 +84,11 @@ Projeto separado `aegis-linux-lab`, preservando a aplicação Demo existente. Se
 O script cadastra duas contas temporárias aleatórias (admin e operador), revisa/cadastra o binding, faz preflight sem efeito, autoriza o Linux Lab, solicita campanha pelo operador e aprova pelo administrador. O worker cria/verifica/remove **um marcador de 43 bytes** em tmpfs, filho limitado a **5 segundos**, lease de 2 segundos. Script verifica recibo/cleanup, resultado inconclusivo sem telemetria inventada, segregação de indicadores e relatórios HTML/JSON. Ao final revoga a autorização e desativa ambas as contas. `down` encerra somente os serviços/redes deste projeto, preservando volumes e evidência local ignorada `.local/linux-lab/platform-assay.json`.
 
 ```bash
-make linux-platform-config  # valida sem iniciar
-make linux-platform-build   # compila sem ensaio
+make linux-platform-config  # exige imagens por ID e LINUX_IDS_ENV atuais, sem iniciar
+# Build da aplicação em tag nova exclusiva; não reutilizar tags antigas.
 # Somente após aprovação específica do escopo acima:
-make linux-platform-up
-make linux-platform-smoke
+make linux-platform-up LINUX_CAMPAIGN_AUTHORIZED=yes
+make linux-platform-smoke LINUX_CAMPAIGN_AUTHORIZED=yes LINUX_CAMPAIGN_ATTEMPT_ID=UUID_APROVADO
 make linux-platform-down    # executar também se smoke falhar; não usar -v
 ```
 

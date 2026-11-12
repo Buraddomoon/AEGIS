@@ -119,17 +119,24 @@ test-runner:
 	$(VENV)/pytest tests/test_runner_protocol.py tests/test_runner_engine.py tests/test_runner_transport.py tests/test_runner_identity_server.py tests/test_runner_identity_probe.py tests/test_runner_tls_peer.py tests/test_runner_parent_death.py tests/test_runner_isolation.py -q
 
 # Separate database/API on 18785; never modifies the default Demo stack.
-LINUX_PLATFORM = docker compose --env-file .env --env-file .local/linux-lab/ids.env -p aegis-linux-lab -f docker-compose.yml -f labs/linux/compose.yml -f labs/linux/platform.yml
+LINUX_IDS_ENV ?= .local/linux-lab/ids.env
+LINUX_CAMPAIGN_ENV ?= .local/linux-campaign/images.env
+LINUX_PLATFORM = docker compose --env-file .env --env-file $(LINUX_IDS_ENV) --env-file $(LINUX_CAMPAIGN_ENV) -p aegis-linux-lab -f docker-compose.yml -f labs/linux/compose.yml -f labs/linux/platform.yml -f labs/linux/campaign.yml
 .PHONY: linux-platform-config linux-platform-build linux-platform-up linux-platform-smoke linux-platform-down
 linux-platform-config:
-	$(LINUX_PLATFORM) config --quiet
+	$(LINUX_PLATFORM) config --format json | $(VENV)/python scripts/check_linux_campaign_config.py
 linux-platform-build: linux-platform-config
-	$(LINUX_PLATFORM) build migrate runner
+	@echo 'Build to a new dedicated tag, review its image ID, then update the campaign package.'
+	@exit 2
 linux-platform-up: linux-platform-config
-	$(LINUX_PLATFORM) up -d db redis migrate runner api worker
+	@test "$(LINUX_CAMPAIGN_AUTHORIZED)" = yes || (echo 'Review labs/linux/CAMPAIGN-ASSAY.md and obtain specific authorization first.'; exit 2)
+	$(LINUX_PLATFORM) up -d --no-build --pull never db redis migrate api worker
+	$(LINUX_PLATFORM) up -d --no-build --pull never --no-deps runner
 linux-platform-smoke:
-	$(VENV)/python scripts/inspect_linux_lab.py
-	$(VENV)/python scripts/smoke_linux_platform.py --confirm-integrated-marker
+	@test "$(LINUX_CAMPAIGN_AUTHORIZED)" = yes || (echo 'Specific campaign authorization required.'; exit 2)
+	@test -n "$(LINUX_CAMPAIGN_ATTEMPT_ID)" || (echo 'Set the approved single-use LINUX_CAMPAIGN_ATTEMPT_ID.'; exit 2)
+	LINUX_IDS_ENV=$(LINUX_IDS_ENV) $(VENV)/python scripts/inspect_linux_lab.py
+	LINUX_IDS_ENV=$(LINUX_IDS_ENV) LINUX_CAMPAIGN_ENV=$(LINUX_CAMPAIGN_ENV) $(VENV)/python scripts/smoke_linux_platform.py --confirm-integrated-marker --capture-ui --attempt-id $(LINUX_CAMPAIGN_ATTEMPT_ID)
 linux-platform-down:
 	$(LINUX_PLATFORM) down
 
