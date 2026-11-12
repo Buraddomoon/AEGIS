@@ -1,5 +1,10 @@
 # Wazuh Indexer — coleta aprovada e pipeline local validado
 
+Renovação de serviços (#6): [inventário/candidato offline](../operations/wazuh-pki.md)
+e [troca/rollback coordenados](../operations/wazuh-pki-rotation.md). Não renovam a
+PKI do runner nem autorizam startup; #149 bloqueia as redes antigas. O ensaio
+TLS sem marcador (#57) continua separado do resultado histórico abaixo.
+
 **Estado real:** em 2026-10-22 foi concluído o único ensaio Wazuh próprio autorizado: uma campanha, um marcador real de 43 bytes, um alerta original 100200, COMPLETED/DETECTED/CLEANED com synthetic=false. [Evidências e limites](../evidence/wazuh-2026-10-22/README.md). Sem associação ATT&CK, archives ou alegação de eficácia de EDR.
 
 O [ensaio próprio](../../labs/wazuh/ASSAY.md) usou imagens oficiais4.14.9 fixadas,

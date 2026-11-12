@@ -179,6 +179,10 @@ wazuh-lab-down:
 test-wazuh-pki:
 	$(VENV)/pytest tests/test_wazuh_pki.py -q
 
+.PHONY: test-wazuh-pki-rotation
+test-wazuh-pki-rotation:
+	$(VENV)/pytest tests/test_wazuh_pki_rotation.py -q
+
 # Encryption is host-only. Private identities are never accepted on the command line.
 .PHONY: backup-tools backup-keygen seal-backup verify-sealed-backup backup-vault-plan
 backup-tools:

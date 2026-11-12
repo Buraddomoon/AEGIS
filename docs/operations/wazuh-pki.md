@@ -70,4 +70,4 @@ credenciais ou caminhos privados. Guardar manifestos localmente, não no Git.
 
 Testes usam PKI real em temporários, auditoria de leituras/rede em processo novo
 e renderização Compose sem startup. Eles não comprovam um ensaio Wazuh nativo.
-Troca/rollback coordenados são o escopo posterior da #56; ensaio real é a #57.
+Troca/rollback: [procedimento coordenado](wazuh-pki-rotation.md); ensaio real é a #57.
