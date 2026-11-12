@@ -240,7 +240,11 @@ def main():
             real = request("GET", "/coverage?mode=linux")
             demo = request("GET", "/coverage?mode=demo")
             assert real["completed_tests"] >= 1
-            assert demo == demo_before, "Linux campaign changed Demo metrics."
+            # Each read has its own snapshot timestamp. Compare every data and
+            # scope field, excluding only that observation time.
+            assert {k: v for k, v in demo.items() if k != "snapshot_at"} == {
+                k: v for k, v in demo_before.items() if k != "snapshot_at"
+            }, "Linux campaign changed Demo metrics."
             request("PATCH", f"/labs/{lab['id']}/authorization", {"authorized": False})
             path = Path(".local/linux-lab") / f"platform-assay-{run['id']}.json"
             path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

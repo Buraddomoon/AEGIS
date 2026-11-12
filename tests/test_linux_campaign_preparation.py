@@ -190,7 +190,9 @@ def test_campaign_overlay_removes_automatic_migration_and_requires_pinned_inputs
     assert all(":?" in service["image"] for service in services.values())
 
 
-@pytest.mark.parametrize("fail_path", [None, "/campaigns", "/reports/run-1"])
+@pytest.mark.parametrize(
+    "fail_path", [None, "/campaigns", "/reports/run-1", "changed_demo_metrics"]
+)
 def test_smoke_records_one_attempt_and_cleans_up_after_midflow_failure(
     smoke_module, tmp_path, monkeypatch, fail_path
 ):
@@ -250,6 +252,13 @@ def test_smoke_records_one_attempt_and_cleans_up_after_midflow_failure(
                 },
                 "/reports/run-1": {"synthetic": False},
             }.get(path, {})
+            if path == "/coverage?mode=demo":
+                body["snapshot_at"] = str(len(calls))
+                if (
+                    fail_path == "changed_demo_metrics"
+                    and sum(call[:2] == ("GET", path) for call in calls) == 2
+                ):
+                    body["completed_tests"] += 1
             return httpx.Response(
                 500 if path == fail_path else 200, json=body, request=httpx.Request(method, path)
             )
@@ -272,7 +281,10 @@ def test_smoke_records_one_attempt_and_cleans_up_after_midflow_failure(
     monkeypatch.setattr(
         "sys.argv", ["smoke", "--confirm-integrated-marker", "--attempt-id", attempt]
     )
-    if fail_path:
+    if fail_path == "changed_demo_metrics":
+        with pytest.raises(AssertionError, match="Linux campaign changed Demo metrics"):
+            smoke_module.main()
+    elif fail_path:
         with pytest.raises(httpx.HTTPStatusError):
             smoke_module.main()
     else:
