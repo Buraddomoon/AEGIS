@@ -174,6 +174,11 @@ wazuh-lab-status:
 wazuh-lab-down:
 	$(VENV)/python scripts/wazuh_lab.py down --confirm-local-wazuh
 
+# Service PKI only, in temporary files: no Docker startup or original key reads.
+.PHONY: test-wazuh-pki
+test-wazuh-pki:
+	$(VENV)/pytest tests/test_wazuh_pki.py -q
+
 # Encryption is host-only. Private identities are never accepted on the command line.
 .PHONY: backup-tools backup-keygen seal-backup verify-sealed-backup backup-vault-plan
 backup-tools:
