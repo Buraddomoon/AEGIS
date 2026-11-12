@@ -85,6 +85,51 @@ def test_readiness_refuses_reserved_lab(readiness_role, pg_engine):
             check(connection, role=readiness_role)
 
 
+def test_readiness_refuses_uninitialized_catalog_without_bootstrapping(readiness_role, pg_engine):
+    with pg_engine.begin() as connection:
+        connection.execute(text("DELETE FROM attack_catalog_state"))
+        releases = connection.scalar(text("SELECT count(*) FROM attack_catalog_releases"))
+    with pg_engine.connect() as connection:
+        with pytest.raises(RuntimeError, match="catalog initialization"):
+            check(connection, role=readiness_role)
+    with pg_engine.connect() as connection:
+        assert connection.scalar(text("SELECT count(*) FROM attack_catalog_state")) == 0
+        assert connection.scalar(text("SELECT count(*) FROM attack_catalog_releases")) == releases
+
+
+def test_explicit_catalog_initialization_preserves_existing_techniques(readiness_role, pg_engine):
+    from aegis.catalog.store import initialize
+    from sqlalchemy.orm import Session
+
+    with pg_engine.begin() as connection:
+        # Synthetic fixture only: model the newly added empty version tables
+        # while keeping the populated legacy technique projection.
+        connection.execute(text("TRUNCATE attack_catalog_state, attack_catalog_releases CASCADE"))
+        before = (
+            connection.execute(text("SELECT to_jsonb(t) FROM attack_techniques t ORDER BY id"))
+            .scalars()
+            .all()
+        )
+    directory = Path("fixtures/attack")
+    with Session(pg_engine) as db:
+        initialize(
+            db,
+            (directory / "enterprise.json").read_bytes(),
+            (directory / "LICENSE.txt").read_bytes(),
+        )
+        db.commit()
+    with pg_engine.connect() as connection:
+        check(connection, role=readiness_role)
+        assert (
+            connection.execute(text("SELECT to_jsonb(t) FROM attack_techniques t ORDER BY id"))
+            .scalars()
+            .all()
+            == before
+        )
+        assert connection.scalar(text("SELECT count(*) FROM attack_catalog_releases")) == 1
+        assert connection.scalar(text("SELECT count(*) FROM attack_catalog_state")) == 1
+
+
 @pytest.fixture
 def smoke_module():
     spec = importlib.util.spec_from_file_location(

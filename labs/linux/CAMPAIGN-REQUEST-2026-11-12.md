@@ -1,6 +1,9 @@
 # Proposta específica da campanha — 12/11/2026
 
-**Autorização humana pendente. Nenhum Lab/campanha iniciado nesta preparação.**
+**Pacote confirmado pelo usuário e consumido. Não reutilizar.**
+O [relatório nativo](CAMPAIGN-2026-11-12.md) registra backup/upgrade original
+concluídos e tentativa encerrada antes de qualquer campanha por catálogo
+versionado ausente. As seções seguintes preservam a proposta original.
 Detalhamento: [CAMPAIGN-ASSAY](CAMPAIGN-ASSAY.md), etapas1–8.
 Este arquivo também é o checkpoint curto da entrega #5.
 

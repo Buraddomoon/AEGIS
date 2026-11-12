@@ -15,6 +15,14 @@ def check(connection, *, role: str = "aegis_app") -> None:
     connection.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"))
     if connection.scalar(text("SELECT version_num FROM alembic_version")) != REVISION:
         raise RuntimeError("Linux campaign requires an explicitly reviewed b7 schema upgrade.")
+    if (
+        connection.scalar(
+            text("""SELECT count(*) FROM attack_catalog_state s
+          JOIN attack_catalog_releases r ON r.id=s.release_id WHERE s.id=1""")
+        )
+        != 1
+    ):
+        raise RuntimeError("Linux campaign requires explicit versioned catalog initialization.")
     checks = connection.execute(
         text("""SELECT
           has_table_privilege(:role, 'scheduled_reports', 'SELECT'),
