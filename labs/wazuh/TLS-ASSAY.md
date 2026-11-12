@@ -15,14 +15,26 @@ encerrado e sua autorização não pode ser reutilizada.
   imediatamente antes de qualquer efeito futuro. O material antigo requer
   transição explícita/versionada e novo plano, não mera edição de hash.
 - Recursos: `scripts/wazuh_host_preflight.py` retornou exit1 na leitura mais
-  recente:16CPUs, MemAvailable **5.307.334.656bytes (~4,94GiB)**, espaço Docker
-  415.276.077.056bytes, vm.max_map_count1048576. São necessários8GiB MemAvailable;
-  swap não conta. A leitura inicial tinha6,05GiB, também insuficiente. Não parar
+  recente:16CPUs, MemAvailable **4.190.216.192bytes (~3,90GiB)**, espaço Docker
+  414.918.975.488bytes, vm.max_map_count1048576. São necessários8GiB MemAvailable;
+  swap não conta. As leituras anteriores tinham6,05/4,94GiB, também insuficientes. Não parar
   outros projetos nem mudar sysctl para liberar o ensaio.
 - Autorização: o usuário ampliou explicitamente a tarefa para incluir #149
   **somente offline**. Não autorizou abrir volumes ou iniciar serviços. A ordem
   de continuar preserva essa restrição. O corpo da #57 e AGENTS.md exigem um
   escopo atual revisado e autorização específica posterior, sem reutilizar22/10.
+
+
+Revisão concreta de metadados em `2026-11-12T18:27:26.434896+00:00`: arquivo host-only
+`.local/wazuh-tls-reviews/9f79a7f1789c48b1a7a08b6b1adcbd9e/review.json`, SHA256
+`9d4775fafdbe896511da41c4f5f3a2c30e78f779f1ce5a0ae7489c53a5b22986`. Imagens Indexer/manager/agente conferidas por digest linux/amd64;
+leitor fixado no ID histórico
+`sha256:afec185e570d54652f0917de8adf4034fc97869d0ebb1a4bbb1fff39c0cd8a08`.
+Nove volumes confirmados por nome/labels/driver/data de criação e zero
+consumidores, em dois inventários coerentes. Não foram lidos conteúdos de volumes
+ou chaves antigas; a origem pública preserva o SHA256 anterior. A revisão só fixa
+escopo/identidades: não gera certificados, não é plano de ativação e não autoriza
+startup. Candidato/plano concretos serão gerados somente após recursos suficientes.
 
 Não gerar candidato real que expire durante o bloqueio, abrir/migrar volumes ou
 iniciar serviços para completar um formulário. Arquivos públicos da PKI antiga

@@ -14,8 +14,8 @@
   Nenhuma rede foi criada/reservada; qasrc e históricos intactos.
 - #57 e #6 **abertas**. [Escopo TLS e bloqueios](../../labs/wazuh/TLS-ASSAY.md).
   A dependência de código/rede #149 foi atendida offline; recursos e autorização
-  específica de startup/leitura/TLS continuam pendentes. Último preflight de
-  recursos:5.307.334.656bytes MemAvailable (<8GiB),16CPUs,415.276.077.056bytes
+  específica de startup/leitura/TLS continuam pendentes. Leitura ao concluir a #152:
+  recursos5.307.334.656bytes MemAvailable (<8GiB),16CPUs,415.276.077.056bytes
   livres no Docker, vm.max_map_count1048576. Não liberar memória parando terceiros.
 - Validação #151:244testes locais aprovados. #152: `make test-wazuh-preparation`
   114+84=198aprovações; `make test-wazuh`60aprovações após selecionar em memória
@@ -35,3 +35,26 @@ origem antiga, sem rehash/reescrita. Planos `/1` permanecem históricos; `/2` ex
 candidato atual e não autoriza efeitos. A PKI do runner é separada; o ensaio TLS
 não o inicia. Não abrir/migrar volumes, reutilizar autorizações/pacotes consumidos
 ou fechar #6 com #57 pendente. Nenhuma nova evidência defensiva/implantação real.
+
+
+## Retomada da #57 — 2026-11-12T18:27:26.434896+00:00
+
+Inventário local protegido em `.local/wazuh-tls-reviews/9f79a7f1789c48b1a7a08b6b1adcbd9e/review.json`, SHA256
+`9d4775fafdbe896511da41c4f5f3a2c30e78f779f1ce5a0ae7489c53a5b22986`. Duas leituras coerentes confirmaram as três imagens oficiais4.14.9
+fixadas e o leitor histórico local por ID, nove volumes próprios e zero containers
+ou consumidores dos volumes. Só metadados/arquivos de configuração protegidos;
+nenhum conteúdo de volume, chave antiga, SQL, startup ou certificado novo.
+Origem pública conserva o SHA256 histórico. Arquivo host-only, não publicado.
+
+A revisão fixa um único ensaio de até15min: Indexer, manager/Filebeat, agente001 e
+leitor na telemetria192.168.253.16/29, sem portas publicadas, marcador, runner,
+observador ou banco. Não é plano de ativação nem autorização; os hashes de
+candidato/plano continuam pendentes do gate de recursos.
+
+Leitura mais recente:MemAvailable4190216192bytes
+(~3.90GiB), mínimo8GiB;
+16CPUs, Docker livre414918975488bytes,
+vm.max_map_count1048576. Redes20/rotas61 sem sobreposição;
+mesmo hash de observação anterior. O usuário foi informado da necessidade de
+recursos; aprovação de startup ainda não solicitada/concedida. #57/#6 abertas.
+Essa retomada é inspeção real de metadados; nenhum teste de TLS nativo executado.
