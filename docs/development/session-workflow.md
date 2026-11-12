@@ -103,3 +103,8 @@ commits/último hash/mensagem, sincronização, limitações e bloqueios. Difere
 implementado, testado por fixture, validado em ensaio real e implantado. Sem
 aprovação/ambiente, não declarar concluída a parte dependente. Encerrar a sessão
 sem iniciar outra entrega.
+
+Para continuar a entrega #5, ler a [proposta de campanha](../../labs/linux/CAMPAIGN-REQUEST-2026-11-12.md):
+#52 preparada, #53 aguarda aprovação específica do pacote e #54 não iniciada.
+O original continua d446; não usar migração/seed implícitos nem o pacote consumido
+da #4. Conferir prazo/hash e comentários atuais das issues antes de operar.
