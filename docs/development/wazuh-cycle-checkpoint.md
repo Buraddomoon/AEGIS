@@ -89,3 +89,33 @@ host-only em `.local/wazuh-schema-upgrade`. Define novo clone do backup frio,
 PG384MiB+helper384MiB, socket Unix privado, imagem/migrações/grants fixados,
 upgrade4b72→b7 e comparação integral. Nenhum efeito executado, original montado,
 PKI, catálogo publicado ou marcador. Escopo revisável ao final de CYCLE-ASSAY.
+
+## Upgrade em clone autorizado e verificado
+
+O usuário respondeu **“tenta fazer entao”** após a explicação do escopo de clone
+e dos limites de384MiB por banco/helper. Proposta8468ae93 executada entre
+13:29:35Z e13:29:58Z de13/11; **CLONE_UPGRADE_AND_GRANTS_VERIFIED/CLEANED**.
+[Relatório completo](../evidence/wazuh-database-2026-11-13/UPGRADE-CLONE.md).
+
+- Nova cópia do backup frioRO, nenhum volume original montado. Imagem fixada
+  conferida antes de SQL: dez migrações, modelos e grants iguais à fonte.
+- Clone4b72/29→b7/33tabelas e `alembic check` passaram. Todas as colunas antigas
+  e linhas das28tabelas de dados, roles/verificadores e ACLs antigas preservados
+  antes dos grants. Quatro tabelas novas vazias, sem publicação de catálogo.
+- Grants mínimos somente no clone; **231checks de tabela e277de coluna passaram**.
+  Senhas/dados/ACLs de outros papéis preservados. Sem seed ou conta nova.
+- Recibo canônico`15ea361226e90fdc869be109c04ff28593cd2ac182c7787348f51591cd9fb4e9`;
+  linhas antigas antes/depois`c708e83887e5a8a69825dfdbfe25771f38cb784f6d23a08596fcf5c1277aaf61`.
+- Zero containers/consumidores; backup frio com mesmo SHA256f93cd36d, volumes
+  antigos e working/socket novos retidos. Nenhuma rede criada/terceiro parado.
+  Limites simultâneos PG+helper768MiB; sem medição de pico global de RAM.
+- Original continua4b72, sem montagem/startup/migração nessa etapa. Journal/PKI/
+  lab/binding/Wazuh/API/worker/runner/observador/marcador não fazem parte do ensaio.
+
+A autorização do clone foi utilizada; não transferir para o original.
+Proposta de manutenção original separada, **ainda não autorizada**:
+f202657f619840c99d0ff13f3438acb8 / SHA256 canônico
+`461edc2f2d692705e0b13d2328e3ce36679c0064d750a0d83c3d7a7c20c4677d`,
+host-only em `.local/wazuh-original-upgrade`, escopo ao final de CYCLE-ASSAY.
+Requer guardas de backup/estado exatos e a mesma cadeia/grants do clone; sem
+seed/catálogo/PKI/runner/Wazuh/marcador. #58/#59/#60 e pai#7 permanecem abertos.

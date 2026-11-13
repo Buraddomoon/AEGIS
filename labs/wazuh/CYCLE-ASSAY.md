@@ -174,9 +174,12 @@ Continuidade/schema foram examinados somente no banco copiado, sem abrir journal
 Após cleanup, RAM~6,57GiB; integrado ainda bloqueado. Antes do pacote integrado,
 propor e aprovar ensaio de upgrade4b72→b7 em clone, sem migração original implícita.
 
-## Próxima proposta: upgrade apenas em clone
+## Upgrade apenas em clone — executado e encerrado
 
-Aprovação ainda pendente. Usar backup frio retido
+Autorizado em13/11 por **“tenta fazer entao”** e executado:
+[CLONE_UPGRADE_AND_GRANTS_VERIFIED/CLEANED](../../docs/evidence/wazuh-database-2026-11-13/UPGRADE-CLONE.md).
+Original preservado; o escopo abaixo registra a operação encerrada, sem autorizar
+replay. Usar backup frio retido
 `aegis-wazuh-diagnostic-6fd466f0fc3d-cold-backup`, inventário
 `f93cd36d483a25d30b2df11bce97dd331aaba1fb6bf8fb2ae33ce9d128a05085`,
 montado RO/nocopy para uma cópia de trabalho **nova**. Manter backup, working-copy
@@ -201,3 +204,38 @@ marcador. Encerrar containers próprios, reter volumes/backup/recibos e comparar
 metadados/consumidores originais sem abri-los. Falha retém artefatos e bloqueia
 qualquer intervenção original. O limite do ensaio integrado de8GiB continua
 independente da etapa de clone com até768MiB configurados simultaneamente.
+
+## Próxima proposta: manutenção do banco original, sem Wazuh ou marcador
+
+**Ainda não autorizada.** Proposta host-onlyf202657f619840c99d0ff13f3438acb8,
+SHA256 canônico`461edc2f2d692705e0b13d2328e3ce36679c0064d750a0d83c3d7a7c20c4677d`.
+Aplicar uma vez a mesma chain4b72→b7 e os grants mínimos **no volume original**
+`aegis-wazuh-lab_postgres-data`, somente depois dos gates abaixo. Esta proposta
+não autoriza operar a plataforma ou executar a campanha.
+
+1. Revalidar zero consumidores e identidade/metadados dos nove volumes. Conferir
+   backup frio e original por helperRO/nocopy: ambos devem conservar o inventário
+   `f93cd36d483a25d30b2df11bce97dd331aaba1fb6bf8fb2ae33ce9d128a05085`.
+   Divergência interrompe antes de iniciar PostgreSQL original; não sobrescrever
+   backup, trocar IDs ou copiar estado novo implicitamente.
+2. Fixar as mesmas três imagens do ensaio em clone. Conferir fonte de migrações,
+   modelos e grants antes de SQL. Registrar intenção durável antes dos efeitos.
+   PostgreSQL original384MiB e helper384MiB, network=none, sem TCP/portas,
+   comunicação apenas por socket Unix em volume próprio novo.
+3. Antes da alteração, exigir exatamente4b72/29tabelas e inventário lógico
+   `8e076899d9c90040fa4dabd7df8e1ba898b2d20db60ff582f05c09d2aea48dcf`.
+   Executar Alembic explícito atéb7, `alembic check`, comparação integral das
+   colunas antigas e novas tabelas vazias. Aplicar grants mínimos somente ao
+   papel aegis_app e verificar a mesma matriz de privilégios, preservando contas,
+   verificadores e permissões dos outros papéis. Nenhum serviço `migrate` genérico.
+4. Encerrar containers próprios, conferir zero consumidores e reter socket,
+   backup, clones e recibos. A mudança física do banco original é esperada nessa
+   manutenção; histórico de domínio/scopes/approvals/receipts não pode ser reescrito.
+   Resposta ambígua exige reconciliação do original, sem retry automático.
+
+Sem seed, publicação/adopção de catálogo, senha/conta nova, alteração de lab/
+binding, leitura de journal, ativação PKI, Wazuh, API/worker, runner, observador ou
+marcador. Backups/clones históricos ficam preservados. Falha não autoriza restore
+sobre original ou downgrade; preservar estado e revisar recuperação em clone.
+Essa manutenção continua limitada ao banco/helper, independente do gate do
+stack integrado. Nova campanha e demais efeitos exigem pacote próprio posterior.
