@@ -29,12 +29,54 @@ Verificação local na fonte `3a6059ac8d70fe4d5e0936debb4f95819db96054`:
 1warning de depreciação Starlette/httpx. É teste do mecanismo de seleção,
 não execução da suíte completa.
 
-## Próximas unidades
+## Validação integral — #68, 13/11/2026
 
-Na #68, fixar a fonte após este registro documental e executar `ci.yml` uma vez
-por `workflow_dispatch`. Conferir quatro jobs Python, React, contagens/skips,
-lint/tipos/build/auditorias e união das coletas sem overlap/omissões.
-Na #69, publicar o resultado real e a diferença entre fonte testada e implantada.
-Não existe mudança de fluxo de produto nesta entrega; E2E novo só será necessário
-se uma correção alterar esse fluxo. Nenhuma implantação ou execução de Lab é
-parte desta validação.
+Fonte fixada: `1f667b1592c5b5e56b2843b50dcccd24e95329f5`.
+A [run43440100468](https://github.com/Buraddomoon/AEGIS/actions/runs/43440100468),
+iniciada uma vez por `gh workflow run ci.yml --ref main`, terminou `success`.
+Os cinco jobs foram conferidos pela API, incluindo suas etapas e logs.
+É uma workflow integral aprovada dessa fonte, sem composição com runs antigas
+ou execução local. Nenhum check, timeout, partição ou filtro foi alterado.
+
+| Job remoto | Aprovados | Skips | Selecionados | Tempo pytest |
+|---|---:|---:|---:|---:|
+| [Python0](https://github.com/Buraddomoon/AEGIS/actions/runs/43440100468/job/131935187924) | 832 | 2 | 834 | 175,07s |
+| [Python1](https://github.com/Buraddomoon/AEGIS/actions/runs/43440100468/job/131935187694) | 805 | 2 | 807 | 277,72s |
+| [Python2](https://github.com/Buraddomoon/AEGIS/actions/runs/43440100468/job/131935187948) | 911 | 1 | 912 | 248,44s |
+| [Python3](https://github.com/Buraddomoon/AEGIS/actions/runs/43440100468/job/131935187862) | 829 | 4 | 833 | 149,60s |
+| Total Python | **3377** | **9** | **3386** | — |
+| [React](https://github.com/Buraddomoon/AEGIS/actions/runs/43440100468/job/131935187297) | **91**,15arquivos | 0 | 91 | — |
+
+Cinco coletas locais independentes, em sequência na mesma fonte, confirmaram
+`3386 = 834 + 807 + 912 + 833`: união exata de nodeIDs, nenhuma omissão, extra,
+duplicação ou sobreposição. Comandos: `.venv/bin/pytest tests -q --collect-only`,
+seguido de `.venv/bin/python scripts/run_ci_tests.py --shard N --collect-only`
+para N=0,1,2,3. Coleta local não foi contada como teste executado. As contagens
+selecionadas correspondem aos aprovados+skips de cada job remoto; os casos
+`deselected` são os destinados às outras partições, não exclusões da união.
+
+Os9skips existentes foram conferidos no resumo `-ra`:
+
+- Grupo0:1projeção opt-in de metadados de imagem e1inspeção de API Demo ausente.
+- Grupo1:1inspeção de compatibilidade sem ferramentas PostgreSQL locais e
+  1inspeção de banco Demo ausente.
+- Grupo2:1inspeção de rede Demo ausente.
+- Grupo3:4inspeções Wazuh sem objeto Demo próprio preexistente.
+
+Nenhum desses testes cria os recursos ausentes para passar a inspeção. As
+suítes de integração restantes executaram com PostgreSQL/Redis próprios dos jobs.
+Cada grupo emitiu1warning de depreciação Starlette/httpx, sem falha de teste.
+
+Ruff lint/format e mypy passaram no grupo0. Auditoria Python passou com
+1finding previamente revisado: `diskcache5.6.3/PYSEC-2026-2447`, caminho do parser
+não afetado segundo o gate existente; isso não significa zero findings.
+React passou TypeScript, Prettier, Vitest, build e `npm audit --audit-level=high`
+(0vulnerabilidades reportadas). Dependências foram instaladas dos locks.
+O [source-review43440053259](https://github.com/Buraddomoon/AEGIS/actions/runs/43440053259)
+também passou para a fonte fixada.
+
+Logs e coletas permanecem privados em `.local/ci-issue10`, sem versionar logs ou
+dados de runtime. Nenhum fluxo de produto foi alterado nesta entrega documental;
+E2E não foi reexecutado nem herdado como validação nova. CI/fixtures não são
+ensaio Linux/Wazuh nem implantação. A publicação da distinção de implantação
+e da equivalência dos inputs finais pertence à #69.
