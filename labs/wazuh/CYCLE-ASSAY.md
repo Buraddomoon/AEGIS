@@ -205,9 +205,12 @@ metadados/consumidores originais sem abri-los. Falha retém artefatos e bloqueia
 qualquer intervenção original. O limite do ensaio integrado de8GiB continua
 independente da etapa de clone com até768MiB configurados simultaneamente.
 
-## Próxima proposta: manutenção do banco original, sem Wazuh ou marcador
+## Manutenção do banco original — executada e encerrada
 
-**Ainda não autorizada.** Proposta host-onlyf202657f619840c99d0ff13f3438acb8,
+**Autorizada por “autorizo” em13/11 e concluída**:
+[ORIGINAL_UPGRADE_AND_GRANTS_VERIFIED/CLEANED](../../docs/evidence/wazuh-database-2026-11-13/UPGRADE-ORIGINAL.md).
+Original agora b7/33tabelas; o procedimento abaixo registra o escopo consumido,
+sem conceder replay ou operação normal. Proposta host-onlyf202657f619840c99d0ff13f3438acb8,
 SHA256 canônico`461edc2f2d692705e0b13d2328e3ce36679c0064d750a0d83c3d7a7c20c4677d`.
 Aplicar uma vez a mesma chain4b72→b7 e os grants mínimos **no volume original**
 `aegis-wazuh-lab_postgres-data`, somente depois dos gates abaixo. Esta proposta
@@ -239,3 +242,19 @@ marcador. Backups/clones históricos ficam preservados. Falha não autoriza rest
 sobre original ou downgrade; preservar estado e revisar recuperação em clone.
 Essa manutenção continua limitada ao banco/helper, independente do gate do
 stack integrado. Nova campanha e demais efeitos exigem pacote próprio posterior.
+
+## Estado de retomada após a manutenção
+
+Compatibilidade de banco/grants atendida no clone e no original, ambos b7/33.
+Backup frio e restore anterior4b72/29 preservados; histórico/verificadores iguais.
+Limpeza confirmada, sem banco ativo. O relatório acima fixa duas imagens locais
+novas com código completo atual,73arquivos/45versões conferidos por imagem e
+tags/bases antigas retidas. Usar seus **IDs**, não tags Wazuh`:local` históricas.
+Essas imagens não foram implantadas. O helper de migração b8 é distinto da
+imagem atual de API/worker e não deve ser confundido com ela.
+
+Gates restantes da#58: pacote integrado atual com PKI/continuidade/inspeção e
+identidade/regra/ACL/observer; revisar/adotar catálogo versionado sem seed geral
+(tabelas de release/estado ainda vazias); recursos do stack e autorização de
+tentativa única. Não reutilizar o harness histórico, o intent original ou
+autorizações de TLS/marcador consumidas. Não iniciar#59/#60 por esta manutenção.

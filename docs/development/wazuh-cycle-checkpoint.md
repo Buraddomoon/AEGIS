@@ -119,3 +119,44 @@ f202657f619840c99d0ff13f3438acb8 / SHA256 canônico
 host-only em `.local/wazuh-original-upgrade`, escopo ao final de CYCLE-ASSAY.
 Requer guardas de backup/estado exatos e a mesma cadeia/grants do clone; sem
 seed/catálogo/PKI/runner/Wazuh/marcador. #58/#59/#60 e pai#7 permanecem abertos.
+
+## Manutenção original autorizada e concluída
+
+O usuário respondeu **“autorizo”** ao escopo separado do original. Entre
+13:39:58Z e13:40:17Z de13/11, f202657f concluiu
+**ORIGINAL_UPGRADE_AND_GRANTS_VERIFIED/CLEANED**.
+[Relatório e preparação de imagens](../evidence/wazuh-database-2026-11-13/UPGRADE-ORIGINAL.md).
+
+- Original/backup conferidosRO com mesmo hashf93cd36d antes do startup. Original
+  agora **b7f3c2d91a06/33tabelas**, Alembic check e231+277checks de grants passaram.
+- Colunas/linhas antigas, roles/verificadores e ACLs dos outros papéis preservados.
+  Inventários após DDL/grants iguais aos demonstrados no clone. Finalb04c7c04,
+  projeção antiga c708e838; hashes completos no relatório.
+- Recibo canônico`d7d292dd6d88ed523271feb3561b0adeb0632a59c6c79b2d9e967945f236d39b`.
+  Original parado, zero containers/consumidores; identidade dos nove volumes
+  preservada. Conteúdo físico mudou legitimamente:68.391.491bytes/1.475entradas,
+  SHA256`2c19f3edf9ea9c176ed21dc75f78f23b52969b737ff9e0c449c6bb90d1704522`.
+- Backup frio51.673.168bytes e clones antigos/atualizados retidos. Backup/restore
+ 4b72/29 continuam históricos válidos; não sobrescrever para acompanhar o original.
+- Sem journal, seed, catálogo, novas contas/senhas, PKI, lab/binding, Wazuh/
+  API/worker/runner/observador ou marcador. Autorização utilizada nesse escopo.
+
+Preparação independente de imagens locais, sem volumes ou daemons de laboratório:
+base de aplicação752ad29/ba50a78c e runnera893bdae conservadas em tags dedicadas;
+perfis atuais acrescentados sem reinstalar dependências. Cada imagem nova teve
+73arquivos Python/45versões runtime conferidos no build e em containerRO.
+
+- API/worker:`sha256:64112646c663933a81a3777adbac03ea439ee6ae923a74418996d8d370fba0fe`.
+- Runner/observer:`sha256:0440049a28cb8799d350d1a646f470e6eed26cc0893384ab6cc211050cfaba54`.
+- Recibo canônico`f4ce94075ddec77f7d2934d7fd238dabd2a07c437c4aee1acab99cb6542f3542`;
+  fontea2378b1, imagens somente locais/não implantadas. Tags históricas intactas.
+
+A#58 continua aberta para pacote PKI/continuidade/inspeção, adoção controlada de
+catálogo ainda vazio, recursos e autorização do ensaio integrado. Última leitura
+após manutenção:~6,03GiB MemAvailable, abaixo do gate8GiB do stack completo;
+isso não impediu banco/helper limitado a768MiB. Não parar terceiros ou baixar gates.
+Sem autorização nova de Wazuh/marcador; #59/#60 e pai#7 continuam abertos.
+
+Releitura após as imagens: MemAvailable5.586.509.824bytes (~5,20GiB), preflight
+do integrado continua recusado. Manutenção/checks pequenos já concluídos;
+sem fechar aplicativos/serviços de terceiros e sem exigir8GiB nessas etapas.

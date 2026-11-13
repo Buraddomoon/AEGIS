@@ -43,9 +43,12 @@ Sem microsserviços/abstrações extras ou comandos livres de API.
   são reescritos para corrigir apresentação ou fazer gates passarem. Hash não é
   assinatura. Comparação exige contexto/manifesto conhecido; denominador explícito.
 - Migrações Alembic explícitas, constraints e grants mínimos por operação/coluna.
-  Schema Demo b7f3c2d91a06 tem33tabelas incluindo Alembic. Lab original atualizado sob aprovação específica da #5 em12/11:
+  Schema Demo b7f3c2d91a06 tem33tabelas incluindo Alembic. Lab Linux original atualizado sob aprovação específica da #5 em12/11:
   b7f3c2d91a06/33tabelas; backup da #48 e backup fresco preservam d446/27tabelas; a0d9c7e21b45/32tabelas era hipótese anterior e segue em
   fixtures/perfis intermediários. Exigir código/imagem compatíveis, sem migração implícita.
+  Wazuh original atualizado explicitamente na #58 em13/11: b7/33tabelas,
+  histórico/verificadores preservados; backup frio/restore4b72c7bb8548/29tabelas
+  e clone b7 retidos. Manutenção encerrada, sem operação normal/marcador.
 - RBAC no backend, CSRF nas mutações com sessão, origem exata, Argon2id, limites,
   logs sem secrets. TLS/SNI/CA verificados, IP/destino revisados, sem proxies ou
   redirects ambientais em conectores. Importação YAML é dado, nunca instrução.
@@ -75,6 +78,10 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   CAMPAIGN-VERIFIED-2026-11-12; não reutilizar pacotes consumidos.
 - Wazuh histórico22/10 foi COMPLETED/DETECTED/CLEANED, limitado a um marcador e
   regra própria100200, zero técnicas ATT&CK. Não generalizar eficácia de SIEM/EDR.
+- #58 em13/11: banco original b7/grants verificados e parado; imagens atuais
+  locais conferidas, sem implantação. Ver [relatório](docs/evidence/wazuh-database-2026-11-13/UPGRADE-ORIGINAL.md).
+  PKI/continuidade/catálogo versionado/pacote integrado
+  seguem pendentes; autorizações de diagnóstico/clone/manutenção utilizadas.
 
 ## Operação, testes e evidência
 
