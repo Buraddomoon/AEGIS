@@ -78,5 +78,44 @@ também passou para a fonte fixada.
 Logs e coletas permanecem privados em `.local/ci-issue10`, sem versionar logs ou
 dados de runtime. Nenhum fluxo de produto foi alterado nesta entrega documental;
 E2E não foi reexecutado nem herdado como validação nova. CI/fixtures não são
-ensaio Linux/Wazuh nem implantação. A publicação da distinção de implantação
-e da equivalência dos inputs finais pertence à #69.
+ensaio Linux/Wazuh nem implantação.
+
+## Publicação e implantação — #69, 13/11/2026
+
+As #67 e #68 foram concluídas em sequência, com comentários de evidência e
+fechamento no GitHub. Commits desta entrega, somente em main:
+
+- `1f667b1`: diagnóstico remoto, `Refs #67` e fonte fixada da CI integral.
+- `3eccdc2`: registro das contagens/checks completos, `Refs #68`.
+- O commit documental `docs(ci): publish validation and deployment checkpoint
+  (Refs #69)` publica esta seção e os links no guia de testes/sessões; o hash
+  final e o estado remoto ficam nos comentários de #69 e #10, evitando
+  autorreferência impossível no próprio commit.
+
+Os commits posteriores à fonte testada alteram apenas Markdown. O conjunto de
+inputs fora dos `paths-ignore` de `ci.yml` contém **418 arquivos**, incluindo
+aplicação, testes, scripts, locks, workflows, políticas JSON e receitas.
+SHA256 desse conjunto: `5ff9a27a2d8eb67bbe767b0d660e09b4b894f86fda79775884ba8cbd851f4820`.
+Foi calculado sobre as linhas de `git ls-tree -r COMMIT`, na ordem original,
+removendo caminhos terminados em `.md`, `docs/images/**` e `LICENSE`, juntando
+as linhas por LF e acrescentando um LF final, em UTF-8. Cada linha inclui
+modo, tipo, object ID e caminho. Comparar as listas, além do digest, comprova
+a equivalência dos inputs Git entre a fonte fixada e a entrega documental;
+não equivale a executar a CI novamente em cada hash documental.
+
+O Demo foi apenas inspecionado, sem build/restart: `aegis-api-1` e
+`aegis-worker-1` usam `aegis-local:0.1`, imagem
+`sha256:b8abe5e44af4bad90d2e302a045f38fb9cf268932be5ea0493fc72f078657a23`,
+sem mounts de código e sem label OCI de revisão. O guia associa historicamente
+essa implantação a `0609ad2`; a inspeção atual confirma o ID, não uma revisão
+nova nem equivalência com a fonte validada. As imagens Wazuh locais preparadas
+na #58 também não foram implantadas por esta entrega. Portanto, a CI comprova
+a fonte testada, sem afirmar atualização do Demo ou dos laboratórios.
+
+Checks de whitespace, staged/segredos e `check_release.py` foram executados
+antes de cada commit. Source-review remoto é uma verificação documental
+distinta dos cinco jobs da CI integral. Logs/coletas não foram publicados;
+somente resumo, links, contagens e limites revisados. A run antiga permanece
+com seu resultado original, e nenhuma evidência histórica foi reescrita.
+Escopo #10 encerrado após o aceite dos três filhos; nenhuma próxima feature
+ou operação de laboratório é autorizada por este checkpoint.

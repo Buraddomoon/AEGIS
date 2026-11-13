@@ -1,5 +1,18 @@
 # Testes e evidências
 
+## Fonte atual validada — 13/11/2026, issue #10
+
+A [CI integral43440100468](https://github.com/Buraddomoon/AEGIS/actions/runs/43440100468)
+passou na fonte `1f667b1592c5b5e56b2843b50dcccd24e95329f5`: quatro grupos Python,
+**3377passed/9skips** justificados e **91React/15arquivos**, além de lint, tipos,
+formatação, build e auditorias. Coleta independente:3386=834+807+912+833,
+sem overlap/omissão. Auditoria Python manteve1finding previamente revisado;
+npm reportou0vulnerabilidades. Nenhum filtro/timeout/partição foi reduzido.
+O [checkpoint da entrega](ci-validation-checkpoint.md) registra diagnóstico,
+jobs, tempos, skips, comandos, equivalência dos inputs documentais e o Demo
+anterior ainda implantado. E2E não foi reexecutado nesta entrega documental.
+Os resultados históricos abaixo continuam limitados às suas respectivas fontes.
+
 ## CI particionada — 2026-11-05
 
 A CI executa quatro partições Python complementares, com PostgreSQL/Redis

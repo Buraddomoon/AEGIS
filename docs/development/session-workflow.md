@@ -123,3 +123,9 @@ preparada parcialmente em13/11, com transição offline do runner Wazuh e pacote
 de revisão. Recursos/compatibilidade/autorização ainda bloqueiam o ensaio novo;
 #59/#60 pendentes. Não reutilizar o harness/intent/autorização de22/10 nem os
 pacotes TLS consumidos de12/11.
+
+Entrega #10: [checkpoint da validação integral](ci-validation-checkpoint.md).
+#67/#68/#69 concluídas em sequência: diagnóstico do incidente GitHub, CI integral
+da fonte fixada com3377Python/9skips e91React, evidências e implantação distintas.
+Commits finais somente documentais; Demo anterior preservado. Não iniciar outra
+entrega ou laboratório a partir desse checkpoint.
