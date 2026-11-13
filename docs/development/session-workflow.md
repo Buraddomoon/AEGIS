@@ -117,3 +117,9 @@ após autorização específica e reconciliação sem replay. Laboratório parad
 volumes/configuração antiga preservados; ambas as autorizações consumidas.
 Sem novo marcador ou operação normal. Conferir CI final e comentários das issues;
 não iniciar outra entrega.
+
+Entrega #7: [checkpoint da revisão integrada](wazuh-cycle-checkpoint.md), #58
+preparada parcialmente em13/11, com transição offline do runner Wazuh e pacote
+de revisão. Recursos/compatibilidade/autorização ainda bloqueiam o ensaio novo;
+#59/#60 pendentes. Não reutilizar o harness/intent/autorização de22/10 nem os
+pacotes TLS consumidos de12/11.

@@ -1,5 +1,9 @@
 # Ensaio integrado Wazuh — escopo autorizado e resultado
 
+Para a entrega #7, consultar a [revisão atual e bloqueios](CYCLE-ASSAY.md).
+O texto abaixo preserva o ensaio de outubro; seus comandos/autorizações não
+constituem um pacote pronto para executar a entrega atual.
+
 Para a entrega #6, seguir [inventário/candidato](../../docs/operations/wazuh-pki.md)
 e [troca/rollback](../../docs/operations/wazuh-pki-rotation.md). São preparação
 offline; o ADR0034 prepara redes novas e #57 exige escopo/aprovação próprios de TLS

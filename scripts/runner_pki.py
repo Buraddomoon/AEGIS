@@ -22,6 +22,7 @@ from init_linux_lab import initialize
 
 FORMAT = "aegis-runner-pki-candidate/1"
 TRANSITION_FORMAT = "aegis-runner-pki-candidate/2"
+WAZUH_TRANSITION_FORMAT = "aegis-runner-pki-candidate/3"
 PUBLIC = (
     "connection.json",
     "server-ca.crt",
@@ -301,24 +302,42 @@ def inspect(source: Path) -> dict:
     }
 
 
-def target_connection(source: dict, *, migrate_linux_network: bool = False) -> dict:
-    if type(migrate_linux_network) is not bool:
+def target_connection(
+    source: dict, *, migrate_linux_network: bool = False, migrate_wazuh_network: bool = False
+) -> dict:
+    if type(migrate_linux_network) is not bool or type(migrate_wazuh_network) is not bool:
         raise PKIError("explicit_network_transition_required")
+    if migrate_linux_network and migrate_wazuh_network:
+        raise PKIError("single_network_transition_required")
     connection = dict(source["connection"])
     if migrate_linux_network:
         if connection["url"] != LEGACY_LINUX_URL:
             raise PKIError("legacy_linux_source_required")
         connection["url"] = LINUX_URL
+    if migrate_wazuh_network:
+        if connection["url"] != LEGACY_RUNNER_URL:
+            raise PKIError("legacy_wazuh_source_required")
+        connection["url"] = WAZUH_URL
     return connection
 
 
-def validate_new(source: dict, target: Path, *, migrate_linux_network: bool = False) -> dict:
+def validate_new(
+    source: dict,
+    target: Path,
+    *,
+    migrate_linux_network: bool = False,
+    migrate_wazuh_network: bool = False,
+) -> dict:
     if set(os.listdir(target)) not in (FILES, FILES | {"rotation.json"}):
         raise PKIError("unexpected_candidate_artifacts")
     for name in FILES:
         read(target / name, modes=(0o444, 0o600))
     new, validity = inventory(target, current=True)
-    expected = target_connection(source, migrate_linux_network=migrate_linux_network)
+    expected = target_connection(
+        source,
+        migrate_linux_network=migrate_linux_network,
+        migrate_wazuh_network=migrate_wazuh_network,
+    )
     if new["connection"] != expected or not all(validity.values()):
         raise PKIError("candidate_identity_or_validity_mismatch")
     old_keys = {value["spki_sha256"] for value in source["certificates"].values()}
@@ -359,12 +378,21 @@ def sync(path: Path):
 
 
 def prepare(
-    source: Path, expected_sha256: str, output_root: Path, *, migrate_linux_network: bool = False
+    source: Path,
+    expected_sha256: str,
+    output_root: Path,
+    *,
+    migrate_linux_network: bool = False,
+    migrate_wazuh_network: bool = False,
 ) -> dict:
     original, _ = inventory(source)
     if not re.fullmatch(r"[a-f0-9]{64}", expected_sha256) or digest(original) != expected_sha256:
         raise PKIError("source_inventory_drift")
-    connection = target_connection(original, migrate_linux_network=migrate_linux_network)
+    connection = target_connection(
+        original,
+        migrate_linux_network=migrate_linux_network,
+        migrate_wazuh_network=migrate_wazuh_network,
+    )
     output_root = absolute(output_root)
     if output_root == absolute(source) or absolute(source) in output_root.parents:
         raise PKIError("candidate_must_be_separate_from_source")
@@ -378,11 +406,20 @@ def prepare(
         server_ip=urlsplit(connection["url"]).hostname,
         identifiers={name: original["connection"][name] for name in IDS},
     )
-    new = validate_new(original, target, migrate_linux_network=migrate_linux_network)
+    new = validate_new(
+        original,
+        target,
+        migrate_linux_network=migrate_linux_network,
+        migrate_wazuh_network=migrate_wazuh_network,
+    )
     if inventory(source)[0] != original:
         raise PKIError("source_changed_during_preparation")
     manifest = {
-        "format": TRANSITION_FORMAT if migrate_linux_network else FORMAT,
+        "format": WAZUH_TRANSITION_FORMAT
+        if migrate_wazuh_network
+        else TRANSITION_FORMAT
+        if migrate_linux_network
+        else FORMAT,
         "id": identifier,
         "created_at": clock().isoformat(),
         "source": original,
@@ -433,7 +470,7 @@ def verify(source: Path, candidate: Path, expected_sha256: str) -> dict:
     if created_at.utcoffset() != timedelta(0):
         raise PKIError("utc_manifest_time_required")
     if (
-        manifest["format"] not in {FORMAT, TRANSITION_FORMAT}
+        manifest["format"] not in {FORMAT, TRANSITION_FORMAT, WAZUH_TRANSITION_FORMAT}
         or manifest["id"] != candidate.name
         or UUID(hex=manifest["id"]).hex != manifest["id"]
         or manifest["activation_performed"] is not False
@@ -443,7 +480,10 @@ def verify(source: Path, candidate: Path, expected_sha256: str) -> dict:
     if original != manifest["source"]:
         raise PKIError("source_inventory_drift")
     new = validate_new(
-        original, candidate, migrate_linux_network=manifest["format"] == TRANSITION_FORMAT
+        original,
+        candidate,
+        migrate_linux_network=manifest["format"] == TRANSITION_FORMAT,
+        migrate_wazuh_network=manifest["format"] == WAZUH_TRANSITION_FORMAT,
     )
     if new != manifest["candidate"] or new["descriptor_sha256"] == original["descriptor_sha256"]:
         raise PKIError("candidate_inventory_drift")
@@ -471,10 +511,16 @@ def main() -> int:
             command.add_argument("--expected-sha256", required=True)
         if name == "prepare":
             command.add_argument("--output-root", type=Path, default=Path(".local/pki-candidates"))
-            command.add_argument(
+            transition = command.add_mutually_exclusive_group()
+            transition.add_argument(
                 "--migrate-linux-network",
                 action="store_true",
                 help="Offline candidate only: reviewed legacy Linux address to current fixed profile.",
+            )
+            transition.add_argument(
+                "--migrate-wazuh-network",
+                action="store_true",
+                help="Offline candidate only: legacy Wazuh runner to the fixed ADR0034 address.",
             )
         if name == "verify":
             command.add_argument("--candidate", type=Path, required=True)
@@ -488,6 +534,7 @@ def main() -> int:
                 args.expected_sha256,
                 args.output_root,
                 migrate_linux_network=args.migrate_linux_network,
+                migrate_wazuh_network=args.migrate_wazuh_network,
             )
         else:
             result = verify(args.source, args.candidate, args.expected_sha256)

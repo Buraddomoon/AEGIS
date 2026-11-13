@@ -155,7 +155,7 @@ wazuh-lab-preflight:
 	$(VENV)/python scripts/wazuh_host_preflight.py
 test-wazuh-preparation:
 	$(VENV)/pytest tests/test_wazuh_host_preflight.py tests/test_wazuh_lab_preparation.py tests/test_wazuh_lab_lifecycle.py tests/test_wazuh_runtime_inspection.py tests/test_wazuh_assay_guard.py tests/test_marker_log.py tests/test_marker_observer.py -q
-	$(VENV)/pytest tests/test_wazuh_network_profile.py tests/test_wazuh_network_transition.py tests/test_wazuh_pki.py tests/test_wazuh_pki_rotation.py -q
+	$(VENV)/pytest tests/test_wazuh_network_profile.py tests/test_wazuh_network_transition.py tests/test_wazuh_runner_transition.py tests/test_wazuh_pki.py tests/test_wazuh_pki_rotation.py -q
 wazuh-lab-pull:
 	$(VENV)/python scripts/wazuh_lab.py pull --confirm-local-wazuh
 wazuh-lab-hash-users:
@@ -212,7 +212,7 @@ backup-vault-plan:
 # Host-only runner PKI candidates. These commands never activate or start a lab.
 PKI_SOURCE ?= .local/linux-lab
 PKI_OUTPUT ?= .local/pki-candidates
-.PHONY: runner-pki-inspect runner-pki-prepare runner-pki-transition runner-pki-verify test-runner-pki
+.PHONY: runner-pki-inspect runner-pki-prepare runner-pki-transition runner-pki-wazuh-transition runner-pki-verify test-runner-pki
 runner-pki-inspect:
 	$(VENV)/python scripts/runner_pki.py inspect --source "$(PKI_SOURCE)"
 runner-pki-prepare:
@@ -222,6 +222,10 @@ runner-pki-prepare:
 runner-pki-transition:
 	@test -n "$(PKI_SHA256)" || (echo 'Set PKI_SHA256 from the reviewed public inventory'; exit 2)
 	$(VENV)/python scripts/runner_pki.py prepare --source "$(PKI_SOURCE)" --expected-sha256 "$(PKI_SHA256)" --output-root "$(PKI_OUTPUT)" --migrate-linux-network
+# Separate versioned Wazuh runner candidate, preserving original IDs and journal.
+runner-pki-wazuh-transition:
+	@test -n "$(PKI_SHA256)" || (echo 'Set PKI_SHA256 from the reviewed public inventory'; exit 2)
+	$(VENV)/python scripts/runner_pki.py prepare --source "$(PKI_SOURCE)" --expected-sha256 "$(PKI_SHA256)" --output-root "$(PKI_OUTPUT)" --migrate-wazuh-network
 runner-pki-verify:
 	@test -n "$(PKI_CANDIDATE)" -a -n "$(PKI_SHA256)" || (echo 'Set PKI_CANDIDATE and reviewed manifest PKI_SHA256'; exit 2)
 	$(VENV)/python scripts/runner_pki.py verify --source "$(PKI_SOURCE)" --candidate "$(PKI_CANDIDATE)" --expected-sha256 "$(PKI_SHA256)"

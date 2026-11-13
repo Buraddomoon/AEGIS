@@ -10,8 +10,9 @@ reiniciar. Os ensaios Linux/Wazuh anteriores continuam encerrados/autorização 
 - Inventário dos quatro certificados e do connection.json, com fingerprints,
   SPKIs públicos, validade UTC, IDs/URL e hash do descritor do backend.
 - Candidato com duas CAs novas e quatro chaves novas/distintas, preservando IDs
-  e nomes dos secrets. Renovação comum conserva endpoint; a transição explícita
-  move apenas o runner Linux legado para `192.168.253.2`. Nenhuma chave privada
+  e nomes dos secrets. Renovação comum conserva endpoint; transições explícitas
+  separadas movem Linux legado para `192.168.253.2` (ADR0033) ou runner Wazuh
+  legado para `192.168.253.10` (ADR0034). Nenhuma chave privada
   antiga é lida/reutilizada.
 - Validação OpenSSL de assinaturas/cadeias, constraints, EKU, SAN/IP/CN, curvaP-256,
   pares privados/públicos e validade. Não há consulta a CA/OCSP/CRL externos.
@@ -19,7 +20,7 @@ reiniciar. Os ensaios Linux/Wazuh anteriores continuam encerrados/autorização 
   explícita de drift do material. Nenhum recibo concede operação normal.
 
 A mesma ferramenta aceita PKI do Linux legado172.30.88.2, do runner atual
-192.168.253.2 ou do runner no overlay Wazuh172.30.89.2. **Não rotaciona
+192.168.253.2 ou do runner Wazuh172.30.89.2/192.168.253.10. **Não rotaciona
 certificados do Indexer, manager,
 agente ou Filebeat**, senhas de integração ou PKI de outros serviços.
 
@@ -52,6 +53,8 @@ make runner-pki-prepare PKI_SOURCE=.local/linux-lab PKI_SHA256=HASH_DO_INVENTARI
 # Retorna candidate_path e manifest_sha256, nunca uma chave privada.
 make runner-pki-transition PKI_SOURCE=.local/linux-lab PKI_SHA256=HASH_DO_INVENTARIO
 # Somente transição explícita legacy Linux .2 → 192.168.253.2; ainda offline.
+make runner-pki-wazuh-transition PKI_SOURCE=.local/wazuh-lab/runner PKI_SHA256=HASH_DO_INVENTARIO
+# Somente runner Wazuh legado172.30.89.2 → 192.168.253.10; ainda offline.
 make runner-pki-verify PKI_SOURCE=.local/linux-lab \
   PKI_CANDIDATE=.local/pki-candidates/ID_RETORNADO PKI_SHA256=HASH_DO_MANIFESTO
 ```
@@ -60,6 +63,14 @@ Equivalentes sem Make: `.venv/bin/python scripts/runner_pki.py inspect|prepare|v
 com `--source`, `--expected-sha256` e `--candidate` conforme `--help`. Prepare aceita
 `--output-root`, sempre área privada separada da origem; não aceita path com
 interpolação/espaços/quebra de linha para arquivo Compose env. Não existe apply/up/smoke.
+
+`--migrate-linux-network` e `--migrate-wazuh-network` são mutuamente exclusivos,
+recusam origens de outro perfil e não aceitam endereço livre. Renovação sem flag
+preserva o endereço, inclusive legado. Manifestos `/1` continuam renovações, `/2`
+continuam transições Linux e `/3` identifica a transição Wazuh. A verificação
+exige o perfil exato de cada versão; alterar formato/hash não converte um perfil
+em outro. Ferramentas de ativação Linux não passam a aceitar o perfil Wazuh.
+A preparação da entrega#7 está em [CYCLE-ASSAY.md](../../labs/wazuh/CYCLE-ASSAY.md).
 
 Hashes são SHA256 do JSON **canônico**, não de whitespace do arquivo: use o valor
 emitido pelo comando, não `sha256sum rotation.json`. Guarde o hash esperado por
