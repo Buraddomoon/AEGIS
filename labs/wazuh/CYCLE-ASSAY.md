@@ -89,8 +89,15 @@ Manter qasrc e aplicar [network.yml](network.yml) antes dos overlays de PKI.
    Backup frio, restore isolado, inventário/grants/compatibilidade e eventual
    upgrade Wazuh precisam de escopo próprio. O serviço Compose `migrate` também
    executa seed/atualiza senha runtime; não usar startup genérico como migração.
-9. Falta autorização específica para abertura de volumes, diagnóstico/backup,
-   startup e efeito único. Esta revisão não concede nenhum desses efeitos.
+   **Atualização após diagnóstico especificamente autorizado:** a cópia física
+   isolada confirmou4b72/29tabelas, dump/restore verificados após reconciliação;
+   [recibos e limites](../../docs/evidence/wazuh-database-2026-11-13/README.md).
+   O original não foi iniciado/migrado; nenhum clone recebeu upgrade. Essa etapa
+   de diagnóstico foi utilizada e não autoriza migração ou marcador.
+9. No inventário inicial faltava autorização para diagnóstico/backup, startup
+   e efeito único. A etapa específica de diagnóstico foi posteriormente
+   autorizada e encerrada conforme o relatório. Outras intervenções continuam
+   pendentes; essa autorização não abrange migração, startup integrado ou marcador.
 
 ## Preparação do runner entregue sem ativação
 
@@ -160,3 +167,37 @@ O segundo target inclui regressão da transição do runner Wazuh. Os testes de 
 usam arquivos temporários e OpenSSL, sem Wazuh real. Conferir lint/staged/release
 antes do commit e os quatro jobs Python mais React na CI antes de chamá-la verde.
 Comandos/resultados efetivos e sincronização constam no comentário de#58/#7.
+
+Diagnóstico/backup autorizado concluído em13/11:
+[VERIFIED_AFTER_RECONCILIATION/CLEANED](../../docs/evidence/wazuh-database-2026-11-13/README.md).
+Continuidade/schema foram examinados somente no banco copiado, sem abrir journal.
+Após cleanup, RAM~6,57GiB; integrado ainda bloqueado. Antes do pacote integrado,
+propor e aprovar ensaio de upgrade4b72→b7 em clone, sem migração original implícita.
+
+## Próxima proposta: upgrade apenas em clone
+
+Aprovação ainda pendente. Usar backup frio retido
+`aegis-wazuh-diagnostic-6fd466f0fc3d-cold-backup`, inventário
+`f93cd36d483a25d30b2df11bce97dd331aaba1fb6bf8fb2ae33ce9d128a05085`,
+montado RO/nocopy para uma cópia de trabalho **nova**. Manter backup, working-copy
+e restore do diagnóstico intactos; nenhum volume original montado nesta etapa.
+
+PostgreSQL17 por ID já fixado acima,384MiB, network=none, sem TCP/portas; helper
+de migração isolado384MiB, somente socket Unix em volume próprio novo. Imagem de
+aplicação existente fixada em
+`sha256:b8abe5e44af4bad90d2e302a045f38fb9cf268932be5ea0493fc72f078657a23`.
+É helper owner fechado de Alembic, sem iniciar API/worker. Verificar os hashes
+de todos os arquivos de migração dessa imagem contra a fonte revisada **antes de
+SQL**; recusar divergência. Usar somente4b72→ec302→977fd→a0→b7, passando de29para33
+tabelas e `alembic check`. Sem serviço Compose genérico de migração ou seed.
+
+Comparar todas as colunas antigas de todas as tabelas, IDs/scopes/approvals/
+receipts/cleanups/contas/verificadores e ACLs antes/depois do upgrade. Esperar as
+quatro tabelas novas vazias e somente os acréscimos de colunas previstos no a0.
+Aplicar/revisar grants mínimos atuais **somente nesse clone**, mantendo senha e
+privilégios de outros papéis. Conferir imutabilidade e permissões por coluna.
+Sem publicação/adopção de catálogo, binding, PKI, Wazuh, API/worker, runner ou
+marcador. Encerrar containers próprios, reter volumes/backup/recibos e comparar
+metadados/consumidores originais sem abri-los. Falha retém artefatos e bloqueia
+qualquer intervenção original. O limite do ensaio integrado de8GiB continua
+independente da etapa de clone com até768MiB configurados simultaneamente.
