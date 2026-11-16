@@ -34,6 +34,7 @@ SOURCE_FILES = (
     "scripts/wazuh_cycle_catalog.py",
     "scripts/wazuh_cycle_continuity.py",
     "scripts/inspect_wazuh_lab.py",
+    "scripts/wazuh_cycle_resources.py",
 )
 
 
@@ -98,7 +99,15 @@ def candidates(profile, runner_sha256, services_sha256):
 
 
 def prepare(
-    source, runner_candidate, runner_sha256, service_candidate, services_sha256, images, output_root
+    source,
+    runner_candidate,
+    runner_sha256,
+    service_candidate,
+    services_sha256,
+    images,
+    output_root,
+    *,
+    resource_profile="standard",
 ):
     profile = CycleProfile(
         uuid4().hex,
@@ -106,6 +115,7 @@ def prepare(
         runner.absolute(runner_candidate),
         runner.absolute(service_candidate),
         dict(images),
+        resource_profile,
     )
     profile.check()
     output_root = runner.absolute(output_root)
@@ -174,6 +184,7 @@ def recheck(directory, expected_sha256):
         Path(record["runner_candidate"]),
         Path(record["service_candidate"]),
         record["images"],
+        record.get("resource_profile", "standard"),
     )
     profile.check()
     if directory.name != profile.review_id:
@@ -215,6 +226,9 @@ def main():
         build.add_argument("--" + name, type=Path, required=True)
     build.add_argument("--runner-sha256", required=True)
     build.add_argument("--services-sha256", required=True)
+    build.add_argument(
+        "--resource-profile", choices=("standard", "bounded-3360m/1"), default="standard"
+    )
     check = commands.add_parser("recheck")
     check.add_argument("--package", type=Path, required=True)
     check.add_argument("--expected-sha256", required=True)
@@ -229,6 +243,7 @@ def main():
                 args.services_sha256,
                 json.loads(runner.read(args.images, modes=(0o600,))),
                 args.output_root,
+                resource_profile=args.resource_profile,
             )
             if args.command == "prepare"
             else recheck(args.package, args.expected_sha256)

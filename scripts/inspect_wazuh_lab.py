@@ -12,6 +12,7 @@ from pathlib import Path
 
 from aegis.lab_runner.wazuh_network_profile import ADDRESSES as PROFILE_ADDRESSES
 from aegis.lab_runner.wazuh_network_profile import GATEWAYS, SUBNETS
+from wazuh_cycle_resources import BOUNDED, DB_COMMAND, HEAP, REDIS_COMMAND, memory
 from wazuh_lab import DOCKER, IMAGES, PRIVATE, PROJECT, ROOT, execute
 
 MIB = 1024**2
@@ -246,7 +247,15 @@ def validate(
             and host["NetworkMode"]
             in {"none" if key == "none" else PROJECT + "_" + key for key in NETWORKS[name]}
         )
-        checks[name + ".memory"] = host["Memory"] == MEMORY[name] * MIB
+        expected_memory = memory(cycle.resource_profile, MEMORY)[name] if cycle else MEMORY[name]
+        checks[name + ".memory"] = host["Memory"] == expected_memory * MIB
+        if cycle and cycle.resource_profile == BOUNDED:
+            checks[name + ".no_extra_swap"] = host.get("MemorySwap") == expected_memory * MIB
+            checks[name + ".resource_profile"] = item.get("resource_profile") == BOUNDED
+            if name == "wazuh.indexer":
+                checks[name + ".heap"] = item.get("bounded_heap_matches") == [True, None]
+            if name in {"db", "redis"}:
+                checks[name + ".bounded_command"] = item.get("bounded_" + name + "_command") is True
         if name in LIMITS:
             checks[name + ".process_cpu_limits"] = (host["PidsLimit"], host["NanoCpus"]) == LIMITS[
                 name
@@ -394,6 +403,7 @@ HOST_FIELDS = (
     "CgroupnsMode",
     "NetworkMode",
     "Memory",
+    "MemorySwap",
     "PidsLimit",
     "NanoCpus",
     "SecurityOpt",
@@ -418,6 +428,17 @@ CONTAINER_FORMAT = (
             "image_reference": ".Config.Image",
             "image_id": ".Image",
             "cycle_review": '(index .Config.Labels "aegis.cycle-review-id")',
+            "resource_profile": '(index .Config.Labels "aegis.resource-profile")',
+            "bounded_db_command": "(eq (json .Config.Cmd) "
+            + json.dumps(json.dumps(DB_COMMAND, separators=(",", ":")))
+            + ")",
+            "bounded_redis_command": "(eq (json .Config.Cmd) "
+            + json.dumps(
+                json.dumps(
+                    [item.replace("$$", "$") for item in REDIS_COMMAND], separators=(",", ":")
+                )
+            )
+            + ")",
             "ports": ".NetworkSettings.Ports",
             "networks": ".NetworkSettings.Networks",
             "mounts": ".Mounts",
@@ -425,7 +446,14 @@ CONTAINER_FORMAT = (
     )[:-1]
     + ',"host":'
     + projection({name: '(index .HostConfig "' + name + '")' for name in HOST_FIELDS})
-    + ',"health":{{with (index .State "Health")}}{{json (index . "Status")}}{{else}}""{{end}}}'
+    + ',"health":{{with (index .State "Health")}}{{json (index . "Status")}}{{else}}""{{end}}'
+    + "}"
+)
+BOUNDED_CONTAINER_FORMAT = (
+    CONTAINER_FORMAT[:-1]
+    + ',"bounded_heap_matches":[{{range $e := .Config.Env}}{{if eq (index (split $e "=") 0) "OPENSEARCH_JAVA_OPTS"}}{{json (eq $e '
+    + json.dumps("OPENSEARCH_JAVA_OPTS=" + HEAP)
+    + ")}},{{end}}{{end}}null]}"
 )
 PROJECT_LABEL = ',"Labels":{"com.docker.compose.project":{{json (index .Labels "com.docker.compose.project")}}}}'
 NETWORK_FORMAT = (
@@ -461,11 +489,18 @@ VOLUME_FORMAT = (
 )
 
 
-def collect() -> tuple[list[dict], list[dict], list[dict]]:
+def collect(*, cycle=None) -> tuple[list[dict], list[dict], list[dict]]:
     """Only ps/ls/inspect on the explicit local daemon; no exec/up/run/search."""
+    if cycle is not None:
+        cycle.check()
+    container_format = (
+        BOUNDED_CONTAINER_FORMAT
+        if cycle is not None and cycle.resource_profile == BOUNDED
+        else CONTAINER_FORMAT
+    )
     snapshots = []
     for kind, listing, template, limit in (
-        ("container", ["ps", "--all", "--quiet", "--no-trunc"], CONTAINER_FORMAT, 16),
+        ("container", ["ps", "--all", "--quiet", "--no-trunc"], container_format, 16),
         ("network", ["network", "ls", "--quiet", "--no-trunc"], NETWORK_FORMAT, 8),
         ("volume", ["volume", "ls", "--quiet"], VOLUME_FORMAT, 16),
     ):

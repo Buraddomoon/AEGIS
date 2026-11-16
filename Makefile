@@ -158,7 +158,7 @@ test-wazuh-preparation:
 	$(VENV)/pytest tests/test_wazuh_network_profile.py tests/test_wazuh_network_transition.py tests/test_wazuh_runner_transition.py tests/test_wazuh_pki.py tests/test_wazuh_pki_rotation.py -q
 .PHONY: test-wazuh-cycle
 test-wazuh-cycle:
-	$(VENV)/pytest tests/test_wazuh_cycle_scope.py tests/test_wazuh_cycle_prepare.py tests/test_wazuh_cycle_continuity.py tests/test_wazuh_cycle_catalog.py tests/test_wazuh_cycle_assay.py -q
+	$(VENV)/pytest tests/test_wazuh_cycle_scope.py tests/test_wazuh_cycle_prepare.py tests/test_wazuh_cycle_continuity.py tests/test_wazuh_cycle_catalog.py tests/test_wazuh_cycle_assay.py tests/test_wazuh_cycle_resources.py -q
 wazuh-lab-pull:
 	$(VENV)/python scripts/wazuh_lab.py pull --confirm-local-wazuh
 wazuh-lab-hash-users:

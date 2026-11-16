@@ -1,5 +1,23 @@
 # Preparação da retomada com histórico — #58
 
+## Tentativa com a memória disponível — autorização de16/11
+
+O usuário pediu explicitamente tentar com a RAM disponível, reconhecendo que
+8GiB é a recomendação. Para essa tentativa, o perfil fechado
+`bounded-3360m/1` mantém imagens, volumes, redes e isolamento e limita os nove
+serviços a3360MiB: DB256, Redis64, API256, worker160, runner128, observer64,
+Indexer1536, manager768 e agente128. Heap Java512MiB; swap adicional desabilitada
+por container. PostgreSQL usa shared_buffers32MB, work_mem1MB,
+maintenance_work_mem32MB e max_connections20; Redis32mb/noeviction.
+
+O preflight padrão de8GiB permanece. A exceção exige3360+512MiB disponíveis,
+4CPUs,50GiB livres e vm.max_map_count262144, sem alterar o host ou parar terceiros.
+Os limites são tetos, não reservas. O coordenador da tentativa deve supervisionar
+MemAvailable, OOM e saída inesperada, interromper somente seus próprios recursos
+em falha e conservar volumes/candidatos/intents. Primeiro verificar inicialização
+e prontidão; essa autorização não executa marcador nem reutiliza ensaios antigos.
+O perfil não comprova capacidade ou prontidão até ser exercitado nativamente.
+
 Catálogo original também **autorizado e concluído** em16/11:
 [recibo, imagens corrigidas e CI integral](../../docs/evidence/wazuh-cycle-2026-11-16/ORIGINAL.md).
 Usar os novos IDs locais desse relatório em um pacote integrado futuro; as

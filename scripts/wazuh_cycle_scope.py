@@ -13,6 +13,7 @@ from aegis.lab_runner.wazuh_network_profile import (
     SUBNETS,
 )
 from inspect_wazuh_lab import HARDENED, MEMORY, NETWORKS, expected_mounts
+from wazuh_cycle_resources import BOUNDED, DB_COMMAND, HEAP, REDIS_COMMAND, memory
 
 PROJECT = "aegis-wazuh-lab"
 SERVICES = frozenset(NETWORKS) - {"migrate"}
@@ -42,6 +43,7 @@ class CycleProfile:
     runner_candidate: Path
     service_candidate: Path
     images: dict[str, str]
+    resource_profile: str = "standard"
 
     def document(self):
         return {
@@ -50,9 +52,11 @@ class CycleProfile:
             "runner_candidate": str(self.runner_candidate),
             "service_candidate": str(self.service_candidate),
             "images": dict(self.images),
+            "resource_profile": self.resource_profile,
         }
 
     def check(self):
+        memory(self.resource_profile, MEMORY)
         if not re.fullmatch(r"[a-f0-9]{32}", self.review_id):
             raise ValueError("cycle_review_identity_invalid")
         if set(self.images) != IMAGE_ROLES or any(
@@ -190,6 +194,16 @@ def scoped_compose(rendered: dict, profile: CycleProfile) -> dict:
         if "aegis.cycle-review-id" in labels:
             raise ValueError("cycle_review_label_collision")
         labels["aegis.cycle-review-id"] = profile.review_id
+        labels["aegis.resource-profile"] = profile.resource_profile
+        if profile.resource_profile == BOUNDED:
+            service["mem_limit"] = memory(profile.resource_profile, MEMORY)[name] * 1024**2
+            service["memswap_limit"] = service["mem_limit"]
+            if name == "wazuh.indexer":
+                service["environment"]["OPENSEARCH_JAVA_OPTS"] = HEAP
+            elif name == "db":
+                service["command"] = list(DB_COMMAND)
+            elif name == "redis":
+                service["command"] = list(REDIS_COMMAND)
     if secrets != set(secret_files(profile)):
         raise ValueError("cycle_secret_scope_changed")
     for name in ("isolated", "telemetry"):
