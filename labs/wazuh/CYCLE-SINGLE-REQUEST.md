@@ -1,6 +1,9 @@
 # Proposta concreta para uma campanha —#59/#60
 
-**Ainda não autorizada nem executada.** A [preparação#58](../../docs/evidence/wazuh-cycle-2026-11-16/BOUNDED-READINESS.md)
+**Autorizada por “autorizo”, executada e encerrada em16/11/2026.**
+[Uma campanha COMPLETED/DETECTED/CLEANED](../../docs/evidence/wazuh-cycle-2026-11-16/CAMPAIGN.md).
+Proposta e autorização consumidas; os limites abaixo são históricos e não
+autorizam replay. A [preparação#58](../../docs/evidence/wazuh-cycle-2026-11-16/BOUNDED-READINESS.md)
 confirmou prontidão real com a memória disponível; seus dois pacotes foram
 encerrados e não são o pacote desta campanha.
 
@@ -13,7 +16,7 @@ arquivo0600/diretório0700; nenhuma conta inserida no banco.
 Código operacional existente: preparação/inspeção, revisão de continuidade em
 processo, registro controlado e `wazuh_cycle_assay.run_once`.
 
-## Efeitos e limites a aprovar
+## Efeitos e limites aprovados — escopo consumido
 
 1. Revalidar fonte34c8093 (mudanças posteriores somente documentais), sete IDs
    locais de imagens do relatório, configuração original, PKI vigente,

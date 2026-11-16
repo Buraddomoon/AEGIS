@@ -1,0 +1,12 @@
+{
+  "alert_canonical_sha256": "1181e2d800bd99e3117b22b760f30223ff88c1243e0462328f2137889c2276c5",
+  "bytes_sha256": {
+    "alert.json": "8bfa75cd4e7c24b8bd305508d83c331a903d37f3a7e88621791e5a86dd7ab03b",
+    "observer.jsonl": "0f572aac3e2d1b98fe65ac2d1aa8bd7f54802e7d5570fc357d692b7cf7816b0f",
+    "result.json": "6b98377d10d488b7626cfb4f0970d448dff90c66d4cf447d4f8a5171a0575ce1"
+  },
+  "format": "aegis-wazuh-cycle-evidence-integrity/1",
+  "full_execution_canonical_sha256": "77a461b086f16b0cf435fac1a74320c2ab5f067be6309b8fc424b8a5b6a269ff",
+  "native_receipt_canonical_sha256": "0ed4ddc74dedf1636949c5686b7dfd251ec1f9103933d7af8e1a2a6f84c7a30b",
+  "note": "Hashes detect changes; they are not signatures or additional native execution."
+}
