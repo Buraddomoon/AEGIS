@@ -20,7 +20,8 @@ desenvolvimento. Se o Demo ainda não a expõe, `make infra` adiciona esse acess
 local ao db/redis do projeto; não publicar essa configuração externamente.
 Não efetuar migrações/DDL durante o backup. Nenhum serviço Wazuh é necessário.
 
-O schema atual é `a0d9c7e21b45`, com32tabelas após versionamento do ATT&CK.
+O schema Demo atual é `b7f3c2d91a06`, com33tabelas incluindo Alembic e
+`scheduled_reports`. A revisão anterior `a0d9c7e21b45` tem32tabelas.
 Dump de schema antigo pode ser verificado como dados pelo manifesto original;
 boot/reconciliação/ciclo da aplicação exigem código/imagem com a mesma revisão.
 Não reconstruir a tag atual e esperar que um backup977fd0c42ae8 seja aceito:
@@ -31,6 +32,20 @@ No marco do catálogo, as imagens antigas foram preservadas localmente como
 `aegis-catalog-previous:recovery-977fd0c42ae8`; tags não são backup off-host.
 O backup anterior e um novo backup32tabelas foram restaurados/verificados como
 dados; isso não é outro ensaio completo de ciclo recuperado na revisão nova.
+
+Na [verificação de16/11/2026, #70](../evidence/backup-b7-2026-11-16/README.md),
+a cópia pré-migração a0 de09/11 foi restaurada com a imagem anterior compatível,
+e um backup fresco b7 foi conferido separadamente. Ambos passaram inventário e
+boot em quarentena, com cleanup antes dos recibos. O backup b7 tem zero
+relatórios automáticos: esse restore sozinho não demonstra preservação de
+documentos não vazios. Não confundir esse resultado com ciclo operacional.
+
+As imagens compatíveis ficaram retidas em `aegis-recovery-issue11:a0-20261109`
+e `aegis-recovery-issue11:b7-20261109`; IDs completos constam nos recibos.
+O ensaio fixou `demo_backup.APPLICATION_IMAGE` ao ID correspondente antes de
+chamar `rehearse(backup_id, application=True)`, preservando a tag recovery antiga
+e todas as guardas de revisão/isolamento. O código da imagem decide a revisão
+aceita; não alterar migrations nem dados para aceitar um backup incompatível.
 
 Criar diretórios privados; em instalações antigas, restringir `.local` existente:
 

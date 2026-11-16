@@ -1,0 +1,73 @@
+{
+  "format": "aegis-demo-backup/1",
+  "inventory_format": "aegis-pg-inventory/2",
+  "structure_comparison": "pg17-literal-array-casts/1",
+  "backup_id": "20261109T180711Z-d3cbdc897ba24b0e99cb780b6aed1813",
+  "dump_sha256": "be29923d65acf11f51d2de0b5751d58a00bce865efcfb3ea085f2d08c1962787",
+  "status": "verified",
+  "verified_at": "2026-11-16T20:43:09.444424+00:00",
+  "elapsed_seconds": 18.093,
+  "clone_removed": true,
+  "network": "none",
+  "application_started": true,
+  "tables": 32,
+  "rows": 3399,
+  "limitations": [
+    "Quarantined API only; no normal operation, reconciliation or failover",
+    "No RPO/RTO guarantee",
+    "No roles, secrets, Redis or runner journals backed up"
+  ],
+  "application_image_id": "sha256:9e3fe0c86a8361520f882aaaad5928c72d3fa3633eec55bbb82c7f780c108add",
+  "application": {
+    "review": {
+      "format": "aegis-recovery-review/1",
+      "mode": "recovery",
+      "database_read_only": true,
+      "schema_revision": "a0d9c7e21b45",
+      "quarantined": true,
+      "normal_operation_permitted": false,
+      "reconciliation_applied": false,
+      "reconciliation_identity": null,
+      "reconciliation_plan_sha256": null,
+      "counts": {
+        "sessions": 1,
+        "active_users": 1,
+        "unexpired_sessions": 0,
+        "runs_by_state": {
+          "COMPLETED": 23
+        },
+        "nonterminal_runs": 0,
+        "nonterminal_executions": 0,
+        "nonterminal_real_runs": 0,
+        "laboratory_reservations": 0,
+        "authorized_laboratories": 1,
+        "unused_unexpired_approvals": 0,
+        "active_schedules": 0,
+        "resumable_schedules": 0,
+        "unrevoked_schedule_grants": 0,
+        "runner_dispatches": 0,
+        "recorded_demo_reconciliations": 0
+      },
+      "required_reviews": [
+        "Invalidate restored sessions before normal authentication",
+        "Reconcile pending runs, reservations and ambiguous external effects",
+        "Review approvals and recurring grants; do not reuse snapshot authorization",
+        "Review laboratories and integration credentials before reconnection"
+      ]
+    },
+    "blocked_routes": {
+      "GET /api/v1/recovery/review": 401,
+      "GET /api/v1/health/ready": 401,
+      "POST /api/v1/auth/login": 503,
+      "GET /api/v1/auth/me": 503,
+      "POST /api/v1/campaigns": 503,
+      "POST /api/v1/executions/restored/start": 503,
+      "GET /api/v1/schedules": 503,
+      "GET /api/openapi.json": 503,
+      "GET /": 503
+    },
+    "database_write_probes_denied": 4,
+    "administrative_tcp_denied": true,
+    "entrypoints_blocked": 5
+  }
+}
