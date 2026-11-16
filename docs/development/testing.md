@@ -1,5 +1,19 @@
 # Testes e evidências
 
+## Retomada Wazuh com histórico — #58, 16/11/2026
+
+`make test-wazuh-cycle` cobre compilação/inspeção dos nove serviços sem seed,
+pacotes privados com PKI real temporária e rechecagem de drift, probe fixo do
+journal Wazuh com runtime simulado e SQLite temporário, adoção de catálogo em
+PostgreSQL descartável e tentativa única contra API/worker de teste. Casos de
+resposta perdida não repetem start; histórico/escopo alterados e revisão stale
+impedem o efeito. Resultado inconclusivo é preservado. Nenhum Wazuh nativo,
+volume original, ativação ou autorização real é exercitado.
+
+Rodada local:46passaram; regressões60/114/96, em sequência, conjuntos sobrepostos.
+`make lint` passou. Não executar simultaneamente a outras suítes PG/Redis15.
+[Procedimento e próxima etapa nativa](../../labs/wazuh/CYCLE-PREPARATION.md).
+
 ## Fonte atual validada — 13/11/2026, issue #10
 
 A [CI integral43440100468](https://github.com/Buraddomoon/AEGIS/actions/runs/43440100468)

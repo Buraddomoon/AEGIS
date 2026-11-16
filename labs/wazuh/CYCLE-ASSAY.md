@@ -1,5 +1,12 @@
 # Retomada integrada Linux/Wazuh — revisão #58 da entrega #7
 
+Implementação posterior em16/11: [preparação com histórico existente](CYCLE-PREPARATION.md).
+Há compilador de nove serviços sem migração/seed, pacote privado de PKI/Compose
+rechecável, receita de continuidade Wazuh, adoção controlada do catálogo e
+coordenador de tentativa única. São ferramentas preparadas/testadas; gates
+nativos e autorização continuam separados. O novo procedimento descreve a
+próxima etapa pequena em clone, sem exigir o stack ou alterar o banco original.
+
 Reinspeção em **16/11/2026**, fonte `b634c52`:
 [evidências, comandos e bloqueios atuais](../../docs/evidence/wazuh-cycle-2026-11-16/README.md).
 Preflight segue recusado por RAM (~4,88 GiB inicialmente, ~4,34 GiB na

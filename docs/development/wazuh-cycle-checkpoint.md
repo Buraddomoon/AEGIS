@@ -1,5 +1,23 @@
 # Entrega #7 — checkpoint da preparação #58 em13/11/2026
 
+## Implementação dos bloqueadores — 16/11/2026
+
+[Ferramentas e escopo nativo proposto](../../labs/wazuh/CYCLE-PREPARATION.md):
+compilador/inspeção dos nove serviços sem migração/seed, pacote privado de
+PKI/Compose rechecável, probe Wazuh RO/nocopy, plano/aplicação controlada do
+catálogo e coordenador de uma tentativa sobre histórico conhecido. O script
+histórico de outubro não foi liberado para replay nem o banco foi zerado.
+
+Testes atuais: `make test-wazuh-cycle`46passaram; regressões Wazuh60 e
+preparação114+96, sequenciais/conjuntos sobrepostos. `make lint` passou.
+Original não aberto/alterado; sem PKI nova real, runtime, contas, binding,
+marcador ou UI. Os impedimentos de software têm implementação testada; sua
+aplicação/validação nativa ainda exige autorização específica e os gates do
+ambiente. Proposta de próxima etapa: cópia fria e leitura de continuidade,
+catálogo somente em clone, PG384MiB+helper256MiB, sem exigir8GiB do integrado.
+Antes de fechar#58, ainda verificar continuidade/catálogo originais e runtime
+renovado; #59/#60 e pai permanecem abertos. Commits/CI nos comentários.
+
 ## Retomada mais recente — 16/11/2026
 
 Revisadas #58→#59→#60, com [resultado e comandos atuais](../evidence/wazuh-cycle-2026-11-16/README.md).
