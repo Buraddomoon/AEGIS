@@ -1,5 +1,16 @@
 # Retomada integrada Linux/Wazuh — revisão #58 da entrega #7
 
+Reinspeção em **16/11/2026**, fonte `b634c52`:
+[evidências, comandos e bloqueios atuais](../../docs/evidence/wazuh-cycle-2026-11-16/README.md).
+Preflight segue recusado por RAM (~4,88 GiB inicialmente, ~4,34 GiB na
+reinspeção; mínimo 8 GiB). Inventários públicos, intent, nove volumes sem
+consumidores e cinco imagens foram reconferidos por leitura. Testes previstos
+passaram, sem cumprir os gates nativos. Banco/grants foram resolvidos em 13/11
+conforme as seções finais; não repetir diagnóstico ou migração por causa das
+constatações iniciais preservadas abaixo. Continuam pendentes continuidade,
+catálogo versionado, coordenador compatível com histórico, PKI/overlays atuais,
+revisão de runtime e autorização específica; liberar RAM não conclui #58.
+
 **Preparação offline, sem autorização de execução.** Revisão em13/11/2026 na
 fonte7751185, com mudança posterior de preparação do runner descrita abaixo.
 Ordem obrigatória: #58 (pré-requisitos/pacote) → #59 (uma campanha real) → #60

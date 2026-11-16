@@ -1,5 +1,25 @@
 # Entrega #7 — checkpoint da preparação #58 em13/11/2026
 
+## Retomada mais recente — 16/11/2026
+
+Revisadas #58→#59→#60, com [resultado e comandos atuais](../evidence/wazuh-cycle-2026-11-16/README.md).
+Ensaio integrado segue bloqueado: preflight inicial ~4,88 GiB disponíveis e
+reinspeção ~4,34 GiB, abaixo de 8 GiB. Vinte redes/61 rotas sem sobreposição
+observada; nove volumes com metadados preservados/zero consumidores. Cinco
+imagens fixadas reencontradas; fontes da aplicação/fixtures/lock sem diferenças
+desde a revisão das imagens. Sem necessidade identificada de rebuild.
+
+Inventários públicos/intent histórico mantêm os hashes; certificados expirados
+e perfil legado confirmados, sem ler chaves. Testes sequenciais atuais:
+`make test-wazuh` 60; `make test-wazuh-preparation` 114+96; gravação histórica 6,
+com sobreposição entre conjuntos. Nenhum ensaio nativo, SQL, montagem de volume,
+PKI nova ou implantação. Além de RAM, continuam pendentes continuidade, catálogo,
+coordenador compatível com histórico, PKI/overlays/runtime e autorização
+específica. #58/#59/#60 e pai abertos. As seções abaixo preservam a evolução de
+13/11; a manutenção do original já concluída não precisa ser repetida.
+
+## Preparação inicial — 13/11/2026
+
 **Aberta/bloqueada para ensaio nativo.** Trabalhar somente #58→#59→#60, sem
 avançar a outras features. Dependências#5/#6 fechadas, autorizações consumidas.
 O [pacote de revisão](../../labs/wazuh/CYCLE-ASSAY.md) fixa versões/digests,
