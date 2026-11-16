@@ -6,6 +6,9 @@ ATT&CK. [UI/JSON/HTML/PDF#60](UI-EXPORTS.md) conferidos sobre a mesma run, sem
 replay. Lab revogado, contas próprias inativas/zero sessões próprias e recursos
 próprios encerrados. Autorização consumida. As constatações abaixo são históricas.
 
+CI final43949735817 SUCCESS:3429Python/9skips opcionais e91React;
+quatro partições e React conferidos. Entrega#7 e filhos#58/#59/#60 concluídos.
+
 # Reinspeção da entrega #7 — 16/11/2026
 
 **Preparação verificada; ensaio integrado bloqueado.** Revisão das subissues na
