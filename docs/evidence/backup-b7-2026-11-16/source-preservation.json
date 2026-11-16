@@ -1,0 +1,13 @@
+{
+  "active_demo_inventory_unchanged": true,
+  "application_image_id": "sha256:b8abe5e44af4bad90d2e302a045f38fb9cf268932be5ea0493fc72f078657a23",
+  "format": "aegis-recovery-source-preservation/1",
+  "pre_migration_original_copy_unchanged": true,
+  "remaining_recovery_containers": 0,
+  "revision": [
+    "b7f3c2d91a06"
+  ],
+  "rows": 3399,
+  "tables": 33,
+  "worker_image_id": "sha256:b8abe5e44af4bad90d2e302a045f38fb9cf268932be5ea0493fc72f078657a23"
+}

@@ -51,6 +51,13 @@ permite consultar/exportar os fatos originais. Não há retry manual ou edição
 snapshot nesta versão. A reconciliação de um backup encerra pedidos pendentes
 como FAILED/RECOVERY_RECONCILED e mantém documentos já finais intactos.
 
+[Verificação de recuperação #71,16/11/2026](../evidence/backup-b7-2026-11-16/REPORTS.md):
+backup b7 real sem documentos e ensaio não vazio separado com fixture sintética
+em clones offline. READY/FAILED e exports salvos preservados; PENDING encerra sem
+reabrir fila/grant/sessão. PDFs conferidos por conteúdo, sem promessa de bytes
+idênticos. Download normal continua bloqueado na API em quarentena: o ensaio
+renderiza o snapshot via exportadores, sem liberar autenticação ou execução.
+
 ## API e exportações
 
 ```text

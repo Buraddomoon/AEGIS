@@ -1,0 +1,107 @@
+{
+  "active_demo_reports": 0,
+  "exports": [
+    {
+      "document_sha256": "e2cd601d497774127dd4fbbb0f2bb395d98b82304d17731e4f88ea192891a406",
+      "html_sha256": "b892a80f3c01c615f030d432c720f3ee20873072ec64dc2baf647db9b203dba1",
+      "json_html_pdf_preserved": true,
+      "kind": "COMPARISON",
+      "pdf_text_sha256": "e7ae2cee56a6ff7c4e88ac3109d9bcfb7615bbeace68385afeb1a3df39446929",
+      "report_id": "c3ec3ea1-5cde-4d04-a5f7-be18ba3ab2f3"
+    },
+    {
+      "document_sha256": "a6acb6a03cc4f7223dd11740bd0b68ddacae000fcff3936d132186491c2be452",
+      "html_sha256": "e3a16fcc3f237d69e114543a70e1ca5462175e82e7beaf6f03ce46b5e65a493b",
+      "json_html_pdf_preserved": true,
+      "kind": "BASELINE",
+      "pdf_text_sha256": "5f831f25166e056c5d4192e4fcc2217bd9879abf8e430382eaa2d4ae5f29ca2a",
+      "report_id": "ccfed4ae-339b-4feb-9346-79979e508c1f"
+    }
+  ],
+  "finished_rows_unchanged": true,
+  "fixture": true,
+  "fixture_backup_id": "20261116T204957Z-f572840d2af343fba852ef029164dd43",
+  "fixture_dump_sha256": "663205d8eaede6d4b9035c778c8485efceeb78ad2cb31ad3549f410746a2326c",
+  "format": "aegis-synthetic-report-recovery-assay/1",
+  "limitations": [
+    "Nonempty reports are explicit synthetic fixtures added only in an offline disposable clone",
+    "No campaign executed; cancelled fixture runs have no detection result or valid denominator",
+    "PDF comparison uses independently parsed text; PDF metadata bytes may change",
+    "No cutover, operational restart, off-host custody or RPO/RTO proof"
+  ],
+  "normal_operation_permitted": false,
+  "old_campaign_dispatched": false,
+  "pending_changed_only_state_error": true,
+  "reconciliation": {
+    "before_counts": {
+      "active_users": 2,
+      "authorized_laboratories": 2,
+      "pending_demo_runs": 1,
+      "pending_executions": 1,
+      "pending_scheduled_reports": 1,
+      "reservations": 1,
+      "resumable_schedules": 1,
+      "retained_unused_approvals": 0,
+      "sessions": 2,
+      "unrevoked_grants": 1
+    },
+    "external_cleanup_performed": false,
+    "format": "aegis-demo-reconciliation/1",
+    "normal_operation_permitted": false,
+    "plan_sha256": "c5bf019e12c6b7c85c53d156e1fe9fb0d0ba43b138d5a31e8711d40fab790023",
+    "reconciliation_applied": true
+  },
+  "recovery_review": {
+    "counts": {
+      "active_schedules": 0,
+      "active_users": 0,
+      "authorized_laboratories": 0,
+      "laboratory_reservations": 0,
+      "nonterminal_executions": 0,
+      "nonterminal_real_runs": 0,
+      "nonterminal_runs": 0,
+      "pending_scheduled_reports": 0,
+      "recorded_demo_reconciliations": 1,
+      "resumable_schedules": 0,
+      "runner_dispatches": 0,
+      "runs_by_state": {
+        "CANCELLED": 4,
+        "COMPLETED": 23
+      },
+      "sessions": 0,
+      "unexpired_sessions": 0,
+      "unrevoked_schedule_grants": 0,
+      "unused_unexpired_approvals": 0
+    },
+    "database_read_only": true,
+    "format": "aegis-recovery-review/1",
+    "mode": "recovery",
+    "normal_operation_permitted": false,
+    "quarantined": true,
+    "reconciliation_applied": true,
+    "reconciliation_identity": "ac6f45eb0feb458cae483021da378551",
+    "reconciliation_plan_sha256": "c5bf019e12c6b7c85c53d156e1fe9fb0d0ba43b138d5a31e8711d40fab790023",
+    "required_reviews": [
+      "Invalidate restored sessions before normal authentication",
+      "Reconcile pending runs, reservations and ambiguous external effects",
+      "Review approvals and recurring grants; do not reuse snapshot authorization",
+      "Review laboratories and integration credentials before reconnection"
+    ],
+    "schema_revision": "b7f3c2d91a06"
+  },
+  "report_states_after": {
+    "FAILED": 2,
+    "READY": 2
+  },
+  "report_states_before": {
+    "FAILED": 1,
+    "PENDING": 1,
+    "READY": 2
+  },
+  "restore_clones_removed": true,
+  "snapshot_rows": 3463,
+  "source_backup_id": "20261116T204118Z-8f58c6c8d5a347c1917809f8b378bf3a",
+  "source_clone_removed": true,
+  "source_helper_removed": true,
+  "tables": 33
+}

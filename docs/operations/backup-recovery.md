@@ -250,6 +250,13 @@ para um ciclo sintético ainda precisam ser validados em destino separado.
 [Ensaio real e recibo](../evidence/reconciliation-2026-10-23/README.md): inventário
 original2.884linhas,1auditoria nova, vínculo ID/hash confirmado e clones removidos.
 
+[Verificação b7 #71 em16/11/2026](../evidence/backup-b7-2026-11-16/REPORTS.md):
+o backup real33tabelas/3399linhas foi reconciliado e conferido em clone novo.
+Como ele tem zero documentos automáticos, outro snapshot derivado, explicitamente
+sintético e criado somente em clone descartável, exercitou READY/FAILED/PENDING
+e exports salvos não vazios após dump/restore. Recibos distinguem fidelidade,
+fences e renderização de prontidão operacional; nenhuma run antiga foi disparada.
+
 ## Primeiro ciclo Demo no destino recuperado
 
 ```bash

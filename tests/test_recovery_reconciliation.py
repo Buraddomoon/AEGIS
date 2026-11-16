@@ -3,9 +3,12 @@
 import json
 import re
 from datetime import timedelta
+from io import BytesIO
+from types import SimpleNamespace
 
 import pytest
 from aegis.domain.states import ACTIVE, TERMINAL, State, check_transition
+from aegis.domain.validation import digest
 from aegis.models import (
     Approval,
     AuditEvent,
@@ -28,8 +31,13 @@ from aegis.models import (
 )
 from aegis.operations import reconciliation as reconcile
 from aegis.operations.backup import inventory
+from aegis.pdf_reporting import PDFReportExporter
+from aegis.reporting import HTMLReportExporter, export_analysis_html
+from aegis.scheduled_report_api import checked_document
 from aegis.services import request_run, start_run
 from fastapi import HTTPException
+from pypdf import PdfReader
+from recovery_report_fixtures import create_report_fixture, report_rows
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 from test_recovery_api import recovered_database as _recovered_database
@@ -207,7 +215,7 @@ def test_reconciliation_preserves_history_revokes_access_and_is_idempotent(recov
     assert get_inventory(writer) == after
 
 
-@pytest.mark.parametrize("state", ["PENDING", "READY"])
+@pytest.mark.parametrize("state", ["PENDING", "READY", "FAILED"])
 def test_reconciliation_fences_pending_reports_and_preserves_finished_snapshots(
     recovered_work, state
 ):
@@ -237,7 +245,8 @@ def test_reconciliation_fences_pending_reports_and_preserves_finished_snapshots(
             run_id=ids["run"],
             kind="BASELINE",
             state=state,
-            attempts=1 if state == "READY" else 0,
+            attempts=1 if state == "READY" else 2,
+            error_code=None if state == "READY" else "GENERATION_FAILED",
             document=document if state == "READY" else None,
             document_sha256=digest(document) if state == "READY" else None,
             generated_at=now() if state == "READY" else None,
@@ -245,17 +254,93 @@ def test_reconciliation_fences_pending_reports_and_preserves_finished_snapshots(
         db.add(request)
         db.commit()
         identifier = request.id
+        before = {column.key: getattr(request, column.key) for column in request.__table__.columns}
     plan = get_plan(writer)
     assert plan["counts"]["pending_scheduled_reports"] == int(state == "PENDING")
     run_sql(writer, reconcile.apply_sql(plan["snapshot_sha256"], RECOVERY_ID))
     with Session(writer) as db:
         restored = db.get(ScheduledReport, identifier)
-        if state == "READY":
-            assert restored.state == "READY" and restored.document == document
-            assert restored.document_sha256 == digest(document)
+        after = {column.key: getattr(restored, column.key) for column in restored.__table__.columns}
+        if state in {"READY", "FAILED"}:
+            assert after == before
         else:
             assert restored.state == "FAILED" and restored.error_code == "RECOVERY_RECONCILED"
-            assert restored.document is None and restored.attempts == 0
+            assert after == before | {"state": "FAILED", "error_code": "RECOVERY_RECONCILED"}
+
+
+def frozen_exports(row):
+    document = checked_document(SimpleNamespace(**row))
+    html = (
+        HTMLReportExporter().export(document)
+        if row["kind"] == "BASELINE"
+        else export_analysis_html(document)
+    )
+    pdf = PDFReportExporter().export(document)
+    pages = PdfReader(BytesIO(pdf), strict=True).pages
+    assert all("DADOS SINTÉTICOS" in page.extract_text() for page in pages)
+    pdf_text = "\n".join(page.extract_text() for page in pages)
+    assert row["id"] in html and row["id"] in pdf_text
+    return {"document_sha256": digest(document), "html": html, "pdf_text": pdf_text}
+
+
+def test_nonempty_report_exports_survive_reconciliation_without_execution(recovered_work):
+    writer, _ = recovered_work
+    with Session(writer) as db:
+        fixture = create_report_fixture(db)
+        before = report_rows(db)
+    ready = {key: frozen_exports(row) for key, row in before.items() if row["state"] == "READY"}
+    assert {before[key]["kind"] for key in ready} == {"BASELINE", "COMPARISON"}
+    comparison = before[fixture["reports"][1]]["document"]
+    assert comparison["comparison"]["comparable"] is False
+    assert comparison["summary"]["detected_rate_delta_percentage_points"] is None
+    original = get_inventory(writer)
+    plan = get_plan(writer)
+    assert plan["counts"]["pending_scheduled_reports"] == 1
+    result = run_sql(writer, reconcile.apply_sql(plan["snapshot_sha256"], RECOVERY_ID))
+    assert result["normal_operation_permitted"] is False
+    with Session(writer) as db:
+        after = report_rows(db)
+    for key, row in before.items():
+        expected = (
+            row | {"state": "FAILED", "error_code": "RECOVERY_RECONCILED"}
+            if row["state"] == "PENDING"
+            else row
+        )
+        assert after[key] == expected
+    assert {key: frozen_exports(after[key]) for key in ready} == ready
+    current = get_plan(writer)["counts"]
+    for key in (
+        "sessions",
+        "active_users",
+        "authorized_laboratories",
+        "reservations",
+        "pending_demo_runs",
+        "pending_executions",
+        "resumable_schedules",
+        "unrevoked_grants",
+        "pending_scheduled_reports",
+    ):
+        assert current[key] == 0, key
+    after_inventory = get_inventory(writer)
+    for table in ("approvals", "schedule_occurrences", "telemetry_events", "validation_results"):
+        assert after_inventory["tables"][table] == original["tables"][table]
+    assert run_sql(writer, reconcile.apply_sql(plan["snapshot_sha256"], RECOVERY_ID)) == result
+    assert get_inventory(writer) == after_inventory
+
+
+@pytest.mark.parametrize("index", [0, 1, 2, 3])
+def test_reconciled_final_report_rows_cannot_be_reactivated_or_edited(recovered_work, index):
+    writer, _ = recovered_work
+    with Session(writer) as db:
+        fixture = create_report_fixture(db)
+    run_sql(writer, reconcile.apply_sql(get_plan(writer)["snapshot_sha256"], RECOVERY_ID))
+    before = get_inventory(writer)
+    with pytest.raises(Exception, match="history is immutable"), writer.begin() as connection:
+        connection.execute(
+            text("UPDATE scheduled_reports SET state='PENDING' WHERE id=:id"),
+            {"id": fixture["reports"][index]},
+        )
+    assert get_inventory(writer) == before
 
 
 @pytest.mark.parametrize("state", sorted(set(State) - TERMINAL))

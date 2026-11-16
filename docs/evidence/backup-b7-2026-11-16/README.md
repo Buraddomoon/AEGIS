@@ -44,3 +44,7 @@ de contas ou nova implantação. Linux/Wazuh, qasrc, PKI, volumes, journals e fe
 preservados. Backups, intenções e diagnósticos ficam no host; sem envio de dumps,
 manifestos, documentos ou credenciais. Hash não é assinatura; não há prova
 off-host, recuperação de roles/Redis/journals ou garantia de RPO/RTO.
+
+Segunda unidade, executada após o fechamento da #70:
+[relatórios/reconciliação #71](REPORTS.md), com backup real sem relatórios e
+fixture não vazia separada, sem alterar os limites dos recibos acima.
