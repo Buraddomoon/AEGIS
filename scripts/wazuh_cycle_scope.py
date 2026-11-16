@@ -158,8 +158,15 @@ def scoped_compose(rendered: dict, profile: CycleProfile) -> dict:
             if kind == "volume":
                 volumes.add(source)
                 source = PROJECT + "_" + source
-            elif kind != "bind" or mount.get("bind", {}).get("create_host_path") is not False:
+            elif kind != "bind" or mount.get("bind", {}).get("create_host_path") not in (
+                None,
+                False,
+            ):
                 raise ValueError("cycle_explicit_file_mount_required")
+            else:
+                # Compose v2 may omit false values from config JSON. The
+                # compiled package must still disable implicit host-path creation.
+                mount.setdefault("bind", {})["create_host_path"] = False
             mounts[target] = kind, source, not mount.get("read_only", False)
         for secret in service.get("secrets", []):
             key = secret["source"]

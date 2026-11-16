@@ -6,6 +6,7 @@ still requires its own native preparation authorization and durable intent.
 """
 
 import copy
+import re
 
 import runner_activation_probe_result as result
 import runner_activation_probe_runtime as process
@@ -14,23 +15,36 @@ from runner_activation_metadata import ActivationError
 
 PROJECT = "aegis-wazuh-lab"
 VOLUME = PROJECT + "_journal"
+SOURCE_LABELS = {
+    "io.aegis.wazuh-source-review",
+    "io.aegis.wazuh-source-role",
+    "org.opencontainers.image.revision",
+}
 
 
-def recipe(review_id, package_sha256, role, image, proof_sha256):
+def recipe(review_id, package_sha256, role, image, proof_sha256, *, image_labels=None):
     # The shared constructor validates role, image, IDs/hashes, entrypoint and
     # every process limit. Only project ownership and the fixed volume differ.
     spec = process.recipe(review_id, package_sha256, role, image, proof_sha256)
+    inherited = {} if image_labels is None else dict(image_labels)
+    if inherited and (
+        set(inherited) != SOURCE_LABELS
+        or inherited["io.aegis.wazuh-source-role"] != "runner"
+        or not re.fullmatch(r"[a-f0-9]{32}", inherited["io.aegis.wazuh-source-review"])
+        or not re.fullmatch(r"[a-f0-9]{40}", inherited["org.opencontainers.image.revision"])
+    ):
+        raise ActivationError("wazuh_journal_image_labels_unreviewed")
     return {
         **spec,
         "format": "aegis-wazuh-journal-probe-recipe/1",
         "name": PROJECT + "-review-" + review_id + "-" + role,
-        "labels": {**spec["labels"], "com.docker.compose.project": PROJECT},
+        "labels": {**inherited, **spec["labels"], "com.docker.compose.project": PROJECT},
         "volume": VOLUME,
     }
 
 
-def create_arguments(review_id, package_sha256, role, image, proof_sha256):
-    spec = recipe(review_id, package_sha256, role, image, proof_sha256)
+def create_arguments(review_id, package_sha256, role, image, proof_sha256, *, image_labels=None):
+    spec = recipe(review_id, package_sha256, role, image, proof_sha256, image_labels=image_labels)
     arguments = list(process.create_arguments(review_id, package_sha256, role, image, proof_sha256))
     arguments[arguments.index("--name") + 1] = spec["name"]
     arguments[arguments.index("--mount") + 1] = (
@@ -51,6 +65,7 @@ def validate(spec, item, known_id, phase):
         spec["role"],
         spec["image"],
         spec["arguments"][-1],
+        image_labels={key: value for key, value in labels.items() if key in SOURCE_LABELS},
     )
     if spec != expected:
         raise ActivationError("wazuh_journal_recipe_changed")
@@ -100,3 +115,18 @@ def compare(before, after, bundle, proof_sha256, expected_identity, old_descript
     decode(before, bundle, proof_sha256, expected_identity, old_descriptor_sha256)
     decode(after, bundle, proof_sha256, expected_identity, old_descriptor_sha256)
     return result.compare(before, after, bundle, proof_sha256)
+
+
+# Exact public image-source labels are projected in addition to operation labels.
+# Neither environment values nor daemon mount-source paths leave this projection.
+CONTAINER_FORMAT = process.CONTAINER_FORMAT.replace(
+    process._projection(
+        {key: '(index .Config.Labels "' + key + '")' for key in process.LABELS.values()}
+    ),
+    process._projection(
+        {
+            key: '(index .Config.Labels "' + key + '")'
+            for key in (*process.LABELS.values(), *sorted(SOURCE_LABELS))
+        }
+    ),
+)

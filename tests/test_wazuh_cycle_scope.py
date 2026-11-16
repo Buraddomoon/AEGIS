@@ -69,6 +69,7 @@ def test_real_compose_renewal_uses_existing_volumes_and_never_migrates_or_seeds(
         "services",
         "label",
         "build-dependency",
+        "host-path-creation",
     ],
 )
 def test_compile_refuses_scope_or_identity_expansion(rendered, profile, change):
@@ -101,10 +102,27 @@ def test_compile_refuses_scope_or_identity_expansion(rendered, profile, change):
         changed["services"]["unreviewed"] = {}
     elif change == "label":
         runner["labels"] = {"aegis.cycle-review-id": "b" * 32}
+    elif change == "host-path-creation":
+        changed["services"]["wazuh.indexer"]["volumes"][1]["bind"]["create_host_path"] = True
     else:
         runner["depends_on"] = {"controller": {"condition": "service_started"}}
     with pytest.raises(ValueError):
         scope.scoped_compose(changed, profile)
+
+
+def test_older_compose_omitted_false_is_compiled_with_explicit_no_host_path_creation(
+    rendered, profile
+):
+    captured = copy.deepcopy(rendered[0])
+    for service in captured["services"].values():
+        for mount in service.get("volumes", []):
+            if mount["type"] == "bind":
+                mount.get("bind", {}).pop("create_host_path", None)
+    result = scope.scoped_compose(captured, profile)
+    for service in result["services"].values():
+        for mount in service.get("volumes", []):
+            if mount["type"] == "bind":
+                assert mount["bind"]["create_host_path"] is False
 
 
 def test_cycle_runtime_rejects_legacy_tags_missing_image_id_and_original_mounts(snapshot, profile):

@@ -77,3 +77,27 @@ def test_real_temporary_journal_proofs_bind_identity_and_do_not_claim_activation
     changed["identity"]["asset_id"] = "ffffffff-ffff-ffff-ffff-ffffffffffff"
     with pytest.raises(ValueError, match="original_identity"):
         continuity.decode(raw, changed, digest(changed), identity, bundle["old_descriptor_sha256"])
+
+
+def test_reviewed_source_labels_are_retained_and_arbitrary_image_labels_are_refused():
+    labels = {
+        "io.aegis.wazuh-source-review": "d" * 32,
+        "io.aegis.wazuh-source-role": "runner",
+        "org.opencontainers.image.revision": "e" * 40,
+    }
+    spec = continuity.recipe("a" * 32, PLAN, "journal-before", IMAGE, PROOFS, image_labels=labels)
+    item = projection(spec)
+    item["label_count"] = len(spec["labels"])
+    item["mounts"][0]["name"] = continuity.VOLUME
+    item["configured_mounts"][0]["source_name"] = continuity.VOLUME
+    continuity.validate(spec, item, OBJECT, "created")
+    assert all(key in continuity.CONTAINER_FORMAT for key in labels)
+    with pytest.raises(ValueError, match="labels_unreviewed"):
+        continuity.recipe(
+            "a" * 32,
+            PLAN,
+            "journal-before",
+            IMAGE,
+            PROOFS,
+            image_labels={**labels, "unreviewed": "value"},
+        )
