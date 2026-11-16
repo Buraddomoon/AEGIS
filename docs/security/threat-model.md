@@ -19,3 +19,8 @@ Ativos: senhas/sessões, aprovações, identidade do laboratório, integridade d
 Não há shell, montagem de Docker socket, payloads ofensivos ou execução de Atomic. Segredos via ambiente, sem persistência em auditoria. Pacotes são travados com hashes; CI identifica novos avisos. O aviso DiskCache herdado é analisado em `dependency-advisories.json`, com teste do caminho de execução; ativar cache/plugins invalida a análise.
 
 Antes de exposição externa: TLS e cookies Secure, proxy revisado, limites operacionais, gerenciamento/rotação de segredos, usuário de migração com menor privilégio, backups testados no ambiente, MFA/SSO se necessário e revisão independente. Esta versão não é declarada pronta para produção empresarial.
+
+Revisão de16/11/2026, escopo Demo: [controles,181testes, auditoria e achados](../evidence/release-2026-11-16/SECURITY.md).
+A API do GitHub informou visibilidade pública, divergente da política local de
+repositório privado; nenhuma mudança de visibilidade foi feita. A revisão não
+atesta privacidade, ausência de segredos em todo o histórico ou prontidão enterprise.
