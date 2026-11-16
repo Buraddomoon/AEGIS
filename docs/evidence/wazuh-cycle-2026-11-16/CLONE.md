@@ -1,5 +1,8 @@
 # Continuidade e catálogo em clone — 16/11/2026
 
+Estado posterior: o [catálogo original foi autorizado e concluído](ORIGINAL.md).
+O registro abaixo preserva a etapa anterior em clone e seus limites naquele momento.
+
 **CLONE_CONTINUITY_AND_CATALOG_VERIFIED / CLEANED.** O usuário respondeu
 **“Autorizar essa etapa em clone”** ao escopo específico de cópia fria, leituras
 RO de journal/log e adoção do catálogo somente no clone. Operação executada

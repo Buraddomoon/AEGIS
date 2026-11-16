@@ -1,5 +1,25 @@
 # Entrega #7 — checkpoint da preparação #58 em13/11/2026
 
+## Estado final da preparação autorizada — 16/11/2026
+
+[ORIGINAL_CATALOG_ADOPTION_VERIFIED/CLEANED](../evidence/wazuh-cycle-2026-11-16/ORIGINAL.md)
+após **“Autorizar catálogo no original”**. Original b7/33 agora tem1release/
+1estado/1audit acrescentados; histórico/verificadores/schema/grants preservados.
+Original parado/zero consumidores; hash físico novo fc78c93f e backup b7
+pré-catálogo2c19f3ed preservado. Autorizações de clone/original consumidas.
+
+OpenTelemetry1.45.2 corrigiu o finding que bloqueou a CI, sem ocultar advisory.
+Imagens locais atuais: API/worker9e3488c4, runner/observer77dec541;73arquivos/
+45versões por imagem conferidos, bases/tags históricas retidas. Não implantadas.
+CI integral9493c0e/43913368799: **3426Python/9skips e91React**, quatro jobs Python
+e React SUCCESS; source-review aprovado.49testes locais da retomada,119da
+correção de dependência; conjuntos sobrepostos. Código posterior somente docs.
+
+Restam recursos (~4,71GiB/8GiB), PKI vigente, pacote/revisão de runtime integrado
+e autorização do ensaio único. Sem Wazuh/runner/observer/API/worker de Lab ou
+marcador atual; #58/#59/#60 e pai abertos. Não repetir manutenção ou ensaio
+consumidos; próximas etapas mantêm os gates de autorização e recursos.
+
 ## Etapa nativa em clone — 16/11/2026
 
 Autorizada por **“Autorizar essa etapa em clone”**, executada16:44:53–16:45:36Z:

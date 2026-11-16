@@ -80,8 +80,14 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   regra própria100200, zero técnicas ATT&CK. Não generalizar eficácia de SIEM/EDR.
 - #58 em13/11: banco original b7/grants verificados e parado; imagens atuais
   locais conferidas, sem implantação. Ver [relatório](docs/evidence/wazuh-database-2026-11-13/UPGRADE-ORIGINAL.md).
-  PKI/continuidade/catálogo versionado/pacote integrado
-  seguem pendentes; autorizações de diagnóstico/clone/manutenção utilizadas.
+  Continuidade/journal/log verificados RO e catálogo versionado adotado no
+  original sob autorizações separadas em16/11, ambos encerrados/CLEANED.
+  Original b7/33 parado, histórico/verificadores/grants preservados; backup b7
+  pré-catálogo2c19f3ed e backups4b72 retidos. Imagens locais corrigidas de
+  OpenTelemetry1.45.2: API/worker9e3488c4 e runner/observer77dec541, sem implantação.
+  PKI vigente/recursos/pacote integrado seguem pendentes; autorizações de
+  diagnóstico/clone/manutenção/catálogo utilizadas. Ver relatório
+  docs/evidence/wazuh-cycle-2026-11-16/ORIGINAL.md; não repetir os ensaios.
 
 ## Operação, testes e evidência
 

@@ -1,5 +1,12 @@
 # Retomada integrada Linux/Wazuh — revisão #58 da entrega #7
 
+Estado mais recente,16/11: [continuidade, catálogo original, imagens corrigidas
+e CI integral verificados](../../docs/evidence/wazuh-cycle-2026-11-16/ORIGINAL.md).
+Catálogo original inicializado sob autorização separada, banco parado. Imagens
+locais atuais API/worker9e3488c4 e runner/observer77dec541 têm OpenTelemetry1.45.2;
+selecionar os IDs completos do relatório, preservando as bases de13/11.
+RAM ainda ~4,71GiB/8GiB: integrado não iniciado, sem PKI nova ou marcador atual.
+
 Implementação posterior em16/11: [preparação com histórico existente](CYCLE-PREPARATION.md).
 Há compilador de nove serviços sem migração/seed, pacote privado de PKI/Compose
 rechecável, receita de continuidade Wazuh, adoção controlada do catálogo e

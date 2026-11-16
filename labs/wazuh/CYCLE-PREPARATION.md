@@ -1,5 +1,10 @@
 # Preparação da retomada com histórico — #58
 
+Catálogo original também **autorizado e concluído** em16/11:
+[recibo, imagens corrigidas e CI integral](../../docs/evidence/wazuh-cycle-2026-11-16/ORIGINAL.md).
+Usar os novos IDs locais desse relatório em um pacote integrado futuro; as
+imagens anteriores permanecem históricas. Ainda sem ativação PKI ou campanha.
+
 Etapa em clone **autorizada e concluída** em16/11:
 [continuidade e catálogo verificados/CLEANED](../../docs/evidence/wazuh-cycle-2026-11-16/CLONE.md).
 O procedimento abaixo preserva o escopo consumido, sem autorizar repetição.
@@ -109,13 +114,16 @@ Depois dessa preparação, restam RAM suficiente, PKI vigente e revisão do
 runtime/ACL/regra/agente/observador sob pacote específico. #59 e #60 dependem
 desses gates; ferramentas/fixtures não são evidência nativa.
 
-### Adoção no banco original — proposta separada, ainda não autorizada
+### Adoção no banco original — executada e encerrada
 
 Plano host-only `4b058e1a6f194fb1a76d37117fbb7520`, SHA256
 `e52f0d0e5d1fcf588c4c46b47d3c38a3957000e7b40b54b416c44f5833fb727a`,
 em `.local/wazuh-original-catalog`. Usa a proposta obtida no clone
 `b3f12e604b450b4fe4032677897095f71bb2d39f50bbce58d0ca069882a5e26a`.
-Operador/helper preparados, compilados e revisados; nenhum efeito executado.
+Operador/helper preparados, compilados e revisados. Depois de **“Autorizar
+catálogo no original”**, executados16:55:59–16:56:10UTC:
+**ORIGINAL_CATALOG_ADOPTION_VERIFIED/CLEANED**, conforme o relatório acima.
+O escopo abaixo é histórico/consumido, não autoriza repetição.
 
 Exigir hash físico2c19f3ed completo do relatório tanto no original quanto no
 novo backup frio retido, mesmo inventário lógico b04c7c04 e helpers/imagens
