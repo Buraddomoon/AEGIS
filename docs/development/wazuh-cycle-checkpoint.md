@@ -1,4 +1,19 @@
-# Entrega #7 — prontidão com memória disponível em16/11
+# Entrega #7 — campanha real e leitura verificadas em16/11
+
+[Campanha#59](../evidence/wazuh-cycle-2026-11-16/CAMPAIGN.md) e
+[UI/exports#60](../evidence/wazuh-cycle-2026-11-16/UI-EXPORTS.md) concluídos após
+**“autorizo”** ao pacote9f60b4c8/propostabfe8a3df. Runb338665e:
+COMPLETED/DETECTED/CLEANED, synthetic=false, um marcador43bytes, alerta original
+100200 correlacionado, zero técnicas ATT&CK. Nenhum retry. Backup frio novo,
+continuidade SQL/journal e bindings atuais renovados preservando história/IDs.
+Mesmo UUID na UI/JSON/HTML/PDF9páginas; browser sem erros ou mutações após login.
+Comparação com campanha histórica recusada409, sem inferência causal.
+Lab revogado/ambiente6, duas contas novas inativas/zero sessões próprias,
+nove volumes sem consumidores, recursos próprios encerrados. Autorização consumida;
+não repetir pacote/marcador nem iniciar outra entrega. Relatórios e comentários
+das issues registram commits/checks/sincronização. Estados abaixo são históricos.
+
+## Prontidão anterior com memória disponível
 
 [Evidência nativa](../evidence/wazuh-cycle-2026-11-16/BOUNDED-READINESS.md):
 perfil3360MiB/heap512MiB explicitamente solicitado, nove serviços/182checks,

@@ -94,6 +94,14 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   Piso padrão8GiB preservado; pacotes de prontidão consumidos. Autorizações de
   diagnóstico/clone/manutenção/catálogo utilizadas. Ver relatório
   docs/evidence/wazuh-cycle-2026-11-16/ORIGINAL.md; não repetir os ensaios.
+  Campanha#59 autorizada depois por “autorizo”, única execução em16/11:
+  b338665e, COMPLETED/DETECTED/CLEANED, marcador43bytes e alerta original100200;
+  zero técnicas ATT&CK. Continuidade/bindings atuais renovados, histórico e
+  contas/senhas antigas preservados. UI/JSON/HTML/PDF da mesma run verificados
+  na#60, sem replay. Lab revogado/ambiente6, duas contas próprias inativas/zero
+  sessões próprias, nove volumes sem consumidores, recursos próprios encerrados.
+  Ver docs/evidence/wazuh-cycle-2026-11-16/CAMPAIGN.md e UI-EXPORTS.md.
+  Entrega#7 atendida; autorização/pacote9f60b4c8 consumidos, sem operação contínua.
 
 ## Operação, testes e evidência
 

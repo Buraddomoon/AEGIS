@@ -1,3 +1,11 @@
+# Resultado posterior: entrega#7 verificada e encerrada
+
+[Campanha real#59](CAMPAIGN.md): um marcador benigno43bytes,
+COMPLETED/DETECTED/CLEANED, alerta original100200 correlacionado, zero técnicas
+ATT&CK. [UI/JSON/HTML/PDF#60](UI-EXPORTS.md) conferidos sobre a mesma run, sem
+replay. Lab revogado, contas próprias inativas/zero sessões próprias e recursos
+próprios encerrados. Autorização consumida. As constatações abaixo são históricas.
+
 # Reinspeção da entrega #7 — 16/11/2026
 
 **Preparação verificada; ensaio integrado bloqueado.** Revisão das subissues na

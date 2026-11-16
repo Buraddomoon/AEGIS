@@ -1,5 +1,12 @@
 # Retomada integrada Linux/Wazuh — revisão #58 da entrega #7
 
+Entrega verificada posteriormente16/11:
+[campanha única COMPLETED/DETECTED/CLEANED](../../docs/evidence/wazuh-cycle-2026-11-16/CAMPAIGN.md)
+e [UI/exports da mesma run](../../docs/evidence/wazuh-cycle-2026-11-16/UI-EXPORTS.md).
+Autorização específica consumida; lab revogado/contas próprias inativas e
+recursos próprios encerrados. Não repetir efeito ou pacotes nem iniciar outra
+entrega. As seções abaixo preservam a evolução da preparação.
+
 Atualização posterior16/11: [prontidão nativa com memória limitada verificada e
 encerrada](../../docs/evidence/wazuh-cycle-2026-11-16/BOUNDED-READINESS.md).
 Sob pedido explícito do usuário, perfil3360MiB/heap512MiB: nove serviços,
