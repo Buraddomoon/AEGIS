@@ -18,6 +18,12 @@ em falha e conservar volumes/candidatos/intents. Primeiro verificar inicializaç
 e prontidão; essa autorização não executa marcador nem reutiliza ensaios antigos.
 O perfil não comprova capacidade ou prontidão até ser exercitado nativamente.
 
+Exercitado depois dessa preparação:
+[READINESS_VERIFIED/CLEANED](../../docs/evidence/wazuh-cycle-2026-11-16/BOUNDED-READINESS.md).
+Nove serviços/182checks, TLS/ACL efetiva/agente/regra/mTLS/observador conferidos;
+sem OOM ou marcador. Primeira falha definitiva de IP e continuação preservadas,
+ambas encerradas. Não reutilizar pacotes/intents consumidos.
+
 Catálogo original também **autorizado e concluído** em16/11:
 [recibo, imagens corrigidas e CI integral](../../docs/evidence/wazuh-cycle-2026-11-16/ORIGINAL.md).
 Usar os novos IDs locais desse relatório em um pacote integrado futuro; as

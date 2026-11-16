@@ -1,3 +1,18 @@
+# Entrega #7 — prontidão com memória disponível em16/11
+
+[Evidência nativa](../evidence/wazuh-cycle-2026-11-16/BOUNDED-READINESS.md):
+perfil3360MiB/heap512MiB explicitamente solicitado, nove serviços/182checks,
+TLS1.3, Filebeat full, agente Active, grants efetivos somente leitura, mTLS e
+regra de sandbox confirmados. READINESS_VERIFIED/CLEANED, sem marcador/OOM;
+originais preservados/zero consumidores. Falha inicial de IP do helper conservada;
+continuação executou o probe na API existente. Código34c8093,52testes do ciclo,
+62runtime/perfil sobrepostos e lint completo passaram. CI34c8093/43943713532:
+3429Python/9skips opcionais e91React, quatro partições e React SUCCESS;
+source-review43943713821 SUCCESS.
+Preparação#58 atendida;#59 exige escopo específico de binding/contas/um marcador,
+#60 depende dessa execução. [Proposta concreta#59](../../labs/wazuh/CYCLE-SINGLE-REQUEST.md)
+preparada/rechecada, ainda sem autorização. Os checkpoints abaixo são históricos.
+
 # Entrega #7 — checkpoint da preparação #58 em13/11/2026
 
 ## Estado final da preparação autorizada — 16/11/2026

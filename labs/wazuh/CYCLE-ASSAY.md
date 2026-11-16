@@ -1,6 +1,15 @@
 # Retomada integrada Linux/Wazuh — revisão #58 da entrega #7
 
-Estado mais recente,16/11: [continuidade, catálogo original, imagens corrigidas
+Atualização posterior16/11: [prontidão nativa com memória limitada verificada e
+encerrada](../../docs/evidence/wazuh-cycle-2026-11-16/BOUNDED-READINESS.md).
+Sob pedido explícito do usuário, perfil3360MiB/heap512MiB: nove serviços,
+182checks, TLS/ACL efetiva/agente/regra/mTLS/observador conferidos, sem OOM ou
+marcador. Preservar a falha de IP do primeiro probe e sua continuação encerrada.
+O piso padrão de8GiB permanece; as constatações abaixo são históricas.
+Preparação#58 atendida;#59 ainda requer efeito único/binding/contas sob escopo
+próprio. Não repetir pacotes de prontidão consumidos.
+
+Estado anterior,16/11: [continuidade, catálogo original, imagens corrigidas
 e CI integral verificados](../../docs/evidence/wazuh-cycle-2026-11-16/ORIGINAL.md).
 Catálogo original inicializado sob autorização separada, banco parado. Imagens
 locais atuais API/worker9e3488c4 e runner/observer77dec541 têm OpenTelemetry1.45.2;

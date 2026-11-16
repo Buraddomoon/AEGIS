@@ -85,7 +85,13 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   Original b7/33 parado, histórico/verificadores/grants preservados; backup b7
   pré-catálogo2c19f3ed e backups4b72 retidos. Imagens locais corrigidas de
   OpenTelemetry1.45.2: API/worker9e3488c4 e runner/observer77dec541, sem implantação.
-  PKI vigente/recursos/pacote integrado seguem pendentes; autorizações de
+  Prontidão integrada limitada verificada depois sob pedido explícito para
+  tentar com RAM disponível: perfil3360MiB/heap512MiB, nove serviços/182checks,
+  TLS/ACL efetiva/agente/regra/mTLS/observador; sem OOM ou marcador. Falha de IP do
+  helper e continuação na API preservadas, ambas CLEANED/zero consumidores.
+  Ver docs/evidence/wazuh-cycle-2026-11-16/BOUNDED-READINESS.md. Preparação#58
+  atendida;#59/#60 dependem de escopo específico de binding/contas/efeito único.
+  Piso padrão8GiB preservado; pacotes de prontidão consumidos. Autorizações de
   diagnóstico/clone/manutenção/catálogo utilizadas. Ver relatório
   docs/evidence/wazuh-cycle-2026-11-16/ORIGINAL.md; não repetir os ensaios.
 
