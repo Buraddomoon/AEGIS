@@ -1,5 +1,22 @@
 # Entrega #7 — checkpoint da preparação #58 em13/11/2026
 
+## Etapa nativa em clone — 16/11/2026
+
+Autorizada por **“Autorizar essa etapa em clone”**, executada16:44:53–16:45:36Z:
+[CLONE_CONTINUITY_AND_CATALOG_VERIFIED/CLEANED](../evidence/wazuh-cycle-2026-11-16/CLONE.md).
+Backup frio b7/33 novo e working retidos; original com mesmo hash físico2c19f3ed,
+sem startup/escrita SQL. Journal original RO:1job/4eventos/1prova, inventário
+antes/depois idêntico; logRO466bytes/uma observação histórica preservada.
+Catálogo adotado somente no clone:1release/1estado/1audit, demais linhas,
+verificadores e grants preservados. Zero containers/consumidores ao final.
+
+Fix6fb319e cobre labels reais da imagem e omissão de `create_host_path:false`
+no Compose v2 da CI. Trinta e quatro regressões passaram; fonte b81f7bd tem
+falha CI preservada, workflow da correção separado. Sem Wazuh ou marcador novo.
+RAM do integrado ainda ~4,55GiB/8GiB. Proposta separada de catálogo original
+4b058e1a/e52f0d0e preparada, **não autorizada/não executada**; escopo no runbook.
+Ainda faltam catálogo original, PKI/runtime integrado e aceite#59/#60; pai aberto.
+
 ## Implementação dos bloqueadores — 16/11/2026
 
 [Ferramentas e escopo nativo proposto](../../labs/wazuh/CYCLE-PREPARATION.md):

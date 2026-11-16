@@ -1,5 +1,9 @@
 # Preparação da retomada com histórico — #58
 
+Etapa em clone **autorizada e concluída** em16/11:
+[continuidade e catálogo verificados/CLEANED](../../docs/evidence/wazuh-cycle-2026-11-16/CLONE.md).
+O procedimento abaixo preserva o escopo consumido, sem autorizar repetição.
+
 Ferramentas implementadas em16/11/2026 para os bloqueadores de software da#7.
 Não constituem ensaio concluído ou autorização de acesso aos volumes.
 
@@ -69,7 +73,8 @@ inicia serviços nem comprova continuidade física, recursos ou autorização.
 
 ## Próxima etapa nativa proposta: continuidade e catálogo em clone
 
-**Ainda não autorizada nem executada.** Etapa pequena e sequencial, independente
+**Executada e encerrada sob autorização específica**, conforme o relatório acima.
+Etapa pequena e sequencial, independente
 do piso de8GiB do integrado; escopo revisável para aprovação específica:
 
 1. Conferir metadados/zero consumidores dos nove volumes e imagens locais por
@@ -103,6 +108,25 @@ original exige revisar o plano efetivamente obtido, sob autorização própria.
 Depois dessa preparação, restam RAM suficiente, PKI vigente e revisão do
 runtime/ACL/regra/agente/observador sob pacote específico. #59 e #60 dependem
 desses gates; ferramentas/fixtures não são evidência nativa.
+
+### Adoção no banco original — proposta separada, ainda não autorizada
+
+Plano host-only `4b058e1a6f194fb1a76d37117fbb7520`, SHA256
+`e52f0d0e5d1fcf588c4c46b47d3c38a3957000e7b40b54b416c44f5833fb727a`,
+em `.local/wazuh-original-catalog`. Usa a proposta obtida no clone
+`b3f12e604b450b4fe4032677897095f71bb2d39f50bbce58d0ca069882a5e26a`.
+Operador/helper preparados, compilados e revisados; nenhum efeito executado.
+
+Exigir hash físico2c19f3ed completo do relatório tanto no original quanto no
+novo backup frio retido, mesmo inventário lógico b04c7c04 e helpers/imagens
+fixados. Iniciar somente PostgreSQL original384MiB, sem porta publicada/rede
+externa, mais helper256MiB no namespace privado. Aplicar uma vez o plano exato
+de catálogo: uma release, um estado e uma auditoria, preservando linhas antigas,
+verificadores, schema e grants. Intenção durável antes dos efeitos; interromper
+em drift, sem seed ou migração. Encerrar banco/helper, conservar backup/clones/
+recibos e conferir zero consumidores. A mudança física do original é esperada.
+Não autoriza novas contas, binding, PKI, Wazuh/runner/observador ou marcador.
+Resposta ambígua exige reconciliação, sem aplicar novamente ou restaurar original.
 
 ## Verificações executadas
 
