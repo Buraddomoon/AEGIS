@@ -129,3 +129,9 @@ Entrega #10: [checkpoint da validação integral](ci-validation-checkpoint.md).
 da fonte fixada com3377Python/9skips e91React, evidências e implantação distintas.
 Commits finais somente documentais; Demo anterior preservado. Não iniciar outra
 entrega ou laboratório a partir desse checkpoint.
+
+Entrega #11: [checkpoint de recuperação b7](backup-b7-checkpoint.md).
+#70/#71 concluídas em sequência: cópia a0 e backup fresco b7 restaurados com
+imagens compatíveis; reconciliação real e fixture não vazia de relatórios
+validadas separadamente. Demo preservado/ready, clones removidos, sem cutover
+ou retomada de campanhas. Conferir CI final nos comentários da #11 e parar.
