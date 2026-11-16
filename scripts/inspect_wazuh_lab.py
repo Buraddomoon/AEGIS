@@ -50,7 +50,9 @@ HARDENED = {"runner", "observer", "api", "worker", "wazuh.indexer"}
 ADDRESSES = {key: value for key, value in PROFILE_ADDRESSES.items() if key[0] != "controller"}
 
 
-def expected_mounts(private: Path) -> dict[str, dict[str, tuple[str, str, bool]]]:
+def expected_mounts(
+    private: Path, *, runner_candidate: Path | None = None, service_candidate: Path | None = None
+) -> dict[str, dict[str, tuple[str, str, bool]]]:
     """Explicit reviewed bind/volume allowlist, independent of rendered Compose."""
 
     def volume(name, writable=True):
@@ -114,7 +116,7 @@ def expected_mounts(private: Path) -> dict[str, dict[str, tuple[str, str, bool]]
             )
         ),
     }
-    return {
+    result = {
         "db": {"/var/lib/postgresql/data": volume("postgres-data")},
         "redis": {},
         "migrate": {},
@@ -145,27 +147,81 @@ def expected_mounts(private: Path) -> dict[str, dict[str, tuple[str, str, bool]]
             "/wazuh-config-mount/etc/client.keys": bind(private / "client.keys"),
         },
     }
+    # Only these individual files move during a reviewed integrated renewal.
+    # Identities, credentials, agent enrollment and collection policy stay at source.
+    replacements = {}
+    if runner_candidate is not None:
+        replacements.update(
+            {
+                str(private / "runner" / name): str(runner_candidate / name)
+                for name in (
+                    "server-ca.crt",
+                    "runner-client.crt",
+                    "runner-client.key",
+                    "connection.json",
+                    "runner-server.key",
+                    "runner-server.crt",
+                    "client-ca.crt",
+                )
+            }
+        )
+    if service_candidate is not None:
+        replacements.update(
+            {
+                str(private / "pki" / name): str(service_candidate / "pki" / name)
+                for name in (
+                    "root-ca.pem",
+                    "indexer.pem",
+                    "indexer-key.pem",
+                    "filebeat.pem",
+                    "filebeat-key.pem",
+                )
+            }
+        )
+    for mounts in result.values():
+        for target, (kind, source, writable) in mounts.items():
+            mounts[target] = kind, replacements.get(source, source), writable
+    return result
 
 
 def validate(
-    containers: list[dict], networks: list[dict], volumes: list[dict], *, private=PRIVATE
+    containers: list[dict],
+    networks: list[dict],
+    volumes: list[dict],
+    *,
+    private=PRIVATE,
+    cycle=None,
 ) -> dict[str, bool]:
     """Return only fixed check names and booleans; never echo daemon data/secrets."""
     checks = {}
+    expected_services = set(NETWORKS)
+    if cycle is not None:
+        # The profile constructor fixes project, endpoints, service set and image IDs.
+        from wazuh_cycle_scope import CycleProfile
+
+        if not isinstance(cycle, CycleProfile) or private != cycle.source:
+            return {"cycle_profile": False}
+        cycle.check()
+        expected_services.remove("migrate")
     services = {}
     for item in containers:
         name = item.get("service")
         if (
-            name not in NETWORKS
+            name not in expected_services
             or name in services
             or item.get("project") != PROJECT
             or item.get("oneoff", "").lower() != "false"
         ):
             return {"project_membership": False}
         services[name] = item
-    checks["project_membership"] = set(services) == set(NETWORKS)
+    checks["project_membership"] = set(services) == expected_services
     checks["container_identities"] = len({item["id"] for item in containers}) == len(containers)
-    mounts = expected_mounts(private)
+    mounts = expected_mounts(
+        private,
+        runner_candidate=cycle.runner_candidate if cycle else None,
+        service_candidate=cycle.service_candidate if cycle else None,
+    )
+    mounts = {name: value for name, value in mounts.items() if name in expected_services}
     for name, item in services.items():
         host = item["host"]
         checks[name + ".state"] = (
@@ -254,6 +310,11 @@ def validate(
             )
         )
         checks[name + ".image"] = item["image_reference"] == expected_image
+        if cycle is not None:
+            checks[name + ".image"] = item["image_reference"] == cycle.image_for(name) and item.get(
+                "image_id"
+            ) == cycle.image_for(name)
+            checks[name + ".cycle_identity"] = item.get("cycle_review") == cycle.review_id
     network_map = {item["Name"]: item for item in networks}
     checks["network_inventory"] = len(networks) == 4 and set(network_map) == {
         PROJECT + "_" + name for name in ("backend", "ingress", "isolated", "telemetry")
@@ -355,6 +416,8 @@ CONTAINER_FORMAT = (
             "oom_killed": ".State.OOMKilled",
             "user": ".Config.User",
             "image_reference": ".Config.Image",
+            "image_id": ".Image",
+            "cycle_review": '(index .Config.Labels "aegis.cycle-review-id")',
             "ports": ".NetworkSettings.Ports",
             "networks": ".NetworkSettings.Networks",
             "mounts": ".Mounts",
