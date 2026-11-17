@@ -143,6 +143,21 @@ def retain_base(folder):
     return tag
 
 
+def asset_checker(build_id):
+    identifier(build_id)
+    return (
+        "import hashlib,json,pathlib\n"
+        "expected=json.loads(pathlib.Path('/assay/assets.json').read_text())\n"
+        "for name,sha in expected.items():\n"
+        " assert hashlib.sha256(pathlib.Path('/app',name).read_bytes()).hexdigest()==sha\n"
+        " if name in ('scripts/atomic_assay_service.py','scripts/atomic_assay_client.py'):\n"
+        "  assert hashlib.sha256(pathlib.Path('/assay',pathlib.Path(name).name).read_bytes()).hexdigest()==sha\n"
+        "import aegis.main,aegis.worker\n"
+        "assert not pathlib.Path('/app/.env').exists()\n"
+        f"print(json.dumps({{'status':'atomic80_application_assets_verified','build_id':'{build_id}','assets':len(expected)}}))\n"
+    )
+
+
 def build_application(runner_build_id, runner_plan_sha, cache_id, cache_sha):
     commit = source._state(ROOT)
     runner = builder.review_existing(builder.ROOT / identifier(runner_build_id), runner_plan_sha)
@@ -199,15 +214,7 @@ def build_application(runner_build_id, runner_plan_sha, cache_id, cache_sha):
         },
     }
     assets = {p: hashlib.sha256(files[p]).hexdigest() for p in paths}
-    checker = (
-        "import hashlib,json,pathlib,sys\n"
-        "expected=json.loads(pathlib.Path('/assay/assets.json').read_text())\n"
-        "for name,sha in expected.items():\n"
-        " assert hashlib.sha256(pathlib.Path('/app',name).read_bytes()).hexdigest()==sha\n"
-        "import aegis.main,aegis.worker\n"
-        "assert not pathlib.Path('/app/.env').exists()\n"
-        f"print(json.dumps({{'status':'atomic80_application_assets_verified','build_id':'{folder.name}','assets':len(assets)}}))\n"
-    )
+    checker = asset_checker(folder.name)
     for name, raw in [
         ("runtime.lock", runtime),
         ("build.lock", tools),

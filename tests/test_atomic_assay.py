@@ -1,7 +1,10 @@
 """Package/authorization negatives only; never build/start/inspect a real Lab."""
 
+import hashlib
 import importlib.util
 import json
+import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -64,6 +67,44 @@ def test_catalog_asset_has_a_distinct_bounded_data_profile(modules):
     content = host.committed_asset("HEAD", "fixtures/attack/enterprise.json")
     assert 1024**2 < len(content) <= 2 * 1024**2
     assert content == Path("fixtures/attack/enterprise.json").read_bytes()
+
+
+@pytest.mark.parametrize("drift", [None, "asset", "runtime_copy"])
+def test_fresh_asset_checker_runs_in_a_bounded_process_and_checks_runtime_copies(
+    modules, tmp_path, drift
+):
+    host = modules["atomic_assay"]
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "runtime").mkdir()
+    raw = b"# fixed helper\n"
+    (tmp_path / "scripts/atomic_assay_service.py").write_bytes(raw)
+    (tmp_path / "runtime/atomic_assay_service.py").write_bytes(raw)
+    (tmp_path / "assets.json").write_text(
+        json.dumps({"scripts/atomic_assay_service.py": hashlib.sha256(raw).hexdigest()})
+    )
+    if drift == "asset":
+        (tmp_path / "scripts/atomic_assay_service.py").write_text("changed")
+    elif drift == "runtime_copy":
+        (tmp_path / "runtime/atomic_assay_service.py").write_text("changed")
+    code = (
+        host.asset_checker(uuid4().hex)
+        .replace("'/assay/assets.json'", repr(str(tmp_path / "assets.json")))
+        .replace("'/app'", repr(str(tmp_path)))
+        .replace("'/assay'", repr(str(tmp_path / "runtime")))
+    )
+    hook = "import sys\ndef guard(event,args):\n if event in ('socket.connect','subprocess.Popen'): raise RuntimeError('forbidden side effect')\nsys.addaudithook(guard)\n"
+    result = subprocess.run(
+        [sys.executable, "-I", "-B", "-c", hook + code],
+        cwd=tmp_path,
+        env={"PATH": "/usr/bin:/bin"},
+        capture_output=True,
+        timeout=15,
+    )
+    if drift:
+        assert result.returncode != 0
+    else:
+        assert result.returncode == 0, result.stderr.decode()
+        assert json.loads(result.stdout)["assets"] == 1
 
 
 @pytest.mark.parametrize("problem", [None, "existing", "mismatch"])
