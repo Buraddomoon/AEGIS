@@ -12,6 +12,12 @@ Python2 registrou7falhas em `tests/test_wazuh_cycle_catalog.py`, com erro
 `wazuh_catalog_explicit_b7_upgrade_required` (911passaram/1skip nessa partição).
 Essas falhas foram registradas no fechamento; não foram corrigidas nesta ação.
 
+**Retomada posterior concluída:** a pedido do usuário, as pendências foram
+corrigidas e a CI integral44151198083 passou na fonte0517d24:3525Python/9skips,
+98React e21regressões de segurança. E2E/auditorias também aprovados. Ver
+[provas da revalidação](REVALIDATION.md). Os resultados históricos abaixo
+permanecem limitados às fontes/datas indicadas.
+
 ## Fonte e comportamento
 
 - `f1564e9`: versões imutáveis por commit/técnica/hash, GUIDs preservados,

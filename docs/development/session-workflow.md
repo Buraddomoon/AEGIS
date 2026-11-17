@@ -152,9 +152,9 @@ explícita de retomada, #63 consultou o Indexer real em
 provas/limites/CI no checkpoint; pacotes consumidos. Parar após esse aceite.
 
 Entrega #13: [checkpoint do catálogo Atomic offline](atomic-catalog-checkpoint.md).
-#75/#76/#77 implementadas e demonstradas sem execução Atomic.83Python/98React,
-lint/build e Firefox real; Demo/Labs originais preservados, sem implantação.
-A #13 foi fechada por pedido explícito do usuário, preservando as falhas da CI
-(Python2/React, incluindo auditoria npm/picomatch). Conferir provas/limites no
-checkpoint e comentário final. Não enfraquecer gates, iniciar laboratório ou
-avançar para outra entrega a partir deste estado.
+#75/#76/#77 concluídas e pendências corrigidas na retomada: CI integral44151198083
+SUCCESS na fonte0517d24,3525Python/9skips opcionais,98React e21testes de segurança.
+Lint/build/auditorias e Firefox real aprovados; nenhum Atomic executado. Fork local
+picomatch revisado/licenciado e inventário Wazuh b7 fixado, sem gates relaxados.
+Demo/Labs originais preservados; sem implantação. Provas/falhas históricas no
+checkpoint. Parar após esse aceite, sem avançar para outra entrega ou laboratório.
