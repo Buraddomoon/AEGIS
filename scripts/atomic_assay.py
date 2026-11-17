@@ -113,6 +113,23 @@ def image(identifier):
     )
 
 
+def committed_asset(commit, path):
+    # The reviewed normalized ATT&CK document is 1.3 MiB; it is a data asset,
+    # separate from the runner's unchanged 1 MiB Python/blob source profile.
+    maximum = 2 * 1024**2 if path == "fixtures/attack/enterprise.json" else source.MAX_FILE
+    header = (
+        source._git(ROOT, "ls-tree", "-l", commit, "--", path, maximum=1024)
+        .split(b"\t", 1)[0]
+        .split()
+    )
+    if len(header) != 4 or header[:2] != [b"100644", b"blob"] or not 0 < int(header[3]) <= maximum:
+        raise ValueError("Committed asset mode/size refused")
+    raw = source._git(ROOT, "show", commit + ":" + path, maximum=maximum)
+    if len(raw) != int(header[3]):
+        raise ValueError("Committed asset size changed")
+    return raw
+
+
 def build_application(runner_build_id, runner_plan_sha, cache_id, cache_sha):
     commit = source._state(ROOT)
     runner = builder.review_existing(builder.ROOT / identifier(runner_build_id), runner_plan_sha)
@@ -136,9 +153,7 @@ def build_application(runner_build_id, runner_plan_sha, cache_id, cache_sha):
         if path.endswith(".py")
     ]
     for path in paths:
-        if source._git(ROOT, "ls-tree", commit, "--", path).split()[0] != b"100644":
-            raise ValueError("Regular committed assets required")
-        files[path] = source._git(ROOT, "show", commit + ":" + path, maximum=source.MAX_FILE)
+        files[path] = committed_asset(commit, path)
     assert files["requirements.lock"] == read(wheels.ROOT / cache_id / "runtime.lock", 65536)
     base = image(BASE_IMAGE)
     assert base["id"] == BASE_IMAGE and base["user"] == "10001:10001"

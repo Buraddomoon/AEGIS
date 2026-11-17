@@ -59,6 +59,31 @@ def test_recipe_has_new_named_volumes_internal_networks_and_no_owner_secrets_in_
     assert not any("ca.key" in v["file"] for v in recipe["secrets"].values())
 
 
+def test_catalog_asset_has_a_distinct_bounded_data_profile(modules):
+    host = modules["atomic_assay"]
+    content = host.committed_asset("HEAD", "fixtures/attack/enterprise.json")
+    assert 1024**2 < len(content) <= 2 * 1024**2
+    assert content == Path("fixtures/attack/enterprise.json").read_bytes()
+
+
+@pytest.mark.parametrize(
+    "header", [b"120000 blob " + b"a" * 40 + b" 10", b"100644 blob " + b"a" * 40 + b" 2097153"]
+)
+def test_invalid_catalog_asset_refused_before_content_read(modules, monkeypatch, header):
+    host = modules["atomic_assay"]
+    calls = []
+
+    def query(*args, **kwargs):
+        calls.append(args)
+        assert "ls-tree" in args
+        return header + b"\tfixtures/attack/enterprise.json\n"
+
+    monkeypatch.setattr(host.source, "_git", query)
+    with pytest.raises(ValueError, match="mode/size"):
+        host.committed_asset("HEAD", "fixtures/attack/enterprise.json")
+    assert len(calls) == 1
+
+
 @pytest.mark.parametrize("problem", ["extra", "missing", "symlink", "hardlink", "mode", "fifo"])
 def test_build_context_refuses_extras_links_special_files_and_missing_assets(
     modules, tmp_path, problem
