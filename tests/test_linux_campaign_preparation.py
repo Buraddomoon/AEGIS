@@ -7,11 +7,17 @@ from uuid import uuid4
 import pytest
 from aegis.operations.linux_campaign_readiness import check
 from aegis.operations.runtime_grants import RUNTIME_PERMISSIONS
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import text
 
 
 @pytest.fixture
 def readiness_role(db_ready, pg_engine):
+    # The opt-in Lab deliberately remains pinned to b7. Exercise its actual
+    # historical schema; do not relabel the current head as a b7 database.
+    config = Config("alembic.ini")
+    command.downgrade(config, "b7f3c2d91a06")
     role = "aegis_campaign_test_" + uuid4().hex
     with pg_engine.begin() as connection:
         namespace = connection.scalar(text("SELECT current_schema()"))
@@ -30,6 +36,7 @@ def readiness_role(db_ready, pg_engine):
         with pg_engine.begin() as connection:
             connection.exec_driver_sql(f'DROP OWNED BY "{role}"')
             connection.exec_driver_sql(f'DROP ROLE "{role}"')
+        command.upgrade(config, "head")
 
 
 def test_readiness_is_a_read_only_snapshot(readiness_role, pg_engine):
@@ -298,3 +305,14 @@ def test_smoke_records_one_attempt_and_cleans_up_after_midflow_failure(
     with pytest.raises(FileExistsError):
         smoke_module.main()
     assert calls == before
+
+
+def test_readiness_refuses_atomic_head_without_implicit_lab_upgrade(db_ready, pg_engine):
+    with pg_engine.connect() as connection:
+        before = connection.scalar(text("SELECT version_num FROM alembic_version"))
+        assert before == "c8e4a6d21f90"
+        connection.rollback()
+        with pytest.raises(RuntimeError, match="schema upgrade"):
+            check(connection)
+    with pg_engine.connect() as connection:
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == before

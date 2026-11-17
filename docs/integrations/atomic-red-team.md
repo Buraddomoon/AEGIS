@@ -51,3 +51,8 @@ O histórico é append-only e auditado; revisão registra decisão sobre metadad
 nunca aprovação de execução: `approved=false`, `executable=false` e
 `available_for_new_scope=false` permanecem constantes. Nenhuma entrada é inserida
 na allowlist de campanhas.
+
+O gate de prontidão Linux permanece deliberadamente fixado em b7: recusa o novo
+schema Atomic até uma revisão operacional específica. Fixtures exercitam o b7
+real e restauram o head no final; não renomeiam a versão de um schema diferente.
+Esta entrega offline não amplia a compatibilidade/autorização dos Labs originais.
