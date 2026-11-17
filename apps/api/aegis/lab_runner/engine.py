@@ -13,11 +13,13 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from aegis.domain.validation import digest
+from aegis.lab_runner import atomic_policy
 from aegis.lab_runner.files import Workspace
 from aegis.lab_runner.journal import Journal
 from aegis.lab_runner.protocol import (
     LEASE_SECONDS,
     MAX_EFFECT_SECONDS,
+    AtomicExecutionReceipt,
     BoundRequest,
     ExecutionReceipt,
     JobSpec,
@@ -50,6 +52,8 @@ class Runner:
     def __init__(self, identity: RunnerIdentity, work: Path, state: Path):
         if sys.platform != "linux":
             raise ValueError("Runner suporta somente Linux.")
+        if identity.tests not in (("linux-file-marker/v1",), (atomic_policy.TEST_ID,)):
+            raise ValueError("Runner exige um único perfil de teste revisado.")
         self.identity, self.workspace = identity, Workspace(work)
         try:
             self.journal = Journal(state)
@@ -95,6 +99,10 @@ class Runner:
             self.closed = True
 
     def prepare(self, spec: JobSpec) -> JobView:
+        if spec.test_id not in self.identity.tests:
+            raise Conflict("Teste não pertence à identidade revisada do runner.")
+        if spec.test_id == atomic_policy.TEST_ID:
+            atomic_policy.program_source()
         if (spec.runner_id, spec.laboratory_id, spec.asset_id) != (
             self.identity.runner_id,
             self.identity.laboratory_id,
@@ -145,6 +153,10 @@ class Runner:
                 raise Conflict("Job já limpo; não pode iniciar.")
             if self.active:
                 raise Conflict("Outro efeito está ativo.")
+            if view.spec.test_id not in self.identity.tests:
+                raise Conflict("Teste não pertence à identidade revisada do runner.")
+            if view.spec.test_id == atomic_policy.TEST_ID:
+                atomic_policy.program_source()
             remaining = (view.spec.deadline_at - datetime.now(UTC)).total_seconds()
             if remaining <= 0:
                 self.journal.update(
@@ -217,9 +229,15 @@ class Runner:
         outcome, reason, receipt = "FAILED", "Programa não confirmou efeito.", None
         process = None
         try:
+            atomic = spec.test_id == atomic_policy.TEST_ID
+            command = (
+                [sys.executable, "-I", "-S", "-c", atomic_policy.program_source()]
+                if atomic
+                else [sys.executable, "-I", "-S", str(MARKER_PROGRAM)]
+            )
             directory = self.workspace.create(spec.job_id)
             process = subprocess.Popen(
-                [sys.executable, "-I", "-S", str(MARKER_PROGRAM)],
+                command,
                 cwd=directory,
                 env={"LANG": "C.UTF-8", "PATH": "/usr/bin:/bin"},
                 start_new_session=True,
@@ -251,7 +269,9 @@ class Runner:
                 if process.poll() is not None:
                     if process.returncode == 0:
                         raw = json.loads(self.workspace.read(spec.job_id, "receipt.json", 8192))
-                        content = self.workspace.read(spec.job_id, "proof.marker", 256)
+                        content = self.workspace.read(
+                            spec.job_id, "proof.marker", 256, mode=0o600 if atomic else None
+                        )
                         expected = (spec.marker + "\n").encode("ascii")
                         if (
                             content != expected
@@ -259,7 +279,8 @@ class Runner:
                             or raw["artifact_bytes"] != len(expected)
                         ):
                             raise ValueError("Comprovante não corresponde ao artefato esperado.")
-                        receipt = ExecutionReceipt(
+                        receipt_type = AtomicExecutionReceipt if atomic else ExecutionReceipt
+                        receipt = receipt_type(
                             **raw,
                             job_id=spec.job_id,
                             runner_id=spec.runner_id,
@@ -272,12 +293,14 @@ class Runner:
                             raise ValueError("Tempo do comprovante inválido.")
                         outcome, reason = (
                             "SUCCEEDED",
-                            "Criação e hash do marcador confirmados pelo executor; sem evidência defensiva.",
+                            "Permissões0400→0600 do arquivo próprio confirmadas; sem evidência defensiva."
+                            if atomic
+                            else "Criação e hash do marcador confirmados pelo executor; sem evidência defensiva.",
                         )
                     break
                 time.sleep(0.025)
         except Exception:
-            log.exception("Fixed marker job failed: %s", spec.job_id)
+            log.exception("Fixed Linux job failed: %s", spec.job_id)
             reason = "Falha local no programa fixo ou verificação do artefato; inspecione logs do runner."
         finally:
             # Kill/reap before touching SQLite. A locked journal cannot extend effect lifetime.

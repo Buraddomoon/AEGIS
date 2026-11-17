@@ -3,12 +3,18 @@ from enum import StrEnum
 from typing import Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from aegis.lab_runner import atomic_policy
 
 PROTOCOL = "aegis-linux-runner/1"
 TEST_ID = "linux-file-marker/v1"
 MAX_EFFECT_SECONDS = 5
 LEASE_SECONDS = 2
+TestId = Literal[
+    "linux-file-marker/v1",
+    "atomic-file-permissions/v1@9e283889776cbd42ebf9b7b25bc1ebfbad452157398ecbe0ab77415136c35673",
+]
 
 
 class Message(BaseModel):
@@ -17,7 +23,7 @@ class Message(BaseModel):
 
 class JobSpec(Message):
     protocol: Literal["aegis-linux-runner/1"] = PROTOCOL
-    test_id: Literal["linux-file-marker/v1"] = TEST_ID
+    test_id: TestId = TEST_ID
     job_id: UUID
     laboratory_id: UUID
     asset_id: UUID
@@ -72,6 +78,14 @@ class ExecutionReceipt(Message):
     exit_code: Literal[0] = 0
 
 
+class AtomicExecutionReceipt(ExecutionReceipt):
+    test_id: Literal[
+        "atomic-file-permissions/v1@9e283889776cbd42ebf9b7b25bc1ebfbad452157398ecbe0ab77415136c35673"
+    ] = atomic_policy.TEST_ID
+    mode_before: Literal[256]
+    mode_after: Literal[384]
+
+
 class JobView(Message):
     spec: JobSpec
     spec_hash: str
@@ -79,8 +93,14 @@ class JobView(Message):
     state: JobState
     cleanup_state: Literal["PENDING", "CLEANED", "FAILED"]
     reason: str | None
-    receipt: ExecutionReceipt | None
+    receipt: AtomicExecutionReceipt | ExecutionReceipt | None
     receipt_sha256: str | None
+
+    @model_validator(mode="after")
+    def receipt_test(self):
+        if self.receipt is not None and self.receipt.test_id != self.spec.test_id:
+            raise ValueError("Recibo de outro teste.")
+        return self
 
 
 class RunnerIdentity(Message):
@@ -89,7 +109,7 @@ class RunnerIdentity(Message):
     laboratory_id: UUID
     asset_id: UUID
     platform: Literal["Linux"] = "Linux"
-    tests: tuple[Literal["linux-file-marker/v1"], ...] = (TEST_ID,)
+    tests: tuple[TestId, ...] = (TEST_ID,)
     max_concurrency: Literal[1] = 1
     max_effect_seconds: Literal[5] = 5
     lease_seconds: Literal[2] = 2

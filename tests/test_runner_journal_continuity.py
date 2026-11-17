@@ -11,7 +11,7 @@ from uuid import uuid4
 
 import pytest
 from aegis.domain.validation import digest
-from aegis.lab_runner import continuity
+from aegis.lab_runner import atomic_policy, continuity
 from aegis.lab_runner.journal import Journal
 from aegis.lab_runner.protocol import ExecutionReceipt, JobSpec, JobView, RunnerIdentity
 
@@ -143,6 +143,22 @@ def test_changed_generation_cannot_match_database_proof(journal):
     edit(root, "UPDATE jobs SET generation=?", (str(uuid4()),))
     with pytest.raises(continuity.ContinuityError, match="expected_proof_mismatch"):
         continuity.review(*journal)
+
+
+def test_other_reviewed_profile_is_not_inherited_by_a_historical_journal(journal):
+    root, identity, expected = journal
+    proof = next(iter(expected.values()))
+    spec = proof.spec.model_copy(update={"test_id": atomic_policy.TEST_ID})
+    changed = proof.model_copy(
+        update={"spec": spec, "spec_hash": digest(spec.model_dump(mode="json"))}
+    )
+    edit(
+        root,
+        "UPDATE jobs SET spec=?, spec_hash=? WHERE id=?",
+        (spec.model_dump_json(), changed.spec_hash, str(spec.job_id)),
+    )
+    with pytest.raises(continuity.ContinuityError, match="unresolved_or_invalid"):
+        continuity.review(root, identity, {spec.job_id: changed})
 
 
 @pytest.mark.parametrize(

@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 
 from aegis.domain.contracts import ExecutionContext
 from aegis.domain.validation import digest
+from aegis.lab_runner import atomic_policy
 from aegis.lab_runner.protocol import (
     PROTOCOL,
     TEST_ID,
@@ -23,6 +24,7 @@ from aegis.lab_runner.protocol import (
     JobSpec,
     JobView,
     RunnerIdentity,
+    TestId,
 )
 
 
@@ -35,6 +37,7 @@ class RunnerConnection(BaseModel):
     server_ca: Path
     client_cert: Path
     client_key: Path
+    test_id: TestId = TEST_ID
 
     @field_validator("url")
     @classmethod
@@ -110,7 +113,7 @@ class LinuxRunnerClient:
             self.config.runner_id,
             self.config.laboratory_id,
             self.config.asset_id,
-            (TEST_ID,),
+            (self.config.test_id,),
         ):
             raise RunnerUnavailable("Identidade ou allowlist diferente da configuração revisada.")
         return identity
@@ -171,7 +174,7 @@ class LinuxRunnerClient:
 
 
 class LinuxMarkerAdapter:
-    """Same ExecutionAdapter contract, with guard supplied by the future orchestrator."""
+    """Fixed-file runner transport; the binding pins the marker or Atomic profile."""
 
     def __init__(
         self,
@@ -190,8 +193,12 @@ class LinuxMarkerAdapter:
         self.pending: dict[str, JobSpec] = {}
 
     def prepare(self, context: ExecutionContext) -> None:
-        if context.synthetic or context.behavior != "temporary-marker":
-            raise ValueError("Adapter aceita somente teste marcador Linux real revisado.")
+        test_id = self.client.config.test_id
+        behavior = (
+            atomic_policy.BEHAVIOR if test_id == atomic_policy.TEST_ID else "temporary-marker"
+        )
+        if context.synthetic or context.behavior != behavior:
+            raise ValueError("Adapter aceita somente o comportamento Linux real revisado.")
         self.guard()
         identity = self.client.preflight()
         if (str(identity.laboratory_id), str(identity.asset_id)) != (
@@ -200,6 +207,7 @@ class LinuxMarkerAdapter:
         ):
             raise RunnerUnavailable("Ativo/contexto não corresponde ao runner.")
         spec = JobSpec(
+            test_id=test_id,
             job_id=context.execution_id,
             laboratory_id=context.laboratory_id,
             asset_id=context.asset_id,

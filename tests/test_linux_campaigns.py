@@ -1,7 +1,9 @@
+import json
 import runpy
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from pathlib import Path
 
 import httpx
 import pytest
@@ -9,6 +11,7 @@ from aegis import linux_labs
 from aegis.config import settings
 from aegis.db import session_factory
 from aegis.integrations.linux_runner import LinuxRunnerClient, RunnerConnection
+from aegis.lab_runner import atomic_policy
 from aegis.lab_runner.server import create_app
 from aegis.models import (
     CampaignRun,
@@ -54,6 +57,7 @@ def linux(admin, runner, tmp_path, monkeypatch):
         server_ca=pki / "server-ca.crt",
         client_cert=pki / "runner-client.crt",
         client_key=pki / "runner-client.key",
+        test_id=runner.identity.tests[0],
     )
     config_file = tmp_path / "connection.json"
     config_file.write_text(configuration.model_dump_json())
@@ -93,7 +97,7 @@ def linux(admin, runner, tmp_path, monkeypatch):
     return admin, lab, runner
 
 
-def requested(linux):
+def requested(linux, test_id="linux-file-marker-v1"):
     client, lab, runner = linux
     login(client, "operator")
     campaign = client.post(
@@ -102,7 +106,7 @@ def requested(linux):
             "name": "Campanha Linux real",
             "objective": "Validar marcador benigno e comprovante, sem consulta SIEM.",
             "laboratory_id": lab["id"],
-            "test_ids": ["linux-file-marker-v1"],
+            "test_ids": [test_id],
         },
     )
     assert campaign.status_code == 201, campaign.text
@@ -114,9 +118,9 @@ def requested(linux):
     return run.json()
 
 
-def queued(linux):
+def queued(linux, test_id="linux-file-marker-v1"):
     client = linux[0]
-    run = requested(linux)
+    run = requested(linux, test_id)
     login(client, "administrator")
     approved = client.post(
         f"/api/v1/executions/{run['id']}/approve",
@@ -151,6 +155,176 @@ def test_linux_campaign_uses_same_worker_and_persists_distinct_receipts(linux):
         assert db.scalar(select(RunnerCleanup)).content["cleanup_state"] == "CLEANED"
         assert db.get(Laboratory, lab["id"]).active_run_id is None
     assert list(runner.workspace.root.iterdir()) == []
+
+
+@pytest.mark.parametrize("runner", [atomic_policy.TEST_ID], indirect=True)
+def test_atomic_campaign_uses_worker_approval_durable_dispatch_and_cleanup(linux, monkeypatch):
+    client, lab, runner = linux
+    factory = linux_labs.client
+    calls = []
+
+    def checked_client():
+        remote = factory()
+        prepare = remote.prepare
+
+        def durable(spec):
+            with session_factory()() as db:
+                stored = db.scalar(
+                    select(RunnerDispatch).where(RunnerDispatch.execution_id == str(spec.job_id))
+                )
+                assert stored and stored.spec == spec.model_dump(mode="json")
+            calls.append(spec.test_id)
+            return prepare(spec)
+
+        remote.prepare = durable
+        return remote
+
+    monkeypatch.setattr(linux_labs, "client", checked_client)
+    run = queued(linux, atomic_policy.DEFINITION_ID)
+    assert run["scope"]["runner"]["atomic_review"] == atomic_policy.review()
+    assert run["scope"]["test_definitions"][0]["technique_id"] == "T1222.002"
+    assert claim_next() == run["id"]
+    process_run(run["id"])
+    detail = client.get("/api/v1/executions/" + run["id"]).json()
+    assert detail["state"] == "COMPLETED", detail
+    item = detail["executions"][0]
+    assert item["executed"] and not item["synthetic"]
+    assert item["result"]["outcome"] == "INCONCLUSIVE"
+    assert not item["events"] and not item["evidence"]
+    with session_factory()() as db:
+        receipt = db.scalar(select(RunnerReceipt)).content
+        assert receipt["test_id"] == atomic_policy.TEST_ID
+        assert receipt["mode_before"] == 0o400 and receipt["mode_after"] == 0o600
+        assert receipt["artifact_bytes"] == 43 and not receipt["synthetic"]
+        cleanup = db.scalar(select(RunnerCleanup)).content
+        assert cleanup["cleanup_state"] == "CLEANED"
+        assert db.get(Laboratory, lab["id"]).active_run_id is None
+    assert calls == [atomic_policy.TEST_ID] and not list(runner.workspace.root.iterdir())
+    # Persisted binding review must accept the new proof without rewriting history.
+    client.patch(f"/api/v1/labs/{lab['id']}/authorization", json={"authorized": False})
+    from aegis.binding_review import review
+
+    with session_factory()() as db:
+        assert review(db, db.get(Laboratory, lab["id"]))["blockers"] == []
+
+
+def test_atomic_definition_is_unavailable_on_historical_marker_profile(linux):
+    client, lab, runner = linux
+    entry = next(
+        t
+        for t in client.get("/api/v1/tests").json()["items"]
+        if t["id"] == atomic_policy.DEFINITION_ID
+    )
+    assert entry["available_for_new_scope"] is False
+    response = client.post(
+        "/api/v1/campaigns",
+        json={
+            "name": "Refuse incompatible profile",
+            "objective": "No Atomic authority from a marker binding",
+            "laboratory_id": lab["id"],
+            "test_ids": [atomic_policy.DEFINITION_ID],
+        },
+    )
+    assert response.status_code == 409
+    assert not list(runner.workspace.root.iterdir())
+
+
+def test_reviewing_the_exact_atomic_metadata_does_not_activate_a_marker_binding(linux):
+    client = linux[0]
+    raw = json.loads(Path("fixtures/atomic/T1222.002.json").read_text())
+    base = "/api/v1/catalog/atomic"
+    assert client.post(base + "/imports", json=raw).status_code == 201
+    entries = client.get(base, params={"q": atomic_policy.GUID}).json()["items"]
+    assert len(entries) == 1
+    entry = entries[0]
+    response = client.post(
+        base + f"/entries/{entry['id']}/reviews",
+        json={
+            "decision": "reviewed",
+            "expected_sequence": 0,
+            "note": "Metadata review does not authorize a fixed-file runner.",
+        },
+    )
+    assert response.status_code == 201
+    entry = client.get(base + f"/entries/{entry['id']}").json()
+    assert entry["approved"] is False and entry["executable"] is False
+    tests = client.get("/api/v1/tests").json()["items"]
+    candidate = next(t for t in tests if t["id"] == atomic_policy.DEFINITION_ID)
+    assert candidate["available_for_new_scope"] is False
+    assert not list(linux[2].workspace.root.iterdir())
+
+
+@pytest.mark.parametrize("runner", [atomic_policy.TEST_ID], indirect=True)
+@pytest.mark.parametrize(
+    "test_ids", [["linux-file-marker-v1"], [atomic_policy.DEFINITION_ID, "linux-file-marker-v1"]]
+)
+def test_atomic_profile_rejects_marker_and_mixed_campaigns(linux, test_ids):
+    client, lab, runner = linux
+    response = client.post(
+        "/api/v1/campaigns",
+        json={
+            "name": "Refuse mixed scope",
+            "objective": "Only one fixed Atomic mapping",
+            "laboratory_id": lab["id"],
+            "test_ids": test_ids,
+        },
+    )
+    assert response.status_code == 409
+    assert not list(runner.workspace.root.iterdir())
+
+
+@pytest.mark.parametrize("runner", [atomic_policy.TEST_ID], indirect=True)
+@pytest.mark.parametrize(
+    "attribute,value",
+    [
+        ("approved", False),
+        ("version", 2),
+        ("behavior", "temporary-marker"),
+        ("technique_id", None),
+        ("platform", "Windows"),
+    ],
+)
+def test_atomic_definition_drift_is_rejected_before_dispatch(linux, attribute, value):
+    run = queued(linux, atomic_policy.DEFINITION_ID)
+    with session_factory()() as db:
+        setattr(db.get(Definition, atomic_policy.DEFINITION_ID), attribute, value)
+        db.commit()
+    assert claim_next() is None
+    assert linux[0].get("/api/v1/executions/" + run["id"]).json()["state"] == "REJECTED"
+    assert not list(linux[2].workspace.root.iterdir())
+    with session_factory()() as db:
+        assert db.scalar(select(func.count()).select_from(RunnerDispatch)) == 0
+
+
+@pytest.mark.parametrize("runner", [atomic_policy.TEST_ID], indirect=True)
+def test_atomic_requires_segregated_approval_real_confirmation_and_csrf(linux):
+    client = linux[0]
+    run = requested(linux, atomic_policy.DEFINITION_ID)
+    url = f"/api/v1/executions/{run['id']}/approve"
+    payload = {"confirm_scope_hash": run["scope_hash"], "confirm_real_execution": True}
+    assert client.post(url, json=payload).status_code == 403
+    login(client, "administrator")
+    token = client.headers.pop("x-csrf-token")
+    assert client.post(url, json=payload).status_code == 403
+    client.headers["x-csrf-token"] = token
+    assert client.post(url, json={"confirm_scope_hash": run["scope_hash"]}).status_code == 409
+    assert not list(linux[2].workspace.root.iterdir())
+
+
+@pytest.mark.parametrize("runner", [atomic_policy.TEST_ID], indirect=True)
+def test_atomic_binding_review_drift_invalidates_queued_approval(linux, monkeypatch):
+    run = queued(linux, atomic_policy.DEFINITION_ID)
+    original = atomic_policy.review
+
+    def changed():
+        value = original()
+        value["source_commit"] = "0" * 40
+        return value
+
+    monkeypatch.setattr(atomic_policy, "review", changed)
+    assert claim_next() is None
+    assert linux[0].get("/api/v1/executions/" + run["id"]).json()["state"] == "REJECTED"
+    assert not list(linux[2].workspace.root.iterdir())
 
 
 def test_linux_self_approval_and_missing_real_confirmation_are_rejected(linux):
@@ -234,10 +408,16 @@ def test_linux_scheduling_is_never_implicitly_authorized(linux):
     assert result.status_code == 409
 
 
+@pytest.mark.parametrize("runner", ["linux-file-marker/v1", atomic_policy.TEST_ID], indirect=True)
 @pytest.mark.parametrize("concurrent", [False, True])
 def test_crashed_linux_worker_is_quarantined_and_recovery_never_starts_job(linux, concurrent):
     client, lab, _ = linux
-    run = queued(linux)
+    test_id = (
+        atomic_policy.DEFINITION_ID
+        if linux[2].identity.tests == (atomic_policy.TEST_ID,)
+        else "linux-file-marker-v1"
+    )
+    run = queued(linux, test_id)
     assert claim_next() == run["id"]
     with session_factory()() as db:
         current = db.get(CampaignRun, run["id"])
@@ -314,9 +494,15 @@ def test_missing_remote_job_does_not_release_quarantine(linux):
         assert db.scalar(select(RunnerCleanup)) is None
 
 
+@pytest.mark.parametrize("runner", ["linux-file-marker/v1", atomic_policy.TEST_ID], indirect=True)
 def test_real_reports_receipts_and_mode_metrics_stay_separate(linux):
     client = linux[0]
-    run = queued(linux)
+    test_id = (
+        atomic_policy.DEFINITION_ID
+        if linux[2].identity.tests == (atomic_policy.TEST_ID,)
+        else "linux-file-marker-v1"
+    )
+    run = queued(linux, test_id)
     assert claim_next() == run["id"]
     process_run(run["id"])
     detail = client.get("/api/v1/executions/" + run["id"]).json()
@@ -336,11 +522,17 @@ def test_real_reports_receipts_and_mode_metrics_stay_separate(linux):
     assert client.get("/api/v1/executions?mode=linux").json()["total"] == 1
 
 
+@pytest.mark.parametrize("runner", ["linux-file-marker/v1", atomic_policy.TEST_ID], indirect=True)
 @pytest.mark.parametrize("lost", ["prepare", "start", "cleanup", "cleanup_commit"])
 def test_ambiguous_linux_responses_never_replay_start(linux, monkeypatch, lost):
     from aegis.integrations.linux_runner import RunnerUnavailable
 
-    run = queued(linux)
+    test_id = (
+        atomic_policy.DEFINITION_ID
+        if linux[2].identity.tests == (atomic_policy.TEST_ID,)
+        else "linux-file-marker-v1"
+    )
+    run = queued(linux, test_id)
     assert claim_next() == run["id"]
     original_client, original_persist = linux_labs.client, linux_labs.persist_view
     calls, dropped = [], []

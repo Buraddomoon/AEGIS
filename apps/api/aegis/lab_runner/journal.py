@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from uuid import UUID
 
-from aegis.lab_runner.protocol import ExecutionReceipt, JobSpec, JobView
+from aegis.lab_runner.protocol import JobSpec, JobView
 
 
 class Journal:
@@ -71,9 +71,7 @@ class Journal:
             state=row["state"],
             cleanup_state=row["cleanup_state"],
             reason=row["reason"],
-            receipt=ExecutionReceipt.model_validate_json(row["receipt"])
-            if row["receipt"]
-            else None,
+            receipt=json.loads(row["receipt"]) if row["receipt"] else None,
             receipt_sha256=row["receipt_sha256"],
         )
 

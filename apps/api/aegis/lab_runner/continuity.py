@@ -182,6 +182,7 @@ def _job(row, identity):
     if (
         str(spec.job_id) != identifier
         or digest(raw_spec) != digest(spec.model_dump(mode="json"))
+        or spec.test_id not in identity.tests
         or str(view.generation) != row["generation"]
         or view.spec_hash != digest(spec.model_dump(mode="json"))
         or view.cleanup_state != "CLEANED"

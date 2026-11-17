@@ -118,15 +118,18 @@ def create_queued(client, tests=None):
 
 
 @pytest.fixture
-def runner(tmp_path):
+def runner(tmp_path, request):
     from aegis.lab_runner.engine import Runner
-    from aegis.lab_runner.protocol import RunnerIdentity
+    from aegis.lab_runner.protocol import TEST_ID, RunnerIdentity
 
     work, state = tmp_path / "work", tmp_path / "state"
     work.mkdir(mode=0o700)
     state.mkdir(mode=0o700)
     identity = RunnerIdentity(
-        runner_id=uuid.uuid4(), laboratory_id=uuid.uuid4(), asset_id=uuid.uuid4()
+        runner_id=uuid.uuid4(),
+        laboratory_id=uuid.uuid4(),
+        asset_id=uuid.uuid4(),
+        tests=(getattr(request, "param", TEST_ID),),
     )
     instance = Runner(identity, work, state)
     yield instance

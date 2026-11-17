@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from aegis.catalog.store import initialize, reference
 from aegis.config import settings
+from aegis.lab_runner import atomic_policy
 from aegis.models import Asset, AttackTechnique, Laboratory, TestDefinition, uid
 
 DEMO_TESTS = [
@@ -93,6 +94,24 @@ def seed(db: Session) -> dict:
                 platform="Linux",
                 cleanup="Remover somente proof.marker e receipt.json do diretório UUID; confirmação pelo runner.",
                 prerequisites="Binding revisado, preflight mTLS vigente, laboratório autorizado e aprovação separada.",
+                risk="low",
+                approved=True,
+                expected_rule="",
+                demo_outcome="",
+            )
+        )
+    if not db.get(TestDefinition, atomic_policy.DEFINITION_ID):
+        db.add(
+            TestDefinition(
+                id=atomic_policy.DEFINITION_ID,
+                name="Linux • Atomic revisado: permissões de arquivo próprio",
+                description="T1222.002 adaptado: fchmod0400→0600 em43bytes próprios; não executa shell/chmod upstream. Revisão fixada e binding específico obrigatórios.",
+                technique_id="T1222.002",
+                behavior=atomic_policy.BEHAVIOR,
+                execution_kind="linux_marker",
+                platform="Linux",
+                cleanup="Remover somente proof.marker e receipt.json do UUID; nunca arquivos desconhecidos.",
+                prerequisites="Revisão Atomic fixada, runner exclusivo sem privilégios, binding e mTLS vigentes, lab autorizado e aprovação segregada.",
                 risk="low",
                 approved=True,
                 expected_rule="",

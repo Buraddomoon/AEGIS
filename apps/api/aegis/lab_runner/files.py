@@ -37,7 +37,7 @@ class Workspace:
             raise ValueError("Diretório de job inseguro.")
         return fd
 
-    def read(self, job_id: UUID, name: str, max_bytes: int) -> bytes:
+    def read(self, job_id: UUID, name: str, max_bytes: int, *, mode: int | None = None) -> bytes:
         if name not in ARTIFACTS:
             raise ValueError("Arquivo fora da allowlist.")
         job_fd = self.open_job(job_id)
@@ -47,6 +47,10 @@ class Workspace:
                 info = os.fstat(fd)
                 if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > max_bytes:
                     raise ValueError("Artefato inválido ou excessivo.")
+                if mode is not None and (
+                    info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) != mode
+                ):
+                    raise ValueError("Permissões/dono do artefato diferem do teste revisado.")
                 value = os.read(fd, max_bytes + 1)
                 if len(value) > max_bytes:
                     raise ValueError("Artefato excedeu o limite.")

@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from aegis.domain.states import TERMINAL
 from aegis.domain.validation import digest
-from aegis.lab_runner.protocol import JobSpec, JobView
+from aegis.lab_runner import atomic_policy
+from aegis.lab_runner.protocol import TEST_ID, JobSpec, JobView
 from aegis.models import (
     Asset,
     CampaignRun,
@@ -49,7 +50,12 @@ def cleanup_confirmed(
             or view.cleanup_state != "CLEANED"
             or view.state in {"PREPARED", "RUNNING"}
             or spec.job_id != UUID(item.id)
-            or item.test_id != "linux-file-marker-v1"
+            or (item.test_id, spec.test_id)
+            not in {
+                ("linux-file-marker-v1", TEST_ID),
+                (atomic_policy.DEFINITION_ID, atomic_policy.TEST_ID),
+            }
+            or spec.test_id != runner.get("test_id", TEST_ID)
             or str(spec.laboratory_id) != lab.id
             or run.laboratory_id != lab.id
             or str(spec.asset_id) != item.asset_id
@@ -71,6 +77,7 @@ def cleanup_confirmed(
             and receipt.asset_id == spec.asset_id
             and receipt.marker == spec.marker
             and receipt.scope_hash == spec.scope_hash
+            and receipt.test_id == spec.test_id
         )
     except (ValueError, TypeError, KeyError, AttributeError):
         return False

@@ -14,6 +14,7 @@ from aegis import binding_review
 from aegis.config import settings
 from aegis.domain.validation import digest
 from aegis.integrations.linux_runner import LinuxRunnerClient, RunnerConnection
+from aegis.lab_runner import atomic_policy
 from aegis.lab_runner.protocol import TEST_ID, JobSpec, JobView
 from aegis.models import (
     Approval,
@@ -51,7 +52,7 @@ def connection() -> RunnerConnection:
 def descriptor() -> dict:
     config = connection()
     try:
-        return {
+        value = {
             "runner_id": str(config.runner_id),
             "laboratory_id": str(config.laboratory_id),
             "asset_id": str(config.asset_id),
@@ -59,8 +60,11 @@ def descriptor() -> dict:
             "server_ca_sha256": hashlib.sha256(config.server_ca.read_bytes()).hexdigest(),
             "client_cert_sha256": hashlib.sha256(config.client_cert.read_bytes()).hexdigest(),
             "protocol": "aegis-linux-runner/1",
-            "test_id": TEST_ID,
+            "test_id": config.test_id,
         }
+        if config.test_id == atomic_policy.TEST_ID:
+            value["atomic_review"] = atomic_policy.review()
+        return value
     except OSError:
         raise HTTPException(409, "Certificados públicos Linux indisponíveis.") from None
 
@@ -74,6 +78,30 @@ def configured_hash() -> str | None:
         return digest(descriptor())
     except HTTPException:
         return None
+
+
+def test_matches(test: TestDefinition, identity: dict) -> bool:
+    if identity.get("test_id") == TEST_ID:
+        return test.id == TEST_DEFINITION_ID
+    return bool(
+        identity.get("test_id") == atomic_policy.TEST_ID
+        and identity.get("atomic_review") == atomic_policy.review()
+        and test.id == atomic_policy.DEFINITION_ID
+        and test.version == 1
+        and test.behavior == atomic_policy.BEHAVIOR
+        and test.technique_id == "T1222.002"
+        and test.platform == "Linux"
+        and test.execution_kind == "linux_marker"
+    )
+
+
+def atomic_available(test: TestDefinition) -> bool:
+    if test.id != atomic_policy.DEFINITION_ID:
+        return True
+    try:
+        return test_matches(test, descriptor())
+    except HTTPException:
+        return False
 
 
 def binding_valid(db: Session, lab: Laboratory) -> bool:
@@ -153,7 +181,7 @@ def register(db: Session, data, actor: User, *, continuity_review=None) -> Labor
             owner=data.owner,
             kind="linux",
             authorized=False,
-            description="Runner Linux real: somente marcador benigno revisado.",
+            description="Runner Linux real: somente o teste fixo do binding revisado.",
             isolation=data.isolation_review,
         )
         db.add(lab)
@@ -253,15 +281,16 @@ def preflight(db: Session, lab: Laboratory, actor: User) -> LabVerification:
 def approval_valid(db: Session, run: CampaignRun, approval: Approval | None) -> bool:
     if run.synthetic:
         return True
-    test = db.get(TestDefinition, TEST_DEFINITION_ID)
-    asset = db.get(Asset, run.scope.get("asset_id"))
     scoped = run.scope.get("test_definitions", [])
+    if len(scoped) != 1:
+        return False
+    test = db.get(TestDefinition, scoped[0]["id"])
+    asset = db.get(Asset, run.scope.get("asset_id"))
     if (
         not test
         or not test.approved
         or test.execution_kind != "linux_marker"
-        or len(scoped) != 1
-        or scoped[0]["id"] != TEST_DEFINITION_ID
+        or not test_matches(test, run.scope.get("runner", {}))
         or scoped[0]["version"] != test.version
         or scoped[0]["behavior"] != test.behavior
         or not asset
@@ -302,6 +331,7 @@ def approval_valid(db: Session, run: CampaignRun, approval: Approval | None) -> 
 
 def ensure_dispatch(db: Session, run: CampaignRun, item: TestExecution) -> RunnerDispatch:
     spec = JobSpec(
+        test_id=run.scope["runner"]["test_id"],
         job_id=item.id,
         laboratory_id=run.laboratory_id,
         asset_id=item.asset_id,

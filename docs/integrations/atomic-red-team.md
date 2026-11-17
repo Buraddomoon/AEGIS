@@ -8,6 +8,16 @@ Nenhum Atomic oficial foi instalado ou executado. A allowlist Demo é própria e
 
 Para evolução: fixar commit, GUID e hashes dos arquivos; revisar execução, dependências, cleanup e efeitos; substituir inputs livres por configuração delimitada; mapear teste revisado a executor fixo; exigir VM/lab isolado próprio e aprovação separada. Proibir mecanismos de evasão, persistência maliciosa, coleta de credenciais e exfiltração. Windows exige VM Windows; container Linux não representa endpoint Windows.
 
+## Adaptação própria revisada — #78/#79
+
+O [dossiê de permissões](atomic-permissions-review.md) fixa um único GUID de
+T1222.002. Há um programa próprio fechado para alterar0400→0600 em um arquivo
+gerado no workspace do runner, com revisão/hash no test_id e no escopo imutável.
+Usa o transporte existente de arquivo fixo; não executa shell/comandos do YAML
+nem instala Atomic/Invoke-AtomicRedTeam. Metadados continuam não executáveis.
+Testes de software em temporários são distintos de um ensaio nativo; a #80 exige
+imagem/ambiente/pacote e autorização específica. Ver [operação e bloqueios](../operations/atomic-permissions.md).
+
 ## Catálogo persistente — #75,17/11/2026
 
 A migration explícita `c8e4a6d21f90` acrescenta três tabelas ao schema b7

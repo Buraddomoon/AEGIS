@@ -445,7 +445,9 @@ def technique_detail(
             {
                 **queries.record(t),
                 "catalog_mapping_status": catalog.lifecycle(technique),
-                "available_for_new_scope": t.approved and catalog.lifecycle(technique) == "active",
+                "available_for_new_scope": t.approved
+                and catalog.lifecycle(technique) == "active"
+                and linux_labs.atomic_available(t),
             }
             for t in tests
         ],
@@ -469,6 +471,7 @@ def tests(user: Viewer, db: DB) -> dict:
                 if t.technique_id
                 else "unmapped",
                 "available_for_new_scope": t.approved
+                and linux_labs.atomic_available(t)
                 and (
                     not t.technique_id
                     or catalog.lifecycle(db.get(AttackTechnique, t.technique_id)) == "active"

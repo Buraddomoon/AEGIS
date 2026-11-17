@@ -13,7 +13,14 @@ from fastapi.responses import JSONResponse
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from aegis.lab_runner.engine import Conflict, Runner
-from aegis.lab_runner.protocol import PROTOCOL, BoundRequest, JobSpec, RunnerIdentity
+from aegis.lab_runner.protocol import (
+    PROTOCOL,
+    TEST_ID,
+    BoundRequest,
+    JobSpec,
+    RunnerIdentity,
+    TestId,
+)
 
 
 class RunnerConfig(BaseSettings):
@@ -27,6 +34,7 @@ class RunnerConfig(BaseSettings):
     server_key: Path = Path("/run/secrets/runner_server_key")
     client_ca: Path = Path("/run/secrets/runner_client_ca")
     identity_only: bool = False
+    test_id: TestId = TEST_ID
 
 
 def create_app(runner: Runner) -> FastAPI:
@@ -158,6 +166,7 @@ def main():
         runner_id=configuration.runner_id,
         laboratory_id=configuration.laboratory_id,
         asset_id=configuration.asset_id,
+        tests=(configuration.test_id,),
     )
     # Identity review does not open state/work paths or recover interrupted jobs.
     # The normal runner retains its existing explicit startup/recovery behavior.

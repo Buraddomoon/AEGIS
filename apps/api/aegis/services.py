@@ -77,7 +77,7 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
         raise HTTPException(409, str(error)) from None
     if not synthetic and (
         len(tests) != 1
-        or tests[0].id != linux_labs.TEST_DEFINITION_ID
+        or not linux_labs.test_matches(tests[0], linux_labs.descriptor())
         or not linux_labs.verified(db, lab)
     ):
         raise HTTPException(409, "Linux exige teste fixo revisado e preflight vigente do binding.")
