@@ -93,29 +93,6 @@ def parse_sigma(content: str) -> dict:
 
 class AtomicMetadataProvider:
     def import_metadata(self, content: str) -> list[dict]:
-        document = safe_document(content)
-        technique = document.get("attack_technique", "")
-        if not re.fullmatch(r"T\d{4}(\.\d{3})?", technique):
-            raise ValueError("ID ATT&CK inválido.")
-        result = []
-        tests = document.get("atomic_tests", [])
-        if not isinstance(tests, list) or len(tests) > 100:
-            raise ValueError("Lista de testes Atomic inválida.")
-        for item in tests:
-            executor = item.get("executor", {})
-            result.append(
-                {
-                    "guid": item.get("auto_generated_guid"),
-                    "name": item["name"],
-                    "technique_id": technique,
-                    "platforms": item.get("supported_platforms", []),
-                    "dependencies": item.get("dependencies", []),
-                    "input_arguments": item.get("input_arguments", {}),
-                    "executor": executor.get("name"),
-                    "has_cleanup": bool(executor.get("cleanup_command")),
-                    "elevation_required": executor.get("elevation_required", False),
-                    "approved": False,
-                    "executable": False,
-                }
-            )
-        return result
+        from aegis.integrations.atomic_metadata import parse
+
+        return parse(content)

@@ -488,3 +488,42 @@ class TelemetryCollection(Entity, Base):
     alerts_available: Mapped[bool] = mapped_column(Boolean)
     window_satisfied: Mapped[bool] = mapped_column(Boolean)
     reason: Mapped[str] = mapped_column(Text)
+
+
+class AtomicDocument(Entity, Base):
+    __tablename__ = "atomic_documents"
+    __table_args__ = (
+        UniqueConstraint("source_commit", "technique_id"),
+        CheckConstraint("source_commit ~ '^[a-f0-9]{40}$'", name="atomic_commit"),
+        CheckConstraint("source_sha256 ~ '^[a-f0-9]{64}$'", name="atomic_hash"),
+        CheckConstraint("technique_id ~ '^T[0-9]{4}(\\.[0-9]{3})?$'", name="atomic_technique"),
+    )
+    source_commit: Mapped[str] = mapped_column(String(40))
+    source_sha256: Mapped[str] = mapped_column(String(64))
+    technique_id: Mapped[str] = mapped_column(String(20))
+    imported_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+
+
+class AtomicEntry(Entity, Base):
+    __tablename__ = "atomic_entries"
+    __table_args__ = (UniqueConstraint("document_id", "guid"),)
+    document_id: Mapped[str] = mapped_column(ForeignKey("atomic_documents.id"), index=True)
+    guid: Mapped[str] = mapped_column(String(36))
+    name: Mapped[str] = mapped_column(String(240))
+    platforms: Mapped[list[str]] = mapped_column(ARRAY(String(40)))
+    metadata_projection: Mapped[dict] = mapped_column(JSONB)
+
+
+class AtomicReview(Entity, Base):
+    __tablename__ = "atomic_reviews"
+    __table_args__ = (
+        CheckConstraint("decision in ('reviewed','rejected')", name="atomic_review_decision"),
+        CheckConstraint("length(note) BETWEEN 1 AND 2000", name="atomic_review_note"),
+        UniqueConstraint("entry_id", "sequence"),
+        CheckConstraint("sequence > 0", name="atomic_review_sequence"),
+    )
+    entry_id: Mapped[str] = mapped_column(ForeignKey("atomic_entries.id"), index=True)
+    sequence: Mapped[int] = mapped_column(Integer)
+    decision: Mapped[str] = mapped_column(String(16))
+    note: Mapped[str] = mapped_column(Text)
+    reviewed_by: Mapped[str] = mapped_column(ForeignKey("users.id"))

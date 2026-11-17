@@ -18,4 +18,6 @@ RUNTIME_PERMISSIONS = (
     "REVOKE UPDATE, DELETE ON scheduled_reports FROM aegis_app",
     "GRANT UPDATE (state, attempts, next_attempt_at, error_code, document, document_sha256, generated_at) ON scheduled_reports TO aegis_app",
     "REVOKE INSERT, UPDATE, DELETE ON attack_catalog_releases, attack_catalog_state, attack_techniques FROM aegis_app",
+    # Historical b7 recovery remains supported without Atomic tables.
+    "DO $$ BEGIN IF to_regclass('atomic_documents') IS NOT NULL THEN REVOKE UPDATE, DELETE ON atomic_documents, atomic_entries, atomic_reviews FROM aegis_app; END IF; END $$",
 )
