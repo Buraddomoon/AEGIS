@@ -271,6 +271,9 @@ const getStarExtglobSequenceChars = pattern => {
 };
 
 const isSelfRepeatingStarBranch = branch => {
+  // Quoted stars are literals; any slash prevents closure under concatenation.
+  if (branch.includes('/')) return false;
+  let quoted = false;
   let escaped = false;
   let bracket = false;
   let star = false;
@@ -293,6 +296,13 @@ const isSelfRepeatingStarBranch = branch => {
       continue;
     }
 
+    if (ch === '"') {
+      quoted = !quoted;
+      continue;
+    }
+
+    if (quoted) continue;
+
     if (ch === '[') {
       bracket = true;
       continue;
@@ -310,7 +320,7 @@ const isSelfRepeatingStarBranch = branch => {
     }
   }
 
-  return star && !escaped && !bracket;
+  return star && !escaped && !bracket && !quoted;
 };
 
 const repeatedExtglobRecursion = pattern => {

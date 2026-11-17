@@ -23,7 +23,7 @@ test('installed build tools resolve the reviewed security fork and exact source 
   assert.equal(provenance.patch_commit, '1bf0d04563cb9ce568cf36efc5f6b7187d9911d5')
   assert.equal(
     provenance.patched_files['lib/parse.js'],
-    '9bd315f0306e4c0caeb271b0419bb72605b03cd013c1793b1c9941b62d4736db',
+    '3c6d5e700359313dc2efc3a8719cbeb6dcac43377539a3db6990147b16dba687',
   )
   for (const [name, upstreamHash] of Object.entries(provenance.upstream_files)) {
     assert.equal(
@@ -84,6 +84,10 @@ for (const [pattern, matching, excluded] of [
   ['**/node_modules/**', ['node_modules/a/index.js', 'apps/web/node_modules/a'], ['src/a.ts']],
   ['@(foo|bar).js', ['foo.js', 'bar.js'], ['baz.js', 'path/foo.js']],
   ['!(*.d).ts', ['foo.ts'], ['foo.d.ts']],
+  ['+("*a")', ['*a', '*a*a'], ['a', 'aaa']],
+  ['*("*a")', ['*a', '*a*a'], ['a', 'aaa']],
+  ['+("a"*b)', ['ab', 'axbayb'], ['axbay', 'a/b']],
+  ['+([/]*a)', ['/a', '/a/a'], ['/ab', 'a']],
 ]) {
   test(`${pattern} preserves matching and path boundaries`, () => {
     for (const value of matching) assert(picomatch.isMatch(value, pattern), value)

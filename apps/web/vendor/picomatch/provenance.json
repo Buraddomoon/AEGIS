@@ -15,6 +15,7 @@
   "patch_source": "https://github.com/micromatch/picomatch/pull/237",
   "patch_commit": "1bf0d04563cb9ce568cf36efc5f6b7187d9911d5",
   "patched_files": {
-    "lib/parse.js": "9bd315f0306e4c0caeb271b0419bb72605b03cd013c1793b1c9941b62d4736db"
-  }
+    "lib/parse.js": "3c6d5e700359313dc2efc3a8719cbeb6dcac43377539a3db6990147b16dba687"
+  },
+  "local_review_adjustment": "Preserve quoted literal-star repetitions and reject all slash-containing branches from the collapse optimization."
 }

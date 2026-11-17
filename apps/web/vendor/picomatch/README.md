@@ -8,6 +8,9 @@ its SHA256 and original file hashes are in provenance.json. Eight runtime/licens
 files were copied exactly. Only lib/parse.js changes: the reviewed correction
 from [upstream PR237](https://github.com/micromatch/picomatch/pull/237), commit
 `1bf0d04563cb9ce568cf36efc5f6b7187d9911d5`, applied to the release code.
+The local review additionally preserves quoted literal-star repetitions and
+excludes all slash-containing branches from that collapse optimization; the
+additional regression cases compare those semantics with the original release.
 That PR was unmerged when reviewed on17/11/2026. The package metadata explicitly
 identifies this local fork and contains no lifecycle scripts or dependencies.
 
