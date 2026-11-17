@@ -71,3 +71,9 @@ O formulário exige commit, SHA256 e YAML informado manualmente, verificando o
 limite UTF-8 antes do POST. A revisão exige justificativa e sequência vigente.
 Não existe ação Atomic para executar, instalar, baixar ou criar campanha.
 As simulações da allowlist são consultadas separadamente pela API existente.
+
+Retomada da validação da #13: a adoção histórica Wazuh usa inventário próprio
+fixado em b7/33tabelas, incluindo Alembic, e recusa tabelas extras ou schema c8.
+O leitor/lock não acompanha automaticamente novas tabelas do ORM. Fixtures
+reproduzem b7 por migration no schema descartável e restauram head ao terminar;
+nenhuma alteração de compatibilidade/autorização dos laboratórios originais.

@@ -8,6 +8,8 @@ import pytest
 from aegis.catalog import store
 from aegis.domain.validation import digest
 from aegis.models import AttackTechnique, Campaign, CampaignRun, Laboratory, User, uid
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -21,6 +23,8 @@ LICENSE = (ROOT / "fixtures/attack/LICENSE.txt").read_bytes()
 
 @pytest.fixture
 def legacy(db_ready, pg_engine):
+    config = Config("alembic.ini")
+    command.downgrade(config, adoption.REVISION)
     # Model the upgraded historical DB with its existing technique projection,
     # while clearing only this test's version metadata and revoking its Demo lab.
     with pg_engine.begin() as connection:
@@ -50,7 +54,10 @@ def legacy(db_ready, pg_engine):
                 scope_hash=digest(scope),
             )
         )
-    return pg_engine
+    try:
+        yield pg_engine
+    finally:
+        command.upgrade(config, "head")
 
 
 def proposal(engine):
@@ -110,3 +117,31 @@ def test_apply_leaves_commit_under_explicit_owner_control(legacy):
         adoption.apply(db, RAW, LICENSE, reviewed, digest(reviewed))
         db.rollback()
     assert proposal(legacy) == reviewed
+
+
+def test_adoption_rejects_atomic_head_without_migration_or_publication(db_ready, pg_engine):
+    with Session(pg_engine) as db:
+        before = db.scalar(text("SELECT version_num FROM alembic_version"))
+    assert before == "c8e4a6d21f90"
+    with Session(pg_engine) as db, pytest.raises(ValueError, match="explicit_b7_upgrade"):
+        adoption.plan(db, RAW, LICENSE)
+    with Session(pg_engine) as db:
+        assert db.scalar(text("SELECT version_num FROM alembic_version")) == before
+
+
+def test_b7_inventory_refuses_extra_table_even_with_b7_version(legacy):
+    with legacy.begin() as conn:
+        conn.execute(text("CREATE TABLE unexpected_history (id integer)"))
+    try:
+        with pytest.raises(ValueError, match="table_inventory_mismatch"):
+            proposal(legacy)
+    finally:
+        with legacy.begin() as conn:
+            conn.execute(text("DROP TABLE unexpected_history"))
+
+
+def test_b7_inventory_does_not_follow_current_orm_metadata(legacy, monkeypatch):
+    from aegis.models import Base
+
+    monkeypatch.setattr(Base, "metadata", None)
+    assert len(proposal(legacy)["preserved_tables"]) == 30

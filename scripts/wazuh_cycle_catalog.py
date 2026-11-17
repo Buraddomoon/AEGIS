@@ -9,6 +9,43 @@ from aegis.domain.validation import digest
 
 FORMAT = "aegis-wazuh-catalog-adoption/1"
 REVISION = "b7f3c2d91a06"
+# Frozen b7 inventory: newer ORM tables must not change a historical reader.
+B7_TABLES = frozenset(
+    (
+        "approvals",
+        "assets",
+        "attack_catalog_releases",
+        "attack_catalog_state",
+        "attack_techniques",
+        "audit_events",
+        "campaign_runs",
+        "campaign_tests",
+        "campaigns",
+        "detection_evidence",
+        "detection_rules",
+        "execution_steps",
+        "lab_verifications",
+        "laboratories",
+        "linux_lab_bindings",
+        "rule_test_links",
+        "rule_versions",
+        "runner_cleanups",
+        "runner_dispatches",
+        "runner_receipts",
+        "schedule_authorizations",
+        "schedule_occurrences",
+        "scheduled_reports",
+        "schedules",
+        "sessions",
+        "telemetry_collections",
+        "telemetry_events",
+        "test_definitions",
+        "test_executions",
+        "users",
+        "validation_results",
+        "wazuh_bindings",
+    )
+)
 CATALOG_TABLES = {"attack_catalog_state", "attack_catalog_releases"}
 MAX_TABLE_ROWS = 100000
 
@@ -26,14 +63,28 @@ def _row_hashes(db, name):
     return sorted(rows)
 
 
+def _require_b7_tables(db):
+    from sqlalchemy import text
+
+    if db.scalar(text("SELECT version_num FROM alembic_version")) != REVISION:
+        raise ValueError("wazuh_catalog_explicit_b7_upgrade_required")
+    rows = db.execute(
+        text("""SELECT c.relname::text, c.relkind::text
+        FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname=current_schema() AND c.relkind IN ('r','p','v','m','f')""")
+    ).all()
+    if dict(rows) != {name: "r" for name in (*B7_TABLES, "alembic_version")}:
+        raise ValueError("wazuh_catalog_b7_table_inventory_mismatch")
+
+
 def _snapshot(db):
-    from aegis.models import Base
+    _require_b7_tables(db)
 
     # Only code-owned table names. JSON stays in memory; no rows or verifiers
     # appear in the proposal. Hash every old table, including users/evidence.
     return {
         name: digest(_row_hashes(db, name))
-        for name in sorted(Base.metadata.tables)
+        for name in sorted(B7_TABLES)
         if name not in CATALOG_TABLES
     }
 
@@ -102,7 +153,6 @@ def apply(db, raw: bytes, license_raw: bytes, proposal: dict, expected_sha256: s
     metadata through the caller's transaction; failure requires rollback.
     """
     from aegis.catalog.store import initialize, projection
-    from aegis.models import Base
     from sqlalchemy import text
 
     if digest(proposal) != expected_sha256:
@@ -111,7 +161,7 @@ def apply(db, raw: bytes, license_raw: bytes, proposal: dict, expected_sha256: s
     db.execute(text("SET LOCAL statement_timeout='15s'"))
     db.execute(text("SET LOCAL lock_timeout='3s'"))
     db.execute(text("SET LOCAL row_security=off"))
-    names = ["alembic_version", *sorted(Base.metadata.tables)]
+    names = ["alembic_version", *sorted(B7_TABLES)]
     db.execute(
         text(
             "LOCK TABLE " + ", ".join(f'ONLY "{name}"' for name in names) + " IN SHARE MODE NOWAIT"
