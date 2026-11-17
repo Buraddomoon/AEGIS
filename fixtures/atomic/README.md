@@ -13,3 +13,12 @@ Alterações usadas pelos testes são sintéticas e não uma release oficial.
 
 O envelope JSON preserva inclusive whitespace do upstream sem introduzir
 whitespace inválido no diff Git. O SHA256 acima refere-se a `content`, não ao envelope.
+
+## Candidato revisado da #78
+
+`T1222.002.json` conserva9653bytes de YAML do commit oficial
+`a0e3f9bc69fed2fd711bd1f1aa87a40c33482fe6`, SHA256
+`f453e844306df372cf600ddd59d15626a83d3dd83cd5a4b3e5fe5175b4204f3b`.
+LICENSE.txt é idêntico nesse commit. Somente o GUID numérico não recursivo foi
+revisado para adaptação; não executar nenhum comando da fixture.
+Ver [dossiê e limites](../../docs/integrations/atomic-permissions-review.md).
