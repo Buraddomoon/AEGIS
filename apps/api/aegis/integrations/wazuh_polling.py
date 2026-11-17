@@ -60,6 +60,15 @@ class WazuhPollingProvider:
                     break
                 window = snapshot_started >= horizon
                 self.summary["window_satisfied"] = window
+                last = replace(
+                    last,
+                    diagnostics=last.diagnostics
+                    + (
+                        "Janela de ingestão: completa."
+                        if window
+                        else "Janela de ingestão: incompleta.",
+                    ),
+                )
                 combined = replace(last, events=tuple(events.values()))
                 if (
                     validate(
@@ -94,13 +103,20 @@ class WazuhPollingProvider:
                 and not conflicts
                 and len(fingerprints) <= 5000
             )
+            reasons = []
+            if last.error:
+                reasons.append(last.error)
+            if not self.summary["window_satisfied"]:
+                reasons.append("Janela de ingestão incompleta; ausência de alerta é inconclusiva.")
+            if conflicts:
+                reasons.append("Documentos com conteúdo conflitante excluídos da evidência.")
+            if len(fingerprints) > 5000:
+                reasons.append("Limite de documentos da coleta atingido.")
             last = replace(
                 last,
                 events=tuple(events.values()),
                 complete=bool(complete),
-                error=None
-                if complete
-                else "Janela de ingestão ou consulta incompleta; ausência de alerta é inconclusiva.",
+                error=None if complete else " ".join(reasons) or "Consulta incompleta.",
             )
             return last
         finally:

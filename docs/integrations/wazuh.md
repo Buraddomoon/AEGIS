@@ -78,3 +78,35 @@ evidência defensiva nativa nem transforma o Demo em real.
 Selecionar um perfil novo altera o hash de escopo e exige nova revisão/binding
 antes de qualquer operação futura. Nenhum arquivo de política implantada,
 approval, run ou evidência histórica é atualizado automaticamente.
+
+## Disponibilidade e classificação — #62
+
+Os dois indicadores de disponibilidade descrevem consultas completas, não a
+presença de documentos. A observação depende dos eventos correlacionados.
+Diagnósticos por fonte acompanham `Collection` e são gravados no campo `reason`
+da nova `TelemetryCollection`; não há migração/reclassificação do histórico.
+
+| Situação | Registro e interpretação |
+| --- | --- |
+| Archives não configurados | Diagnóstico explícito; `telemetry_available=false`. Consulta de alertas pode ser completa. Não prova ausência de telemetria no endpoint. |
+| Consulta vazia completa | Fonte disponível, zero documentos correlacionados; distinto de falta de configuração ou permissão. |
+| HTTP401 / HTTP403 | Autenticação recusada / permissão negada, separados por fonte. |
+| HTTP404 | Índice ou cursor ausente; não prova archives desativados. |
+| Timeout / transporte / schema inválido | Motivos distintos e consulta incompleta. Sem persistir mensagem/corpo/URL do servidor. |
+| Shards, total ou correlação inválidos | Consulta incompleta; não constitui uma negativa limpa. |
+| Ingestão tardia | Polling pode encontrar alerta antes do horizonte; negativas aguardam rodada final iniciada após a espera. |
+| Janela/orçamento incompleto ou documento conflitante | Motivo preservado junto à falha específica; ausência de alerta permanece inconclusiva. |
+
+`DETECTED` continua exigindo execução e alerta esperado correlacionado. Um
+positivo pode existir em coleta parcial. `OBSERVED_NOT_ALERTED` exige observação,
+consulta completa de alertas e, no fluxo do worker, janela cumprida.
+`NO_TELEMETRY` significa que a execução foi confirmada sem evidência correlacionada
+suficiente nas fontes consultadas; não afirma que o endpoint não gerou telemetria
+nem que a detecção falhou. Falha de consulta ou janela => `INCONCLUSIVE`.
+As regras de domínio e sua versão1.1 permanecem; a alteração torna verificável
+o diagnóstico das consultas, sem recalcular resultados anteriores.
+
+`make test-wazuh` inclui perfis, disponibilidade, ingestão tardia/janela, identidade,
+worker/API/relatório em PostgreSQL descartável, observador e TLS de loopback.
+É teste de contrato local, sem infraestrutura Wazuh externa. Não executar junto
+de outra suíte que compartilhe Redis15.

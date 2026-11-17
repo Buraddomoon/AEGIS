@@ -27,6 +27,7 @@ def wazuh(linux, tmp_path, monkeypatch):
         f"/api/v1/labs/{lab['id']}/authorization", json={"authorized": False}
     ).raise_for_status()
     cfg = WazuhCollectionConfig(
+        schema_id="wazuh-4.14.9/1",
         laboratory_id=lab["id"],
         asset_id=runner.identity.asset_id,
         agent_id="007",
@@ -71,6 +72,11 @@ def wazuh(linux, tmp_path, monkeypatch):
         mode = scenario["outcome"]
         if mode == "INCONCLUSIVE":
             return httpx.Response(503, json={"error": "fixture-unavailable"})
+        if mode in ("INDEX_MISSING", "FORBIDDEN"):
+            return httpx.Response(
+                404 if mode == "INDEX_MISSING" else 403,
+                json={"error": "sensitive-upstream-body"},
+            )
         documents = []
         if mode == "DETECTED" or (mode == "OBSERVED_NOT_ALERTED" and archive):
             documents = [hit(ctx, "telemetry" if archive else "alert")]
@@ -95,7 +101,16 @@ def wazuh(linux, tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "outcome", ["DETECTED", "OBSERVED_NOT_ALERTED", "NO_TELEMETRY", "INCONCLUSIVE", "WRONG_AGENT"]
+    "outcome",
+    [
+        "DETECTED",
+        "OBSERVED_NOT_ALERTED",
+        "NO_TELEMETRY",
+        "INCONCLUSIVE",
+        "WRONG_AGENT",
+        "INDEX_MISSING",
+        "FORBIDDEN",
+    ],
 )
 def test_worker_collects_validates_persists_and_reports_contract_evidence(wazuh, outcome):
     linux, path, scenario = wazuh
@@ -110,10 +125,20 @@ def test_worker_collects_validates_persists_and_reports_contract_evidence(wazuh,
     detail = client.get("/api/v1/executions/" + run["id"]).json()
     assert detail["state"] == "COMPLETED", detail
     execution = detail["executions"][0]
-    expected = "INCONCLUSIVE" if outcome == "WRONG_AGENT" else outcome
+    expected = (
+        "INCONCLUSIVE" if outcome in ("WRONG_AGENT", "INDEX_MISSING", "FORBIDDEN") else outcome
+    )
     assert execution["result"]["outcome"] == expected
     assert execution["collection"]["provider"] == "wazuh-indexer"
     assert execution["collection"]["attempts"] >= 1
+    assert execution["collection"]["schema_id"] == "wazuh-4.14.9/1"
+    reason = execution["collection"]["reason"]
+    if outcome == "INDEX_MISSING":
+        assert "índice ou cursor ausente" in reason
+    elif outcome == "FORBIDDEN":
+        assert "permissão negada" in reason
+    elif outcome in ("DETECTED", "OBSERVED_NOT_ALERTED", "NO_TELEMETRY"):
+        assert "consulta completa" in reason
     assert execution["runner_receipt"] and execution["runner_cleanup"]
     assert not execution["synthetic"]
     if outcome == "DETECTED":
@@ -127,6 +152,7 @@ def test_worker_collects_validates_persists_and_reports_contract_evidence(wazuh,
     assert "SIEM não consultado" not in " ".join(report["limitations"])
     assert "pipeline" in " ".join(report["limitations"])
     assert "fixture-only-not-a-real-secret" not in json.dumps(report)
+    assert "sensitive-upstream-body" not in json.dumps(report)
     assert client.get("/api/v1/coverage?mode=demo").json()["completed_tests"] == 0
     with session_factory()() as db:
         assert db.scalar(select(func.count()).select_from(TelemetryCollection)) == 1

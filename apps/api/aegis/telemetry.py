@@ -199,6 +199,7 @@ def collect_real(run_id: str, context: ExecutionContext, guard) -> Collection:
                     alerts_available=result.alerts_available,
                     window_satisfied=summary.get("window_satisfied", False),
                     reason=result.error
+                    or " ".join(result.diagnostics)
                     or "Consulta concluída; interpretação depende da evidência correlacionada.",
                 )
             )

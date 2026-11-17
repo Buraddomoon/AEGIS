@@ -143,7 +143,7 @@ linux-platform-down:
 # Local contract tests only: no Wazuh installation or real lab startup.
 .PHONY: test-wazuh
 test-wazuh:
-	$(VENV)/pytest tests/test_wazuh_collection.py tests/test_wazuh_campaigns.py tests/test_marker_observer.py tests/test_wazuh_tls.py -q
+	$(VENV)/pytest tests/test_wazuh_profiles.py tests/test_wazuh_availability.py tests/test_wazuh_collection.py tests/test_wazuh_campaigns.py tests/test_marker_observer.py tests/test_wazuh_tls.py -q
 
 # A separate real Wazuh assay is never started by default. See labs/wazuh/ASSAY.md.
 .PHONY: wazuh-lab-prepare wazuh-lab-config wazuh-lab-preflight test-wazuh-preparation wazuh-lab-pull wazuh-lab-hash-users wazuh-lab-build wazuh-lab-up wazuh-lab-inspect wazuh-lab-check-rule wazuh-lab-assay wazuh-lab-status wazuh-lab-down

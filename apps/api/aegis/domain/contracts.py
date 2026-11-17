@@ -39,6 +39,7 @@ class Collection:
     alerts_available: bool
     complete: bool = True
     error: str | None = None
+    diagnostics: tuple[str, ...] = ()
 
 
 class ExecutionAdapter(Protocol):

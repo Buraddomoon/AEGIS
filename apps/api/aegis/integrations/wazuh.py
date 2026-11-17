@@ -317,25 +317,50 @@ class WazuhIndexerProvider:
         ):
             raise ValueError("Contexto difere do mapping aprovado.")
         events, alerts_ok, telemetry_ok, complete = [], False, False, True
+        diagnostics = []
         for index, kind in [(self.alerts_index, "alert"), (self.archives_index, "telemetry")]:
+            label = "Alertas" if kind == "alert" else "Archives"
             if index is None:
+                diagnostics.append(f"{label}: consulta não configurada.")
                 continue
             try:
                 hits, ok = self._search(index, context, kind)
                 events.extend(hits)
+                diagnostics.append(
+                    f"{label}: consulta completa ({len(hits)} documentos correlacionados)."
+                    if ok
+                    else f"{label}: consulta incompleta (paginação, shards, schema ou correlação)."
+                )
                 if kind == "alert":
                     alerts_ok = ok
                 else:
                     telemetry_ok = ok
                 complete = complete and ok
-            except (httpx.HTTPError, ValueError, KeyError, TypeError, TimeoutError):
+            except httpx.HTTPStatusError as exc:
+                code = exc.response.status_code
+                reason = {
+                    401: "autenticação recusada (HTTP 401)",
+                    403: "permissão negada (HTTP 403)",
+                    404: "índice ou cursor ausente (HTTP 404); não comprova archives desativados",
+                }.get(code, "erro HTTP do Indexer")
+                diagnostics.append(f"{label}: {reason}.")
+                complete = False
+            except (httpx.TimeoutException, TimeoutError):
+                diagnostics.append(f"{label}: tempo de consulta esgotado.")
+                complete = False
+            except httpx.HTTPError:
+                diagnostics.append(f"{label}: transporte indisponível.")
+                complete = False
+            except (ValueError, KeyError, TypeError, AttributeError):
+                diagnostics.append(f"{label}: resposta inválida para o contrato selecionado.")
                 complete = False
         return Collection(
             tuple(events),
             telemetry_ok,
             alerts_ok,
             complete,
-            None if complete else "Coleta Indexer incompleta ou indisponível.",
+            None if complete else " ".join(diagnostics),
+            tuple(diagnostics),
         )
 
     async def _close(self):
