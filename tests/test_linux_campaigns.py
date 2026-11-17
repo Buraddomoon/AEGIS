@@ -582,3 +582,77 @@ def test_ambiguous_linux_responses_never_replay_start(linux, monkeypatch, lost):
     with session_factory()() as db:
         assert db.get(Laboratory, run["laboratory_id"]).active_run_id is None
         assert db.scalar(select(RunnerCleanup)).content["cleanup_state"] == "CLEANED"
+
+
+@pytest.mark.parametrize("runner", [atomic_policy.TEST_ID], indirect=True)
+@pytest.mark.parametrize("lost_start", [False, True])
+def test_atomic80_controller_uses_segregated_approval_and_never_replays(
+    linux, monkeypatch, lost_start
+):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "atomic80_client_test", "scripts/atomic_assay_client.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    api, lab, _ = linux
+    assert (
+        api.patch(f"/api/v1/labs/{lab['id']}/authorization", json={"authorized": False}).status_code
+        == 200
+    )
+    persisted, starts = [], []
+
+    def dispatch(request):
+        if request.method == "POST" and request.url.path.endswith("/start"):
+            assert len(persisted) == 1
+            starts.append(request.url.path)
+        response = api.request(
+            request.method,
+            request.url.path + ("?" + request.url.query.decode() if request.url.query else ""),
+            content=request.content,
+            headers=dict(request.headers),
+        )
+        if (
+            request.method == "POST"
+            and request.url.path.endswith("/start")
+            and response.status_code == 200
+        ):
+            claimed = claim_next()
+            assert claimed == persisted[0]["run_id"]
+            process_run(claimed)
+            if lost_start:
+                raise httpx.ReadError("Lost start response fixture; no retry")
+        return httpx.Response(
+            response.status_code, content=response.content, headers=response.headers
+        )
+
+    plan = {
+        "identity": {"laboratory_id": lab["id"]},
+        "review": atomic_policy.review(),
+        "attempt_id": str(uuid.uuid4()),
+        "expires_at": (now() + timedelta(minutes=5)).isoformat(),
+    }
+    accounts = [
+        {"username": role, "role": role, "password": "Test-only-randomized-scope-23!"}
+        for role in ("administrator", "operator")
+    ]
+    with httpx.Client(
+        base_url="http://192.168.253.4:8080/api/v1", transport=httpx.MockTransport(dispatch)
+    ) as remote:
+        if lost_start:
+            with pytest.raises(httpx.ReadError):
+                module.assay(
+                    plan, accounts, remote, persist=persisted.append, emit=lambda *a, **kw: None
+                )
+        else:
+            result = module.assay(
+                plan, accounts, remote, persist=persisted.append, emit=lambda *a, **kw: None
+            )
+            assert (
+                result["status"] == "native_atomic_verified"
+            )  # Fixture validates the client contract only.
+    assert len(starts) == 1 and len(persisted) == 1
+    with session_factory()() as db:
+        assert not db.get(Laboratory, lab["id"]).authorized
+        assert db.scalar(select(RunnerCleanup)).content["cleanup_state"] == "CLEANED"
