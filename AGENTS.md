@@ -62,7 +62,10 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
 
 - Preservar rede de terceiros qasrc, PKI, IDs, volumes, journals, intents/fences,
   candidatos expirados e imagens históricas; sem remover/recriar para liberar replay.
-- Linux allowlist atual: apenas linux-file-marker/v1. Sem shell remoto,
+- Perfis históricos Linux: apenas linux-file-marker/v1. Fonte da #79 acrescenta
+  um perfil opt-in separado de permissões de arquivo próprio, com revisão/hash
+  fixados; #80 ainda exige imagem/ambiente/pacote e autorização específicos.
+  Ver docs/development/atomic-execution-checkpoint.md. Sem shell remoto,
   Docker socket na app, alvo livre, evasão, persistência maliciosa, credenciais
   ou exfiltração. Atomic importado permanece não executável até revisão específica.
 - Dispatch durável antes da RPC, efeito de uso único, deadline/lease e supervisor;

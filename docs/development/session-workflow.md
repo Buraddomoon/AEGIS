@@ -158,3 +158,9 @@ Lint/build/auditorias e Firefox real aprovados; nenhum Atomic executado. Fork lo
 picomatch revisado/licenciado e inventário Wazuh b7 fixado, sem gates relaxados.
 Demo/Labs originais preservados; sem implantação. Provas/falhas históricas no
 checkpoint. Parar após esse aceite, sem avançar para outra entrega ou laboratório.
+
+Entrega #14: [checkpoint da execução Atomic](atomic-execution-checkpoint.md).
+#78 revisou/fixou um GUID e #79 entregou o adaptador próprio fechado, com CI
+integral44168295232 aprovada (3575Python/9skips e98React). #80 permanece bloqueada por imagem/ambiente/
+pacote revisados e autorização específica. Metadados continuam não executáveis,
+Labs originais preservados; não tratar a preparação offline como ensaio nativo.
