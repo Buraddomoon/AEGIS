@@ -14,8 +14,10 @@ Fonte exige migration explícita c8/36tabelas; Demo/Labs originais b7 preservado
 Gate de prontidão Linux continua recusando c8 até revisão operacional específica.
 Não migrar original nem iniciar Lab a partir deste checkpoint.
 
-A #13 permanece aberta pelo bloqueio da auditoria npm na cadeia picomatch,
-GHSA-fc5q-39xc-vjpf, sem versão corrigida na consulta17/11. Lockfiles preservados,
-nenhum gate enfraquecido. CI parcial/falha não equivale a workflow verde;
-conferir estado/IDs no comentário final da issue. Não ampliar escopo para
-remediação genérica de dependências, outra feature ou implantação nesta sessão.
+A #13 foi fechada por pedido explícito posterior do usuário, com #75/#76/#77
+concluídas. O encerramento inicial havia mantido o pai aberto pela auditoria npm
+na cadeia picomatch, GHSA-fc5q-39xc-vjpf, sem versão corrigida na consulta17/11.
+A CI44144791638 terminou com falha: Python0/1/3 passaram; Python2 e React falharam.
+O fechamento preserva essas limitações e não declara workflow verde. Lockfiles
+preservados, nenhum gate enfraquecido; conferir provas e comentários da issue.
+Não ampliar escopo para remediação genérica, outra feature ou implantação.

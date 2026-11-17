@@ -1,7 +1,16 @@
 # Catálogo Atomic offline — entrega #13
 
 Implementação das #75/#76/#77 em17/11/2026, sem execução Atomic ou implantação.
-**Aceite funcional demonstrado; aceite final da #13 pendente da CI/auditoria.**
+**Estado no encerramento inicial:** aceite funcional demonstrado; pai mantido
+aberto pela CI/auditoria.
+
+**Fechamento posterior:** o usuário solicitou fechar a #13, com as três subissues
+concluídas. A CI44144791638 terminou com falha: Python0/1/3 passaram; Python2 e
+React falharam. O fechamento preserva o histórico e essas limitações, sem declarar
+workflow verde nem autorizar execução Atomic, laboratório ou implantação.
+Python2 registrou7falhas em `tests/test_wazuh_cycle_catalog.py`, com erro
+`wazuh_catalog_explicit_b7_upgrade_required` (911passaram/1skip nessa partição).
+Essas falhas foram registradas no fechamento; não foram corrigidas nesta ação.
 
 ## Fonte e comportamento
 
@@ -86,7 +95,8 @@ nenhum .env/conta/grant de outro projeto foi alterado.
   revisado em17/11 e sem versão corrigida anunciada na consulta. O lockfile é
   idêntico à base9c44631. Nenhum audit fix forçado, override, exclusão ou
   relaxamento de threshold foi aplicado. Esse bloqueio externo impede declarar
-  CI integral verde e deixa a #13 aberta para aceite final.
+  CI integral verde e motivou manter a #13 aberta no encerramento inicial.
+  O pedido posterior de fechamento está registrado no início deste relatório.
 
 As contagens locais não substituem as quatro partições Python e React da CI.
 IDs/estados finais da CI e hash documental constam no comentário da #13.
