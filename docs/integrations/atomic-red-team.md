@@ -28,3 +28,26 @@ não busca nem autentica os bytes no upstream. O caminho oficial é derivado da
 técnica. Hash não é assinatura. A fixture oficial fixada/licenciada em
 [fixtures/atomic](../../fixtures/atomic/README.md) é usada só pelo parser/testes.
 `test_definitions` e a allowlist continuam independentes do catálogo importado.
+
+## API de importação e revisão — #76
+
+Leitura autenticada em `GET /api/v1/catalog/atomic` (paginação20padrão/100máximo,
+filtros `q`, `platform`, `review_status`, `document_id`), `/documents`,
+`/entries/{id}` e `/entries/{id}/reviews`. Todas as versões são consultáveis;
+revisão de outra versão não é herdada. O vínculo ATT&CK é declarado pela fonte,
+comparado ao catálogo local; técnica desconhecida não é criada nem considerada ativa.
+
+Somente administrador com sessão/CSRF pode fazer `POST /imports`, enviando
+`source_commit` (40hex), `source_sha256` (64hex) e `content` (YAML UTF-8).
+Limite10tentativas/5min por administrador, fail-closed se Redis indisponível;
+limite HTTP geral256KiB e YAML64KiB. Documento inválido/conflitante retorna422
+sem echo do YAML. Importação nova, repetida e recusada têm auditoria sem conteúdo.
+Não há download, fetch de URL, instalação, start ou migração implícitos.
+
+`POST /entries/{id}/reviews` exige administrador/CSRF, `decision` (`reviewed` ou
+`rejected`), justificativa1–2000caracteres e `expected_sequence`. A sequência
+stale retorna409, inclusive sob concorrência. Limite30revisões/5min por ator.
+O histórico é append-only e auditado; revisão registra decisão sobre metadados,
+nunca aprovação de execução: `approved=false`, `executable=false` e
+`available_for_new_scope=false` permanecem constantes. Nenhuma entrada é inserida
+na allowlist de campanhas.

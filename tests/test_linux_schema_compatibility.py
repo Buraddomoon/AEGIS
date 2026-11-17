@@ -116,7 +116,6 @@ def test_populated_a0_upgrade_is_additive_and_original_proofs_remain_valid(bindi
             assert "scheduled_reports" not in before
             assert len(before["runner_receipts"]) == len(before["approvals"]) == 1
         command.upgrade(config, CURRENT)
-        command.check(config)
         with pg_engine.connect() as connection:
             after = inventory(connection)
             assert after.pop("scheduled_reports") == []
@@ -130,6 +129,7 @@ def test_populated_a0_upgrade_is_additive_and_original_proofs_remain_valid(bindi
             assert not lab.authorized
     finally:
         command.upgrade(config, "head")
+        command.check(config)  # ORM follows head; historical b7 assertions stay above.
 
 
 def test_actual_historical_schema_upgrade_preserves_every_original_column(binding_lab, pg_engine):
@@ -147,7 +147,6 @@ def test_actual_historical_schema_upgrade_preserves_every_original_column(bindin
             }
             grants = [row for row in privileges(connection) if row[0] in before]
         command.upgrade(config, CURRENT)
-        command.check(config)
         with pg_engine.connect() as connection:
             for table, rows in before.items():
                 extra = sorted(
@@ -171,6 +170,7 @@ def test_actual_historical_schema_upgrade_preserves_every_original_column(bindin
             assert binding_review.review(db, lab)["blockers"] == []
     finally:
         command.upgrade(config, "head")
+        command.check(config)  # ORM follows head; historical b7 assertions stay above.
 
 
 def test_a0_dump_restores_only_its_disposable_schema_before_upgrade(binding_lab, pg_engine):
@@ -256,6 +256,7 @@ def test_a0_dump_restores_only_its_disposable_schema_before_upgrade(binding_lab,
             assert after == before and privileges(connection) == grants
     finally:
         command.upgrade(config, "head")
+        command.check(config)  # ORM follows head; historical b7 assertions stay above.
 
 
 def test_b7_runtime_grants_preserve_proofs_and_limit_report_updates(db_ready, pg_engine):

@@ -23,6 +23,7 @@ from aegis import (
 )
 from aegis.analytics_api import Scope as AnalyticsScope
 from aegis.analytics_api import router as analytics_router
+from aegis.atomic_api import router as atomic_router
 from aegis.catalog import store as catalog
 from aegis.catalog.api import router as catalog_router
 from aegis.config import settings
@@ -68,6 +69,7 @@ from aegis.security import (
 
 router = APIRouter(prefix="/api/v1")
 router.include_router(catalog_router)
+router.include_router(atomic_router)
 router.include_router(analytics_router)
 router.include_router(scheduled_report_router)
 DB = Annotated[Session, Depends(get_db)]
