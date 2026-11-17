@@ -102,6 +102,13 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   sessões próprias, nove volumes sem consumidores, recursos próprios encerrados.
   Ver docs/evidence/wazuh-cycle-2026-11-16/CAMPAIGN.md e UI-EXPORTS.md.
   Entrega#7 atendida; autorização/pacote9f60b4c8 consumidos, sem operação contínua.
+- #63/#8 em17/11, após autorização explícita de retomada: perfil
+  `wazuh-4.14.9/1` consultado no Indexer real, alerta original da#59 idêntico,
+  negativa de filtro e cleanup de cursores verificados; archives404/incompletos,
+  sem habilitar ingestão. NATIVE_PROFILE_QUERY_VERIFIED/CLEANED, zero novas runs/
+  marcadores/vereditos, nove volumes sem consumidores. Pacotes/tentativas e
+  autorização consumidos; Demo/histórico/PKI preservados, sem operação contínua.
+  Ver docs/evidence/wazuh-schema-2026-11-17/README.md; não repetir os ensaios.
 
 ## Operação, testes e evidência
 

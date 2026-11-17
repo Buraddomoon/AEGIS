@@ -1,5 +1,10 @@
 # Consulta nativa de perfil — #63
 
+**Encerrado em17/11/2026: NATIVE_PROFILE_QUERY_VERIFIED/CLEANED.**
+[Provas, tentativas anteriores e limites](../../docs/evidence/wazuh-schema-2026-11-17/README.md).
+Pacotes/autorização desta entrega consumidos; o escopo abaixo é histórico e
+não autoriza nova inicialização ou consulta. Não repetir os operadores.
+
 O usuário retomou explicitamente a #63 após o bloqueio de autorização registrado
 na issue. Escopo desta retomada: um ensaio novo de consulta do alerta preservado
 da #59, sem nova campanha. Pacotes anteriores permanecem consumidos.

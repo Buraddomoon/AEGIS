@@ -1,8 +1,9 @@
 # Consulta Wazuh com perfis explícitos — #8
 
-Checkpoint17/11/2026. Escopo exclusivo: #61 → #62 → #63. A entrega pai
-permanece **pendente**, pois a validação externa da #63 exige autorização
-específica ainda ausente. Não iniciar laboratório a partir deste documento.
+Checkpoint17/11/2026. Escopo exclusivo: #61 → #62 → #63. **Aceite conjunto
+atendido**, após o usuário autorizar explicitamente a retomada da #63.
+[Ensaio nativo NATIVE_PROFILE_QUERY_VERIFIED/CLEANED](../evidence/wazuh-schema-2026-11-17/README.md).
+Pacotes/autorização consumidos; não iniciar laboratório a partir deste documento.
 
 ## Implementado e testado localmente
 
@@ -17,9 +18,10 @@ específica ainda ausente. Não iniciar laboratório a partir deste documento.
   domínio1.1 preservadas, sem recalcular evidência histórica.
 
 Contrato e matriz de suporte em [integração Wazuh](../integrations/wazuh.md).
-Os perfis novos foram testados **por contrato local**, sem ensaio nativo ou
-implantação. Evidência histórica4.14.9/alertas sob política legada não valida
-retroativamente os perfis novos ou archives.
+O perfil `wazuh-4.14.9/1` foi depois consultado nativamente no Indexer4.14.9,
+com alerta original da #59, sem nova run/marcador. Perfil `@timestamp` e eventos
+de archives permanecem **só contratuais**. Evidência histórica sob política
+legada não foi renomeada/reclassificada; o novo ensaio tem registro próprio.
 
 ## Verificação executada
 
@@ -41,31 +43,31 @@ retroativamente os perfis novos ou archives.
 
 As98+36aprovações são validação local complementar. O estado da CI da fonte final,
 quatro grupos Python e React, deve ser conferido nos comentários da issue; não
-confundir source-review documental com CI integral. Sem novo E2E/build/imagem,
-release, implantação ou ensaio Wazuh/Linux. Demo ativo preservado.
+confundir source-review documental com CI integral. Na #63, `make test-wazuh-schema`
+teve84passed/1,37s, lint completo aprovado e validação nativa separada. Sem novo
+E2E/build/imagem/release ou implantação permanente. Demo ativo preservado.
 
-## Bloqueio externo — #63
+## Bloqueio externo resolvido — #63
 
-Perfil selecionado para um futuro escopo específico: **`wazuh-4.14.9/1`**,
-`timestamp`, alertas `wazuh-alerts-4.x-*`; archives permanecem opcionais e não
-ativados. O segundo perfil permanece somente contratual. A escolha não concede
-autorização de acesso, startup, ingestão ou marcador.
+O bloqueio inicial era ausência de autorização específica. O usuário retomou
+explicitamente a #63 após esse registro. Escopos e tentativas foram registrados
+na issue antes dos efeitos; falhas anteriores preservadas/CLEANED, sem reutilizar
+pacote. O [procedimento](../../labs/wazuh/SCHEMA-QUERY-ASSAY.md) descreve o escopo
+histórico, correções do leitor/CLI e limites. Não concede autorização futura.
 
-Não existe no corpo/comentários da #8/#63 uma autorização específica vigente
-para consultar um alvo externo ou reabrir os laboratórios. Os pacotes históricos
-descritos em AGENTS estão consumidos. Nenhum deles foi reutilizado.
+Final `f3297fc7b401419ebbcecb3c8a7d0451`, fonte executável3a758a6,
+13:30:35–13:30:55UTC: somente Indexer e leitor; TLS1.3/CA/SNI/IP/ACL e perfil
+`wazuh-4.14.9/1`/`timestamp` conferidos. Alerta original idêntico em índice/id/
+conteúdo/tempo; total exato e negativa vazia completos, três DELETEs de cursor
+confirmados. Archives404/indisponíveis, sem ativação ou inferência de falha.
 
-Para remover o bloqueio, um escopo humano deve identificar infraestrutura/versão,
-alvo/IP/CA e principal de leitura, lab/ativo/agente, índices disponíveis,
-identificadores e intervalo temporal dos eventos que podem ser consultados,
-limites/duração e destino protegido das evidências. Search/Scroll e cleanup de
-cursor são operações do leitor; não habilitar archives, ingestão ou privilégios
-de administração implicitamente. Se o alvo exigir startup, clone, abertura de
-volumes ou efeito novo, esses efeitos precisam de autorização própria antes de
-executar. Não há instalação/download de stack nesta preparação.
+Zero novas runs/marcadores/vereditos e requisições de escrita de documento;
+histórico/bindings/contas/PKI intactos. Fonte/probes montadosRO, sem build/pull,
+sem banco/API/worker da plataforma, runner/observador, manager/agente. Recursos
+próprios removidos e nove volumes preservados/zero consumidores. Inicialização
+normal do Indexer pode escrever estado/logs no volume; não alegar igualdade física.
 
-O futuro aceite deve registrar política/hash e versão real independentemente da
-resposta raiz de compatibilidade, consultas/IDs/timezone, completude/shards/scroll,
-ACL/TLS e cleanup, comparando comportamento observado com a matriz contratual.
-Não reescrever runs/approvals/PKI/journals/fences nem converter fixture em prova
-externa. Até esse ensaio, #63 e #8 ficam abertas. Parar aqui.
+CI fbe192d44086844300 concluída SUCCESS, quatro grupos Python e React conferidos.
+CI da fonte final do probe44093362930 é outra execução, cujo estado está nos
+comentários da #63/#8. Relatório lista hashes/tentativas/limitações. Não extrapolar
+para archives, outras versões ou eficácia SIEM/EDR. Entrega #8 atendida; parar aqui.

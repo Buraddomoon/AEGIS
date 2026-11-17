@@ -52,7 +52,7 @@ hashes existentes. Não é uma promessa de suporte universal ao Wazuh4.x.
 | schema_id | Índices alertas / archives opcional | Campo temporal | Evidência desta implementação |
 | --- | --- | --- | --- |
 | `aegis-json/1` | Configurados pela política | `timestamp` ou `@timestamp` explícito | Contrato legado; ensaios históricos limitados às políticas das respectivas runs |
-| `wazuh-4.14.9/1` | `wazuh-alerts-4.x-*` / `wazuh-archives-4.x-*` | `timestamp` | Fixture local; sem novo ensaio/implantação |
+| `wazuh-4.14.9/1` | `wazuh-alerts-4.x-*` / `wazuh-archives-4.x-*` | `timestamp` | Alertas consultados no Indexer real em17/11/#63; archives404/indisponíveis; sem implantação permanente |
 | `wazuh-4.14.9-at-timestamp/1` | Mesmos padrões | `@timestamp` | Fixture local; sem ensaio nativo/implantação |
 
 Nos dois perfis novos, `data.aegis` é a extensão de instrumentação própria,
@@ -106,7 +106,28 @@ nem que a detecção falhou. Falha de consulta ou janela => `INCONCLUSIVE`.
 As regras de domínio e sua versão1.1 permanecem; a alteração torna verificável
 o diagnóstico das consultas, sem recalcular resultados anteriores.
 
+## Consulta nativa encerrada — #63,17/11/2026
+
+Após autorização específica para retomar a #63,
+[NATIVE_PROFILE_QUERY_VERIFIED/CLEANED](../evidence/wazuh-schema-2026-11-17/README.md):
+somente Indexer4.14.9 e leitor temporários, perfil `wazuh-4.14.9/1`, alerta original
+da #59 com `_id/_index/_source` e timezone/hash idênticos. Consulta negativa de
+marcador completa e cleanup de três cursores verificados. TLS1.3/CA/SNI/IP/principal
+e negativas de ACL conferidos. Sem novo marcador, run, veredito ou escrita de
+documento. Fonte atual montadaRO no leitor; Demo/bindings/histórico preservados.
+
+Archives retornaram **404**, com motivo específico/indisponibilidade e coleta
+incompleta; não foi403 e não se inferiu ausência de telemetria ou falha defensiva.
+Não foram ativados ou ingeridos. Leitura desse estado é evidência nativa de
+disponibilidade, não valida normalização de eventos de archives. Perfil
+`@timestamp` e eventos de archives continuam limitados a contrato/fixtures.
+Todos os recursos próprios foram encerrados, nove volumes sem consumidores;
+autorizações/pacotes dessa entrega consumidos, sem operação contínua.
+
 `make test-wazuh` inclui perfis, disponibilidade, ingestão tardia/janela, identidade,
 worker/API/relatório em PostgreSQL descartável, observador e TLS de loopback.
 É teste de contrato local, sem infraestrutura Wazuh externa. Não executar junto
 de outra suíte que compartilhe Redis15.
+
+`make test-wazuh-schema` testa o probe fechado da #63, limites de entrada sem EOF,
+prontidão e captura de estados reais de archives por fixtures. Nunca inicia Wazuh.
