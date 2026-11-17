@@ -107,7 +107,7 @@ def image(identifier):
             "image",
             "inspect",
             "--format",
-            '{"id":{{json .Id}},"descriptor":{{json (index . "Descriptor")}},"user":{{json .Config.User}},"os":{{json .Os}},"architecture":{{json .Architecture}}}',
+            '{"id":{{json .Id}},"descriptor":{{json (index . "Descriptor")}},"user":{{json (index .Config "User")}},"os":{{json .Os}},"architecture":{{json .Architecture}}}',
             identifier,
         )
     )
@@ -504,6 +504,7 @@ def recipe(plan, folder):
 
 
 def prepare(application_build_id, application_sha):
+    coordinator_commit = source._state(ROOT)
     application = json.loads(read(BUILDS / identifier(application_build_id) / "receipt.json"))
     assert digest(application) == application_sha
     assert image(application["image_id"])["id"] == application["image_id"]
@@ -551,6 +552,7 @@ def prepare(application_build_id, application_sha):
         "created_at": now.isoformat(),
         "expires_at": (now + timedelta(hours=12)).isoformat(),
         "application_commit": application["source_commit"],
+        "coordinator_commit": coordinator_commit,
         "images": {
             "application": application["image_id"],
             "runner": application["runner_image"],
@@ -624,6 +626,21 @@ def verify(package_id, expected_sha):
         ):
             raise ValueError("Private package drift")
     plan = proposal["plan"]
+    source._state(ROOT)
+    if source._git(
+        ROOT,
+        "diff",
+        "--name-only",
+        plan["coordinator_commit"],
+        "HEAD",
+        "--",
+        "apps/api",
+        "scripts",
+        "requirements.lock",
+        "requirements-image-build.lock",
+        "pyproject.toml",
+    ):
+        raise ValueError("Executable coordinator inputs changed; review a new proposal")
     if (
         plan["id"] != package_id
         or plan["review"] != atomic_policy.review()
@@ -676,7 +693,7 @@ def validate_runtime(item, service, plan, folder):
 
 def runtime_review(compose, plan, folder):
     # Deliberately exclude all environment values and command arguments.
-    projection = '{"image":{{json .Config.Image}},"user":{{json .Config.User}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"service":{{json (index .Config.Labels "com.docker.compose.service")}},"readonly":{{json .HostConfig.ReadonlyRootfs}},"privileged":{{json .HostConfig.Privileged}},"ports":{{json .HostConfig.PortBindings}},"cap_drop":{{json .HostConfig.CapDrop}},"security":{{json .HostConfig.SecurityOpt}},"pids":{{json .HostConfig.PidsLimit}},"memory":{{json .HostConfig.Memory}},"cpus":{{json .HostConfig.NanoCpus}},"tmpfs":{{json .HostConfig.Tmpfs}},"mounts":{{json .Mounts}},"networks":{{json .NetworkSettings.Networks}}}'
+    projection = '{"image":{{json .Config.Image}},"user":{{json (index .Config "User")}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"service":{{json (index .Config.Labels "com.docker.compose.service")}},"readonly":{{json .HostConfig.ReadonlyRootfs}},"privileged":{{json .HostConfig.Privileged}},"ports":{{json .HostConfig.PortBindings}},"cap_drop":{{json .HostConfig.CapDrop}},"security":{{json .HostConfig.SecurityOpt}},"pids":{{json .HostConfig.PidsLimit}},"memory":{{json .HostConfig.Memory}},"cpus":{{json .HostConfig.NanoCpus}},"tmpfs":{{json .HostConfig.Tmpfs}},"mounts":{{json .Mounts}},"networks":{{json .NetworkSettings.Networks}}}'
     result = {}
     for service in ("db", "redis", "runner", "api", "worker"):
         container = docker(*compose, "ps", "--quiet", service, timeout=5).decode().strip()

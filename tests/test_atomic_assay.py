@@ -69,6 +69,26 @@ def test_catalog_asset_has_a_distinct_bounded_data_profile(modules):
     assert content == Path("fixtures/attack/enterprise.json").read_bytes()
 
 
+def test_official_root_image_metadata_can_omit_config_user(modules, monkeypatch):
+    host = modules["atomic_assay"]
+
+    def query(*args, **kwargs):
+        assert '(index .Config "User")' in args[3]
+        assert ".Config.Env" not in args[3]
+        return json.dumps(
+            {
+                "id": "sha256:" + "a" * 64,
+                "descriptor": None,
+                "user": None,
+                "os": "linux",
+                "architecture": "amd64",
+            }
+        ).encode()
+
+    monkeypatch.setattr(host, "docker", query)
+    assert host.image("sha256:" + "a" * 64)["user"] is None
+
+
 @pytest.mark.parametrize("drift", [None, "asset", "runtime_copy"])
 def test_fresh_asset_checker_runs_in_a_bounded_process_and_checks_runtime_copies(
     modules, tmp_path, drift
