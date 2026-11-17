@@ -121,19 +121,24 @@ def probe(payload, *, provider_factory=AuditedReader, peer=None):
     optional = collect(
         context, policy.model_copy(update={"archives_index": "wazuh-archives-4.x-*"})
     )
-    if (
-        optional.complete
-        or optional.telemetry_available
-        or not optional.alerts_available
-        or not optional.error
-        or "Archives: permissão negada (HTTP 403)" not in optional.error
-    ):
-        raise ValueError("archive_read_denial_not_verified")
+    if not optional.alerts_available or [
+        digest(e.raw) for e in optional.events if e.kind == "alert"
+    ] != [REFERENCE["raw_sha256"]]:
+        raise ValueError("historical_alert_query_incomplete")
+    archive_calls = [
+        call for call in audit if call["path"].startswith("/wazuh-archives-4.x-*/_search")
+    ]
+    if len(archive_calls) != 1 or not optional.diagnostics:
+        raise ValueError("archive_query_not_recorded")
+    archive_response = archive_calls[0]
     cursors = {call["cursor_sha256"] for call in audit if "cursor_sha256" in call}
+    cursor_queries = [
+        call for call in audit if "_search?scroll=" in call["path"] and "cursor_sha256" in call
+    ]
     cleanup = [call for call in audit if call["method"] == "DELETE"]
     if (
         not cursors
-        or len(cleanup) != 3
+        or len(cleanup) != len(cursor_queries)
         or any(call.get("succeeded") is not True for call in cleanup)
         or any(not set(call["requested_cursor_sha256"]) <= cursors for call in cleanup)
     ):
@@ -147,7 +152,15 @@ def probe(payload, *, provider_factory=AuditedReader, peer=None):
         "reference": REFERENCE,
         "positive_complete": positive.complete,
         "negative_marker_complete_empty": True,
-        "archives": {"available": False, "http_status": 403, "reason": optional.error},
+        "archives": {
+            "available": optional.telemetry_available,
+            "http_status": archive_response["http_status"],
+            "shards": archive_response.get("shards"),
+            "collection_complete": optional.complete,
+            "reason": optional.error,
+            "diagnostics": optional.diagnostics,
+            "correlated_documents": sum(e.kind == "telemetry" for e in optional.events),
+        },
         "diagnostics": positive.diagnostics,
         "requests": audit,
         "scroll_cleanup_verified": True,
@@ -170,7 +183,7 @@ def main():
             "historical_alert_query_incomplete",
             "historical_alert_identity_or_content_changed",
             "negative_marker_query_not_verified",
-            "archive_read_denial_not_verified",
+            "archive_query_not_recorded",
             "scroll_cleanup_not_verified",
             "probe_input_too_large",
             "indexer_tls_readiness_timeout",

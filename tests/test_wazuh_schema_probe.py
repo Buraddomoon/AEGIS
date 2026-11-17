@@ -41,6 +41,12 @@ def execute(fault=None):
         elif path.startswith("/.opendistro_security"):
             return httpx.Response(403, json={})
         elif path.startswith("/wazuh-archives-"):
+            if fault == "archive_zero_shards":
+                page = response(cursor="empty-archive-cursor")
+                page["_shards"] = {"total": 0, "successful": 0, "failed": 0}
+                return httpx.Response(200, json=page)
+            if fault == "archive_empty":
+                return httpx.Response(200, json=response())
             return httpx.Response(
                 404 if fault == "archive_404" else 403, json={"error": "private-data"}
             )
@@ -102,10 +108,30 @@ def test_probe_verifies_original_identity_complete_scroll_and_redacted_diagnosti
     assert not any("/_doc" in request.url.path or "/_bulk" in request.url.path for request in calls)
 
 
-@pytest.mark.parametrize("fault", ["content", "id", "shards", "cleanup", "archive_404"])
+@pytest.mark.parametrize("fault", ["content", "id", "shards", "cleanup"])
 def test_probe_refuses_partial_or_changed_source_and_unverified_cleanup(fault):
     with pytest.raises(ValueError):
         execute(fault)
+
+
+@pytest.mark.parametrize(
+    "fault,status,available",
+    [
+        ("archive_404", 404, False),
+        ("archive_zero_shards", 200, False),
+        ("archive_empty", 200, True),
+    ],
+)
+def test_optional_archive_response_is_observed_without_assuming_403(fault, status, available):
+    result, _ = execute(fault)
+    assert result["positive_complete"] and result["negative_marker_complete_empty"]
+    archive = result["archives"]
+    assert archive["http_status"] == status and archive["available"] == available
+    assert archive["collection_complete"] == available
+    assert archive["correlated_documents"] == 0
+    assert archive["diagnostics"]
+    if fault == "archive_zero_shards":
+        assert archive["shards"]["total"] == 0 and "consulta incompleta" in archive["reason"]
 
 
 def test_credentials_are_validated_before_network():

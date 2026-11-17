@@ -31,8 +31,9 @@ credenciais, com CA/SNI/IP verificados. Saída final vem de `docker logs` do ID
 original: `docker start -ai` pode retornar sem os bytes de stdout nesse runtime.
 Logs privados são capturados antes de remover containers, inclusive em falha.
 Consultas: identidade/ACL já fixadas pelo probe TLS; Search/Scroll do alerta
-original; marcador diferente sem hits; leitura de archives com403 esperado pelo
-escopo do principal. Não habilitar archives ou ingestão. Preservar `_id`, `_index`,
+original; marcador diferente sem hits; leitura opcional de archives com registro
+do status/shards/disponibilidade efetivos, sem supor403 ou ausência de índice.
+Resposta200 com zero shards continua incompleta. Não habilitar archives ou ingestão. Preservar `_id`, `_index`,
 `_source`, timestamp/timezone e conferir total/shards/cursor/DELETE de cleanup.
 Sem requisição de escrita de documento ou teste destrutivo de ACL.
 
