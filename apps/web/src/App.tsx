@@ -208,7 +208,7 @@ export default function App() {
             ) : page === 'attack' ? (
               <Catalog />
             ) : page === 'tests' ? (
-              <TestLibrary />
+              <TestLibrary user={user.data} />
             ) : page === 'campaigns' ? (
               <Campaigns user={user.data} />
             ) : page === 'executions' && route.split('/')[1] ? (

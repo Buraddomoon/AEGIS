@@ -2201,3 +2201,8 @@ td > small {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+.atomic-identifiers dd,
+.test-card code {
+  overflow-wrap: anywhere;
+}

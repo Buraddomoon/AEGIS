@@ -9,9 +9,10 @@ import {
   Search,
   ShieldCheck,
 } from 'lucide-react'
+import { AtomicCatalog } from './AtomicCatalog'
 import { AttackCatalogStatus, lifecycleLabels, loadTechniques } from './AttackCatalog'
 import { Badge, date, Empty, Failure, Go, Loading, Modal, PageHeading, Panel, useData } from './lib'
-import type { Page, RuleTestLink, Technique, Test } from './types'
+import type { Page, RuleTestLink, Technique, Test, User } from './types'
 
 const tactics: Record<string, string> = {
   reconnaissance: 'Reconhecimento',
@@ -435,7 +436,33 @@ function TechniqueDetails({
   )
 }
 
-export function TestLibrary() {
+export function TestLibrary({ user }: { user: User }) {
+  const [tab, setTab] = useState('allowlist')
+  return (
+    <>
+      <PageHeading
+        eyebrow="SIMULAÇÕES E METADADOS"
+        title="Biblioteca de testes"
+        description="Consulte a allowlist e o catálogo Atomic. A importação de metadados mantém a execução desabilitada."
+      />
+      <div className="toolbar" role="group" aria-label="Tipo de biblioteca">
+        <button
+          className="button"
+          aria-pressed={tab === 'allowlist'}
+          onClick={() => setTab('allowlist')}
+        >
+          Simulações da allowlist
+        </button>
+        <button className="button" aria-pressed={tab === 'atomic'} onClick={() => setTab('atomic')}>
+          Metadados Atomic
+        </button>
+      </div>
+      {tab === 'atomic' ? <AtomicCatalog user={user} /> : <AllowlistLibrary />}
+    </>
+  )
+}
+
+function AllowlistLibrary() {
   const data = useData<Page<Test>>('/tests'),
     [query, setQuery] = useState('')
   if (data.isLoading) return <Loading />
@@ -445,11 +472,6 @@ export function TestLibrary() {
   )
   return (
     <>
-      <PageHeading
-        eyebrow="SIMULAÇÕES CONTROLADAS"
-        title="Biblioteca de testes"
-        description="Simulações da allowlist. A execução depende do laboratório autorizado e da validade da referência ATT&CK."
-      />
       <div className="toolbar">
         <div className="search">
           <Search size={17} />

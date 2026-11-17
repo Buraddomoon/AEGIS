@@ -15,6 +15,7 @@ const page = await browser.newPage(),
 page.on('pageerror', (e) => errors.push(e.message))
 page.setDefaultTimeout(20000)
 await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
+let screenshotCount = 0
 const screenshotDirectory = process.env.AEGIS_E2E_SCREENSHOTS ?? '../../docs/images'
 await mkdir(screenshotDirectory, { recursive: true })
 async function button(text, selector = 'button') {
@@ -51,6 +52,7 @@ async function screenshot(name) {
   const dismiss = await page.$('button[aria-label="Dispensar mensagem"]')
   if (dismiss) await dismiss.click()
   await page.screenshot({ path: `${screenshotDirectory}/${name}.png`, fullPage: true })
+  screenshotCount += 1
 }
 async function exportPdf(label, path, filename) {
   const waiting = page.waitForResponse(
@@ -111,6 +113,112 @@ try {
   await page.type('input[autocomplete="current-password"]', password)
   await button('Entrar no workspace')
   await text('Visão geral')
+  // Atomic uses official source bytes only as inert data in this disposable schema.
+  const atomicFixture = JSON.parse(await readFile('../../fixtures/atomic/T1059.004.json', 'utf8'))
+  const atomicBefore = await page.evaluate(async () => ({
+    tests: await (await fetch('/api/v1/tests')).json(),
+    runs: await (await fetch('/api/v1/executions')).json(),
+  }))
+  const atomicMutations = []
+  const trackAtomic = (request) => {
+    if (request.method() === 'POST') atomicMutations.push(new URL(request.url()).pathname)
+  }
+  page.on('request', trackAtomic)
+  await navigate('tests')
+  await button('Metadados Atomic')
+  await text('Nenhum metadado Atomic encontrado')
+  await button('Importar metadados Atomic')
+  await page
+    .locator('input[aria-label="Commit oficial informado"]')
+    .fill('3c62c9701d1009b991ad0224606c762fa02ba513')
+  await page
+    .locator('input[aria-label="SHA256 do YAML"]')
+    .fill('2a26f69f3fdcf6f3f2135d4405a184cfd365ed662c42f71fd4a1aa978b018021')
+  // Native setter + input/change models a paste without Puppeteer textarea fill
+  // updating React's value tracker before the input event in Firefox.
+  await page.$eval(
+    'textarea[aria-label="YAML Atomic"]',
+    (el, content) => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(el, content)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+    },
+    atomicFixture.content,
+  )
+  const atomicForm = await page.evaluate(async () => {
+    const value = document.querySelector('textarea[aria-label="YAML Atomic"]').value
+    const bytes = new TextEncoder().encode(value)
+    return {
+      length: bytes.length,
+      hash: [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+        .map((v) => v.toString(16).padStart(2, '0'))
+        .join(''),
+      commit: document.querySelector('input[aria-label="Commit oficial informado"]').value,
+      declared: document.querySelector('input[aria-label="SHA256 do YAML"]').value,
+    }
+  })
+  assert.equal(
+    atomicForm.hash,
+    '2a26f69f3fdcf6f3f2135d4405a184cfd365ed662c42f71fd4a1aa978b018021',
+    JSON.stringify(atomicForm),
+  )
+  const importedAtomic = page.waitForResponse(
+    (r) => r.url().endsWith('/catalog/atomic/imports') && r.request().method() === 'POST',
+  )
+  await button('Importar somente metadados', 'dialog button')
+  const importResponse = await importedAtomic
+  assert.equal(importResponse.status(), 201, await importResponse.text())
+  await page.waitForFunction(() => !document.querySelector('dialog[open]'))
+  await text('17 metadados')
+  const atomicEntries = await page.evaluate(async () =>
+    (await fetch('/api/v1/catalog/atomic')).json(),
+  )
+  assert.equal(atomicEntries.total, 17)
+  assert(
+    atomicEntries.items.every(
+      (item) => !item.executable && !item.approved && !item.available_for_new_scope,
+    ),
+  )
+  const atomicEntry = atomicEntries.items[0]
+  await page.locator('input[aria-label="Pesquisar Atomic"]').fill(atomicEntry.guid)
+  await page.locator('input[aria-label="Plataforma Atomic"]').fill(atomicEntry.platforms[0])
+  await button('Filtrar Atomic')
+  await text('1 metadados')
+  await button('Inspecionar ' + atomicEntry.name)
+  await text(atomicEntry.guid)
+  await text('2a26f69f3fdcf6f3f2135d4405a184cfd365ed662c42f71fd4a1aa978b018021')
+  await page.type(
+    'textarea[aria-label="Justificativa da revisão"]',
+    'Revisão E2E de metadado; nenhuma autorização de execução.',
+  )
+  const reviewedAtomic = page.waitForResponse(
+    (r) => r.url().endsWith('/reviews') && r.request().method() === 'POST',
+  )
+  await button('Registrar revisão de metadado', 'dialog button')
+  assert.equal((await reviewedAtomic).status(), 201)
+  await page.waitForFunction(() =>
+    document.querySelector('dialog')?.textContent.includes('Metadado revisado'),
+  )
+  await page.$eval('dialog', (el) => {
+    el.scrollTop = 0
+  })
+  await screenshot('atomic-metadata')
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
+  await page.$eval('dialog', (el) => {
+    el.scrollTop = 0
+  })
+  await screenshot('atomic-metadata-mobile')
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+  await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
+  await page.click('dialog button[aria-label="Fechar"]')
+  const atomicAfter = await page.evaluate(async () => ({
+    tests: await (await fetch('/api/v1/tests')).json(),
+    runs: await (await fetch('/api/v1/executions')).json(),
+  }))
+  assert.deepEqual(atomicAfter, atomicBefore)
+  page.off('request', trackAtomic)
+  assert.equal(atomicMutations.length, 2)
+  assert(atomicMutations.every((path) => path.startsWith('/api/v1/catalog/atomic/')))
   await navigate('attack')
   await text('706 referências no estado selecionado')
   await text('Snapshot inicial distribuído')
@@ -539,11 +647,17 @@ level: informational
   console.log(
     JSON.stringify({
       result: 'PASS',
-      flow: 'login → catalog provenance → immutable catalog history → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → two automatic runs → frozen baseline and comparison → automatic PDF → mobile report layout → Sigma static analysis → review → version change → historical analysis → retirement → historical scope comparison → frozen automatic snapshot unchanged → blocked backend diagnostics → candidate marker field mapping',
+      flow: 'login → offline Atomic metadata import and review without execution → catalog provenance → immutable catalog history → campaign → approval → worker → evidence → metrics → export → repeat → compare → approved schedule → two automatic runs → frozen baseline and comparison → automatic PDF → mobile report layout → Sigma static analysis → review → version change → historical analysis → retirement → historical scope comparison → frozen automatic snapshot unchanged → blocked backend diagnostics → candidate marker field mapping',
       runs: 5,
       tests: 20,
       browser: process.env.AEGIS_BROWSER ?? 'firefox',
-      screenshots: 14,
+      screenshots: screenshotCount,
+      atomicMetadata: {
+        imported: atomicEntries.total,
+        reviewed: 1,
+        executed: atomicAfter.runs.total - atomicBefore.runs.total,
+        allowlistUnchanged: true,
+      },
       pdfExports: 4,
       automaticReports: 2,
       browserErrors: errors.length,

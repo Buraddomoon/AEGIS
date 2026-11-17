@@ -56,3 +56,18 @@ O gate de prontidão Linux permanece deliberadamente fixado em b7: recusa o novo
 schema Atomic até uma revisão operacional específica. Fixtures exercitam o b7
 real e restauram o head no final; não renomeiam a versão de um schema diferente.
 Esta entrega offline não amplia a compatibilidade/autorização dos Labs originais.
+
+## Biblioteca — #77
+
+Em **Biblioteca de testes → Metadados Atomic**, a UI consulta a API, pesquisa
+nome/GUID/técnica/commit, filtra plataforma/revisão e pagina20entradas. Todas as
+versões importadas continuam visíveis. Inspeção mostra procedência declarada,
+associação ATT&CK local, elevação, inputs, dependências, cleanup e últimas20
+revisões com denominador explícito. Descrições são texto, nunca HTML/Markdown.
+Estado vazio, falhas e atualização são explícitos; erro de refetch oculta dados
+cacheados. Somente administrador vê importação e registro de revisão.
+
+O formulário exige commit, SHA256 e YAML informado manualmente, verificando o
+limite UTF-8 antes do POST. A revisão exige justificativa e sequência vigente.
+Não existe ação Atomic para executar, instalar, baixar ou criar campanha.
+As simulações da allowlist são consultadas separadamente pela API existente.
