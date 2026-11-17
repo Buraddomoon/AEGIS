@@ -19,7 +19,7 @@ import httpx
 
 from aegis.config import settings
 from aegis.domain.contracts import Collection, Event, ExecutionContext
-from aegis.domain.validation import correlates
+from aegis.domain.validation import correlates, digest
 from aegis.integrations.wazuh_config import WazuhCollectionConfig
 
 
@@ -228,7 +228,7 @@ class WazuhIndexerProvider:
             "query": {"bool": {"filter": filters}},
         }
         scroll_id, complete = None, True
-        events, total, seen = [], None, set()
+        events, total, seen, conflicts = {}, None, {}, set()
         try:
             response = self._request(
                 "POST",
@@ -236,13 +236,21 @@ class WazuhIndexerProvider:
                 query,
             )
             for _ in range(25):
+                if "_scroll_id" in response and (
+                    not isinstance(response["_scroll_id"], str)
+                    or not 1 <= len(response["_scroll_id"]) <= 65536
+                ):
+                    raise ValueError("Cursor de paginação inválido.")
                 scroll_id = response.get("_scroll_id", scroll_id)
                 shards = response.get("_shards", {})
                 if (
                     response.get("timed_out") is not False
                     or response.get("terminated_early")
-                    or not isinstance(shards.get("total"), int)
+                    or not isinstance(shards, dict)
+                    or type(shards.get("total")) is not int
                     or shards["total"] <= 0
+                    or type(shards.get("failed")) is not int
+                    or type(shards.get("successful")) is not int
                     or shards.get("failed") != 0
                     or shards.get("successful") != shards["total"]
                 ):
@@ -251,25 +259,32 @@ class WazuhIndexerProvider:
                 if not isinstance(hits, list) or len(hits) > 200:
                     raise ValueError("Lista de hits inválida.")
                 reported = response["hits"].get("total")
+                count = None
+                if (
+                    isinstance(reported, dict)
+                    and reported.get("relation") == "eq"
+                    and type(reported.get("value")) is int
+                ):
+                    count = reported["value"]
+                elif type(reported) is int:
+                    count = reported
+                if count is None or count < 0 or (total is not None and count != total):
+                    complete = False
                 if total is None:
-                    if (
-                        isinstance(reported, dict)
-                        and reported.get("relation") == "eq"
-                        and isinstance(reported.get("value"), int)
-                    ):
-                        total = reported["value"]
-                    elif isinstance(reported, int) and not isinstance(reported, bool):
-                        total = reported
-                    else:
-                        complete = False
+                    total = count
                 for hit in hits:
                     try:
                         if not fnmatchcase(hit["_index"], index):
                             raise ValueError("Índice devolvido fora do escopo.")
                         event = self.normalize(hit, kind, policy)
-                        seen.add((event.source, event.source_id))
-                        if correlates(context, event, skew, ingestion):
-                            events.append(event)
+                        key, fingerprint = (event.source, event.source_id), digest(event.raw)
+                        if key in seen and seen[key] != fingerprint:
+                            conflicts.add(key)
+                            events.pop(key, None)
+                            complete = False
+                        seen[key] = fingerprint
+                        if correlates(context, event, skew, ingestion) and key not in conflicts:
+                            events[key] = event
                         else:
                             complete = False  # Source failed the exact scope, not a clean negative.
                     except (KeyError, TypeError, ValueError, AttributeError):
@@ -286,7 +301,7 @@ class WazuhIndexerProvider:
                 complete = False
             if total is None or len(seen) != total:
                 complete = False
-            return events, complete
+            return list(events.values()), complete
         finally:
             if scroll_id:
                 try:

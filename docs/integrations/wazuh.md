@@ -41,3 +41,40 @@ Polling aguarda ingestão e exige espera que cubra a janela temporal para uma co
 [Instalação, política, observador e XML](../../labs/wazuh/README.md). Observador não inicia automaticamente; no ensaio teve acesso somente leitura ao workspace tmpfs do runner, log 0600 e agente root somente no logfileRO. A regra de instrumentação foi validada no engine real. Regras padrão que dependem de listas CDB omitidas pelo config mínimo emitiram avisos; não foi avaliada a cobertura desse ruleset. Archives precisam de configuração/indexação próprias; não os habilitamos automaticamente.
 
 Fontes: [Wazuh Indexer](https://documentation.wazuh.com/current/user-manual/indexer-api/reference.html), [alertas](https://documentation.wazuh.com/current/user-manual/manager/alert-management.html), [archives](https://documentation.wazuh.com/current/user-manual/manager/event-logging.html), [SNI HTTPX](https://www.python-httpx.org/advanced/extensions/#sni_hostname), [HTTPX async](https://www.python-httpx.org/async/), [timeout Python](https://docs.python.org/3.13/library/asyncio-task.html#asyncio.timeout). Sem novas dependências; locks existentes preservados.
+
+## Perfis explícitos — #61
+
+Seleção por `schema_id` da política; não há autodetecção por resposta `/`, nem
+inferência de compatibilidade de outras versões. O contrato legado
+`aegis-json/1` permanece configurável e é o default para preservar políticas e
+hashes existentes. Não é uma promessa de suporte universal ao Wazuh4.x.
+
+| schema_id | Índices alertas / archives opcional | Campo temporal | Evidência desta implementação |
+| --- | --- | --- | --- |
+| `aegis-json/1` | Configurados pela política | `timestamp` ou `@timestamp` explícito | Contrato legado; ensaios históricos limitados às políticas das respectivas runs |
+| `wazuh-4.14.9/1` | `wazuh-alerts-4.x-*` / `wazuh-archives-4.x-*` | `timestamp` | Fixture local; sem novo ensaio/implantação |
+| `wazuh-4.14.9-at-timestamp/1` | Mesmos padrões | `@timestamp` | Fixture local; sem ensaio nativo/implantação |
+
+Nos dois perfis novos, `data.aegis` é a extensão de instrumentação própria,
+não um campo obrigatório de todo evento Wazuh. Lab/ativo/agente/regra e janelas
+continuam explícitos. `archives_index=null` desabilita a consulta de archives.
+Perfil desconhecido, índices/prefixo divergentes ou campo temporal incompatível
+falham na leitura da política. Para o segundo perfil, fornecer também
+`"timestamp_field": "@timestamp"`; não há fallback entre campos.
+
+Base oficial consultada em17/11/2026, fixada em **v4.14.9**:
+
+- [Template de índices](https://github.com/wazuh/wazuh/blob/v4.14.9/extensions/elasticsearch/7.x/wazuh-template.json): padrões de alertas/archives.
+- [Pipeline de alertas](https://github.com/wazuh/wazuh/blob/v4.14.9/extensions/filebeat/7.x/wazuh-module/alerts/ingest/pipeline.json) e [pipeline de archives](https://github.com/wazuh/wazuh/blob/v4.14.9/extensions/filebeat/7.x/wazuh-module/archives/ingest/pipeline.json): ISO8601 de `timestamp` para `@timestamp`. Essa transformação fundamenta os dois contratos; não comprova ingestão real de archives.
+- [Scroll OpenSearch](https://docs.opensearch.org/latest/api-reference/search-apis/scroll/): cursor mais recente e término com página vazia. O adaptador exige total exato estável, shards completos e limites locais; booleanos não valem como contagens. Mudança de conteúdo de um mesmo `_index`/`_id` exclui o documento conflitante da evidência.
+
+`fixtures/wazuh-4.14.9-{alert,archive}.json` são documentos escritos manualmente,
+com identidades fictícias e offsets explícitos, não capturas de laboratório.
+Os testes verificam consulta, normalização, preservação integral de origem e
+recusas por drift/tempo/paginação. `synthetic=false` nos eventos retornados pelo
+adaptador representa o contrato do conector real; executar fixture não produz
+evidência defensiva nativa nem transforma o Demo em real.
+
+Selecionar um perfil novo altera o hash de escopo e exige nova revisão/binding
+antes de qualquer operação futura. Nenhum arquivo de política implantada,
+approval, run ou evidência histórica é atualizado automaticamente.

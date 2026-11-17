@@ -1,0 +1,28 @@
+{
+  "_id": "contract-original-alert",
+  "_index": "wazuh-alerts-4.x-2026.11.17",
+  "_source": {
+    "timestamp": "2026-11-17T09:00:00.123-0300",
+    "@timestamp": "2026-11-17T12:00:00.123Z",
+    "agent": {
+      "id": "007",
+      "name": "anonymized-contract-agent"
+    },
+    "manager": {
+      "name": "anonymized-contract-manager"
+    },
+    "data": {
+      "aegis": {
+        "laboratory_id": "deef2f0d-142e-4bc3-9762-2527b4dc0001",
+        "execution_id": "fixture-execution",
+        "marker": "aegis-fixture-marker",
+        "behavior": "temporary-marker"
+      }
+    },
+    "rule": {
+      "id": "100200",
+      "level": 3,
+      "description": "Contract fixture only"
+    }
+  }
+}

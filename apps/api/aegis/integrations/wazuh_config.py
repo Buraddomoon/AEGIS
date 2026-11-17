@@ -18,7 +18,9 @@ class WazuhCollectionConfig(BaseModel):
     asset_id: UUID
     agent_id: str = Field(pattern=r"^[0-9]{3,12}$")
     expected_rule: str = Field(pattern=r"^[1-9][0-9]{0,9}$")
-    schema_id: Literal["aegis-json/1"] = "aegis-json/1"
+    schema_id: Literal["aegis-json/1", "wazuh-4.14.9/1", "wazuh-4.14.9-at-timestamp/1"] = (
+        "aegis-json/1"
+    )
     alerts_index: str = Field(
         default="wazuh-alerts-4.x-*", pattern=r"^[a-z0-9][a-z0-9._*-]{0,150}$"
     )
@@ -42,6 +44,17 @@ class WazuhCollectionConfig(BaseModel):
 
     @model_validator(mode="after")
     def limits(self):
+        if self.schema_id != "aegis-json/1":
+            timestamp = (
+                "@timestamp" if self.schema_id == "wazuh-4.14.9-at-timestamp/1" else "timestamp"
+            )
+            if (
+                self.alerts_index != "wazuh-alerts-4.x-*"
+                or self.archives_index not in (None, "wazuh-archives-4.x-*")
+                or self.timestamp_field != timestamp
+                or self.identity_prefix != "data.aegis"
+            ):
+                raise ValueError("Campos de coleta incompatíveis com o perfil Wazuh selecionado.")
         if self.ingestion_wait_seconds < self.ingestion_window_seconds:
             raise ValueError(
                 "Espera de ingestão deve cobrir a janela temporal antes de concluir ausência de alerta."
