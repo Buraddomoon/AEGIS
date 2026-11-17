@@ -150,3 +150,10 @@ explícita de retomada, #63 consultou o Indexer real em
 17/11, perfil `wazuh-4.14.9/1`, alerta original preservado e archives404; CLEANED.
 #61/#62/#63 atendidas, sem nova campanha ou implantação permanente. Conferir
 provas/limites/CI no checkpoint; pacotes consumidos. Parar após esse aceite.
+
+Entrega #13: [checkpoint do catálogo Atomic offline](atomic-catalog-checkpoint.md).
+#75/#76/#77 implementadas e demonstradas sem execução Atomic.83Python/98React,
+lint/build e Firefox real; Demo/Labs originais preservados, sem implantação.
+A #13 permanece aberta pelo bloqueio externo da auditoria npm/picomatch;
+conferir CI/provas/limites no checkpoint e comentário final. Não enfraquecer gates,
+iniciar laboratório ou avançar para outra entrega a partir deste estado.
