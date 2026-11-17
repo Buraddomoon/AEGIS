@@ -143,3 +143,8 @@ imagem temporária testada e Demo anterior ativo são distintos. Visibilidade
 GitHub PUBLIC diverge da política privada; sem alteração de visibilidade nesta
 entrega. Ver provas/limites, comentários finais e sincronização. Parar após esse
 aceite; próxima issue é escolha explícita do usuário.
+
+Entrega #8: [checkpoint dos perfis Wazuh](wazuh-schema-checkpoint.md).
+#61/#62 implementadas e verificadas por contrato local. #63 e pai pendentes de
+autorização/infraestrutura externa específicas; perfis novos sem ensaio nativo
+ou implantação. Não iniciar laboratório a partir dessa preparação.
