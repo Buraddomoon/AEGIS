@@ -123,9 +123,52 @@ def test_startup_wait_retries_only_connection_readiness(monkeypatch):
         return {"certificate_der_sha256": "a" * 64}
 
     monkeypatch.setattr(probe, "peer_identity", peer)
+    monkeypatch.setattr(probe, "readiness_status", lambda: 401)
     monkeypatch.setattr(probe.time, "sleep", lambda _: None)
     assert probe.wait_for_peer() == {"certificate_der_sha256": "a" * 64}
     assert len(calls) == 2
+
+
+def test_startup_waits_for_http_after_tls_without_sending_credentials(monkeypatch):
+    statuses = iter([503, 401])
+    monkeypatch.setattr(probe, "peer_identity", lambda: {"certificate_der_sha256": "a" * 64})
+    monkeypatch.setattr(probe, "readiness_status", lambda: next(statuses))
+    monkeypatch.setattr(probe.time, "sleep", lambda _: None)
+    assert probe.wait_for_peer() == {"certificate_der_sha256": "a" * 64}
+
+
+def test_startup_refuses_unexpected_http_status(monkeypatch):
+    monkeypatch.setattr(probe, "peer_identity", lambda: {})
+    monkeypatch.setattr(probe, "readiness_status", lambda: 302)
+    with pytest.raises(ValueError, match="http_readiness_unexpected"):
+        probe.wait_for_peer()
+
+
+def test_readiness_is_a_fixed_verified_request_without_authorization(monkeypatch):
+    real_client = httpx.Client
+    real_context = ssl.create_default_context
+    calls = []
+
+    def context(*, cafile):
+        assert cafile == "/run/secrets/wazuh_ca"
+        return real_context()
+
+    def handle(request):
+        calls.append(request)
+        assert request.url.host == "192.168.253.18" and request.url.path == "/"
+        assert request.headers["host"] == "wazuh.indexer:9200"
+        assert request.extensions["sni_hostname"] == "wazuh.indexer"
+        assert "authorization" not in request.headers
+        return httpx.Response(401)
+
+    def client(**kwargs):
+        assert kwargs["trust_env"] is False and kwargs["follow_redirects"] is False
+        assert kwargs["verify"].check_hostname
+        return real_client(transport=httpx.MockTransport(handle), **kwargs)
+
+    monkeypatch.setattr(probe.ssl, "create_default_context", context)
+    monkeypatch.setattr(probe.httpx, "Client", client)
+    assert probe.readiness_status() == 401 and len(calls) == 1
 
 
 def test_startup_wait_never_retries_certificate_failure(monkeypatch):

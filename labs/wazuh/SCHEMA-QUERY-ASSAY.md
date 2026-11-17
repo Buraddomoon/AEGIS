@@ -26,6 +26,10 @@ escrever estado/logs normais. Demais oito volumes sem consumidores.
 Leitor somente `aegis_reader`, senha em uma linha JSON terminada por newline no
 stdin; credenciais transmitidas ao Indexer após verificação CA/SNI/fingerprint.
 Compose mantém `StdinOnce=false`; o leitor não aguarda EOF da conexão de attach.
+Prontidão espera TLS e HTTP200/401 (HTTP503 transitório), até90s; GET raiz sem
+credenciais, com CA/SNI/IP verificados. Saída final vem de `docker logs` do ID
+original: `docker start -ai` pode retornar sem os bytes de stdout nesse runtime.
+Logs privados são capturados antes de remover containers, inclusive em falha.
 Consultas: identidade/ACL já fixadas pelo probe TLS; Search/Scroll do alerta
 original; marcador diferente sem hits; leitura de archives com403 esperado pelo
 escopo do principal. Não habilitar archives ou ingestão. Preservar `_id`, `_index`,

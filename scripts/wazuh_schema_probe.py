@@ -5,6 +5,7 @@ terminated JSON object on stdin. No Docker/lifecycle operations or free destinat
 """
 
 import json
+import ssl
 import sys
 import time
 from dataclasses import replace
@@ -15,7 +16,7 @@ from aegis.domain.contracts import ExecutionContext
 from aegis.domain.validation import digest
 from aegis.integrations.wazuh import WazuhIndexerProvider
 from aegis.integrations.wazuh_config import WazuhCollectionConfig
-from wazuh_tls_probe import CA, IP, URL, peer_identity, unique_fields
+from wazuh_tls_probe import CA, HOSTNAME, IP, URL, peer_identity, unique_fields
 from wazuh_tls_probe import probe as tls_probe
 
 REFERENCE = {
@@ -164,11 +165,33 @@ def main():
         if len(raw) > 4096:
             raise ValueError("probe_input_too_large")
         result = probe(json.loads(raw, object_pairs_hook=unique_fields), peer=wait_for_peer)
-    except (OSError, ValueError, TypeError, KeyError, TimeoutError, httpx.HTTPError):
+    except (OSError, ValueError, TypeError, KeyError, TimeoutError, httpx.HTTPError) as error:
+        public_codes = {
+            "historical_alert_query_incomplete",
+            "historical_alert_identity_or_content_changed",
+            "negative_marker_query_not_verified",
+            "archive_read_denial_not_verified",
+            "scroll_cleanup_not_verified",
+            "probe_input_too_large",
+            "indexer_tls_readiness_timeout",
+            "invalid_probe_scope",
+            "tls_peer_identity_mismatch",
+            "indexer_version_unavailable",
+            "reader_principal_or_role_mismatch",
+            "reader_security_api_access_not_denied",
+            "alert_index_read_incomplete",
+            "security_index_denial_unconfirmed",
+            "security_index_read_was_not_denied",
+            "indexer_http_readiness_unexpected",
+        }
         print(
             json.dumps(
                 {
                     "status": "inconclusive",
+                    "error_type": type(error).__name__,
+                    "error_code": str(error)
+                    if str(error) in public_codes
+                    else "probe_not_verified",
                     "reason": "Consulta nativa não verificada; preservar artefatos e executar cleanup.",
                 }
             )
@@ -179,15 +202,53 @@ def main():
 
 
 def wait_for_peer():
-    # Startup readiness only: bounded TLS handshakes, no credentials or effects.
+    # Handshake can precede security-index initialization. Read readiness without
+    # credentials before the authenticated TLS/ACL probe, keeping the same budget.
     deadline = time.monotonic() + 90
     while True:
         try:
-            return peer_identity()
-        except (ConnectionRefusedError, ConnectionResetError, TimeoutError):
-            if time.monotonic() >= deadline:
-                raise TimeoutError("indexer_tls_readiness_timeout") from None
-            time.sleep(1)
+            observed = peer_identity()
+            status = readiness_status()
+            print(
+                json.dumps({"stage": "http_readiness", "status": status}),
+                file=sys.stderr,
+                flush=True,
+            )
+            if status in (200, 401):
+                return observed
+            if status != 503:
+                raise ValueError("indexer_http_readiness_unexpected")
+        except (
+            ConnectionRefusedError,
+            ConnectionResetError,
+            TimeoutError,
+            ssl.SSLEOFError,
+            httpx.TimeoutException,
+        ):
+            pass
+        if time.monotonic() >= deadline:
+            raise TimeoutError("indexer_tls_readiness_timeout") from None
+        time.sleep(1)
+
+
+def readiness_status():
+    with httpx.Client(
+        verify=ssl.create_default_context(cafile=CA),
+        timeout=3,
+        trust_env=False,
+        follow_redirects=False,
+    ) as client:
+        request = client.build_request(
+            "GET",
+            f"https://{IP}:9200/",
+            headers={"Host": HOSTNAME + ":9200"},
+            extensions={"sni_hostname": HOSTNAME},
+        )
+        response = client.send(request, stream=True)
+        try:
+            return response.status_code
+        finally:
+            response.close()
 
 
 if __name__ == "__main__":
