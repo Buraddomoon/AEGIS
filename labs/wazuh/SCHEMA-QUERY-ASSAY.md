@@ -23,7 +23,9 @@ Esse perfil de dois componentes não altera o piso padrão8GiB da stack completa
 Somente volume `aegis-wazuh-lab_indexer-data`, externo/nocopy; inicialização pode
 escrever estado/logs normais. Demais oito volumes sem consumidores.
 
-Leitor somente `aegis_reader`, senha em stdin após verificação CA/SNI/fingerprint.
+Leitor somente `aegis_reader`, senha em uma linha JSON terminada por newline no
+stdin; credenciais transmitidas ao Indexer após verificação CA/SNI/fingerprint.
+Compose mantém `StdinOnce=false`; o leitor não aguarda EOF da conexão de attach.
 Consultas: identidade/ACL já fixadas pelo probe TLS; Search/Scroll do alerta
 original; marcador diferente sem hits; leitura de archives com403 esperado pelo
 escopo do principal. Não habilitar archives ou ingestão. Preservar `_id`, `_index`,
@@ -32,8 +34,10 @@ Sem requisição de escrita de documento ou teste destrutivo de ACL.
 
 Operador host-only novo registra manifesto/hash, autorização e INTENT duráveis
 antes dos efeitos, verifica runtime e faz cleanup apenas de seus IDs/labels.
-Máximo15min, sem retry de startup ou leitor após resposta ambígua. Falha exige
-registrar/reconciliar e encerrar recursos; não repetir pacote para obter verde.
+Máximo15min por tentativa. Falha exige registrar/reconciliar e encerrar recursos;
+não reutilizar pacote para obter verde. Uma continuação de consulta idempotente
+exige diagnóstico, confirmação de cleanup e pacote/intent novos sob a autorização
+atual da #63. Isso não autoriza replay de execução, marcador ou campanha.
 Conservar volumes/configuração/PKI/intents antigos e recursos de terceiros.
 
 Sem manager, agente, runner, observador, banco/API/worker da plataforma, marcador,

@@ -5,6 +5,7 @@ import json
 import ssl
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -145,3 +146,45 @@ def test_startup_wait_has_a_deadline(monkeypatch):
     )
     with pytest.raises(TimeoutError, match="readiness_timeout"):
         probe.wait_for_peer()
+
+
+def test_cli_consumes_one_bounded_line_without_waiting_for_compose_stdin_eof(monkeypatch, capsys):
+    payload = {
+        "username": "aegis_reader",
+        "password": "private-line-secret",
+        "expected_certificate_der_sha256": "a" * 64,
+    }
+
+    class OpenPipe:
+        def readline(self, limit):
+            assert limit == 4097
+            return json.dumps(payload).encode() + b"\n"
+
+        def read(self, limit):
+            pytest.fail("An open Compose pipe has no EOF; read() would block")
+
+    monkeypatch.setattr(probe.sys, "stdin", SimpleNamespace(buffer=OpenPipe()))
+
+    def verified(value, **kwargs):
+        assert value == payload and kwargs["peer"] is probe.wait_for_peer
+        return {"status": "fixture-only"}
+
+    monkeypatch.setattr(probe, "probe", verified)
+    assert probe.main() == 0
+    output = capsys.readouterr().out
+    assert json.loads(output) == {"status": "fixture-only"}
+    assert "private-line-secret" not in output
+
+
+@pytest.mark.parametrize("raw", [b"x" * 4097, b'{"username":"one","username":"two"}\n'])
+def test_cli_rejects_oversized_or_duplicate_input_before_network(monkeypatch, capsys, raw):
+    monkeypatch.setattr(
+        probe.sys, "stdin", SimpleNamespace(buffer=SimpleNamespace(readline=lambda limit: raw))
+    )
+    monkeypatch.setattr(
+        probe,
+        "probe",
+        lambda *args, **kwargs: pytest.fail("Invalid input must not reach the network"),
+    )
+    assert probe.main() == 1
+    assert json.loads(capsys.readouterr().out)["status"] == "inconclusive"

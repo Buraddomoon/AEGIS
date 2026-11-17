@@ -1,7 +1,7 @@
 """Read-only #63 probe of the retained #59 alert, never a new campaign.
 
-Run only in the reviewed isolated reader. Credentials arrive on stdin. This
-module has no Docker/lifecycle operations and accepts no free destination.
+Run only in the reviewed isolated reader. Credentials arrive as one newline-
+terminated JSON object on stdin. No Docker/lifecycle operations or free destination.
 """
 
 import json
@@ -159,7 +159,8 @@ def probe(payload, *, provider_factory=AuditedReader, peer=None):
 
 def main():
     try:
-        raw = sys.stdin.buffer.read(4097)
+        # Compose keeps stdin open (StdinOnce=false). Do not wait for pipe EOF.
+        raw = sys.stdin.buffer.readline(4097)
         if len(raw) > 4096:
             raise ValueError("probe_input_too_large")
         result = probe(json.loads(raw, object_pairs_hook=unique_fields), peer=wait_for_peer)
