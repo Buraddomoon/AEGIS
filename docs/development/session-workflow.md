@@ -118,11 +118,11 @@ volumes/configuração antiga preservados; ambas as autorizações consumidas.
 Sem novo marcador ou operação normal. Conferir CI final e comentários das issues;
 não iniciar outra entrega.
 
-Entrega #7: [checkpoint da revisão integrada](wazuh-cycle-checkpoint.md), #58
-preparada parcialmente em13/11, com transição offline do runner Wazuh e pacote
-de revisão. Recursos/compatibilidade/autorização ainda bloqueiam o ensaio novo;
-#59/#60 pendentes. Não reutilizar o harness/intent/autorização de22/10 nem os
-pacotes TLS consumidos de12/11.
+Entrega #7: [checkpoint da revisão integrada](wazuh-cycle-checkpoint.md),
+#58/#59/#60 concluídas em16/11. Campanha única atual COMPLETED/DETECTED/CLEANED,
+43bytes/regra100200/zero técnicas ATT&CK; UI/JSON/HTML/PDF da mesma run verificados.
+Lab revogado, contas próprias inativas e recursos encerrados. Pacotes/autorizações
+consumidos; não repetir efeito ou inferir operação contínua.
 
 Entrega #10: [checkpoint da validação integral](ci-validation-checkpoint.md).
 #67/#68/#69 concluídas em sequência: diagnóstico do incidente GitHub, CI integral
@@ -135,3 +135,11 @@ Entrega #11: [checkpoint de recuperação b7](backup-b7-checkpoint.md).
 imagens compatíveis; reconciliação real e fixture não vazia de relatórios
 validadas separadamente. Demo preservado/ready, clones removidos, sem cutover
 ou retomada de campanhas. Conferir CI final nos comentários da #11 e parar.
+
+Entrega #12: [base demonstrável consolidada](release-checkpoint.md).
+#72 revisou controles/dependências;#73 demonstrou instalação nova e dois percursos
+Demo;#74 consolidou matriz/docs sem reescrever evidência histórica. CI da fonte,
+imagem temporária testada e Demo anterior ativo são distintos. Visibilidade
+GitHub PUBLIC diverge da política privada; sem alteração de visibilidade nesta
+entrega. Ver provas/limites, comentários finais e sincronização. Parar após esse
+aceite; próxima issue é escolha explícita do usuário.

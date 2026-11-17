@@ -1,135 +1,57 @@
 # Aceite por escopo — código 0.2.0
 
-Critérios abaixo cobrem incrementos comprovados; não equivalem ao cumprimento de
-todo o roadmap. A versão do código não foi elevada para simular marcos concluídos.
+Consolidação da [#12](https://github.com/Buraddomoon/AEGIS/issues/12),17/11/2026,
+com ensaios Demo de16/11 e conferência final da fonte em17/11. Critérios aceitos
+abaixo correspondem à prova indicada; não significam todo o roadmap entregue,
+privacidade do repositório ou prontidão enterprise. Nenhuma versão foi elevada.
+[Checkpoint para outra sessão](../development/release-checkpoint.md).
 
-| Critério | Evidência / estado |
-|---|---|
-| Inicialização reproduzível, API, SPA e banco | Docker build/Compose executados; health ready DB/Redis confirmado |
-| Autenticação e RBAC backend | testes de login, CSRF, viewer/operator e escalada negada |
-| Campanha, aprovação e worker | E2E navegador + API + worker + PostgreSQL real |
-| Demo persistente, sem dados estáticos de UI | eventos/resultados consultados da API; schema E2E real |
-| Classificações e evidências corretas | testes contra alerta de outro ativo/marcador/tempo/regra e inspeção de payload/hash |
-| Cancelamento, timeout, idempotência e cleanup | testes de claim/entrega concorrente, cancelamento ativo/fila, falha/recuperação |
-| Métricas com denominadores e histórico | teste 1/3 e E2E 2/6; técnicas catalogadas distintas das avaliadas |
-| Exportação e comparação | PDF com parser/API/UI/E2E validados, HTML escapado, JSON original e comparação de mesmo escopo |
-| Snapshots automáticos Demo | Fila por ocorrência/grant, inicial/comparativo fixados, hash/imutabilidade/retries, parser/API/UI e E2E de duas ocorrências; CI/implantação no checkpoint |
-| UI funcional e responsiva | E2E visita páginas e verifica ausência de overflow em 390px; capturas reais |
-| Catálogo oficial versionado | snapshot, referência, licença e hash de origem |
-| Integrações não configuradas explícitas | Wazuh desconectado; Linux somente por opt-in revisado; scheduler somente Demo aprovado |
-| Agendamento Demo delimitado | testes de grant exato, slots concorrentes, rollback, busy/atraso, limites, revogação, cleanup, E2E e smoke runtime |
-| Segurança de importações | testes YAML, parsing pySigma, versionamento; sem implantação automática |
-| Qualidade e GitHub | checks locais, CI configurada, privado/main-only, staged verificado e pushes granulares |
+## Matriz corrente
 
-Consulte docs/PROGRESS.md para a rodada final de testes e estado real da CI. Não considerar Wazuh externo ou agendamento de laboratório real concluídos a partir desses critérios. Auditoria de dependências mantém advisory transitivo revisado; isso é limitação documentada, não alegação de ausência de vulnerabilidades.
+| Capacidade / critério | Prova verificável | Limite do aceite |
+|---|---|---|
+| Configuração/instalação Demo nova | [#73: build, Compose, migração/seed/grants, CLI bootstrap e ready](../evidence/release-2026-11-16/INSTALL.md); b7/33tabelas,0usuários/0runs iniciais | Projeto/imagem/porta/volume novos no mesmo host; caches presentes; sem reset do Demo existente ou teste off-host |
+| Auth/RBAC/CSRF, SSRF/TLS, YAML/Sigma, SQL/runtime ACL, segredos/evidências | [#72: revisão e181testes locais](../evidence/release-2026-11-16/SECURITY.md) | Revisão dos controles e recusas cobertos, não pentest exaustivo; HTTP só loopback, sem MFA/SSO/tenant |
+| Campanha/aprovação/worker, repetição e evidência persistente | [Firefox contra Compose novo e `make e2e`](../evidence/release-2026-11-16/INSTALL.md): cada rodada5runs/20testes/zeroerrosJS | Mesma regra de domínio, dados da API, synthetic=true; nenhuma execução ofensiva/PowerShell real |
+| Classificação, integridade, métricas e comparação | #72 testa identidade/ativo/marcador/tempo/regra/execução; #73 confere1detectado/3válidos, inconclusivo excluído, recorte2runs/6válidos e delta0 | Ausência de alerta não prova ausência de telemetria; delta não prova causalidade; hash não é assinatura |
+| Cancelamento/timeout/idempotência/cleanup/concorrência | [CI integral da fonte executável](https://github.com/Buraddomoon/AEGIS/actions/runs/43954449487), testes existentes de flow/cleanup/transactions/scheduling | Testes/fixtures não são nova execução de laboratório ou benchmark |
+| PDF/HTML/JSON: execução, recorte, comparação e snapshots | [#73](../evidence/release-2026-11-16/INSTALL.md):4PDFs lidos por pypdf/aviso em todas as páginas;5HTMLs200; JSON/PDF por botões reais | HTML complementar pela API; não teste exaustivo de todos os botões; sem PDF/A/assinatura ou truncamento silencioso |
+| Agendamentos e relatórios automáticos | #73:duas ocorrências/cadência real60s, grant delimitado,2READY inicial/comparação congelados após mudanças Sigma | Somente novas ocorrências Demo, sem backfill; documento pronto não comprova detecção |
+| Interface/responsividade | #73:14capturas por rodada, inspeção visual desktop/móvel,390px sem overflow global e tabelas com scroll interno | Percurso coberto por Firefox, sem alegação de acessibilidade completa ou todos os browsers |
+| ATT&CK versionado, matriz/proveniência/publicação controlada | #73 consulta API/snapshot inicial Enterprise20.0/706ativas; [publicação e histórico](../evidence/attack-catalog-2026-10-23/README.md) | Catalogado não significa executado; atualização não ocorre no startup; revisão pela UI é backlog#19 |
+| Sigma: parsing, versões/vínculos/análise/preparação/prévia | #72 testa parser sem cache/limites; #73 confere revisão/retirada/histórico e bloqueios reais | Backend/pipeline/mapping físico, conversão, consulta e implantação não aceitos; #16/#17/#18 |
+| Redes/PKI/identidade/binding Linux renovados | [#4: checkpoint e ensaio nativo12/11](../development/activation-checkpoint.md), dependência#3 atendida | Operação delimitada já encerrada; não é confiança permanente nem permissão de replay |
+| Campanha Linux após renovação | [#5: campanha real12/11](../../labs/linux/CAMPAIGN-VERIFIED-2026-11-12.md),43bytes/COMPLETED/INCONCLUSIVE/CLEANED | Sem SIEM/alerta; zero técnicas ATT&CK; recibo não é evidência defensiva; autorização consumida |
+| Wazuh com configuração atual | [#7: campanha16/11](../evidence/wazuh-cycle-2026-11-16/CAMPAIGN.md) e [UI/exports da mesma run](../evidence/wazuh-cycle-2026-11-16/UI-EXPORTS.md), COMPLETED/DETECTED/CLEANED | Um marcador43bytes/agente001/regra100200/4.14.9, zero técnicas ATT&CK; sem Windows/archives/outras regras ou eficácia geral SIEM/EDR; pacote consumido |
+| Recuperação b7 e relatórios congelados | [#11: backups a0/b7 e fixture não vazia separados](../development/backup-b7-checkpoint.md) | Clones offline/quarentena; Demo fonte sem relatórios automáticos, fixture explícita com eles; sem cutover/off-host/RPO/RTO |
+| Cópia cifrada e custódia | [Restore offline age/X25519](../evidence/encrypted-backups-2026-10-26/README.md) | Custódia externa#28 adiada; chave/cópia locais e originais em claro; sem upload/expurgo |
+| Qualidade e histórico Git | CI integral43954449487:3435Python/9skips e91React; [inputs equivalentes e fonte/imagem](../development/release-checkpoint.md); checks locais/documentais | CI integral de fonte fixada, distinta de source-review documental e imagem ativa. Main/push direto; nenhum histórico/approval/receipt reescrito |
 
-## Aceite Linux 0.2 limitado ao marcador
+## Achados e condições que permanecem explícitos
 
-Campanha única no ensaio autorizado: cadastro/preflight mTLS/autorização → solicitante operador → administrador distinto → PostgreSQL/worker → marcador real de 43 bytes → CLEANED → recibos e relatório → INCONCLUSIVE sem SIEM. Runtime SQL sem UPDATE/DELETE em comprovantes, workspace vazio, contas temporárias desativadas, laboratório revogado e containers/redes encerrados. Captura do histórico em Firefox real, sem repetir o efeito. Testes de crash, resposta perdida, configuração/usuários revogados, 404 sem liberação e comparação entre modos. Não equivale a validação Wazuh.
+- GitHub informou **PUBLIC** em16/11 e17/11, divergente da política privada em
+  AGENTS.md. Nenhuma mudança de visibilidade executada; esse requisito de
+  privacidade não é declarado atendido. A decisão permanece humana, fora da
+  autorização de consolidação. Scanner de padrões do índice não atesta todo
+  histórico Git ou ausência de exposição.
+- DiskCache5.6.3:1finding médio upstream mantido visível na auditoria16/11;
+  caminho limitado do parser sem import/cache conforme gate/testes. Habilitar
+  validators/plugins/cache exige outra revisão; não se alega zero vulnerabilidades.
+- Nenhuma implantação do código atual no Demo persistente: imagem b8 anterior
+  preservada. A imagem nova foi validada somente em Compose temporário encerrado.
+- Nenhum ensaio Linux/Wazuh foi repetido pela #12. Labs revogados/encerrados e
+  autorizações consumidas; novas operações exigem escopo/revisão específicos.
+- TLS/proxy externo, operação contínua, escala, multi-workspace, MFA/SSO,
+  recuperação off-host e novos provedores não se tornam aceitos por este Demo.
 
-## Aceite do pipeline Wazuh próprio — 2026-10-22
+## Retomada sem chat ou PROGRESS completo
 
-Uma campanha real `987bd48f-fafc-4a34-bf2a-2d310e7ca794`: preflight de recursos,
-imagens 4.14.9 fixadas, mounts efetivos, mTLS, agente 001 Active, regra 100200sandbox,
-TLS/ACLs e aprovação segregada de 120s → um marcador43 bytes → log passivo → alerta
-original no Indexer → uma evidência persistida, DETECTED/synthetic=false → CLEANED
-e workspace vazio → relatório HTML/JSON → revogação/desativação/encerramento.
-Diário/volumes preservados e autorização consumida. [Evidência registrada](../evidence/wazuh-2026-10-22/README.md).
-Esse aceite cobre só o pipeline de instrumentação; zero técnicas ATT&CK avaliadas,
-sem archives, outras versões, Windows ou eficácia de EDR. Testes offline dos
-artefatos não constituem outro ensaio real. Não houve nova rodada E2E de navegador.
+Escolher uma issue no [índice](https://github.com/Buraddomoon/AEGIS/issues/1),
+ler AGENTS.md e [guia curto](../development/session-workflow.md), a issue,
+seus bloqueadores e arquivos de entrada. Não reconstruir PDFs, comparação,
+agendamentos, snapshots, parsing Sigma ou matriz já entregues. Próxima capacidade
+é decisão do usuário; a #12 não inicia automaticamente outra entrega.
 
-Incremento de engenharia de detecção: testes PostgreSQL/API cobrem vínculos/versões, concorrência, revisão obsoleta, retirada monotônica, RBAC/CSRF, migração populada, invalidação de início/agendamento e preservação de relatórios. UI permite revisão/retirada/histórico e explica mudanças do escopo. Associação é planejamento; conversão/implantação de regras não estão aceitas. Fluxo Firefox Demo validado com 4 runs/16 testes sintéticos, incluindo troca de versão, retirada e relatório histórico idêntico. Contagens finais e CI em PROGRESS.
-
-Incremento Sigma estático: GET autenticado de versão/hash, checks AEGIS sobre parser/modelo pySigma e consulta de versões atuais/históricas na UI validados por testes e Firefox. Compatibilidade/conversão não configuradas; zero achados não comprova semântica/eficácia. Análise não altera escopos ou veredictos. Compose/smoke confirmaram a leitura pelo papel SQL runtime; contagens finais em PROGRESS.
-
-Preparação Sigma: diagnóstico de campos/requisitos e UI histórica validados; mapeamento candidato não habilita conversão. Requisitos conflitantes e ausência de backend/pipeline/mapping físico continuam bloqueios reais. E2E demonstra exemplo mapeado com can_convert=false e preservação do relatório, sem iniciar SIEM. Conversão/implantação não aceitas; detalhes e contagens finais em PROGRESS.
-
-Catálogo ATT&CK controlado: prepare real do bundle20.0 por commit, plan/apply da
-CLI em PostgreSQL, persistência de867referências, repetição idempotente,
-proveniência e histórico imutáveis. Dois ciclos sintéticos confirmaram relatório
-anterior idêntico e cobertura atual somente após nova aprovação/execução. API,
-worker e papel runtime restrito validados; Firefox inspecionou snapshot histórico
-e produziu captura real. Demo local migrado/publicado,20runs anteriores
-preservadas. Não equivale a nova versão oficial, cobertura defensiva real,
-sincronização automática ou novo ensaio Linux/Wazuh.
-
-Recorte analítico: período semiaberto com fuso, release exata/atual/legado,
-snapshot consistente e limites sem truncamento; exportações agregadas e
-comparativas com membros/evidências/hashes. Equivalência exige árvore/manifesto
-e resultados completos/contexto conhecido. UI bloqueia ações após erro e
-mudança de filtros; Firefox exportou ambos os tipos, aplicou legado e período
-vazio sem novos efeitos reais. Contagens finais e CI no PROGRESS.
-
-Backup cifrado host-only: age/X25519, chave separada, publicação privada e limites;
-stream completo autenticado e hash consumido antes de restore. Cópia real restaurada
-em clone offline:32tabelas/3.169linhas, fonte/usuários iguais e clone/staging removidos.
-Retenção somente leitura usa snapshots distintos e verificados/chave disponível;
-sem exclusão/upload. Originais permanecem em claro, chave/cópia ainda locais.
-Guarda independente, recuperação entre hosts e RPO/RTO não são critérios aceitos.
-[Procedimento](../operations/encrypted-backups.md).
-
-Consolidação de entrega: gerador local com recusa de arquivos inseguros/segredos
-vazios, preservação de configuração válida e testes em diretórios descartáveis.
-Compose renderizado com configuração nova sem iniciar serviços; versões/links
-inline locais/cabeçalhos PNG/padrões de credenciais verificados no índice Git.
-README/galeria distinguem Demo, histórico Linux e ensaio Wazuh encerrado. CI leve
-separada para documentação não instala dependências nem bancos. Não é um novo
-boot completo, E2E, ensaio de laboratório ou release publicada.
-[Procedimento e limites](../operations/release.md).
-
-Prévia Sigma: pipeline oficial de field rename aplicado em memória no subconjunto
-revisado; API de versão/hash somente leitura e UI com antes/depois, unsupported,
-loading/erro e recusa de contexto divergente. Não aceita pipeline/YAML/vars/plugins
-externos e não altera regra histórica, relatório ou classificação. Can_convert,
-query_generated, siem_queried, deployment_performed e mapping físico continuam false.
-Backend compatível e pipeline completo para consultas não estão aceitos.
-
-PKI do runner: inspect/prepare/verify host-only aceitos para inventário público e
-candidato separado, preservando origem/IDs, com hashes, validação criptográfica,
-limites de arquivos, validade atual e recusa de drift. Testes incluem TLS loopback
-e falhas de durabilidade/retry. Candidato real verificado sem chaves antigas,
-diário, banco ou laboratório. Ativação, novo binding/preflight, recuperação sob
-confiança alterada e PKI dos serviços Wazuh não estão aceitos.
-[Operação](../operations/runner-pki.md).
-
-Revisão de vínculo: API administrativa somente leitura e UI aceitas para mostrar
-bloqueios persistidos; mutações Linux/Wazuh recusam pendências e cleanup inválido
-mesmo sem reserva. Solicitação Linux serializada com revogação/revisão, com teste
-PostgreSQL concorrente. Ausência de bloqueio não é autorização, validade da PKI
-ou integridade do diário. Ativação e recuperação real sob confiança alterada
-permanecem fora do aceite. [Limites](../operations/linux-binding-review.md).
-
-Plan/recheck da ativação Linux aceitos para snapshots de metadados: hashes PKI/
-Compose, imagens locais por ID, volumes/labels/consumidores e TTL15min; consulta
-real e fixtures não concedem autorização nem comprovam diário/runtime/imagens.
-Ativação e mTLS novo ainda fora do aceite; o diagnóstico original tem aceite
-limitado abaixo. Nenhum ensaio anterior é reaberto por um plano.
-[Contrato](../operations/runner-pki-activation.md).
-
-Diagnóstico banco/diário **executado e aceito no escopo de 29/10**: PostgreSQL
-original iniciou uma vez sob autorização específica; uma prova SQL foi comparada
-antes/depois e dois jobs/oito eventos do diário foram lidos duas vezes. Cinco
-recursos próprios foram removidos, com ausência reconferida e volumes preservados.
-O startup escreveu WAL/metadados conforme autorizado; as consultas e o diário
-foram somente leitura. Não é comparação de todas as tabelas, atestado atual,
-rotação PKI ou permissão de retomar jobs. Autorização consumida.
-[Evidência completa](../evidence/diagnostic-2026-10-29/README.md).
-
-Ownership, intents, runtime e cleanup foram integrados ao diagnóstico acima;
-deixaram de ser apenas componentes de fixture nesse escopo. O coordenador
-identity-only e suas CLIs estão implementados/testados, mas o ensaio nativo mTLS
-novo **ainda não foi realizado**. Imagem construída e testes de loopback não
-substituem essa evidência. Ativação/binding permanecem fora do aceite.
-[Escopo](../../labs/linux/IDENTITY-ASSAY.md).
-
-Em 05/11, o preflight recusou sobreposição com a rede Docker `qasrc`; o usuário
-escolheu preservá-la e concluir somente as correções. Não houve novo ensaio,
-remoção de rede, ativação ou autorização de operação normal nessa retomada.
-
-Exportação PDF aceita no fluxo Demo: execução individual, cobertura filtrada e
-comparação gerados pela API, baixados no Firefox e lidos por parser independente.
-Resumo, evidências/hash/apêndice completo e aviso sintético em todas as páginas;
-limites recusam PDF parcial. Viewer, erros, auditoria e limites de requisição
-testados. Sem mudança de veredictos, assinatura digital, PDF/A ou alegação de
-validação adicional Linux/Wazuh. Estado da imagem implantada e CI em PROGRESS.
+O [texto anterior](acceptance-history-before-issue12.md) preserva integralmente
+os registros históricos de aceite e suas antigas pendências. Evidências originais,
+scopes, approvals, receipts e relatórios não foram reescritos para esta matriz.

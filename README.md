@@ -10,8 +10,11 @@ O ÆGIS automatiza esse ciclo: campanha → aprovação de escopo → simulaçã
 identificadores e limites da análise, para que outra pessoa consiga verificá-lo.
 
 **Versão do código: 0.2.0.** Demo persistente e funcional; Linux restrito a um
-marcador benigno; pipeline Wazuh validado em um ensaio próprio encerrado. O
-repositório permanece **privado**. Não é SIEM, EDR ou shell remoto.
+marcador benigno; pipeline Wazuh validado em ensaios próprios encerrados. O
+GitHub informa visibilidade **pública** em 17/11/2026, divergente da política
+privada registrada em AGENTS.md; esta entrega não alterou visibilidade.
+[Achado e limites da revisão](docs/evidence/release-2026-11-16/SECURITY.md).
+Não é SIEM, EDR ou shell remoto.
 
 Para desenvolver em sessões independentes, escolha uma entrega no
 [índice de issues](https://github.com/Buraddomoon/AEGIS/issues/1) e use o
@@ -23,7 +26,7 @@ necessário; cada issue delimita a entrega, subissues, dependências e aceite.
 ## Executar localmente
 
 Ambiente validado: Linux x86_64, Docker Engine com Compose, Make, Git e Python 3.13.
-O host precisa de acesso ao repositório privado e internet para o primeiro build.
+O host precisa de acesso ao repositório e internet para o primeiro build.
 Node/Python de desenvolvimento não são necessários dentro do host para executar
 as aplicações em containers; Python no host gera a configuração local.
 
@@ -85,8 +88,8 @@ segurança de uma organização. Repetir o mesmo escopo não inventa melhoria.
 | Sigma | Parsing pySigma, versões, vínculos revisados, análise estática, preparação e prévia restrita de campos | Conversão/implantação bloqueadas sem backend/pipeline compatíveis |
 | Agendamentos | Grants delimitados, limite de ocorrências, pausa/revogação e auditoria | Somente Demo; mínimo 60 s, até 100 horários e 90 dias por plano |
 | Relatórios automáticos | Snapshot inicial e comparação por autorização, fila durável e exportação JSON/HTML/PDF | Somente novas ocorrências Demo; sem backfill; pronto não significa detecção |
-| Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing, campanha integrada e diagnóstico histórico dos volumes | Um marcador de 43 bytes; rotação PKI/binding pendente e ensaios reais sujeitos a autorização específica |
-| Wazuh | Indexer somente leitura, TLS, binding agente/regra, paginação e coleta correlacionada | Um ensaio Linux/Wazuh 4.14.9; sem Windows/archives/outras regras |
+| Linux | Runner mTLS, programa fixo, supervisão, lease, diário/fencing, campanha integrada e diagnóstico histórico dos volumes | Um marcador de 43 bytes; rotação/binding demonstrados em12/11 e encerrados; nova operação exige autorização específica |
+| Wazuh | Indexer somente leitura, TLS, binding agente/regra, paginação e coleta correlacionada | Ensaios próprios encerrados em22/10 e16/11, Wazuh4.14.9/regra100200; sem Windows/archives/outras regras |
 | Recuperação | Backup consistente, restore offline, quarentena, reconciliação e novo ciclo Demo em clone | Sem cutover, recuperação entre hosts ou RPO/RTO garantidos |
 | Cópia cifrada | age/X25519 opcional host-only, chave separada, restore verificado e plano de retenção | Sem upload/expurgo; originais permanecem em claro; custódia ainda local |
 
@@ -110,19 +113,36 @@ A prévia fica em **Regras → Preparação de conversão → Gerar prévia de c
 
 O Linux próprio validou um marcador de 43 bytes, cleanup e idempotência; o recibo
 sem SIEM foi classificado **INCONCLUSIVE**, sem inventar alerta.
-[Escopo, instalação e limites](labs/linux/README.md).
+[Campanha após renovação em12/11](labs/linux/CAMPAIGN-VERIFIED-2026-11-12.md) ·
+[Rotação e vínculo delimitados já verificados](docs/development/activation-checkpoint.md).
 
 Em 2026-10-22, uma campanha separada percorreu marcador → observador passivo →
 agente 001 → manager/regra 100200 → Filebeat TLS → Indexer → correlação → relatório:
 **COMPLETED / DETECTED / CLEANED, synthetic=false**. Foram avaliados **um teste e
 zero técnicas ATT&CK**. A regra confirma a instrumentação desse marcador; não
 comprova eficácia de EDR ou proteção empresarial.
-[Alerta original, hashes e encerramento](docs/evidence/wazuh-2026-10-22/README.md).
+[Alerta original e encerramento histórico](docs/evidence/wazuh-2026-10-22/README.md).
+
+Em16/11, o fluxo com confiança/rede atuais foi validado por outra campanha única:
+**COMPLETED / DETECTED / CLEANED**, também43bytes/regra100200/zero técnicas ATT&CK.
+[Campanha e alerta original](docs/evidence/wazuh-cycle-2026-11-16/CAMPAIGN.md) ·
+[UI/JSON/HTML/PDF da mesma run](docs/evidence/wazuh-cycle-2026-11-16/UI-EXPORTS.md).
+Ambos os ensaios têm autorizações consumidas; não generalizar eficácia SIEM/EDR.
 
 As autorizações foram consumidas: containers/redes encerrados, laboratórios
 revogados, contas temporárias desativadas e volumes/journals preservados. Os dados
 reais não foram inseridos no Demo. Um novo ensaio exige escopo e autorização
 específicos; `make up`, testes e CI não iniciam esses laboratórios.
+
+## Base demonstrável verificada
+
+A entrega [#12](https://github.com/Buraddomoon/AEGIS/issues/12) revisou controles
+e dependências, reproduziu instalação Demo com configuração/volume novos e
+validou Firefox contra essa imagem. Cada percurso passou com 5 runs/20 testes
+sintéticos/2 snapshots/4 PDFs e zero erros JavaScript; recursos temporários removidos,
+Demo existente preservado. A CI da fonte executável passou com 3435 Python/9 skips
+e 91 React; os commits desta consolidação só alteram Markdown.
+[Provas, limites e distinção de imagens](docs/development/release-checkpoint.md).
 
 ## Arquitetura
 
@@ -199,7 +219,8 @@ Git; não substitui testes, auditoria, revisão humana ou ensaio de instalação
   [Backup/restore](docs/operations/backup-recovery.md) ·
   [Criptografia e custódia](docs/operations/encrypted-backups.md).
 - Sem garantia de desempenho, alta disponibilidade ou maturidade enterprise-ready.
-  [Progresso e retomada](docs/PROGRESS.md) registra testes efetivamente executados.
+  [Aceite e ponto de retomada](docs/development/release-checkpoint.md) distingue
+  fonte/CI, instalação testada e Demo anterior ainda ativo.
 
 ## Uso autorizado e licença
 
@@ -208,5 +229,5 @@ persistência maliciosa, roubo de credenciais ou exfiltração. Nenhuma infraest
 empresarial ou alvo externo foi utilizado nos ensaios.
 
 Código sob [MIT](LICENSE); dados MITRE e dependências mantêm suas próprias licenças.
-Isso não altera a visibilidade privada. [Contribuição](CONTRIBUTING.md) ·
+Licença e visibilidade são decisões independentes; veja a observação acima. [Contribuição](CONTRIBUTING.md) ·
 [Política de segurança](SECURITY.md) · [Regras para agentes](AGENTS.md).

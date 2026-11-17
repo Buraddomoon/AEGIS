@@ -1,5 +1,23 @@
 # Testes e evidências
 
+## Consolidação demonstrável — #12, 17/11/2026
+
+[Checkpoint atual](release-checkpoint.md): revisão de controles com181testes
+locais aprovados, auditoria Python1finding médio revisado/npm0 em16/11;
+[instalação limpa](../evidence/release-2026-11-16/INSTALL.md) com build/Compose/
+bootstrap/ready e Firefox real, mais `make e2e` separado. Cada rodada5runs/
+20testesDemo/2snapshots/4PDFs/14capturas/zeroerrosJS; não somar rodadas como casos
+novos. Cinco HTMLs pela API e quatro PDFs pelo parser; revisão visual390px.
+Recursos descartáveis removidos, fonte completa idêntica/reconferida17/11.
+
+CI integral[43954449487](https://github.com/Buraddomoon/AEGIS/actions/runs/43954449487)
+aprovada na fonte `a8db6da`:3435Python/9skips e91React, quatro grupos e React
+conferidos. Os441inputs executáveis são idênticos nesta entrega somente Markdown;
+source-review documental é outro workflow. Demo ativo continua na imagem b8
+anterior; nova imagem foi testada só em Compose temporário encerrado. Sem
+repetir laboratório real ou declarar privacidade do repo/zero vulnerabilidades.
+Os resultados históricos abaixo são limitados às fontes e datas que indicam.
+
 ## Retomada Wazuh com histórico — #58, 16/11/2026
 
 `make test-wazuh-cycle` cobre compilação/inspeção dos nove serviços sem seed,
