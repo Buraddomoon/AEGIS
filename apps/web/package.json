@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 18780",
     "build": "tsc -b && vite build",
-    "test": "vitest run",
+    "test": "npm run test:glob-security && vitest run",
     "e2e": "cd ../.. && .venv/bin/python scripts/e2e.py",
     "lint": "tsc -b --pretty false",
     "format": "prettier --write src",
-    "format:check": "prettier --check src"
+    "format:check": "prettier --check src",
+    "test:glob-security": "node --test scripts/picomatch-security.test.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.5",
@@ -34,6 +35,10 @@
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vite": "8.3.4",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "picomatch": "file:vendor/picomatch"
+  },
+  "overrides": {
+    "picomatch": "$picomatch"
   }
 }

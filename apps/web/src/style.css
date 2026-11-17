@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@source not "../vendor";
+@source not "../scripts";
 
 @theme {
   --color-aegis-bg: #0c1119;

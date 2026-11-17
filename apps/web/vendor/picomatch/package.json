@@ -1,0 +1,19 @@
+{
+  "name": "@aegis/picomatch",
+  "version": "4.0.7-aegis.1",
+  "private": true,
+  "description": "AEGIS-reviewed picomatch 4.0.7 security fork for build tooling; CVE-2026-112366 fix",
+  "license": "MIT",
+  "author": "Jon Schlinkert (upstream); AEGIS (local patch)",
+  "main": "index.js",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=12"
+  },
+  "files": [
+    "index.js",
+    "posix.js",
+    "lib",
+    "LICENSE"
+  ]
+}

@@ -55,6 +55,7 @@ build:
 	npm --prefix apps/web run build
 audit:
 	$(VENV)/python scripts/audit_dependencies.py
+	npm --prefix apps/web run test:glob-security
 	npm --prefix apps/web audit --audit-level=high
 logs:
 	docker compose logs --tail=100 api worker
