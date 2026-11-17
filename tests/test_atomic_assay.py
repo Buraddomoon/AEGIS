@@ -66,6 +66,33 @@ def test_catalog_asset_has_a_distinct_bounded_data_profile(modules):
     assert content == Path("fixtures/attack/enterprise.json").read_bytes()
 
 
+@pytest.mark.parametrize("problem", [None, "existing", "mismatch"])
+def test_base_retention_is_exclusive_and_bound_to_an_immutable_id(
+    modules, tmp_path, monkeypatch, problem
+):
+    host = modules["atomic_assay"]
+    calls = []
+
+    def execute(*args, **kwargs):
+        calls.append(args)
+        if args[:2] == ("image", "ls"):
+            return b"existing" if problem == "existing" else b""
+        if args[:2] == ("image", "tag"):
+            assert (tmp_path / "base-tag-intent.json").exists()
+            return b""
+        assert args[:2] == ("image", "inspect")
+        return (host.BASE_IMAGE if problem != "mismatch" else "sha256:" + "0" * 64).encode()
+
+    monkeypatch.setattr(host, "docker", execute)
+    if problem:
+        with pytest.raises(ValueError):
+            host.retain_base(tmp_path)
+    else:
+        assert host.retain_base(tmp_path) == "aegis-atomic80-base:" + tmp_path.name
+    if problem == "existing":
+        assert not any(call[:2] == ("image", "tag") for call in calls)
+
+
 @pytest.mark.parametrize(
     "header", [b"120000 blob " + b"a" * 40 + b" 10", b"100644 blob " + b"a" * 40 + b" 2097153"]
 )

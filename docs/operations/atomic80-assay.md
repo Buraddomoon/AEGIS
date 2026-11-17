@@ -77,7 +77,9 @@ encerra somente o projeto próprio, mantendo três volumes/imagens/PKI/intents.
 ## Aprovação vinculada à proposta
 
 O comando `build` usa somente blobs de main limpa, contexto novo e base local
-fixada; wheels/locks conferidos, build sem rede/pull/push. Check fresco confere
+fixada; wheels/locks conferidos, RUNs sem rede, pull=false e sem push. A base
+própria é retida em tag nova com ID imutável conferido antes/depois; Docker29
+não aceita um FROM sha256:ID como referência de base local. Check fresco confere
 pacote instalado/versões/imports e assets de bootstrap. Tag exclusiva retém a
 imagem anterior. Recibos locais não são assinatura ou atestado do publicador.
 

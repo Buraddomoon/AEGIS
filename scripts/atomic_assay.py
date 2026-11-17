@@ -130,6 +130,19 @@ def committed_asset(commit, path):
     return raw
 
 
+def retain_base(folder):
+    # Docker29/containerd resolves a bare FROM sha256:ID as a registry name.
+    # A fresh retained tag plus independent immutable-ID checks pins the local base.
+    tag = "aegis-atomic80-base:" + folder.name
+    if docker("image", "ls", "--quiet", tag).strip():
+        raise ValueError("Base retention tag already exists")
+    put(folder / "base-tag-intent.json", {"tag": tag, "image_id": BASE_IMAGE})
+    docker("image", "tag", BASE_IMAGE, tag)
+    if docker("image", "inspect", "--format", "{{.Id}}", tag).decode().strip() != BASE_IMAGE:
+        raise ValueError("Retained base identity mismatch")
+    return tag
+
+
 def build_application(runner_build_id, runner_plan_sha, cache_id, cache_sha):
     commit = source._state(ROOT)
     runner = builder.review_existing(builder.ROOT / identifier(runner_build_id), runner_plan_sha)
@@ -159,6 +172,7 @@ def build_application(runner_build_id, runner_plan_sha, cache_id, cache_sha):
     assert base["id"] == BASE_IMAGE and base["user"] == "10001:10001"
     folder = BUILDS / uuid4().hex
     folder.mkdir(mode=0o700, parents=True)
+    base_tag = retain_base(folder)
     context = folder / "context"
     for path, raw in files.items():
         put(context / path, raw, 0o644)
@@ -207,7 +221,7 @@ def build_application(runner_build_id, runner_plan_sha, cache_id, cache_sha):
         ("build-id", folder.name.encode()),
     ]:
         put(context / name, raw, 0o644)
-    recipe = f"""FROM {BASE_IMAGE}
+    recipe = f"""FROM {base_tag}
 USER root
 ENV PYTHONDONTWRITEBYTECODE=1 WEB_DIST=/assay/no-web
 COPY wheels/ /review/wheels/
@@ -296,6 +310,9 @@ CMD ["api"]
         f'"build_id": "{folder.name}"' in output and '"installed_versions_verified": true' in output
     )
     assert context_inventory(context, allowed) == inventory and source._state(ROOT) == commit
+    assert (
+        docker("image", "inspect", "--format", "{{.Id}}", base_tag).decode().strip() == BASE_IMAGE
+    )
     receipt = {
         "format": "atomic80-application-build/1",
         "id": folder.name,
@@ -303,6 +320,7 @@ CMD ["api"]
         "image_id": native["id"],
         "tag": tag,
         "base_image": BASE_IMAGE,
+        "base_retention_tag": base_tag,
         "runner_image": runner["native_image_id"],
         "runner_build_id": runner_build_id,
         "runner_plan_sha256": runner_plan_sha,
