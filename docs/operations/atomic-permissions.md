@@ -94,3 +94,7 @@ Antes de pedir autorização para uma tentativa, preparar em escopo próprio:
 
 Não há comando apply/start oferecido por este documento. O bloqueio está
 registrado nas #14/#80; esses itens permanecem abertos até ensaio e aceite real.
+
+Retomada específica da #80: [coordenador e ambiente separado](atomic80-assay.md).
+O estado de imagem/proposta atual consta na issue; os bloqueios acima registram
+a entrega inicial. A preparação nova não altera as receitas/volumes históricos.
