@@ -1,6 +1,7 @@
 import secrets
 from typing import Annotated, Literal
 
+import httpx
 import yaml
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse
@@ -29,8 +30,9 @@ from aegis.catalog.api import router as catalog_router
 from aegis.config import settings
 from aegis.db import get_db
 from aegis.domain.validation import digest
-from aegis.integrations import sigma_conversion, sigma_mapping, sigma_readiness
+from aegis.integrations import sigma_conversion, sigma_mapping, sigma_readiness, sigma_validation
 from aegis.integrations.sigma_analysis import analyze as analyze_sigma
+from aegis.integrations.sigma_index import IndexMismatch
 from aegis.integrations.yaml_import import parse_sigma
 from aegis.models import (
     Asset,
@@ -819,6 +821,32 @@ def rule_query(
     result.update(rule_id=rule_id, rule_version_id=saved.id, rule_version=saved.version)
     result["document_sha256"] = digest(result)
     return result
+
+
+@router.post("/rules/{rule_id}/versions/{version_id}/query-validation", tags=["Sigma"])
+def validate_rule_query(
+    rule_id: str,
+    version_id: str,
+    data: schemas.SigmaValidation,
+    user: Admin,
+    db: DB,
+) -> dict:
+    saved = checked_rule_version(db, rule_id, version_id)
+    rate_limit("sigma-validation:" + user.id, 2, 60)
+    try:
+        return sigma_validation.validate_query(
+            saved.content, rule_id, version_id, data.confirm_scope_sha256
+        )
+    except (sigma_validation.ValidationBlocked, IndexMismatch):
+        raise HTTPException(
+            409, "Consulta bloqueada: escopo/revisão/mapping ausente ou divergente."
+        ) from None
+    except sigma_conversion.ConversionUnavailable:
+        raise HTTPException(503, "Conversor isolado indisponível ou fora da revisão.") from None
+    except (SigmaError, yaml.YAMLError, ValueError, TypeError, KeyError, RecursionError):
+        raise HTTPException(422, "Conteúdo/resposta fora do contrato de validação Sigma.") from None
+    except (httpx.HTTPError, OSError, TimeoutError):
+        raise HTTPException(503, "Transporte Indexer indisponível.") from None
 
 
 @router.post("/rules", status_code=201, tags=["Sigma"])

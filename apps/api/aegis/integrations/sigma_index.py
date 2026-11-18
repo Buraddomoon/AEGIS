@@ -63,7 +63,13 @@ def verify_index(provider: WazuhIndexerProvider, profile: IndexProfile, fields: 
         ):
             raise IndexMismatch()
         mapping = mapping_response[profile.index]["mappings"]
-        if mapping.get("runtime") or mapping.get("_source", {}).get("enabled", True) is not True:
+        source = mapping.get("_source", {})
+        if (
+            mapping.get("runtime")
+            or source.get("enabled", True) is not True
+            or source.get("includes")
+            or source.get("excludes")
+        ):
             raise IndexMismatch()
         for path in fields | {"agent.id", "timestamp"}:
             field = physical_field(mapping, path)

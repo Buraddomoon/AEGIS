@@ -1,5 +1,24 @@
 # Testes e evidências
 
+## Validação de consultas Sigma — #17
+
+Executar sequencialmente com PG/Redis15 já existentes:
+
+```sh
+.venv/bin/pytest tests/test_sigma_validation.py tests/test_sigma_index.py tests/test_wazuh_tls.py tests/test_sigma_conversion.py tests/test_sigma_converter_worker.py tests/test_wazuh_collection.py tests/test_wazuh_profiles.py tests/test_sigma_mapping_api.py tests/test_wazuh_availability.py -q --tb=short
+```
+
+Fixtures de metadata, Search/Scroll e falhas verificam drift físico, TLS/destino,
+hashes/escopo, negativos/falsos positivos, duplicatas, shards/total, limites,
+resposta ambígua, limpeza de cursor e revogação. API usa PostgreSQL real em schema
+descartável/Redis15: RBAC, CSRF, rate limit, integridade da versão salva e preservação
+de versões/auditoria/cobertura. O conector em fixture usa flags de contrato real;
+esses testes não são prova nativa e não iniciam SIEM ou laboratórios. Se as
+credenciais locais estiverem desatualizadas, selecionar as dos serviços de testes
+somente no processo; não alterar contas, grants, `.env` ou imprimir segredos.
+Ensaio externo exige autorização própria conforme o
+[procedimento](../operations/sigma-query-validation.md).
+
 ## Conversão Sigma offline — #84/#85/#86
 
 `make sigma-converter-setup` prepara o venv dedicado com18pins/hashes e pip check;

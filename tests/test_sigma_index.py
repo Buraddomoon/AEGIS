@@ -128,7 +128,10 @@ def test_http_errors_not_physical_compatibility(code):
         provider.close()
 
 
-@pytest.mark.parametrize("mutation", ["nested", "disabled", "missing", "date", "source"])
+@pytest.mark.parametrize(
+    "mutation",
+    ["nested", "disabled", "missing", "date", "source", "source_include", "source_exclude"],
+)
 def test_ancestors_source_and_timestamp_checked(mutation):
     responses = copy.deepcopy(metadata())
     mapping = responses[f"/{INDEX}/_mapping"][INDEX]["mappings"]
@@ -140,6 +143,10 @@ def test_ancestors_source_and_timestamp_checked(mutation):
         del mapping["properties"]["data"]
     elif mutation == "source":
         mapping["_source"] = {"enabled": False}
+    elif mutation == "source_include":
+        mapping["_source"] = {"includes": ["agent.*"]}
+    elif mutation == "source_exclude":
+        mapping["_source"] = {"excludes": ["data.*"]}
     else:
         mapping["properties"]["timestamp"]["type"] = "keyword"
     provider = provider_for(lambda request: httpx.Response(200, json=responses[request.url.path]))

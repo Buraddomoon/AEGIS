@@ -90,6 +90,10 @@ class SigmaImport(Input):
     content: str = Field(min_length=10, max_length=65536)
 
 
+class SigmaValidation(Input):
+    confirm_scope_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class RuleTestReview(Input):
     rule_version_id: str = Field(min_length=36, max_length=36)
     test_id: str = Field(min_length=1, max_length=60)

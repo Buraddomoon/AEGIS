@@ -26,6 +26,15 @@ ou subcampos. [Template oficial4.14.9](https://github.com/wazuh/wazuh/blob/v4.14
 Fixtures e TLS de loopback verificam o contrato; nenhum mapping de laboratório foi
 consultado nesta etapa. Não há ativação no startup nem autorização de operação.
 
+## Execução limitada — #88
+
+A [API opt-in e o procedimento](../operations/sigma-query-validation.md) acrescentam
+consulta de uma versão revisada, com escopo privado/temporário e hashes fixados.
+Reutilizam o transporte TLS e exigem o gate físico antes/depois da busca. Hits
+preservam origem, têm verificação literal independente e completude explícita.
+Não há persistência/reclassificação histórica nem implantação de regra. Implementação
+testada em fixtures/DB/API locais; o ensaio real da #89 permanece bloqueado.
+
 ## Conversão offline isolada — #85, 18/11/2026
 
 O [ADR0036](../architecture/decisions/0036-isolated-sigma-converter.md) resolve

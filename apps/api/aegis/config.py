@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     wazuh_allowed_ip: str | None = None
     linux_runner_config: Path | None = None
     wazuh_collection_config: Path | None = None
+    sigma_validation_scope: Path | None = None
     operating_mode: Literal["normal", "recovery"] = "normal"
     recovery_access_token: SecretStr | None = Field(default=None, repr=False)
     recovery_reconciliation_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
