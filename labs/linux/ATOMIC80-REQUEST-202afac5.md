@@ -1,5 +1,12 @@
 # Proposta específica #80 — uma campanha Atomic adaptada
 
+**AUTORIZADA, CONSUMIDA E ENCERRADA em18/11/2026.** Uma campanha real
+COMPLETED/INCONCLUSIVE/CLEANED, run `a9dc99b1-921f-4d94-be1f-70525c89fb4a`.
+Lab revogado, contas próprias inativas, recursos encerrados; três volumes retidos.
+[Provas](../../docs/evidence/atomic-execution-2026-11-18/VERIFIED-80.md).
+A proposta privada original e os registros posteriores permanecem preservados.
+O texto abaixo registra a preparação apresentada; não permite replay.
+
 **Preparada/verificada; não autorizada nem executada.** Não reutiliza pacotes
 ou autorizações dos ensaios anteriores. Não iniciar recursos apenas por ler
 esta proposta. [Procedimento e controles](../../docs/operations/atomic80-assay.md).

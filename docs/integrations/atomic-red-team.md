@@ -18,6 +18,11 @@ nem instala Atomic/Invoke-AtomicRedTeam. Metadados continuam não executáveis.
 Testes de software em temporários são distintos de um ensaio nativo; a #80 exige
 imagem/ambiente/pacote e autorização específica. Ver [operação e bloqueios](../operations/atomic-permissions.md).
 
+Em18/11, a #80 validou uma única campanha da adaptação própria sob autorização
+específica: [COMPLETED/INCONCLUSIVE/CLEANED](../evidence/atomic-execution-2026-11-18/VERIFIED-80.md),
+sem evidência defensiva. Recursos encerrados e autorização consumida; sem replay.
+Isso não executou o shell upstream nem tornou metadados importados executáveis.
+
 ## Catálogo persistente — #75,17/11/2026
 
 A migration explícita `c8e4a6d21f90` acrescenta três tabelas ao schema b7

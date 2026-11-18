@@ -160,11 +160,10 @@ Demo/Labs originais preservados; sem implantação. Provas/falhas históricas no
 checkpoint. Parar após esse aceite, sem avançar para outra entrega ou laboratório.
 
 Entrega #14: [checkpoint da execução Atomic](atomic-execution-checkpoint.md).
-#78 revisou/fixou um GUID e #79 entregou o adaptador próprio fechado, com CI
-integral44168295232 aprovada (3575Python/9skips e98React). #80 retomada: imagens,
-PKI e proposta202afac5 verificadas offline, aguardando autorização específica
-da tentativa. a4335444 expirou antes da confirmação e foi preservada sem efeito.
-CI final44205114457 aprovada (3615Python/9skips e98React);
-conferir prazo/estado da proposta no checkpoint/issue antes de operar.
-Metadados continuam não executáveis,
-Labs originais preservados; não tratar a preparação offline como ensaio nativo.
+#78 fixou um GUID; #79 entregou o adaptador fechado. #80 teve um único ensaio
+nativo autorizado em18/11: [COMPLETED/INCONCLUSIVE/CLEANED](../evidence/atomic-execution-2026-11-18/VERIFIED-80.md),
+synthetic=false,43bytes/0400→0600. Lab revogado, contas próprias inativas/zero
+sessões e recursos próprios encerrados; três volumes retidos sem consumidores.
+Pacote202afac5/autorizações consumidos, sem replay ou operação contínua.
+CI da fonte44205114457 SUCCESS,3615Python/9skips e98React. Originais preservados,
+metadados importados não executáveis; pai aberto para aceite conjunto. Parar.

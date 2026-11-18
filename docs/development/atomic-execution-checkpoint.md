@@ -11,17 +11,20 @@ suas autorizações operacionais anteriores estão consumidas.
   CI integral44168295232 SUCCESS na fontee2e0277:3575Python/9skips opcionais,
   98React; quatro partições e React conferidos. #79 atendida por software/fixtures,
   sem validação nativa ou implantação. Falha inicial preservada no relatório.
-- #80 retomada especificamente: imagens runner/aplicação construídas e verificadas,
-  receita/PKI/proposta202afac5 preparadas sem startup. Falta **autorização específica**
-  da [proposta concreta](../../labs/linux/ATOMIC80-REQUEST-202afac5.md) para
-  os recursos novos e uma campanha; nenhuma autorização/tentativa registrada.
-  CI4759805 passou3614Python/9skips e98React; inspeção RO real de layout Docker
-  levou à correção posterior c974380. CI final44205114457 SUCCESS:
-  3615Python/9skips e98React, cinco jobs/logs conferidos, coleta3624.
-  Proposta91de0d6f retirada sem autorização/efeito, preservada. a4335444 expirou
-  às09:07:07SP de18/11; confirmação constatada às09:27:06SP, sem autorização ou
-  tentativa. Novo pacote202afac5 verificado, até21:27:54SP de18/11, mesmas imagens/
-  efeito/limites, novos UUIDs/PKI. Nova confirmação necessária; pai #14 aberto.
+- #80 validada em ensaio nativo autorizado em18/11, pacote202afac5 consumido:
+  run `a9dc99b1-921f-4d94-be1f-70525c89fb4a`, um efeito43bytes/0400→0600,
+  **COMPLETED/INCONCLUSIVE/CLEANED**, synthetic=false. Aprovação segregada/mTLS,
+  dispatch/recibo/cleanup e JSON/HTML da mesma run conferidos. Sem SIEM/regra
+  defensiva, nenhuma alegação DETECTED/eficácia. Lab revogado, duas contas próprias
+  inativas/zero sessões, zero containers/redes próprios; três volumes retidos sem
+  consumidores. [Provas nativas](../evidence/atomic-execution-2026-11-18/VERIFIED-80.md).
+  CI final da fonte44205114457 SUCCESS:3615Python/9skips e98React; sem mudança
+  executável durante a execução. Consolidação posterior somente Markdown.
+  Pacote91de0d6f retirado e a4335444 expirada preservados sem tentativa.
+  Autorização202afac5 consumida, sem replay ou operação contínua.
+
+A #80 está atendida; pai #14 permanece aberto para aceite conjunto. Esta sessão
+não implementou irmãs ou outra feature. Não iniciar novo laboratório/ensaio.
 
 [Provas e distinção entre testes/ensaio/implantação](../evidence/atomic-execution-2026-11-17/README.md).
 [Operação e pré-requisitos](../operations/atomic-permissions.md).

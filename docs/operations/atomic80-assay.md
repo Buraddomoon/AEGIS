@@ -96,3 +96,12 @@ informar IDs/imagens/prazo/efeitos/limpeza e pedir confirmação específica.
 Testes de software usam somente temporários, mocks e schemas PG descartáveis;
 não criam Docker/Lab. Conferir comandos/contagens, CI, imagens e proposta reais
 nos comentários da #80 antes de operar. Não fechar #80 com preparação apenas.
+
+## Ensaio encerrado em18/11/2026
+
+O pacote202afac5 foi autorizado e consumido em uma tentativa,
+COMPLETED/INCONCLUSIVE/CLEANED, synthetic=false. Lab revogado, contas próprias
+inativas/zero sessões, recursos próprios encerrados, três volumes preservados
+sem consumidores. [Provas e limites](../evidence/atomic-execution-2026-11-18/VERIFIED-80.md).
+O procedimento é referência de controles; não autoriza repetir esse pacote,
+reativar recursos ou iniciar outro ensaio. Preservar PKI/imagens/fences/histórico.

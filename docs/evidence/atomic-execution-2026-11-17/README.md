@@ -1,5 +1,9 @@
 # Preparação offline da execução Atomic — #14
 
+Relatório histórico da fase offline. A #80 foi validada depois, sob autorização
+específica, no [ensaio encerrado de18/11](../atomic-execution-2026-11-18/VERIFIED-80.md).
+A preparação abaixo não é autorização nem prova nativa.
+
 Baseline `421a03e`, main limpa e igual a origin/main. Lidos AGENTS, guia de
 sessão, #14, seus três filhos nativos e provas finais das dependências #13/#5.
 Não foi lido o PROGRESS inteiro nem usada conversa anterior como autorização.

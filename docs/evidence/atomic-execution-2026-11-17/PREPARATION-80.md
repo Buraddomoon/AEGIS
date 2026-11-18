@@ -1,5 +1,9 @@
 # Retomada específica da #80 — preparação verificável
 
+Registro histórico de preparação e propostas anteriores. A proposta202afac5 foi
+autorizada e consumida no [ensaio real encerrado de18/11](../atomic-execution-2026-11-18/VERIFIED-80.md).
+Seu status atual é VERIFIED_CLEANED; não repetir efeitos a partir deste registro.
+
 Após pedido explícito para trabalhar a #80, a preparação saiu do bloqueio de
 imagem/ambiente indefinidos. Não houve startup, banco/journal original aberto,
 efeito em endpoint ou consulta defensiva. Autorização do ensaio continua separada.

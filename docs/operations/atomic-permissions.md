@@ -1,4 +1,4 @@
-# Atomic de permissões — implementação #79 e bloqueio do ensaio #80
+# Atomic de permissões — implementação #79 e ensaio #80
 
 Esta receita documenta a capacidade implementada e os pré-requisitos do ensaio.
 Não é pacote autorizado para executar. Nenhum Lab original foi iniciado,
@@ -63,7 +63,7 @@ Cleanup exige ausência dos dois arquivos e do diretório; desconhecidos, links,
 erro de RPC,404 ou commit perdido retêm a reserva até confirmação explícita.
 O recibo histórico é preservado mesmo quando cleanup falha.
 
-## Bloqueadores concretos da #80
+## Bloqueadores históricos na entrega inicial da #79
 
 Não existe autorização específica para este GUID/efeito. As autorizações das
 #5/#7/#8 estão consumidas e não podem ser reaproveitadas. Não existe neste escopo
@@ -98,3 +98,8 @@ registrado nas #14/#80; esses itens permanecem abertos até ensaio e aceite real
 Retomada específica da #80: [coordenador e ambiente separado](atomic80-assay.md).
 O estado de imagem/proposta atual consta na issue; os bloqueios acima registram
 a entrega inicial. A preparação nova não altera as receitas/volumes históricos.
+
+Ensaio #80 realizado sob autorização específica em18/11: um efeito próprio,
+COMPLETED/INCONCLUSIVE/CLEANED; lab revogado/contas inativas/recursos encerrados.
+[Provas e limites](../evidence/atomic-execution-2026-11-18/VERIFIED-80.md).
+Pacote202afac5 e autorização consumidos. Este documento não permite replay.

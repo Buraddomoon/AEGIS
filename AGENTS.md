@@ -64,9 +64,11 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   candidatos expirados e imagens históricas; sem remover/recriar para liberar replay.
 - Perfis históricos Linux: apenas linux-file-marker/v1. Fonte da #79 acrescenta
   um perfil opt-in separado de permissões de arquivo próprio, com revisão/hash
-  fixados; #80 possui imagens/proposta202afac5 verificadas offline, aguardando
-  autorização específica. a4335444 expirou antes da confirmação, sem tentativa;
-  sem startup/efeito ou ensaio nativo até aqui.
+  fixados; #80 teve uma campanha nativa autorizada em18/11, pacote202afac5,
+  COMPLETED/INCONCLUSIVE/CLEANED. Lab revogado, contas próprias inativas/zero
+  sessões, recursos encerrados/três volumes retidos sem consumidores. Provas em
+  docs/evidence/atomic-execution-2026-11-18/VERIFIED-80.md. Autorização consumida;
+  sem replay/operação contínua. a4335444 expirada preservada sem tentativa.
   Ver docs/development/atomic-execution-checkpoint.md. Sem shell remoto,
   Docker socket na app, alvo livre, evasão, persistência maliciosa, credenciais
   ou exfiltração. Atomic importado permanece não executável até revisão específica.
