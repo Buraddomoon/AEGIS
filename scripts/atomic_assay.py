@@ -1,4 +1,4 @@
-"""Closed #80 preparation/one-attempt lifecycle. Originals are never mounted.
+"""Closed #80/#83 preparation/one-attempt lifecycle. Originals are never mounted.
 
 Prepare/build are development operations. Run additionally requires a concrete
 package hash and a separate, explicit human authorization record for that hash.
@@ -22,10 +22,11 @@ import runner_activation_image_source as source
 import runner_activation_subnet_review as subnet
 import runner_image_wheels as wheels
 from aegis.domain.validation import digest
-from aegis.lab_runner import atomic_policy
+from aegis.lab_runner.assay_profile import NAMES, selected
 
 ROOT = source.ROOT
 PACKAGES = ROOT / ".local/atomic80-packages"
+BEHAVIOR_PACKAGES = ROOT / ".local/linux83-packages"
 BUILDS = ROOT / ".local/atomic80-builds"
 BASE_IMAGE = "sha256:9e3488c42adecf3c6a3ffb5588752bc75bae5e31f72e215d9777e950de7dd527"
 SUBNETS = ("192.168.253.0/29", "192.168.253.8/29")
@@ -342,6 +343,7 @@ CMD ["api"]
 
 
 def recipe(plan, folder):
+    profile = selected(plan)
     project, images = plan["project"], plan["images"]
     common = {
         "restart": "no",
@@ -366,13 +368,15 @@ def recipe(plan, folder):
         "controller_client_cert",
         "controller_client_key",
     ]
+    if profile["issue"] == 83:
+        runtime.append("plan")
     admin = ["owner_url", "redis_url", "app_password", "accounts", "plan"]
     services = {
         "db": {
             "image": images["postgres"],
             "environment": {
-                "POSTGRES_USER": "atomic_owner",
-                "POSTGRES_DB": "atomic_assay",
+                "POSTGRES_USER": profile["owner"],
+                "POSTGRES_DB": profile["database"],
                 "POSTGRES_PASSWORD_FILE": "/run/secrets/owner_password",
                 "POSTGRES_INITDB_ARGS": "--auth-host=scram-sha-256",
             },
@@ -380,7 +384,7 @@ def recipe(plan, folder):
             "volumes": ["database:/var/lib/postgresql/data"],
             "networks": {"backend": {"ipv4_address": "192.168.253.10"}},
             "healthcheck": {
-                "test": ["CMD", "pg_isready", "-U", "atomic_owner", "-d", "atomic_assay"],
+                "test": ["CMD", "pg_isready", "-U", profile["owner"], "-d", profile["database"]],
                 "interval": "2s",
                 "timeout": "2s",
                 "retries": 30,
@@ -409,7 +413,7 @@ def recipe(plan, folder):
             "image": images["runner"],
             "environment": {
                 **{"AEGIS_RUNNER_" + key.upper(): value for key, value in plan["identity"].items()},
-                "AEGIS_RUNNER_TEST_ID": atomic_policy.TEST_ID,
+                "AEGIS_RUNNER_TEST_ID": profile["test_id"],
             },
             "volumes": ["journal:/state"],
             "tmpfs": ["/work:rw,noexec,nosuid,nodev,size=1m,mode=0700,uid=10001,gid=10001"],
@@ -503,18 +507,29 @@ def recipe(plan, folder):
     }
 
 
-def prepare(application_build_id, application_sha):
+def prepare(application_build_id, application_sha, profile_name="atomic80"):
+    profile = selected(
+        {
+            "profile": profile_name,
+            "format": "atomic80-one-attempt/1"
+            if profile_name == "atomic80"
+            else "linux83-one-attempt/1",
+        }
+    )
     coordinator_commit = source._state(ROOT)
     application = json.loads(read(BUILDS / identifier(application_build_id) / "receipt.json"))
     assert digest(application) == application_sha
     assert image(application["image_id"])["id"] == application["image_id"]
     network = subnet._review(SUBNETS)
-    folder = PACKAGES / uuid4().hex
+    root = BEHAVIOR_PACKAGES if profile["issue"] == 83 else PACKAGES
+    if profile["issue"] == 83:
+        builder.pki.private_directory(root, create=True)
+    folder = root / uuid4().hex
     folder.mkdir(mode=0o700, parents=True)
     identity = {name: str(uuid4()) for name in ("runner_id", "laboratory_id", "asset_id")}
     init_linux_lab.initialize(folder / "pki", identifiers=identity)
     connection = json.loads((folder / "pki/connection.json").read_text())
-    connection["test_id"] = atomic_policy.TEST_ID
+    connection["test_id"] = profile["test_id"]
     # Newly generated candidate only. No original PKI/configuration is touched.
     (folder / "pki/connection.json").chmod(0o600)
     (folder / "pki/connection.json").write_text(json.dumps(connection))
@@ -523,8 +538,8 @@ def prepare(application_build_id, application_sha):
     values = {
         "owner_password": passwords["owner"],
         "app_password": passwords["app"],
-        "owner_url": f"postgresql+psycopg://atomic_owner:{passwords['owner']}@db:5432/atomic_assay",
-        "runtime_url": f"postgresql+psycopg://aegis_app:{passwords['app']}@db:5432/atomic_assay",
+        "owner_url": f"postgresql+psycopg://{profile['owner']}:{passwords['owner']}@db:5432/{profile['database']}",
+        "runtime_url": f"postgresql+psycopg://aegis_app:{passwords['app']}@db:5432/{profile['database']}",
         "redis_url": f"redis://:{passwords['redis']}@redis:6379/0",
         "redis_config": f'requirepass {passwords["redis"]}\nmaxmemory 96mb\nmaxmemory-policy noeviction\nsave ""\nappendonly no\n',
     }
@@ -534,7 +549,7 @@ def prepare(application_build_id, application_sha):
         folder / "private/accounts",
         [
             {
-                "username": "atomic80_" + role + "_" + folder.name[:12],
+                "username": profile["prefix"] + role + "_" + folder.name[:12],
                 "role": role,
                 "password": secrets.token_urlsafe(40),
             }
@@ -544,10 +559,10 @@ def prepare(application_build_id, application_sha):
     )
     now = datetime.now(UTC)
     plan = {
-        "format": "atomic80-one-attempt/1",
+        "format": profile["format"],
         "id": folder.name,
         "attempt_id": str(uuid4()),
-        "project": "aegis-atomic80-" + folder.name[:12],
+        "project": profile["project_prefix"] + folder.name[:12],
         "identity": identity,
         "created_at": now.isoformat(),
         "expires_at": (now + timedelta(hours=12)).isoformat(),
@@ -559,7 +574,7 @@ def prepare(application_build_id, application_sha):
             "postgres": "sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
             "redis": "sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0",
         },
-        "review": atomic_policy.review(),
+        "review": profile["review"],
         "subnets": list(SUBNETS),
         "api": "http://192.168.253.4:8080",
         "host_ports": [],
@@ -575,6 +590,8 @@ def prepare(application_build_id, application_sha):
         "effects_authorized": False,
         "network_preflight_sha256": digest(network),
     }
+    if profile["issue"] == 83:
+        plan["profile"] = profile_name
     for value in plan["images"].values():
         assert image(value)["id"] == value
     put(folder / "plan.json", plan, 0o444)
@@ -614,7 +631,11 @@ def prepare(application_build_id, application_sha):
 
 
 def verify(package_id, expected_sha):
-    folder = PACKAGES / identifier(package_id)
+    candidates = [root / identifier(package_id) for root in (PACKAGES, BEHAVIOR_PACKAGES)]
+    folders = [path for path in candidates if path.is_dir()]
+    if len(folders) != 1:
+        raise ValueError("Missing or ambiguous assay package")
+    folder = folders[0]
     proposal = json.loads(read(folder / "proposal.json"))
     if digest(proposal) != expected_sha:
         raise ValueError("Proposal hash changed")
@@ -626,6 +647,9 @@ def verify(package_id, expected_sha):
         ):
             raise ValueError("Private package drift")
     plan = proposal["plan"]
+    profile = selected(plan)
+    if folder.parent != (BEHAVIOR_PACKAGES if profile["issue"] == 83 else PACKAGES):
+        raise ValueError("Profile belongs to another package namespace")
     source._state(ROOT)
     if source._git(
         ROOT,
@@ -643,7 +667,8 @@ def verify(package_id, expected_sha):
         raise ValueError("Executable coordinator inputs changed; review a new proposal")
     if (
         plan["id"] != package_id
-        or plan["review"] != atomic_policy.review()
+        or plan["review"] != profile["review"]
+        or plan["project"] != profile["project_prefix"] + package_id[:12]
         or datetime.now(UTC) >= datetime.fromisoformat(plan["expires_at"])
     ):
         raise ValueError("Expired or incompatible proposal")
@@ -807,7 +832,7 @@ def run(package_id, expected_sha):
             record=folder / "controller.txt",
         )
         result = json.loads(output.decode().splitlines()[-1])
-        assert result["status"] == "native_atomic_verified"
+        assert result["status"] == selected(plan)["status"]
         completed = True
     finally:
         stop_permitted = not client_started
@@ -865,6 +890,7 @@ def main():
     create = commands.add_parser("prepare")
     create.add_argument("--application-build-id", required=True)
     create.add_argument("--application-sha256", required=True)
+    create.add_argument("--profile", choices=NAMES, default="atomic80")
     for name in ("verify", "run"):
         command = commands.add_parser(name)
         command.add_argument("--package-id", required=True)
@@ -875,7 +901,7 @@ def main():
             args.runner_build_id, args.runner_plan_sha256, args.cache_id, args.cache_sha256
         )
     elif args.command == "prepare":
-        result = prepare(args.application_build_id, args.application_sha256)
+        result = prepare(args.application_build_id, args.application_sha256, args.profile)
     elif args.command == "verify":
         _, plan = verify(args.package_id, args.expected_sha256)
         result = {"status": "proposal_verified_not_authorized", "plan": plan}

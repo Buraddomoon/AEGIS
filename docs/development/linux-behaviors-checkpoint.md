@@ -47,3 +47,12 @@ identidade/spec/geração, cancelar se ativo e solicitar somente cleanup. Não r
 start, apagar arquivos desconhecidos, journal/fences ou liberar por HTTP404.
 Recuperação manual exige revisão do runner original; guardar a prova persistida de
 CLEANED antes de liberar. #15 continua aberta até ensaio e aceite conjunto reais.
+
+## Retomada exclusiva da #83 em18/11
+
+Pedido de início recebido após a entrega técnica; preparação em andamento sob
+[procedimento próprio](../operations/linux83-assay.md). Coordenador compartilhado
+ganha dois perfis fechados, namespaces/bancos novos e controle por pacote, sem
+alterar programas/revisões da #82 ou consumir autorização histórica. Não há
+startup/efeito nativo autorizado por este checkpoint. Imagens/pacotes concretos,
+CI da preparação, aprovação humana e gate de memória ainda devem ser conferidos.

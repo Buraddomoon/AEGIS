@@ -1,4 +1,4 @@
-"""Closed entrypoints for a fresh, separate #80 database and runtime.
+"""Closed entrypoints for fresh, separate #80/#83 databases and runtimes.
 
 Never installed in the historical Linux/Wazuh recipes. Host package verification
 and human authorization must precede invoking these container entrypoints.
@@ -9,10 +9,16 @@ import os
 import sys
 from pathlib import Path
 
+from aegis.lab_runner.assay_profile import selected
 from sqlalchemy import delete, select, text
 from sqlalchemy.engine import make_url
 
 SECRETS = Path("/run/secrets")
+
+
+def profile():
+    path = SECRETS / "plan"
+    return selected(json.loads(path.read_text()) if path.exists() else {})
 
 
 def secret(name):
@@ -23,13 +29,14 @@ def secret(name):
 
 
 def configure(owner=False):
+    current = profile()
     uri = secret("owner_url" if owner else "runtime_url")
     url = make_url(uri)
     if (url.host, url.port, url.database, url.username) != (
         "db",
         5432,
-        "atomic_assay",
-        "atomic_owner" if owner else "aegis_app",
+        current["database"],
+        current["owner"] if owner else "aegis_app",
     ) or url.query:
         raise ValueError("Fresh assay database required")
     os.environ["DATABASE_URL"] = uri
@@ -48,7 +55,7 @@ def accounts():
         len(rows) != 2
         or {row["role"] for row in rows} != {"administrator", "operator"}
         or len({row["username"] for row in rows}) != 2
-        or any(not row["username"].startswith("atomic80_") for row in rows)
+        or any(not row["username"].startswith(profile()["prefix"]) for row in rows)
         or any(len(row["password"]) < 32 for row in rows)
     ):
         raise ValueError("Separate fresh accounts required")
@@ -84,7 +91,7 @@ def bootstrap():
             )
             db.add(user)
             db.flush()
-            audit(db, None, "atomic80.account_created", user.id, synthetic=False)
+            audit(db, None, profile()["name"] + ".account_created", user.id, synthetic=False)
         db.commit()
     os.environ["APP_DB_PASSWORD"] = secret("app_password")
     try:
@@ -96,7 +103,8 @@ def bootstrap():
 
 def check():
     from aegis.db import engine
-    from aegis.lab_runner import atomic_policy
+
+    current = profile()
 
     with engine().connect() as connection:
         connection.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"))
@@ -116,9 +124,13 @@ def check():
         assert (
             connection.scalar(
                 text(
-                    "SELECT count(*) FROM test_definitions WHERE id=:id AND approved AND version=1 AND behavior=:behavior AND technique_id='T1222.002'"
+                    "SELECT count(*) FROM test_definitions WHERE id=:id AND approved AND version=1 AND behavior=:behavior AND technique_id IS NOT DISTINCT FROM :technique"
                 ),
-                {"id": atomic_policy.DEFINITION_ID, "behavior": atomic_policy.BEHAVIOR},
+                {
+                    "id": current["definition_id"],
+                    "behavior": current["review"]["behavior"],
+                    "technique": current["review"]["technique_id"],
+                },
             )
             == 1
         )
@@ -149,7 +161,7 @@ def disable():
         if lab and lab.authorized:
             lab.authorized = False
             lab.environment_version += 1
-            audit(db, None, "atomic80.emergency_revoke", lab.id, synthetic=False)
+            audit(db, None, profile()["name"] + ".emergency_revoke", lab.id, synthetic=False)
         ids = []
         for row in accounts():
             user = db.scalar(select(User).where(User.username == row["username"]))
@@ -158,7 +170,9 @@ def disable():
                 user.active = False
                 ids.append(user.id)
                 db.execute(delete(LoginSession).where(LoginSession.user_id == user.id))
-                audit(db, user.id, "atomic80.account_disabled", user.id, synthetic=False)
+                audit(
+                    db, user.id, profile()["name"] + ".account_disabled", user.id, synthetic=False
+                )
         db.commit()
         assert all(not db.get(User, identifier).active for identifier in ids)
         assert not db.scalar(select(LoginSession).where(LoginSession.user_id.in_(ids)))

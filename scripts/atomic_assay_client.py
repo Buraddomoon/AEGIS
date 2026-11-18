@@ -9,7 +9,7 @@ from pathlib import Path
 
 import httpx
 from aegis.domain.validation import digest
-from aegis.lab_runner import atomic_policy
+from aegis.lab_runner.assay_profile import selected
 from aegis.lab_runner.protocol import JobView
 
 SECRETS = Path("/run/secrets")
@@ -32,7 +32,8 @@ def save_intent(value):
 
 
 def assay(plan, accounts, client, *, emit=print, persist=save_intent):
-    if plan["review"] != atomic_policy.review() or len(accounts) != 2:
+    profile = selected(plan)
+    if plan["review"] != profile["review"] or len(accounts) != 2:
         raise ValueError("Pinned review required")
     admin = next(row for row in accounts if row["role"] == "administrator")
     operator = next(row for row in accounts if row["role"] == "operator")
@@ -79,9 +80,9 @@ def assay(plan, accounts, client, *, emit=print, persist=save_intent):
             "POST",
             "/labs/linux/register",
             {
-                "name": "Atomic80 isolated one-attempt lab",
-                "owner": "Explicitly authorized #80 assay",
-                "isolation_review": "Fresh dedicated volumes, internal networks, pinned images, UID10001, read-only rootfs, no host ports/socket; one fchmod0400-to0600 effect only.",
+                "name": f"{profile['name']} isolated one-attempt lab",
+                "owner": f"Explicitly authorized #{profile['issue']} assay",
+                "isolation_review": "Fresh dedicated volumes, internal networks, pinned images, UID10001, read-only rootfs, no host ports/socket; exactly one code-reviewed fixed test.",
                 "confirm_isolation_review": True,
             },
         )
@@ -94,16 +95,16 @@ def assay(plan, accounts, client, *, emit=print, persist=save_intent):
             "POST",
             "/campaigns",
             {
-                "name": "Atomic80 single reviewed permission change",
-                "objective": "One fixed owned-file permission change with native mTLS and cleanup; defensive collection unavailable.",
+                "name": profile["name"] + " single reviewed effect",
+                "objective": "One fixed code-reviewed effect with native mTLS and cleanup; defensive collection unavailable.",
                 "laboratory_id": lab_id,
-                "test_ids": [atomic_policy.DEFINITION_ID],
+                "test_ids": [profile["definition_id"]],
             },
         )
         run = request(
             "POST", f"/campaigns/{campaign['id']}/runs", {"idempotency_key": plan["attempt_id"]}
         )
-        assert run["scope"]["runner"]["atomic_review"] == plan["review"]
+        assert run["scope"]["runner"][profile["review_key"]] == plan["review"]
         assert not run["synthetic"] and run["scope"]["telemetry"]["provider"] == "unavailable"
         persist(
             {
@@ -141,12 +142,14 @@ def assay(plan, accounts, client, *, emit=print, persist=save_intent):
         assert item["result"]["outcome"] == "INCONCLUSIVE"
         assert not item["events"] and not item["evidence"]
         receipt = item["runner_receipt"]["content"]
-        assert receipt["test_id"] == atomic_policy.TEST_ID
-        assert (
-            receipt["artifact_bytes"] == 43
-            and receipt["mode_before"] == 0o400
-            and receipt["mode_after"] == 0o600
-        )
+        assert receipt["test_id"] == profile["test_id"] and receipt["artifact_bytes"] == 43
+        if profile["issue"] == 80:
+            assert receipt["mode_before"] == 0o400 and receipt["mode_after"] == 0o600
+        else:
+            assert receipt["child_pid"] > 0 and receipt["child_exit_code"] == 0
+            output = (item["marker"] + "\n").encode() if profile["name"] == "linux83-shell" else b""
+            assert receipt["stdout_bytes"] == len(output)
+            assert receipt["stdout_sha256"] == hashlib.sha256(output).hexdigest()
         assert digest(receipt) == item["runner_receipt"]["sha256"]
         cleanup = item["runner_cleanup"]["content"]
         assert digest(cleanup) == item["runner_cleanup"]["sha256"]
@@ -159,7 +162,7 @@ def assay(plan, accounts, client, *, emit=print, persist=save_intent):
         assert "COMPROVANTES DO EXECUTOR" in result.text
         assert request("GET", "/executions?mode=linux")["total"] == 1
         return {
-            "status": "native_atomic_verified",
+            "status": profile["status"],
             "run_id": run["id"],
             "scope_hash": run["scope_hash"],
             "detail": detail,

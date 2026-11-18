@@ -741,9 +741,11 @@ def test_ambiguous_linux_responses_never_replay_start(linux, monkeypatch, lost):
         assert db.scalar(select(RunnerCleanup)).content["cleanup_state"] == "CLEANED"
 
 
-@pytest.mark.parametrize("runner", [atomic_policy.TEST_ID], indirect=True)
+@pytest.mark.parametrize(
+    "runner", [atomic_policy.TEST_ID, *behavior_policy.TEST_IDS.values()], indirect=True
+)
 @pytest.mark.parametrize("lost_start", [False, True])
-def test_atomic80_controller_uses_segregated_approval_and_never_replays(
+def test_native_assay_controller_uses_segregated_approval_and_never_replays(
     linux, monkeypatch, lost_start
 ):
     import importlib.util
@@ -790,6 +792,14 @@ def test_atomic80_controller_uses_segregated_approval_and_never_replays(
         "attempt_id": str(uuid.uuid4()),
         "expires_at": (now() + timedelta(minutes=5)).isoformat(),
     }
+    identifier = linux[2].identity.tests[0]
+    if identifier in behavior_policy.TEST_IDS.values():
+        kind = behavior_policy.kind_for(identifier)
+        plan.update(
+            profile="linux83-" + kind,
+            format="linux83-one-attempt/1",
+            review=behavior_policy.review(kind),
+        )
     accounts = [
         {"username": role, "role": role, "password": "Test-only-randomized-scope-23!"}
         for role in ("administrator", "operator")
@@ -806,8 +816,10 @@ def test_atomic80_controller_uses_segregated_approval_and_never_replays(
             result = module.assay(
                 plan, accounts, remote, persist=persisted.append, emit=lambda *a, **kw: None
             )
-            assert (
-                result["status"] == "native_atomic_verified"
+            assert result["status"] == (
+                "native_atomic_verified"
+                if identifier == atomic_policy.TEST_ID
+                else "native_linux83_verified"
             )  # Fixture validates the client contract only.
     assert len(starts) == 1 and len(persisted) == 1
     with session_factory()() as db:
