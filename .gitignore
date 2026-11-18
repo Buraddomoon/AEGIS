@@ -1,4 +1,5 @@
 .venv/
+.venv-sigma-converter/
 __pycache__/
 *.py[cod]
 .pytest_cache/

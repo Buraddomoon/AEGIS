@@ -12,11 +12,18 @@ parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
 group.add_argument("--dev", action="store_true")
 group.add_argument("--backup", action="store_true")
+group.add_argument("--sigma-converter", action="store_true")
 args = parser.parse_args()
 targets = (
-    tomllib.loads(Path("pyproject.toml").read_text())["project"]["optional-dependencies"]["backup"]
-    if args.backup
-    else [".[dev]" if args.dev else "."]
+    ["pysigma==1.5.1", "pysigma-backend-opensearch==2.0.3", "pysigma-backend-elasticsearch==2.1.1"]
+    if args.sigma_converter
+    else (
+        tomllib.loads(Path("pyproject.toml").read_text())["project"]["optional-dependencies"][
+            "backup"
+        ]
+        if args.backup
+        else [".[dev]" if args.dev else "."]
+    )
 )
 with tempfile.TemporaryDirectory() as directory:
     report = Path(directory) / "resolution.json"
@@ -45,8 +52,12 @@ for item in sorted(resolved["install"], key=lambda p: p["metadata"]["name"].lowe
     sha = item["download_info"]["archive_info"]["hashes"]["sha256"]
     lines.append(f"{name}=={item['metadata']['version']} --hash=sha256:{sha}")
 destination = (
-    "requirements-backup.lock"
-    if args.backup
-    else ("requirements-dev.lock" if args.dev else "requirements.lock")
+    "requirements-sigma-converter.lock"
+    if args.sigma_converter
+    else (
+        "requirements-backup.lock"
+        if args.backup
+        else ("requirements-dev.lock" if args.dev else "requirements.lock")
+    )
 )
 Path(destination).write_text("\n".join(lines) + "\n")

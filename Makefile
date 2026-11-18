@@ -8,8 +8,16 @@ setup:
 	$(VENV)/python -m pip install --upgrade pip==26.2.2
 	$(VENV)/pip install --require-hashes --no-deps -r requirements-dev.lock
 	$(VENV)/pip install -e . --no-deps
+	$(MAKE) sigma-converter-setup
 	npm --prefix apps/web ci
 	$(VENV)/python scripts/init_env.py
+
+# Separate, compatible official Sigma packages; never downgrades the API parser.
+.PHONY: sigma-converter-setup
+sigma-converter-setup:
+	$(VENV)/python -m venv --without-pip .venv-sigma-converter
+	$(VENV)/python -m pip --isolated --python .venv-sigma-converter/bin/python install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: -r requirements-sigma-converter.lock
+	$(VENV)/python -m pip --isolated --python .venv-sigma-converter/bin/python check
 up:
 	python3 scripts/init_env.py
 	docker compose up -d --build

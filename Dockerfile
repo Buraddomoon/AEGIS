@@ -14,6 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends libstdc++6 && r
     && python -m pip install --no-cache-dir pip==26.2.2
 COPY requirements.lock ./
 RUN pip install --no-cache-dir --require-hashes --no-deps -r requirements.lock
+COPY requirements-sigma-converter.lock ./
+RUN python -m venv --without-pip /opt/aegis-sigma-converter \
+    && python -m pip --isolated --python /opt/aegis-sigma-converter/bin/python install --no-cache-dir --require-hashes --only-binary=:all: -r requirements-sigma-converter.lock \
+    && python -m pip --isolated --python /opt/aegis-sigma-converter/bin/python check
 COPY pyproject.toml alembic.ini ./
 COPY apps/api/ apps/api/
 COPY fixtures/ fixtures/

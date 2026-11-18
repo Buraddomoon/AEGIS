@@ -1,5 +1,14 @@
 # Checkpoint — entrega #16: conversão Sigma
 
+Retomada em18/11 após pedido explícito de resolver o bloqueio: o
+[ADR0036](../architecture/decisions/0036-isolated-sigma-converter.md) substitui
+a espera por publicação por um conversor oficial em venv/processo separados.
+Parser da API continua2.0.1; conjunto1.5.1/2.0.3/2.1.1 com18pins/hashes e
+pip check próprios, auditado separadamente.25testes do processo passaram e
+auditoria manteve somente o finding DiskCache já revisado, cujo import é proibido.
+#84 retomada para essa solução;#85/#86 em implementação. Estado anterior abaixo
+é preservado como histórico, sem alegar conversão/UI entregue nesta etapa.
+
 18/11/2026: **#84 pesquisada e concluída com resultado negativo; #85/#86
 bloqueadas e #16 aberta, sem aceite conjunto.**
 

@@ -48,6 +48,7 @@ jobs:
           python -m pip install pip==26.2.2
           pip install --require-hashes --no-deps -r requirements-dev.lock
           pip install -e . --no-deps
+          make sigma-converter-setup
       - name: Lint and types
         if: matrix.shard == 0
         run: |

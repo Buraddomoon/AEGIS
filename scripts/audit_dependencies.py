@@ -9,29 +9,30 @@ from aegis.integrations.sigma_analysis import analyze
 from aegis.integrations.sigma_readiness import assess
 from aegis.integrations.yaml_import import parse_sigma
 
-result = subprocess.run(
-    [
-        sys.executable,
-        "-m",
-        "pip_audit",
-        "-r",
-        "requirements.lock",
-        "-r",
-        "requirements-backup.lock",
-        "-r",
-        "requirements-image-build.lock",
-        "--no-deps",
-        "--disable-pip",
-        "--format",
-        "json",
-    ],
-    capture_output=True,
-    text=True,
-)
-if result.returncode not in {0, 1}:
-    print(result.stderr, file=sys.stderr)
-    raise SystemExit(result.returncode)
-report = json.loads(result.stdout)
+# Separate dependency graphs: the converter's core must never be merged with the API's.
+report = {"dependencies": []}
+for locks in (
+    ("requirements.lock", "requirements-backup.lock", "requirements-image-build.lock"),
+    ("requirements-sigma-converter.lock",),
+):
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip_audit",
+            *[argument for lock in locks for argument in ("-r", lock)],
+            "--no-deps",
+            "--disable-pip",
+            "--format",
+            "json",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode not in {0, 1} or not result.stdout.strip():
+        print(result.stderr, file=sys.stderr)
+        raise SystemExit(result.returncode or 1)
+    report["dependencies"].extend(json.loads(result.stdout)["dependencies"])
 baseline = json.loads(Path("docs/security/dependency-advisories.json").read_text())["reviewed"]
 probe = """title: Cache path audit
 id: 73e12878-5870-4588-a7b6-79704ad821a4

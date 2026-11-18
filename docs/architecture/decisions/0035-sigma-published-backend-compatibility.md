@@ -2,6 +2,10 @@
 
 Data: 2026-11-18. Status: pesquisa #84 concluída; conversão #85 e UI #86 bloqueadas.
 
+Retomada posterior em18/11: a exigência de aguardar publicação foi substituída
+pelo [ADR0036](0036-isolated-sigma-converter.md), que isola um conjunto oficial
+compatível sem reduzir o parser da aplicação. O diagnóstico abaixo é preservado.
+
 ## Contexto
 
 A entrega #16 exige um backend oficial compatível e um pipeline fechado para

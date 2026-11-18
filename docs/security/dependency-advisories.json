@@ -9,8 +9,8 @@
         "GHSA-w8v5-vhqr-4h9v"
       ],
       "status": "not_affected_in_current_parser_path",
-      "reason": "Transitive pySigma requirement. AEGIS uses bounded in-memory SigmaCollection parsing plus explicit local checks of the parsed model/conditions. No sigma.validators.core, DiskCache import, instance or cache directory is used. Regression tests and audit exercise parsing and analysis, including invalid conditions, and require diskcache absent from sys.modules. Runtime filesystem is read-only. Enabling pySigma validators, plugins, data loaders or caching requires fresh review.",
-      "reviewed_at": "2026-10-22",
+      "reason": "Transitive pySigma requirement. AEGIS uses bounded in-memory SigmaCollection parsing plus explicit local checks of the parsed model/conditions. No sigma.validators.core, DiskCache import, instance or cache directory is used. Regression tests and audit exercise parsing and analysis, including invalid conditions, and require diskcache absent from sys.modules. Runtime filesystem is read-only. Enabling pySigma validators, plugins, data loaders or caching requires fresh review. Separately locked Sigma converter uses core1.5.1 with official compatible backends; a fresh isolated process enforces an audit hook before imports to reject diskcache, validators, plugins, data loaders, network, subprocesses and writes. Worker golden/negative and actual-effect tests exercise this path; no cache API or pickle data is accepted. The API parser remains2.0.1 in a different environment. Both dependency graphs are audited separately.",
+      "reviewed_at": "2026-11-18",
       "source": "https://github.com/advisories/GHSA-w8v5-vhqr-4h9v"
     }
   ]
