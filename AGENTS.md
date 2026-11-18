@@ -64,8 +64,9 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   candidatos expirados e imagens históricas; sem remover/recriar para liberar replay.
 - Perfis históricos Linux: apenas linux-file-marker/v1. Fonte da #79 acrescenta
   um perfil opt-in separado de permissões de arquivo próprio, com revisão/hash
-  fixados; #80 possui imagens/propostaa4335444 verificadas offline, aguardando
-  autorização específica antes de startup/efeito; sem ensaio nativo até aqui.
+  fixados; #80 possui imagens/proposta202afac5 verificadas offline, aguardando
+  autorização específica. a4335444 expirou antes da confirmação, sem tentativa;
+  sem startup/efeito ou ensaio nativo até aqui.
   Ver docs/development/atomic-execution-checkpoint.md. Sem shell remoto,
   Docker socket na app, alvo livre, evasão, persistência maliciosa, credenciais
   ou exfiltração. Atomic importado permanece não executável até revisão específica.

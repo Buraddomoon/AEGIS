@@ -1,5 +1,12 @@
 # Proposta específica #80 — uma campanha Atomic adaptada
 
+**EXPIRADA, preservada sem execução.** Prazo encerrado em18/11 às09:07:07
+em São Paulo. A confirmação humana foi constatada às09:27:06, cerca de20min
+depois; não gerou `authorization.json` ou `attempt.json`. O recebimento tardio
+foi registrado separadamente no diretório privado deste pacote. Nova
+[proposta202afac5](ATOMIC80-REQUEST-202afac5.md), sem reaproveitar autorização.
+O texto original abaixo é histórico e não libera startup/efeito.
+
 **Preparada/verificada; não autorizada nem executada.** Não reutiliza pacotes
 ou autorizações dos ensaios anteriores. Não iniciar recursos apenas por ler
 esta proposta. [Procedimento e controles](../../docs/operations/atomic80-assay.md).

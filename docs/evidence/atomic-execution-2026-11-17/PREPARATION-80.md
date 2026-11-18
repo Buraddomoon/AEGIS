@@ -15,7 +15,7 @@ preflight mTLS e um start; UUID/escopo ficam no volume próprio antes do efeito.
 Nenhuma alteração de contrato/worker/allowlist da #79 ou do gate histórico b7.
 
 Procedimento: [atomic80-assay](../../operations/atomic80-assay.md).
-Proposta atual: [pacotea4335444](../../../labs/linux/ATOMIC80-REQUEST-a4335444.md).
+Proposta atual: [pacote202afac5](../../../labs/linux/ATOMIC80-REQUEST-202afac5.md).
 
 ## Imagens construídas de verdade
 
@@ -108,9 +108,9 @@ revisado/npm0. Sem filtros/exclusões/partições/timeouts relaxados. Consolida�
 posterior somente Markdown; inputs executáveis iguais à fonte aprovada.
 Não confundir testes ou RUNs de build com ensaio nativo/mTLS/telemetria.
 
-## Proposta sem autorização
+## Preparação histórica a4335444 — expirada
 
-Pacote atual a4335444 preparado, SHA256
+Pacote a4335444 preparado, SHA256
 `1d765beae77041733963db23304965d10839f0384f27ee0d309429d4513314af`.
 Receita Compose renderizada sem create/start. PKI nova conferida offline:
 OpenSSL verify serverAuth/clientAuth e IP192.168.253.2 OK; folhas até
@@ -126,3 +126,28 @@ e o gate exige3072MiB novamente antes de qualquer create.
 Os bloqueios de preparação foram resolvidos. Falta confirmação humana específica
 da proposta antes de iniciar os recursos novos, inicializar seu banco/contas e
 executar uma única campanha. Não fechar #80/#14 com este relatório de preparação.
+
+## Substituição após expiração — 18/11/2026
+
+A confirmação humana “sim” foi constatada às12:27:06UTC (09:27:06SP), após o
+prazo12:07:07UTC do pacotea4335444. Seu conteúdo/PKI permanecem preservados;
+recebimento registrado separadamente em `approval-received-expired.json`, com
+`effects_authorized=false`. Sem `authorization.json`, `attempt.json`, recursos
+ou efeito nativo. A confirmação tardia não foi transferida para outro pacote.
+
+Novo pacote `202afac50f69432681adabf07baaaaed`, SHA256
+`21e4cad0f9287de38861cc9e0aa903e0f7ccd5c4c5b4affd7c647675f6ab068b`,
+gerado às12:27:54UTC, até19/11 às00:27:54UTC (18/11 às21:27:54SP).
+Coordenador a19257f, executáveis idênticos à c974380 da CI integral verde acima.
+Mesmas quatro imagens, efeito único, limites de1728MiB e3072MiB disponíveis,
+sem volumes originais. UUIDs/PKI e projeto novos, detalhados na proposta atual.
+Não houve rebuild, migração, startup ou campanha durante essa substituição.
+
+Comandos efetivamente executados: `atomic_assay.py prepare` com o mesmo build
+de aplicação e recibo fixados, seguido de `verify --package-id 202afac50f69432681adabf07baaaaed
+--expected-sha256 21e4cad0f9287de38861cc9e0aa903e0f7ccd5c4c5b4affd7c647675f6ab068b`,
+saída0/`proposal_verified_not_authorized`. OpenSSL `verify -purpose sslserver
+-verify_ip 192.168.253.2` e `verify -purpose sslclient` passaram com as respectivas
+CAs novas; duas folhas válidas até20/11 às12:27:54UTC. Isso não prova mTLS nativo.
+Fences/autorizações ausentes no pacote novo. Aguardando confirmação específica
+do novo hash, conforme procedimento sem renovação silenciosa. #80/#14 abertas.
