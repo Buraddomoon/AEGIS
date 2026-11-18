@@ -50,6 +50,16 @@ não é apresentada como análise sem achados.
 
 ### Conversão e compatibilidade
 
+Reavaliação da entrega#16 em **18/11/2026**: pesquisa#84 concluída, conversão#85
+e UI#86 bloqueadas. Os wheels oficiais OpenSearch2.0.3/Elasticsearch2.1.1 ainda
+exigem core<2; nem manter2.0.1 nem atualizar para2.1.0 resolve o par. O controle
+1.5.1 resolve dependências, mas é downgrade vedado, não uma opção de instalação.
+Runtime, locks e snapshot histórico22/10 foram preservados. Nenhum backend
+instalado, consulta gerada ou implantação realizada. Ver
+[matriz/provas](../evidence/sigma-compatibility-2026-11-18/README.md),
+[ADR0035](../architecture/decisions/0035-sigma-published-backend-compatibility.md)
+e [checkpoint de retomada](../development/sigma-conversion-checkpoint.md).
+
 Estado da análise estática: `not_configured`, backend/pipeline de conversão null,
 conversão/implantação false. A prévia de campos abaixo é uma etapa independente.
 A [documentação oficial de backends](https://sigmahq.io/docs/digging-deeper/backends)
