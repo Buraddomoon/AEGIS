@@ -6,6 +6,26 @@ Nova importação do mesmo UUID cria versão imutável; conteúdo idêntico é i
 
 Sintaxe válida não comprova semântica, cobertura ou compatibilidade Wazuh. Validação de consulta no índice exige prova num laboratório autorizado, independente da geração offline. Associação revisada regra/teste é operacional como metadado de planejamento, com versões fixas, retirada e histórico. [Operação e API](../operations/rule-test-reviews.md). Análise estática parcial está disponível abaixo; semântica no índice e implantação continuam em entregas próprias.
 
+## Gate físico de consulta — #87
+
+`integrations/sigma_index.py` acrescenta o perfil `aegis-marker-keyword/1`.
+Consulta somente GET raiz, `_mapping`, `_settings` e `_alias` de um índice diário
+concreto `wazuh-alerts-4.x-AAAA.MM.DD`. Exige hashes previamente revisados de mapping
+e settings completos, versão anunciada exata e ausência de aliases; não aprende
+confiança da resposta. O hash de settings inclui UUID/versão de criação disponíveis.
+A versão da API raiz pode ser mascarada pela compatibilidade Wazuh; não comprova
+a versão da distribuição. HTTP403/404, TLS inválido e drift nunca liberam busca.
+
+Campos utilizados e `agent.id` precisam ser keyword sem normalizer, script,
+null_value, divisão por espaços ou truncamento abaixo do orçamento512; `timestamp`
+precisa ser date indexado. Objetos disabled/nested, aliases de campo, runtime fields
+e `_source` desabilitado são recusados. Não adapta silenciosamente texto analisado
+ou subcampos. [Template oficial4.14.9](https://github.com/wazuh/wazuh/blob/v4.14.9/extensions/elasticsearch/7.x/wazuh-template.json)
+é referência de revisão, nunca substituto do mapping físico.
+
+Fixtures e TLS de loopback verificam o contrato; nenhum mapping de laboratório foi
+consultado nesta etapa. Não há ativação no startup nem autorização de operação.
+
 ## Conversão offline isolada — #85, 18/11/2026
 
 O [ADR0036](../architecture/decisions/0036-isolated-sigma-converter.md) resolve
