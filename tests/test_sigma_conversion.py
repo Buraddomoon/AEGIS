@@ -38,6 +38,20 @@ def test_real_conversion_has_exact_provenance_and_no_siem_effect():
     "change,code",
     [
         (
+            lambda s: s.replace("    AegisSchema:", "    AegisSchema: discarded\n    AegisSchema:"),
+            "ambiguous_yaml_keys",
+        ),
+        (
+            lambda s: s.replace("  condition:", "  condition: discarded\n  condition:"),
+            "ambiguous_yaml_keys",
+        ),
+        (
+            lambda s: s.replace(
+                "    AegisSchema:", "    <<: {AegisSchema: discarded}\n    AegisSchema:"
+            ),
+            "ambiguous_yaml_keys",
+        ),
+        (
             lambda s: s.replace("AegisSchema:", "AegisSchema|fieldref:"),
             "field_or_modifier_unsupported",
         ),

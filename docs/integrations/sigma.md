@@ -27,6 +27,8 @@ AND/OR/NOT e parênteses até8níveis. Modificadores/fieldref/keywords/selectors
 números/booleanos/null, curingas/backslash e metadados executáveis/desconhecidos
 são unsupported com motivo. Estimativa conservadora limita expansão da query
 a8KiB antes do subprocesso; budgets YAML anteriores continuam obrigatórios.
+Chaves duplicadas, merge YAML e chaves não textuais são recusadas antes do parser
+Sigma, para não converter silenciosamente apenas o último valor carregado.
 
 O processo recebe somente JSON inerte limitado, com ambiente limpo e Python-I/-B.
 Classes oficiais fixas, sem desserializar pipeline; invariância da detection

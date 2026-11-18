@@ -6,6 +6,8 @@ import subprocess
 from pathlib import Path
 from threading import BoundedSemaphore
 
+import yaml
+
 from aegis.domain.validation import digest
 from aegis.integrations import sigma_converter_worker as worker
 from aegis.integrations.sigma_analysis import analyze
@@ -36,12 +38,41 @@ def profiles() -> dict:
     return {"items": [contract()], "configured": interpreter().is_file()}
 
 
+def ambiguous_keys(content: str) -> bool:
+    # Called only after the shared YAML size/depth/event/alias preflight. Reject
+    # duplicate and merge keys before a Sigma parser could silently drop a term.
+    stack = [yaml.compose(content, Loader=yaml.SafeLoader)]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, yaml.MappingNode):
+            seen = set()
+            for key, value in node.value:
+                if (
+                    not isinstance(key, yaml.ScalarNode)
+                    or key.tag != "tag:yaml.org,2002:str"
+                    or key.value == "<<"
+                    or key.value in seen
+                ):
+                    return True
+                seen.add(key.value)
+                stack.append(value)
+        elif isinstance(node, yaml.SequenceNode):
+            stack.extend(node.value)
+    return False
+
+
 def convert(content: str, profile_id: str = worker.PROFILE_ID) -> dict:
     if profile_id != worker.PROFILE_ID:
         raise LookupError("Perfil de consulta não encontrado.")
     document = safe_sigma_document(content)
     source = {key: document.get(key) for key in ("title", "id", "logsource", "detection")}
-    reason = "metadata_unsupported" if set(document) - METADATA else worker.blocker(source)
+    reason = (
+        "ambiguous_yaml_keys"
+        if ambiguous_keys(content)
+        else "metadata_unsupported"
+        if set(document) - METADATA
+        else worker.blocker(source)
+    )
     if reason is None:
         analysis = analyze(content)
         if analysis["findings"] or analysis["skipped_checks"]:
