@@ -15,7 +15,7 @@ preflight mTLS e um start; UUID/escopo ficam no volume próprio antes do efeito.
 Nenhuma alteração de contrato/worker/allowlist da #79 ou do gate histórico b7.
 
 Procedimento: [atomic80-assay](../../operations/atomic80-assay.md).
-Proposta concreta: [pacote91de0d6f](../../../labs/linux/ATOMIC80-REQUEST-2026-11-17.md).
+Proposta atual: [pacotea4335444](../../../labs/linux/ATOMIC80-REQUEST-a4335444.md).
 
 ## Imagens construídas de verdade
 
@@ -60,8 +60,16 @@ alterar tags antigas ou apagar resíduos/cache/imagens históricas.
    oficiais de PG/Redis consultadas por ID. Projeção usa index para esse campo;
    UID10001 continua obrigatório para aplicação/runner. Candidato/PKI preservados,
    sem efeito, sem sobrescrever/usar seu pacote incompleto.
+5. A projeção foi exercitada somente em metadados reais do Demo já existente,
+   sem volumes/SQL/startup. Docker também omitia Tmpfs vazio no DB. O template
+   usa index para esse campo; parsing de DB/API real passou depois, sem imprimir
+   valores. Isso valida layout do transporte, não o isolamento/runtime do perfil
+   novo. O layout sem portas do worker existente também foi lido RO, sem dados.
+   Novo coordenador c974380; pacote91de0d6f retirado sem autorização/efeito,
+   preservando integralmente sua proposta/PKI. Pacote novo a4335444, sem converter
+   ou rehash do pacote anterior para fazer o guard passar.
 
-As runs intermediárias da CI foram substituídas/canceladas após os commits de
+Várias runs intermediárias da CI foram substituídas/canceladas após os commits de
 correção; não são agregadas como workflow verde. Logs/receipts/segredos somente
 em `.local`, sem upload de conteúdo privado. Não houve tentativa de laboratório
 consumida por essas falhas de preparação.
@@ -74,22 +82,45 @@ de assets/retention/checker/metadata. Não somar rodadas como casos únicos.
 Módulos testados: `test_atomic_assay`, `test_linux_campaigns`,
 `test_linux_campaign_preparation`. Fixture usa schemas PG/Redis15 próprios,
 sequenciais; processos próprios apenas em temporários, nenhum Docker/Lab.
+Mais38testes passaram após o guard de metadata runtime; sem somar rodadas.
 Aviso conhecido Starlette/httpx preservado. Lint/tipos/formato aprovados.
 
 CI integral da fonte4759805:
 [44202869465](https://github.com/Buraddomoon/AEGIS/actions/runs/44202869465),
-em andamento; conferir quatro Python e React antes do aceite da preparação.
+SUCCESS, quatro Python937/868/942/867aprovações,9skips opcionais e98React;
+3623coletados igual à coleta local. Cinco jobs/logs conferidos. Python1finding
+revisado/npm0. Correção posterior de metadata em c974380; CI final
+[44205114457](https://github.com/Buraddomoon/AEGIS/actions/runs/44205114457):
+**SUCCESS**, fonte `c9743800176950305c408daf969d3e1b6638d241`, cinco jobs/logs:
+
+| Job | Resultado |
+| --- | --- |
+| Python0 |937passaram/2skips |
+| Python1 |869passaram/2skips |
+| Python2 |942passaram/1skip |
+| Python3 |867passaram/4skips |
+| React |98passaram/16arquivos; lint/tipos/formato/build/auditoria aprovados |
+
+Total único **3615Python passaram/9skips opcionais**,3624coletados igual à
+coleta local. Skips existentes por metadata opt-in/objetos Demo/ferramentas locais
+ausentes; não criar recursos para obter green. Python1finding explicitamente
+revisado/npm0. Sem filtros/exclusões/partições/timeouts relaxados. Consolidação
+posterior somente Markdown; inputs executáveis iguais à fonte aprovada.
 Não confundir testes ou RUNs de build com ensaio nativo/mTLS/telemetria.
 
 ## Proposta sem autorização
 
-Pacote91de0d6f preparado e `verify` real aprovou SHA256
-`b99e3ac0e9f0e644333431c31da640f75a3ac0f467dbd9d02f62a5559d24cf05`.
+Pacote atual a4335444 preparado, SHA256
+`1d765beae77041733963db23304965d10839f0384f27ee0d309429d4513314af`.
 Receita Compose renderizada sem create/start. PKI nova conferida offline:
 OpenSSL verify serverAuth/clientAuth e IP192.168.253.2 OK; folhas até
-19/11/2026 às23:51:20UTC. Proposta expira18/11 às11:51:20UTC; revalidar tudo
-antes de operar. Hash de executáveis prende o coordenador4759805, permitindo
+20/11/2026 às00:07:07UTC. Proposta expira18/11 às12:07:07UTC; revalidar tudo
+antes de operar. Hash de executáveis prende o coordenador c974380, permitindo
 somente consolidação Markdown posterior, sem mudar autorização/escopo histórico.
+Comparação independente de HEAD com o manifesto da aplicação construída confirmou
+78fontes de pacote e16assets byte a byte/SHA256 idênticos. Consulta RO de recursos
+no host observou3915MiB MemAvailable/385GiB livres; isso não reserva recursos,
+e o gate exige3072MiB novamente antes de qualquer create.
 
 `authorization.json` e `attempt.json` ausentes; efeitos não autorizados.
 Os bloqueios de preparação foram resolvidos. Falta confirmação humana específica

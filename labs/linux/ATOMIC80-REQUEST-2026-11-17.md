@@ -1,3 +1,8 @@
+> **Retirada antes de autorização/execução.** A revisão do inspetor de metadata
+> exigiu novo coordenador e uma [nova proposta a4335444](ATOMIC80-REQUEST-a4335444.md).
+> O pacote91de0d6f, PKI e hash abaixo foram preservados, sem autorização ou tentativa
+> consumida. Não executar esta proposta; o guard de inputs atuais a recusa.
+
 # Proposta específica #80 — uma campanha Atomic adaptada
 
 **Preparada/verificada; não autorizada nem executada.** Não reutiliza pacotes

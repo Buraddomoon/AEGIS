@@ -12,10 +12,13 @@ suas autorizações operacionais anteriores estão consumidas.
   98React; quatro partições e React conferidos. #79 atendida por software/fixtures,
   sem validação nativa ou implantação. Falha inicial preservada no relatório.
 - #80 retomada especificamente: imagens runner/aplicação construídas e verificadas,
-  receita/PKI/proposta91de0d6f preparadas sem startup. Falta **autorização específica**
-  da [proposta concreta](../../labs/linux/ATOMIC80-REQUEST-2026-11-17.md) para
+  receita/PKI/propostaa4335444 preparadas sem startup. Falta **autorização específica**
+  da [proposta concreta](../../labs/linux/ATOMIC80-REQUEST-a4335444.md) para
   os recursos novos e uma campanha; nenhuma autorização/tentativa registrada.
-  CI final da preparação4759805 em44202869465 em andamento. Pai #14 aberto.
+  CI4759805 passou3614Python/9skips e98React; inspeção RO real de layout Docker
+  levou à correção posterior c974380. CI final44205114457 SUCCESS:
+  3615Python/9skips e98React, cinco jobs/logs conferidos, coleta3624.
+  Proposta91de0d6f retirada sem autorização/efeito, preservada. Pai #14 aberto.
 
 [Provas e distinção entre testes/ensaio/implantação](../evidence/atomic-execution-2026-11-17/README.md).
 [Operação e pré-requisitos](../operations/atomic-permissions.md).

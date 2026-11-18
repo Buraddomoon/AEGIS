@@ -162,7 +162,8 @@ checkpoint. Parar após esse aceite, sem avançar para outra entrega ou laborat�
 Entrega #14: [checkpoint da execução Atomic](atomic-execution-checkpoint.md).
 #78 revisou/fixou um GUID e #79 entregou o adaptador próprio fechado, com CI
 integral44168295232 aprovada (3575Python/9skips e98React). #80 retomada: imagens,
-PKI e proposta91de0d6f verificadas offline, aguardando autorização específica
-da tentativa. Conferir CI da preparação e prazo/estado no checkpoint/issue.
+PKI e propostaa4335444 verificadas offline, aguardando autorização específica
+da tentativa. CI final44205114457 aprovada (3615Python/9skips e98React);
+conferir prazo/estado da proposta no checkpoint/issue antes de operar.
 Metadados continuam não executáveis,
 Labs originais preservados; não tratar a preparação offline como ensaio nativo.
