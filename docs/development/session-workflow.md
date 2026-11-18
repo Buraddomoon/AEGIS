@@ -168,3 +168,13 @@ Pacote202afac5/autorizações consumidos, sem replay ou operação contínua.
 CI da fonte44205114457 SUCCESS,3615Python/9skips e98React. Originais preservados,
 metadados importados não executáveis. [Aceite conjunto da #14](../evidence/atomic-execution-2026-11-18/ACCEPTANCE-14.md)
 realizado em18/11, critérios do pai atendidos. Entrega encerrada; parar.
+
+Entrega #15: [checkpoint dos comportamentos Linux](linux-behaviors-checkpoint.md).
+#81/#82/#83 concluídas: processo benigno sem técnica e shell Unix fixo com
+T1059.004 limitada, cada qual com uma run nativa autorizada em18/11,
+COMPLETED/INCONCLUSIVE/CLEANED, synthetic=false. Labs revogados, quatro contas UI
+inativas/zero sessões, recursos encerrados e seis volumes retidos sem consumidores.
+CI da fonte1dcff25 SUCCESS,3733Python/9skips e98React. [Aceite conjunto](../evidence/linux83-2026-11-18/ACCEPTANCE-15.md)
+conferiu critérios, hashes, encerramento, imagens retidas e sincronização sem
+repetir efeito/abrir volumes. Autorizações/pacotes consumidos, sem operação
+contínua. Entrega encerrada; parar e não iniciar outra feature.

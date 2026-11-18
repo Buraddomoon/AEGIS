@@ -79,7 +79,8 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   synthetic=false. Labs revogados, quatro contas UI próprias inativas/zero
   sessões, recursos encerrados; seis volumes retidos sem consumidores.
   Autorização consumida, sem replay/reativação/operação contínua. Provas em
-  docs/evidence/linux83-2026-11-18/VERIFIED-83.md; pai#15 aguarda aceite conjunto.
+  docs/evidence/linux83-2026-11-18/VERIFIED-83.md. Aceite conjunto#15 concluído
+  em18/11: docs/evidence/linux83-2026-11-18/ACCEPTANCE-15.md. Entrega encerrada.
 - Dispatch durável antes da RPC, efeito de uso único, deadline/lease e supervisor;
   resposta ambígua retém reserva/quarentena.404 não comprova cleanup. Cancelamento
   e revogação não dispensam limpeza; falha deve mostrar recuperação segura.

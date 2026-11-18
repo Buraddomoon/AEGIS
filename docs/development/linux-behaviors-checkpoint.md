@@ -1,5 +1,14 @@
 # Ampliação Linux — #15
 
+**Aceite conjunto concluído em18/11/2026.** #81/#82/#83 e dependência #5
+concluídas; [matriz e reconferência final](../evidence/linux83-2026-11-18/ACCEPTANCE-15.md)
+atendem os critérios do pai #15. Duas runs nativas COMPLETED/INCONCLUSIVE/CLEANED,
+CI integral3733Python/9skips e98React aprovada. Recursos próprios encerrados,
+seis volumes sem consumidores, contas inativas e autorizações consumidas.
+Entrega encerrada; sem replay/operação contínua e sem iniciar outra feature.
+
+## Histórico da preparação e da conclusão da #83
+
 **Atualização final18/11: #83 autorizada e encerrada.** Dois ensaios nativos,
 uma campanha por perfil, COMPLETED/INCONCLUSIVE/CLEANED, synthetic=false.
 [Provas](../evidence/linux83-2026-11-18/VERIFIED-83.md). Labs revogados, quatro contas
