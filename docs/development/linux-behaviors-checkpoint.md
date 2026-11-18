@@ -16,7 +16,12 @@ são recibos do executor, nunca evidência de detecção.
 Validação local:135casos API/worker/binding/domínio e212casos runner/protocolo/
 transporte/Atomic/comportamentos aprovados, com sobreposição entre rodadas.
 Lint e build aprovados. [Provas e limites](../evidence/linux-behaviors-2026-11-18/PREPARATION.md).
-CI da fonte será registrada após push; resultados locais não são CI verde.
+Dois asserts de inventário da primeira CI foram corrigidos em `9e614cb`;
+24regressões locais de fluxo Demo/publicação ATT&CK aprovadas.
+[CI integral44313563809](https://github.com/Buraddomoon/AEGIS/actions/runs/44313563809)
+SUCCESS na fonte `9e614cb829cccaa70b21ff7a286418a5482fa771`:3703Python/9skips
+opcionais e98React, quatro grupos e React conferidos. [Contagens e limites](../evidence/linux-behaviors-2026-11-18/CI.md).
+Escopo técnico de #81/#82 atendido; #83 e aceite do pai ainda pendentes.
 Nenhuma imagem nova implantada ou ensaio nativo
 realizado nesta preparação. O banco Demo e os volumes originais não recebem seed
 nem migração para disponibilizar esses testes; seed somente em schemas de teste.

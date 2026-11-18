@@ -86,6 +86,18 @@ na revisão exigida quando T1059.004 sai do catálogo. Corrigidas expectativas
 exatas, preservando os gates de disponibilidade, modo e catálogo. Sem mudança
 de código runtime, filtros, exclusões ou parâmetros da CI.
 
-CI final e hash da correção serão registrados depois do push, sem equiparar
-validação local a workflow aprovado. Evidências públicas contêm apenas metadados
-de fonte/testes, sem credenciais, dumps, logs ou artefatos privados.
+A correção `9e614cb829cccaa70b21ff7a286418a5482fa771`
+(`test(linux): account for reviewed shell profile in catalog regressions (Refs #82)`)
+foi validada localmente com `tests/test_flow.py tests/test_attack_publication.py -q`:
+24passed em21,34s, PostgreSQL/Redis de desenvolvimento e fixtures próprias.
+Commit enviado a origin/main após staged/segredos/checks obrigatórios aprovados.
+O push iniciou nova CI integral; pela política de concorrência existente, as
+partições2/3 ainda em execução da rodada44312253261 foram canceladas. Conclusão
+global dessa rodada: CANCELLED, com a falha da partição1 preservada; não é green.
+
+CI final [44313563809](https://github.com/Buraddomoon/AEGIS/actions/runs/44313563809)
+SUCCESS em `9e614cb829cccaa70b21ff7a286418a5482fa771`:3703Python/9skips opcionais
+e98React. [Detalhamento por job](CI.md). Consolidação posterior apenas documental;
+não houve mudança nos inputs executáveis/testes validados. Evidências públicas
+contêm apenas metadados de fonte/testes, sem credenciais, dumps, logs ou artefatos
+privados. #81/#82 atendidas; #83 permanece bloqueada e #15 aberta.
