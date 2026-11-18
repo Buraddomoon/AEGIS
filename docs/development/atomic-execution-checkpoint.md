@@ -23,8 +23,11 @@ suas autorizações operacionais anteriores estão consumidas.
   Pacote91de0d6f retirado e a4335444 expirada preservados sem tentativa.
   Autorização202afac5 consumida, sem replay ou operação contínua.
 
-A #80 está atendida; pai #14 permanece aberto para aceite conjunto. Esta sessão
-não implementou irmãs ou outra feature. Não iniciar novo laboratório/ensaio.
+Aceite conjunto da #14 realizado em18/11: dependências #13/#5 e filhos
+#78/#79/#80 concluídos; revisão, implementação e ensaio vinculam o mesmo perfil.
+[Critérios e provas do aceite](../evidence/atomic-execution-2026-11-18/ACCEPTANCE-14.md).
+Entrega atendida, sem pendência técnica neste escopo. Não iniciar outro ensaio
+ou feature; autorizações consumidas, sem replay/operação contínua.
 
 [Provas e distinção entre testes/ensaio/implantação](../evidence/atomic-execution-2026-11-17/README.md).
 [Operação e pré-requisitos](../operations/atomic-permissions.md).

@@ -69,6 +69,8 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   sessões, recursos encerrados/três volumes retidos sem consumidores. Provas em
   docs/evidence/atomic-execution-2026-11-18/VERIFIED-80.md. Autorização consumida;
   sem replay/operação contínua. a4335444 expirada preservada sem tentativa.
+  #14 com aceite conjunto em18/11: #78/#79/#80 e dependências concluídas;
+  ver docs/evidence/atomic-execution-2026-11-18/ACCEPTANCE-14.md. Entrega encerrada.
   Ver docs/development/atomic-execution-checkpoint.md. Sem shell remoto,
   Docker socket na app, alvo livre, evasão, persistência maliciosa, credenciais
   ou exfiltração. Atomic importado permanece não executável até revisão específica.

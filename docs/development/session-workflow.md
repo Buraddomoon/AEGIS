@@ -166,4 +166,5 @@ synthetic=false,43bytes/0400→0600. Lab revogado, contas próprias inativas/zer
 sessões e recursos próprios encerrados; três volumes retidos sem consumidores.
 Pacote202afac5/autorizações consumidos, sem replay ou operação contínua.
 CI da fonte44205114457 SUCCESS,3615Python/9skips e98React. Originais preservados,
-metadados importados não executáveis; pai aberto para aceite conjunto. Parar.
+metadados importados não executáveis. [Aceite conjunto da #14](../evidence/atomic-execution-2026-11-18/ACCEPTANCE-14.md)
+realizado em18/11, critérios do pai atendidos. Entrega encerrada; parar.
