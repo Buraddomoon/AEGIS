@@ -50,9 +50,11 @@ bloqueiam sem renovação silenciosa. Segredos/dumps/logs ficam fora do Git/issu
 
 Duas redes internas isolated192.168.253.0/29 e192.168.253.8/29, IPv6 desabilitado,
 nenhuma porta host ou conexão a qasrc/outros projetos. Recheck RO de todas as
-redes/rotas antes de create; alvos/IDs/imagens concretos na proposta. Runtime
-UID10001, rootfs RO, cap_drop ALL, no-new-privileges, tmpfs0700 próprio; app sem
-owner PostgreSQL ou CA privada. Administração separada; sem comando/alvo livre.
+redes/rotas antes de create; alvos/IDs/imagens concretos na proposta. API/worker/
+runner usam UID10001, rootfs RO, cap_drop ALL, no-new-privileges e tmpfs próprio;
+app sem owner PostgreSQL ou CA privada. Redis usa999:999/rootfs RO/tmpfs. O PG
+usa entrypoint oficial para inicializar somente seu volume novo, com rootfs
+gravável. Administração separada; sem comando/alvo livre.
 
 Limites: runner192MiB/API512MiB/worker256MiB/PG384MiB/Redis128MiB e controlador128MiB/
 helper256MiB em fases distintas. Pico1728MiB; MemAvailable≥3072MiB antes de iniciar.

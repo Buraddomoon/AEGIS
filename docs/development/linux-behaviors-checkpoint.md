@@ -56,3 +56,14 @@ ganha dois perfis fechados, namespaces/bancos novos e controle por pacote, sem
 alterar programas/revisões da #82 ou consumir autorização histórica. Não há
 startup/efeito nativo autorizado por este checkpoint. Imagens/pacotes concretos,
 CI da preparação, aprovação humana e gate de memória ainda devem ser conferidos.
+
+Preparação posteriormente concluída em18/11: [dois pacotes concretos](../../labs/linux/LINUX83-REQUEST-2026-11-18.md),
+processo0a85302e e shell22431af4, criados/verificados sem autorização/fence ou
+startup. Imagens e PKIs próprias, c8/36tabelas somente em bancos novos propostos;
+originais b7 não serão abertos. [CI44317530894](https://github.com/Buraddomoon/AEGIS/actions/runs/44317530894)
+SUCCESS em `1dcff254b7af0e699676cdfcbfd1508e9f747cec`:3733Python/9skips opcionais,
+98React. [Provas/limites](../evidence/linux83-2026-11-18/PREPARATION.md).
+Memória3574MiB disponível na verificação posterior, piso3072MiB mantido e sujeito
+a recheck. **Aguardando aprovação humana específica dos dois hashes.** Propostas
+válidas até18/11 às22:51:43SãoPaulo (prazo comum conservador); expiração/drift
+bloqueiam, sem renovar ou operar silenciosamente. #83 e pai continuam abertos.
