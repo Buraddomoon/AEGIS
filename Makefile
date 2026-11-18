@@ -119,6 +119,11 @@ lab-down:
 test-runner:
 	$(VENV)/pytest tests/test_runner_protocol.py tests/test_runner_engine.py tests/test_runner_transport.py tests/test_runner_identity_server.py tests/test_runner_identity_probe.py tests/test_runner_tls_peer.py tests/test_runner_parent_death.py tests/test_runner_isolation.py -q
 
+# Fixed benign programs in temporaries and API/worker fixtures; never starts a Lab.
+.PHONY: test-linux-behaviors
+test-linux-behaviors:
+	$(VENV)/pytest tests/test_linux_behaviors.py tests/test_linux_campaigns.py tests/test_binding_review.py tests/test_domain.py -q
+
 # Separate database/API on 18785; never modifies the default Demo stack.
 LINUX_IDS_ENV ?= .local/linux-lab/ids.env
 LINUX_CAMPAIGN_ENV ?= .local/linux-campaign/images.env

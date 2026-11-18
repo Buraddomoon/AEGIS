@@ -9,7 +9,7 @@ os quatro testes Demo nem torna metadados Atomic executáveis.
 | Definição v1 | Comportamento | Processo filho fixo | ATT&CK | Resultado esperado |
 | --- | --- | --- | --- | --- |
 | `linux-process-canary-v1` | `benign-process-creation` | `/bin/true <marker>` | Nenhuma | Exit0, stdout vazio; wrapper grava43bytes em `proof.marker` |
-| `linux-shell-canary-v1` | `fixed-unix-shell` | `/bin/sh -c 'printf '\''%s\n'\'' "$0"' <marker>` | T1059.004, limite abaixo | Exit0, stdout exatamente `<marker>\n`; wrapper grava esses43bytes |
+| `linux-shell-canary-v1` | `fixed-unix-shell` | `/bin/sh -c <script fixo> <marker>` | T1059.004, limite abaixo | Exit0, stdout exatamente `<marker>\n`; wrapper grava esses43bytes |
 
 O marcador é exclusivamente `aegis-<UUID canônico>`, gerado pelo domínio. É um
 argumento separado, nunca interpolado em código. O script completo é a constante
@@ -46,6 +46,12 @@ efeito até5s/deadline. Wrapper e filho têm vínculo de morte do pai; cancelame
 timeout e encerramento terminam/recolhem seus processos. Recibo contém perfil,
 PID do filho, exit0, hash/bytes de stdout e do artefato, tempos e contexto;
 é `execution_receipt`, `synthetic=false`, sem evento defensivo fabricado.
+O wrapper limita espaço virtual a512MiB (arenas do Python3.13), CPU1s,
+core0, arquivo8192bytes e32descritores; isso não aumenta o limite de memória
+residente do container. Stdout tem leitura máxima257bytes e valor esperado0/43;
+filho deve encerrar em1s após a leitura. A supervisão externa limita também leitura
+bloqueada. Binários são dependências da imagem aprovada, sem hash de executável
+do host apresentado como prova de imagem implantada.
 
 Somente `proof.marker`0600 e `receipt.json`0600 no diretório UUID próprio.
 Cleanup usa a allowlist existente, sem remoção recursiva. Arquivo desconhecido,

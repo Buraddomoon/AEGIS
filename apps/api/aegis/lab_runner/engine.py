@@ -13,13 +13,14 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from aegis.domain.validation import digest
-from aegis.lab_runner import atomic_policy
+from aegis.lab_runner import atomic_policy, behavior_policy
 from aegis.lab_runner.files import Workspace
 from aegis.lab_runner.journal import Journal
 from aegis.lab_runner.protocol import (
     LEASE_SECONDS,
     MAX_EFFECT_SECONDS,
     AtomicExecutionReceipt,
+    BehaviorExecutionReceipt,
     BoundRequest,
     ExecutionReceipt,
     JobSpec,
@@ -52,7 +53,11 @@ class Runner:
     def __init__(self, identity: RunnerIdentity, work: Path, state: Path):
         if sys.platform != "linux":
             raise ValueError("Runner suporta somente Linux.")
-        if identity.tests not in (("linux-file-marker/v1",), (atomic_policy.TEST_ID,)):
+        if identity.tests not in (
+            ("linux-file-marker/v1",),
+            (atomic_policy.TEST_ID,),
+            *((identifier,) for identifier in behavior_policy.TEST_IDS.values()),
+        ):
             raise ValueError("Runner exige um único perfil de teste revisado.")
         self.identity, self.workspace = identity, Workspace(work)
         try:
@@ -103,6 +108,8 @@ class Runner:
             raise Conflict("Teste não pertence à identidade revisada do runner.")
         if spec.test_id == atomic_policy.TEST_ID:
             atomic_policy.program_source()
+        elif spec.test_id in behavior_policy.TEST_IDS.values():
+            behavior_policy.program_source(spec.test_id)
         if (spec.runner_id, spec.laboratory_id, spec.asset_id) != (
             self.identity.runner_id,
             self.identity.laboratory_id,
@@ -157,6 +164,8 @@ class Runner:
                 raise Conflict("Teste não pertence à identidade revisada do runner.")
             if view.spec.test_id == atomic_policy.TEST_ID:
                 atomic_policy.program_source()
+            elif view.spec.test_id in behavior_policy.TEST_IDS.values():
+                behavior_policy.program_source(view.spec.test_id)
             remaining = (view.spec.deadline_at - datetime.now(UTC)).total_seconds()
             if remaining <= 0:
                 self.journal.update(
@@ -230,11 +239,19 @@ class Runner:
         process = None
         try:
             atomic = spec.test_id == atomic_policy.TEST_ID
-            command = (
-                [sys.executable, "-I", "-S", "-c", atomic_policy.program_source()]
-                if atomic
-                else [sys.executable, "-I", "-S", str(MARKER_PROGRAM)]
-            )
+            behavior = spec.test_id in behavior_policy.TEST_IDS.values()
+            if behavior:
+                command = [
+                    sys.executable,
+                    "-I",
+                    "-S",
+                    "-c",
+                    behavior_policy.program_source(spec.test_id),
+                ]
+            elif atomic:
+                command = [sys.executable, "-I", "-S", "-c", atomic_policy.program_source()]
+            else:
+                command = [sys.executable, "-I", "-S", str(MARKER_PROGRAM)]
             directory = self.workspace.create(spec.job_id)
             process = subprocess.Popen(
                 command,
@@ -270,7 +287,10 @@ class Runner:
                     if process.returncode == 0:
                         raw = json.loads(self.workspace.read(spec.job_id, "receipt.json", 8192))
                         content = self.workspace.read(
-                            spec.job_id, "proof.marker", 256, mode=0o600 if atomic else None
+                            spec.job_id,
+                            "proof.marker",
+                            256,
+                            mode=0o600 if atomic or behavior else None,
                         )
                         expected = (spec.marker + "\n").encode("ascii")
                         if (
@@ -279,9 +299,7 @@ class Runner:
                             or raw["artifact_bytes"] != len(expected)
                         ):
                             raise ValueError("Comprovante não corresponde ao artefato esperado.")
-                        receipt_type = AtomicExecutionReceipt if atomic else ExecutionReceipt
-                        receipt = receipt_type(
-                            **raw,
+                        context = dict(
                             job_id=spec.job_id,
                             runner_id=spec.runner_id,
                             laboratory_id=spec.laboratory_id,
@@ -289,11 +307,20 @@ class Runner:
                             marker=spec.marker,
                             scope_hash=spec.scope_hash,
                         )
+                        if behavior:
+                            receipt = BehaviorExecutionReceipt(
+                                **raw, **context, test_id=spec.test_id
+                            )
+                        else:
+                            receipt_type = AtomicExecutionReceipt if atomic else ExecutionReceipt
+                            receipt = receipt_type(**raw, **context)
                         if not datetime.now(UTC) >= receipt.ended_at >= receipt.started_at:
                             raise ValueError("Tempo do comprovante inválido.")
                         outcome, reason = (
                             "SUCCEEDED",
-                            "Permissões0400→0600 do arquivo próprio confirmadas; sem evidência defensiva."
+                            "Processo fixo e stdout verificados pelo executor; sem evidência defensiva."
+                            if behavior
+                            else "Permissões0400→0600 do arquivo próprio confirmadas; sem evidência defensiva."
                             if atomic
                             else "Criação e hash do marcador confirmados pelo executor; sem evidência defensiva.",
                         )

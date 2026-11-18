@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from aegis.catalog.store import initialize, reference
 from aegis.config import settings
-from aegis.lab_runner import atomic_policy
+from aegis.lab_runner import atomic_policy, behavior_policy
 from aegis.models import Asset, AttackTechnique, Laboratory, TestDefinition, uid
 
 DEMO_TESTS = [
@@ -118,6 +118,28 @@ def seed(db: Session) -> dict:
                 demo_outcome="",
             )
         )
+    for kind, profile in behavior_policy.PROFILES.items():
+        if not db.get(TestDefinition, profile["definition_id"]):
+            db.add(
+                TestDefinition(
+                    id=profile["definition_id"],
+                    name="Linux • "
+                    + (
+                        "processo benigno fixo" if kind == "process" else "script Unix fixo benigno"
+                    ),
+                    description="Perfil opt-in revisado por hash; um filho fixo, sem rede. Recibo não é telemetria defensiva.",
+                    technique_id=profile["technique_id"],
+                    behavior=profile["behavior"],
+                    execution_kind="linux_marker",
+                    platform="Linux",
+                    cleanup="Remover somente proof.marker e receipt.json do UUID após recolher processos; preservar desconhecidos.",
+                    prerequisites="Imagem/programa fixados, binding exclusivo revisado, mTLS vigente, lab autorizado e aprovação segregada.",
+                    risk="low",
+                    approved=True,
+                    expected_rule="",
+                    demo_outcome="",
+                )
+            )
     active_count = db.scalar(
         select(func.count())
         .select_from(AttackTechnique)

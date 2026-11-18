@@ -11,7 +11,7 @@ from aegis import linux_labs
 from aegis.config import settings
 from aegis.db import session_factory
 from aegis.integrations.linux_runner import LinuxRunnerClient, RunnerConnection
-from aegis.lab_runner import atomic_policy
+from aegis.lab_runner import atomic_policy, behavior_policy
 from aegis.lab_runner.server import create_app
 from aegis.models import (
     CampaignRun,
@@ -130,6 +130,163 @@ def queued(linux, test_id="linux-file-marker-v1"):
     start = client.post(f"/api/v1/executions/{run['id']}/start", json={"confirm": True})
     assert start.status_code == 200, start.text
     return run
+
+
+def runner_definition(linux):
+    identifier = linux[2].identity.tests[0]
+    if identifier in behavior_policy.TEST_IDS.values():
+        return behavior_policy.PROFILES[behavior_policy.kind_for(identifier)]["definition_id"]
+    return (
+        atomic_policy.DEFINITION_ID
+        if identifier == atomic_policy.TEST_ID
+        else "linux-file-marker-v1"
+    )
+
+
+@pytest.mark.parametrize("runner", list(behavior_policy.TEST_IDS.values()), indirect=True)
+def test_benign_behavior_campaign_uses_durable_dispatch_and_independent_verdict(linux, monkeypatch):
+    client, lab, runner = linux
+    kind = behavior_policy.kind_for(runner.identity.tests[0])
+    definition = runner_definition(linux)
+    factory = linux_labs.client
+    calls = []
+
+    def checked_client():
+        remote = factory()
+        original = remote.prepare
+
+        def durable(spec):
+            with session_factory()() as db:
+                dispatch = db.scalar(
+                    select(RunnerDispatch).where(RunnerDispatch.execution_id == str(spec.job_id))
+                )
+                assert dispatch and dispatch.spec == spec.model_dump(mode="json")
+            calls.append(spec.test_id)
+            return original(spec)
+
+        remote.prepare = durable
+        return remote
+
+    monkeypatch.setattr(linux_labs, "client", checked_client)
+    run = queued(linux, definition)
+    assert run["scope"]["runner"]["behavior_review"] == behavior_policy.review(kind)
+    assert (
+        run["scope"]["test_definitions"][0]["technique_id"]
+        == behavior_policy.PROFILES[kind]["technique_id"]
+    )
+    assert claim_next() == run["id"]
+    process_run(run["id"])
+    detail = client.get("/api/v1/executions/" + run["id"]).json()
+    assert detail["state"] == "COMPLETED", detail
+    item = detail["executions"][0]
+    assert item["executed"] and not item["synthetic"]
+    assert item["result"]["outcome"] == "INCONCLUSIVE"
+    assert not item["events"] and not item["evidence"]
+    assert item["runner_receipt"]["content"]["child_exit_code"] == 0
+    with session_factory()() as db:
+        receipt = db.scalar(select(RunnerReceipt)).content
+        assert receipt["test_id"] == runner.identity.tests[0] and receipt["artifact_bytes"] == 43
+        assert db.scalar(select(RunnerCleanup)).content["cleanup_state"] == "CLEANED"
+        assert db.get(Laboratory, lab["id"]).active_run_id is None
+    assert calls == [runner.identity.tests[0]] and not list(runner.workspace.root.iterdir())
+    client.patch(f"/api/v1/labs/{lab['id']}/authorization", json={"authorized": False})
+    with session_factory()() as db:
+        assert linux_labs.binding_review.review(db, db.get(Laboratory, lab["id"]))["blockers"] == []
+
+
+@pytest.mark.parametrize("runner", list(behavior_policy.TEST_IDS.values()), indirect=True)
+@pytest.mark.parametrize(
+    "change", ["version", "behavior", "technique", "review", "lab", "approver"]
+)
+def test_benign_behavior_drift_revocation_invalidates_queued_approval(linux, monkeypatch, change):
+    run = queued(linux, runner_definition(linux))
+    if change == "review":
+        original = behavior_policy.review
+
+        def changed(kind):
+            return {**original(kind), "version": 2}
+
+        monkeypatch.setattr(behavior_policy, "review", changed)
+    else:
+        with session_factory()() as db:
+            definition = db.get(Definition, runner_definition(linux))
+            if change == "version":
+                definition.version += 1
+            elif change == "behavior":
+                definition.behavior = "temporary-marker"
+            elif change == "technique":
+                definition.technique_id = "T1057"
+            elif change == "lab":
+                db.get(Laboratory, run["laboratory_id"]).authorized = False
+            else:
+                db.scalar(select(User).where(User.username == "administrator")).active = False
+            db.commit()
+    assert claim_next() is None
+    assert not list(linux[2].workspace.root.iterdir())
+    with session_factory()() as db:
+        assert db.get(CampaignRun, run["id"]).state == "REJECTED"
+        assert db.scalar(select(RunnerDispatch)) is None
+
+
+@pytest.mark.parametrize("runner", list(behavior_policy.TEST_IDS.values()), indirect=True)
+def test_benign_behavior_requires_segregated_real_approval_and_single_profile(linux):
+    client, lab, runner = linux
+    own = runner_definition(linux)
+    tests = client.get("/api/v1/tests").json()["items"]
+    for profile in behavior_policy.PROFILES.values():
+        entry = next(t for t in tests if t["id"] == profile["definition_id"])
+        assert entry["available_for_new_scope"] == (entry["id"] == own)
+    for identifiers in (["linux-file-marker-v1"], [own, "linux-file-marker-v1"]):
+        response = client.post(
+            "/api/v1/campaigns",
+            json={
+                "name": "Wrong profile",
+                "objective": "No mixed authority",
+                "laboratory_id": lab["id"],
+                "test_ids": identifiers,
+            },
+        )
+        assert response.status_code == 409
+    run = requested(linux, own)
+    url = f"/api/v1/executions/{run['id']}/approve"
+    payload = {"confirm_scope_hash": run["scope_hash"], "confirm_real_execution": True}
+    assert client.post(url, json=payload).status_code == 403
+    login(client, "administrator")
+    token = client.headers.pop("x-csrf-token")
+    assert client.post(url, json=payload).status_code == 403
+    client.headers["x-csrf-token"] = token
+    assert client.post(url, json={"confirm_scope_hash": run["scope_hash"]}).status_code == 409
+    assert not list(runner.workspace.root.iterdir())
+
+
+def test_benign_behaviors_are_unavailable_on_legacy_binding_and_seed_preserves_history(linux):
+    from aegis.seed import seed
+
+    client, lab, runner = linux
+    with session_factory()() as db:
+        original = db.get(Definition, "linux-file-marker-v1")
+        original.description = "preserved history"
+        db.commit()
+        seed(db)
+        assert db.get(Definition, original.id).description == "preserved history"
+    for profile in behavior_policy.PROFILES.values():
+        entry = next(
+            t
+            for t in client.get("/api/v1/tests").json()["items"]
+            if t["id"] == profile["definition_id"]
+        )
+        assert entry["available_for_new_scope"] is False
+        response = client.post(
+            "/api/v1/campaigns",
+            json={
+                "name": "No legacy authority",
+                "objective": "New binding required",
+                "laboratory_id": lab["id"],
+                "test_ids": [entry["id"]],
+            },
+        )
+        assert response.status_code == 409
+    assert not list(runner.workspace.root.iterdir())
 
 
 def test_linux_campaign_uses_same_worker_and_persists_distinct_receipts(linux):
@@ -408,15 +565,15 @@ def test_linux_scheduling_is_never_implicitly_authorized(linux):
     assert result.status_code == 409
 
 
-@pytest.mark.parametrize("runner", ["linux-file-marker/v1", atomic_policy.TEST_ID], indirect=True)
+@pytest.mark.parametrize(
+    "runner",
+    ["linux-file-marker/v1", atomic_policy.TEST_ID, *behavior_policy.TEST_IDS.values()],
+    indirect=True,
+)
 @pytest.mark.parametrize("concurrent", [False, True])
 def test_crashed_linux_worker_is_quarantined_and_recovery_never_starts_job(linux, concurrent):
     client, lab, _ = linux
-    test_id = (
-        atomic_policy.DEFINITION_ID
-        if linux[2].identity.tests == (atomic_policy.TEST_ID,)
-        else "linux-file-marker-v1"
-    )
+    test_id = runner_definition(linux)
     run = queued(linux, test_id)
     assert claim_next() == run["id"]
     with session_factory()() as db:
@@ -494,14 +651,14 @@ def test_missing_remote_job_does_not_release_quarantine(linux):
         assert db.scalar(select(RunnerCleanup)) is None
 
 
-@pytest.mark.parametrize("runner", ["linux-file-marker/v1", atomic_policy.TEST_ID], indirect=True)
+@pytest.mark.parametrize(
+    "runner",
+    ["linux-file-marker/v1", atomic_policy.TEST_ID, *behavior_policy.TEST_IDS.values()],
+    indirect=True,
+)
 def test_real_reports_receipts_and_mode_metrics_stay_separate(linux):
     client = linux[0]
-    test_id = (
-        atomic_policy.DEFINITION_ID
-        if linux[2].identity.tests == (atomic_policy.TEST_ID,)
-        else "linux-file-marker-v1"
-    )
+    test_id = runner_definition(linux)
     run = queued(linux, test_id)
     assert claim_next() == run["id"]
     process_run(run["id"])
@@ -522,16 +679,16 @@ def test_real_reports_receipts_and_mode_metrics_stay_separate(linux):
     assert client.get("/api/v1/executions?mode=linux").json()["total"] == 1
 
 
-@pytest.mark.parametrize("runner", ["linux-file-marker/v1", atomic_policy.TEST_ID], indirect=True)
+@pytest.mark.parametrize(
+    "runner",
+    ["linux-file-marker/v1", atomic_policy.TEST_ID, *behavior_policy.TEST_IDS.values()],
+    indirect=True,
+)
 @pytest.mark.parametrize("lost", ["prepare", "start", "cleanup", "cleanup_commit"])
 def test_ambiguous_linux_responses_never_replay_start(linux, monkeypatch, lost):
     from aegis.integrations.linux_runner import RunnerUnavailable
 
-    test_id = (
-        atomic_policy.DEFINITION_ID
-        if linux[2].identity.tests == (atomic_policy.TEST_ID,)
-        else "linux-file-marker-v1"
-    )
+    test_id = runner_definition(linux)
     run = queued(linux, test_id)
     assert claim_next() == run["id"]
     original_client, original_persist = linux_labs.client, linux_labs.persist_view

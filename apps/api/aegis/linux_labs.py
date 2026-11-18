@@ -14,7 +14,7 @@ from aegis import binding_review
 from aegis.config import settings
 from aegis.domain.validation import digest
 from aegis.integrations.linux_runner import LinuxRunnerClient, RunnerConnection
-from aegis.lab_runner import atomic_policy
+from aegis.lab_runner import atomic_policy, behavior_policy
 from aegis.lab_runner.protocol import TEST_ID, JobSpec, JobView
 from aegis.models import (
     Approval,
@@ -64,6 +64,9 @@ def descriptor() -> dict:
         }
         if config.test_id == atomic_policy.TEST_ID:
             value["atomic_review"] = atomic_policy.review()
+        elif config.test_id in behavior_policy.TEST_IDS.values():
+            kind = behavior_policy.kind_for(config.test_id)
+            value["behavior_review"] = behavior_policy.review(kind)
         return value
     except OSError:
         raise HTTPException(409, "Certificados públicos Linux indisponíveis.") from None
@@ -83,6 +86,20 @@ def configured_hash() -> str | None:
 def test_matches(test: TestDefinition, identity: dict) -> bool:
     if identity.get("test_id") == TEST_ID:
         return test.id == TEST_DEFINITION_ID
+    if identity.get("test_id") in behavior_policy.TEST_IDS.values():
+        kind = behavior_policy.kind_for(identity["test_id"])
+        profile = behavior_policy.PROFILES[kind]
+        return bool(
+            identity.get("behavior_review") == behavior_policy.review(kind)
+            and identity["test_id"]
+            == f"linux-{kind}-canary/v1@" + digest(behavior_policy.review(kind))
+            and test.id == profile["definition_id"]
+            and test.version == 1
+            and test.behavior == profile["behavior"]
+            and test.technique_id == profile["technique_id"]
+            and test.platform == "Linux"
+            and test.execution_kind == "linux_marker"
+        )
     return bool(
         identity.get("test_id") == atomic_policy.TEST_ID
         and identity.get("atomic_review") == atomic_policy.review()
@@ -95,8 +112,11 @@ def test_matches(test: TestDefinition, identity: dict) -> bool:
     )
 
 
-def atomic_available(test: TestDefinition) -> bool:
-    if test.id != atomic_policy.DEFINITION_ID:
+def reviewed_profile_available(test: TestDefinition) -> bool:
+    if test.id not in {
+        atomic_policy.DEFINITION_ID,
+        *(profile["definition_id"] for profile in behavior_policy.PROFILES.values()),
+    }:
         return True
     try:
         return test_matches(test, descriptor())

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from aegis.domain.states import TERMINAL
 from aegis.domain.validation import digest
-from aegis.lab_runner import atomic_policy
+from aegis.lab_runner import atomic_policy, behavior_policy
 from aegis.lab_runner.protocol import TEST_ID, JobSpec, JobView
 from aegis.models import (
     Asset,
@@ -54,6 +54,10 @@ def cleanup_confirmed(
             not in {
                 ("linux-file-marker-v1", TEST_ID),
                 (atomic_policy.DEFINITION_ID, atomic_policy.TEST_ID),
+                *(
+                    (profile["definition_id"], behavior_policy.TEST_IDS[kind])
+                    for kind, profile in behavior_policy.PROFILES.items()
+                ),
             }
             or spec.test_id != runner.get("test_id", TEST_ID)
             or str(spec.laboratory_id) != lab.id

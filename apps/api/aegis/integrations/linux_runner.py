@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 
 from aegis.domain.contracts import ExecutionContext
 from aegis.domain.validation import digest
-from aegis.lab_runner import atomic_policy
+from aegis.lab_runner import atomic_policy, behavior_policy
 from aegis.lab_runner.protocol import (
     PROTOCOL,
     TEST_ID,
@@ -174,7 +174,7 @@ class LinuxRunnerClient:
 
 
 class LinuxMarkerAdapter:
-    """Fixed-file runner transport; the binding pins the marker or Atomic profile."""
+    """Fixed runner transport; each binding pins exactly one reviewed profile."""
 
     def __init__(
         self,
@@ -197,6 +197,8 @@ class LinuxMarkerAdapter:
         behavior = (
             atomic_policy.BEHAVIOR if test_id == atomic_policy.TEST_ID else "temporary-marker"
         )
+        if test_id in behavior_policy.TEST_IDS.values():
+            behavior = behavior_policy.PROFILES[behavior_policy.kind_for(test_id)]["behavior"]
         if context.synthetic or context.behavior != behavior:
             raise ValueError("Adapter aceita somente o comportamento Linux real revisado.")
         self.guard()

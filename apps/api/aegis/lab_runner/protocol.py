@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Literal
@@ -5,16 +6,23 @@ from uuid import UUID
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from aegis.lab_runner import atomic_policy
+from aegis.lab_runner import atomic_policy, behavior_policy
 
 PROTOCOL = "aegis-linux-runner/1"
 TEST_ID = "linux-file-marker/v1"
 MAX_EFFECT_SECONDS = 5
 LEASE_SECONDS = 2
-TestId = Literal[
-    "linux-file-marker/v1",
-    "atomic-file-permissions/v1@9e283889776cbd42ebf9b7b25bc1ebfbad452157398ecbe0ab77415136c35673",
+BehaviorTestId = Literal[
+    "linux-process-canary/v1@5d16dd8867b4f8f06163311cfbdd1d754a03784c7c53212cb1709d29738b52e3",
+    "linux-shell-canary/v1@1baab18c75ad4a6ce8534962582fd61ae490eef1240ea8db9245af1c092438cb",
 ]
+TestId = (
+    BehaviorTestId
+    | Literal[
+        "linux-file-marker/v1",
+        "atomic-file-permissions/v1@9e283889776cbd42ebf9b7b25bc1ebfbad452157398ecbe0ab77415136c35673",
+    ]
+)
 
 
 class Message(BaseModel):
@@ -86,6 +94,28 @@ class AtomicExecutionReceipt(ExecutionReceipt):
     mode_after: Literal[384]
 
 
+class BehaviorExecutionReceipt(ExecutionReceipt):
+    test_id: BehaviorTestId
+    child_pid: int = Field(gt=0)
+    child_exit_code: Literal[0]
+    stdout_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    stdout_bytes: int = Field(ge=0, le=43)
+
+    @model_validator(mode="after")
+    def expected_output(self):
+        output = (
+            (self.marker + "\n").encode("ascii")
+            if self.test_id == behavior_policy.TEST_IDS["shell"]
+            else b""
+        )
+        if (
+            self.stdout_bytes != len(output)
+            or self.stdout_sha256 != hashlib.sha256(output).hexdigest()
+        ):
+            raise ValueError("Stdout não corresponde ao perfil fixo revisado.")
+        return self
+
+
 class JobView(Message):
     spec: JobSpec
     spec_hash: str
@@ -93,7 +123,7 @@ class JobView(Message):
     state: JobState
     cleanup_state: Literal["PENDING", "CLEANED", "FAILED"]
     reason: str | None
-    receipt: AtomicExecutionReceipt | ExecutionReceipt | None
+    receipt: BehaviorExecutionReceipt | AtomicExecutionReceipt | ExecutionReceipt | None
     receipt_sha256: str | None
 
     @model_validator(mode="after")

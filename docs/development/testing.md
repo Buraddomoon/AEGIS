@@ -1,5 +1,18 @@
 # Testes e evidências
 
+## Comportamentos Linux fixos — #81/#82
+
+`make test-linux-behaviors` verifica dois perfis opt-in em temporários próprios,
+hash/revisão, subprocesso e shell fixos, recibo/stdout/artefato, morte do pai,
+cancelamento/timeout com recolhimento do filho, drift/no replay e cleanup falho.
+API/worker usam PostgreSQL em schema descartável e Redis15, PKI descartável e
+transporte TestClient; não demonstram mTLS ou sensor defensivo nativo. Os casos
+de falso positivo usam eventos independentes de fixture, nunca recibos convertidos
+em eventos. Regressões de relatórios e recuperação abrangem os quatro perfis.
+Executar sequencialmente com outras suítes PG/Redis15. O target não inicia Docker,
+Linux/Wazuh, volumes originais ou ensaio. Ver [especificação](linux-behaviors-spec.md)
+e [checkpoint da entrega](linux-behaviors-checkpoint.md); #83 exige autorização nova.
+
 ## Consolidação demonstrável — #12, 17/11/2026
 
 [Checkpoint atual](release-checkpoint.md): revisão de controles com181testes
