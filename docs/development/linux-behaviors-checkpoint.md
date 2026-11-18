@@ -1,5 +1,13 @@
 # Ampliação Linux — #15
 
+**Atualização final18/11: #83 autorizada e encerrada.** Dois ensaios nativos,
+uma campanha por perfil, COMPLETED/INCONCLUSIVE/CLEANED, synthetic=false.
+[Provas](../evidence/linux83-2026-11-18/VERIFIED-83.md). Labs revogados, quatro contas
+UI próprias inativas/zero sessões, seis volumes retidos sem consumidores e
+recursos próprios encerrados. Autorizações/pacotes0a85302e/22431af4 consumidos;
+sem replay ou operação contínua. Pai #15 permanece aberto até aceite conjunto.
+As seções abaixo preservam a sequência de preparação e os bloqueios anteriores.
+
 Escopo exclusivo: #81 → #82 → #83. Dependência #5 concluída; autorizações
 históricas #5/#14 consumidas. Não iniciar outra entrega a partir deste arquivo.
 

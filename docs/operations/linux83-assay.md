@@ -84,3 +84,12 @@ Em ambiguidade, manter reserva/quarentena e consultar job/spec/geração da mesm
 tentativa; recuperar somente cleanup. Não executar de novo o coordenador ou criar
 outra run. Bloquear o segundo pacote até reconciliar o primeiro. #83 só fecha
 com provas nativas e limites; não iniciar outra entrega após concluir.
+
+## Operação encerrada em18/11/2026
+
+Após aprovação humana da proposta específica, processo0a85302e e shell22431af4
+tiveram uma campanha cada, COMPLETED/INCONCLUSIVE/CLEANED, synthetic=false.
+Labs revogados, quatro contas UI inativas/zero sessões, recursos encerrados e
+seis volumes preservados sem consumidores. [Provas e limites](../evidence/linux83-2026-11-18/VERIFIED-83.md).
+Autorização consumida. Este procedimento não permite replay, nova tentativa,
+reativação dos recursos ou reutilização dos pacotes; preservar histórico/fences.

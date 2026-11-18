@@ -1,6 +1,13 @@
 # Proposta específica #83 — dois comportamentos fixos, uma tentativa por teste
 
-**PREPARADA/VERIFICADA, NÃO AUTORIZADA NEM EXECUTADA.** O pedido de iniciar a
+**AUTORIZADA, CONSUMIDA E ENCERRADA em18/11/2026.** Após “autorizo”, os dois
+pacotes tiveram uma campanha cada, COMPLETED/INCONCLUSIVE/CLEANED. Labs revogados,
+quatro contas UI próprias inativas/zero sessões, recursos encerrados e seis
+volumes retidos sem consumidores. [Provas](../../docs/evidence/linux83-2026-11-18/VERIFIED-83.md).
+Não há replay ou operação contínua autorizados. O texto abaixo preserva a proposta
+apresentada antes da autorização; as propostas privadas não foram reescritas.
+
+**Estado inicial: PREPARADA/VERIFICADA, NÃO AUTORIZADA NEM EXECUTADA.** O pedido de iniciar a
 #83 foi usado para preparar esta proposta concreta; não há `authorization.json`
 ou `attempt.json` em nenhum dos dois pacotes. Autorizações #5/#14 consumidas,
 originais/PKI/volumes/journals/fences preservados. [Controles](../../docs/operations/linux83-assay.md).

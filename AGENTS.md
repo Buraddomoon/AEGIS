@@ -74,6 +74,12 @@ essa autorização. Todos os ensaios históricos de uso único estão encerrados
   Ver docs/development/atomic-execution-checkpoint.md. Sem shell remoto,
   Docker socket na app, alvo livre, evasão, persistência maliciosa, credenciais
   ou exfiltração. Atomic importado permanece não executável até revisão específica.
+- #83 em18/11, sob autorização dos pacotes0a85302e/22431af4: uma campanha de
+  processo benigno e uma de shell fixo, ambas COMPLETED/INCONCLUSIVE/CLEANED,
+  synthetic=false. Labs revogados, quatro contas UI próprias inativas/zero
+  sessões, recursos encerrados; seis volumes retidos sem consumidores.
+  Autorização consumida, sem replay/reativação/operação contínua. Provas em
+  docs/evidence/linux83-2026-11-18/VERIFIED-83.md; pai#15 aguarda aceite conjunto.
 - Dispatch durável antes da RPC, efeito de uso único, deadline/lease e supervisor;
   resposta ambígua retém reserva/quarentena.404 não comprova cleanup. Cancelamento
   e revogação não dispensam limpeza; falha deve mostrar recuperação segura.
