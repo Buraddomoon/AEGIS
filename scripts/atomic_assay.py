@@ -693,7 +693,7 @@ def validate_runtime(item, service, plan, folder):
 
 def runtime_review(compose, plan, folder):
     # Deliberately exclude all environment values and command arguments.
-    projection = '{"image":{{json .Config.Image}},"user":{{json (index .Config "User")}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"service":{{json (index .Config.Labels "com.docker.compose.service")}},"readonly":{{json .HostConfig.ReadonlyRootfs}},"privileged":{{json .HostConfig.Privileged}},"ports":{{json .HostConfig.PortBindings}},"cap_drop":{{json .HostConfig.CapDrop}},"security":{{json .HostConfig.SecurityOpt}},"pids":{{json .HostConfig.PidsLimit}},"memory":{{json .HostConfig.Memory}},"cpus":{{json .HostConfig.NanoCpus}},"tmpfs":{{json .HostConfig.Tmpfs}},"mounts":{{json .Mounts}},"networks":{{json .NetworkSettings.Networks}}}'
+    projection = '{"image":{{json .Config.Image}},"user":{{json (index .Config "User")}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"service":{{json (index .Config.Labels "com.docker.compose.service")}},"readonly":{{json .HostConfig.ReadonlyRootfs}},"privileged":{{json .HostConfig.Privileged}},"ports":{{json .HostConfig.PortBindings}},"cap_drop":{{json .HostConfig.CapDrop}},"security":{{json .HostConfig.SecurityOpt}},"pids":{{json .HostConfig.PidsLimit}},"memory":{{json .HostConfig.Memory}},"cpus":{{json .HostConfig.NanoCpus}},"tmpfs":{{json (index .HostConfig "Tmpfs")}},"mounts":{{json .Mounts}},"networks":{{json .NetworkSettings.Networks}}}'
     result = {}
     for service in ("db", "redis", "runner", "api", "worker"):
         container = docker(*compose, "ps", "--quiet", service, timeout=5).decode().strip()

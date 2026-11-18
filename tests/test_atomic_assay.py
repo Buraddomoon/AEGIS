@@ -341,6 +341,28 @@ def test_runner_runtime_drift_blocks_before_effect(modules, tmp_path, drift):
         host.validate_runtime(item, "runner", value, tmp_path)
 
 
+def test_postgres_runtime_allows_only_its_expected_optional_root_fields(modules, tmp_path):
+    host = modules["atomic_assay"]
+    value = plan()
+    item = {
+        "image": value["images"]["postgres"],
+        "privileged": False,
+        "ports": None,
+        "project": value["project"],
+        "service": "db",
+        "networks": {value["project"] + "_backend": {"IPAddress": "192.168.253.10"}},
+        "user": None,
+        "readonly": False,
+        "cap_drop": None,
+        "tmpfs": None,
+        "mounts": [{"Type": "volume", "Name": value["project"] + "_database"}],
+    }
+    host.validate_runtime(item, "db", value, tmp_path)
+    item["privileged"] = True
+    with pytest.raises(AssertionError):
+        host.validate_runtime(item, "db", value, tmp_path)
+
+
 @pytest.mark.parametrize(
     "uri",
     [
