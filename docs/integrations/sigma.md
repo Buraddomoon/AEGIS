@@ -2,9 +2,59 @@
 
 Fonte: [pySigma oficial](https://github.com/SigmaHQ/pySigma). AEGIS utiliza SigmaCollection.from_dicts da versão 2.0.1, após SafeLoader, limite de 64 KiB, complexidade limitada, profundidade máxima32 e bloqueio de âncoras/aliases. Um documento/regra por importação; UUID obrigatório. Tags `attack.tNNNN(.NNN)` precisam existir no catálogo.
 
-Nova importação do mesmo UUID cria versão imutável; conteúdo idêntico é idempotente. UI apresenta YAML, técnicas, hash e comparação visual entre versão anterior/atual. Não há geração/execução de consultas SIEM ou implantação automática. O snapshot de execução registra versões do inventário para contextualizar comparações; isso não significa que essas regras foram implantadas.
+Nova importação do mesmo UUID cria versão imutável; conteúdo idêntico é idempotente. UI apresenta YAML, técnicas, hash e comparação visual entre versão anterior/atual. A conversão offline limitada abaixo gera consultas para revisão; não executa consultas SIEM nem implanta regras. O snapshot de execução registra versões do inventário para contextualizar comparações; isso não significa que essas regras foram implantadas.
 
-Sintaxe válida não comprova semântica, cobertura ou compatibilidade Wazuh. Conversão futura exige backend/pipeline oficialmente compatíveis e prova num laboratório autorizado. Associação revisada regra/teste é operacional como metadado de planejamento, com versões fixas, retirada e histórico. [Operação e API](../operations/rule-test-reviews.md). Análise estática parcial está disponível abaixo; semântica completa, conversão e implantação continuam no roadmap.
+Sintaxe válida não comprova semântica, cobertura ou compatibilidade Wazuh. Validação de consulta no índice exige prova num laboratório autorizado, independente da geração offline. Associação revisada regra/teste é operacional como metadado de planejamento, com versões fixas, retirada e histórico. [Operação e API](../operations/rule-test-reviews.md). Análise estática parcial está disponível abaixo; semântica no índice e implantação continuam em entregas próprias.
+
+## Conversão offline isolada — #85, 18/11/2026
+
+O [ADR0036](../architecture/decisions/0036-isolated-sigma-converter.md) resolve
+o conflito de dependências sem alterar o parser2.0.1 da API: o conversor oficial
+pySigma1.5.1/OpenSearch2.0.3/Elasticsearch2.1.1 usa venv/processo separados.
+`make sigma-converter-setup` instala18pins com hashes e verifica a árvore completa;
+o Dockerfile prepara `/opt/aegis-sigma-converter`. Nenhuma instalação acontece
+durante requisição. Lock próprio `requirements-sigma-converter.lock`, auditado
+separadamente; não mesclar esse lock aos locks da aplicação. Regeneração é revisão
+explícita via `scripts/lock_dependencies.py --sigma-converter`, com conferência
+do hash revisado no contrato antes de adoção. Ausência/drift falham fechado.
+
+Perfil novo **aegis-marker-lucene/1**, política literal-boolean/1. Mantém o
+logsource exato product=aegis/service=marker_observer e os caminhos próprios
+do marcador, exceto artifact_bytes cujo tipo não foi validado. Não altera o
+candidato wazuh-aegis-marker/1 ou seu hash. Só16seleções planas,8campos/seleção,
+8strings/lista e512bytes/string; condição única até256caracteres/64tokens,
+AND/OR/NOT e parênteses até8níveis. Modificadores/fieldref/keywords/selectors,
+números/booleanos/null, curingas/backslash e metadados executáveis/desconhecidos
+são unsupported com motivo. Estimativa conservadora limita expansão da query
+a8KiB antes do subprocesso; budgets YAML anteriores continuam obrigatórios.
+
+O processo recebe somente JSON inerte limitado, com ambiente limpo e Python-I/-B.
+Classes oficiais fixas, sem desserializar pipeline; invariância da detection
+após rename.3sCPU/512MiB de espaço virtual/5s de prazo, no máximo2processos
+simultâneos por processo da API. Audit hook rejeita cache/discovery/validators/data,
+rede, criação de processos e mutação de arquivos antes de importar o backend.
+DiskCache5.6.3 ainda consta da auditoria; não é importado ou usado pelo conversor.
+
+API autenticada, viewer permitido, somente leitura:
+
+- GET `/api/v1/sigma/query-profiles`: contrato/perfil/pins/hashes revisados;
+  configured indica presença do interpretador, não sucesso de uma conversão.60/min.
+- GET `/api/v1/rules/{rule_id}/versions/{version_id}/query?profile_id=aegis-marker-lucene%2F1`:
+  versão exata,30/min/usuário; ownership/SHA conferidos antes do efeito. Perfil
+  desconhecido404, integridade409, conteúdo inválido/budget422, indisponibilidade/
+  drift/timeout/capacidade503 e limite429. Unsupported retorna200 com motivo e
+  query/hash null, sem iniciar processo.
+
+Resposta converted contém query, hash dos bytes UTF-8, versão/regra/hash, perfil,
+backend/core, pipeline, hash do lock/implementação/contrato e SHA do documento.
+siem_queried/deployment_performed/index_mapping_verified=false. Não persiste cache
+nem altera regras, versões, scopes, aprovações, cobertura, evidências ou veredictos.
+O backend escapa strings e preserva a expressão no subconjunto revisado; isso não
+comprova tipos/analisadores/subcampos, correspondência ou eficácia no índice real.
+
+As seções históricas de preparação/análise/prévia abaixo continuam diagnosticando
+o parser da aplicação e o candidato original, onde can_convert=false. Esse
+diagnóstico não é a disponibilidade do novo processo de conversão isolado.
 
 Dependência pySigma é LGPL-2.1-only e permanece biblioteca separada, sem código copiado/modificado. Regras importadas mantêm licença de seus autores. DiskCache 5.6.3 é uma dependência transitiva com advisory conhecido sem patch; AEGIS não importa nem usa seu caminho de cache. A auditoria mantém a ocorrência visível e testa essa premissa; habilitar plugins/cache exige nova revisão.
 
@@ -59,6 +109,10 @@ instalado, consulta gerada ou implantação realizada. Ver
 [matriz/provas](../evidence/sigma-compatibility-2026-11-18/README.md),
 [ADR0035](../architecture/decisions/0035-sigma-published-backend-compatibility.md)
 e [checkpoint de retomada](../development/sigma-conversion-checkpoint.md).
+
+Esse foi o bloqueio inicial da sessão. A retomada solicitada posteriormente
+adotou o ADR0036 e o conversor isolado descrito acima; a matriz histórica e os
+metadados publicados permanecem corretos, sem reescrever as provas anteriores.
 
 Estado da análise estática: `not_configured`, backend/pipeline de conversão null,
 conversão/implantação false. A prévia de campos abaixo é uma etapa independente.

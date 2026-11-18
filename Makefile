@@ -14,10 +14,11 @@ setup:
 
 # Separate, compatible official Sigma packages; never downgrades the API parser.
 .PHONY: sigma-converter-setup
+SIGMA_SETUP_PYTHON ?= $(VENV)/python
 sigma-converter-setup:
-	$(VENV)/python -m venv --without-pip .venv-sigma-converter
-	$(VENV)/python -m pip --isolated --python .venv-sigma-converter/bin/python install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: -r requirements-sigma-converter.lock
-	$(VENV)/python -m pip --isolated --python .venv-sigma-converter/bin/python check
+	$(SIGMA_SETUP_PYTHON) -m venv --without-pip .venv-sigma-converter
+	$(SIGMA_SETUP_PYTHON) -m pip --isolated --python .venv-sigma-converter/bin/python install --index-url https://pypi.org/simple --require-hashes --only-binary=:all: -r requirements-sigma-converter.lock
+	$(SIGMA_SETUP_PYTHON) -m pip --isolated --python .venv-sigma-converter/bin/python check
 up:
 	python3 scripts/init_env.py
 	docker compose up -d --build

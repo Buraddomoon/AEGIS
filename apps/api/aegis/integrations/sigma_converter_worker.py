@@ -96,6 +96,7 @@ def blocker(document):
     references = set(tokens) - {"and", "or", "not", "(", ")"}
     if references != set(selections):
         return "condition_references_unsupported"
+    costs = {}
     for name, selection in selections.items():
         if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,63}", name):
             return "selection_unsupported"
@@ -105,6 +106,7 @@ def blocker(document):
             or not 1 <= len(selection) <= 8
         ):
             return "selection_unsupported"
+        cost = 0
         for field, value in selection.items():
             if field not in FIELDS:
                 return "field_or_modifier_unsupported"
@@ -119,6 +121,10 @@ def blocker(document):
                     or any(ord(c) < 32 or ord(c) == 127 for c in item)
                 ):
                     return "literal_string_required"
+            cost += len(FIELDS[field]) + 8 + sum(2 * len(item.encode()) + 8 for item in values)
+        costs[name] = cost
+    if sum(costs.get(token, 0) for token in tokens) + 8 * len(tokens) > 8192:
+        return "query_expansion_limit"
     return None
 
 
@@ -137,6 +143,19 @@ def audit(event, args):
         ("socket.", "subprocess.", "os.system", "os.posix_spawn", "os.exec", "os.fork")
     ):
         raise RuntimeError("Forbidden network/process effect")
+    if event in {
+        "os.remove",
+        "os.rename",
+        "os.mkdir",
+        "os.rmdir",
+        "os.chmod",
+        "os.chown",
+        "os.link",
+        "os.symlink",
+        "os.truncate",
+        "os.utime",
+    }:
+        raise RuntimeError("Forbidden filesystem mutation")
     if event == "open" and (
         isinstance(args[1], str)
         and any(c in args[1] for c in "wax+")
