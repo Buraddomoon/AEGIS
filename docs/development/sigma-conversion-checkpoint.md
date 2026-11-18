@@ -1,37 +1,37 @@
 # Checkpoint — entrega #16: conversão Sigma
 
-Retomada em18/11 após pedido explícito de resolver o bloqueio: o
-[ADR0036](../architecture/decisions/0036-isolated-sigma-converter.md) substitui
-a espera por publicação por um conversor oficial em venv/processo separados.
-Parser da API continua2.0.1; conjunto1.5.1/2.0.3/2.1.1 com18pins/hashes e
-pip check próprios, auditado separadamente.25testes do processo passaram e
-auditoria manteve somente o finding DiskCache já revisado, cujo import é proibido.
-#84 retomada para essa solução;#85/#86 em implementação. Estado anterior abaixo
-é preservado como histórico, sem alegar conversão/UI entregue nesta etapa.
+18/11/2026, retomada após pedido explícito para resolver o bloqueio e entregar
+#85/#86. Não foi necessária outra issue. O
+[ADR0036](../architecture/decisions/0036-isolated-sigma-converter.md) substituiu
+a espera por publicação prevista no ADR0035: conversor oficial compatível em
+venv/processo separados, core1.5.1/OpenSearch2.0.3/Elasticsearch2.1.1 e18pins/hashes.
+Parser2.0.1 e locks da aplicação preservados; sem backend incompatível na API,
+patch de METADATA, código upstream copiado ou serviço de rede adicional.
 
-18/11/2026: **#84 pesquisada e concluída com resultado negativo; #85/#86
-bloqueadas e #16 aberta, sem aceite conjunto.**
+#84 entregou o isolamento e sua validação;#85 implementou perfil/pipeline/API
+fechados;#86 implementou seleção de versão, query/procedência e download validado.
+Fonte executável `69ae1e4f2730c64b93841d1f8a67c3e2250ada16`. Ver
+[provas completas](../evidence/sigma-conversion-2026-11-18/README.md) e
+[operação/limites](../integrations/sigma.md). A
+[pesquisa inicial negativa](../evidence/sigma-compatibility-2026-11-18/README.md)
+é preservada como histórico correto dos pacotes publicados.
 
-OpenSearch2.0.3 e Elasticsearch2.1.1 publicados continuam exigindo pySigma<2.
-O runtime2.0.1 e a atualização candidata2.1.0 falham com ResolutionImpossible.
-Core1.5.1 resolve18wheels com hashes conferidos, mas é downgrade vedado, não
-instalação aprovada. A declaração core^2.1.0 no main do Elasticsearch não está
-no wheel publicado. Não instalar fontes/editar METADATA para ignorar o conflito.
+Validação local:139Python pertinentes/115React/21segurança glob; lint/tipos/build
+e auditorias aprovados (Python1finding DiskCache revisado e import proibido;
+npm0). Firefox real:5runs/20testes Demo/2snapshots/4PDFs/17capturas/0errosJS,
+mais query offline/download real com hashes conferidos e relatórios preservados.
+Imagem dedicada final construída/testada sem rede, escrita ou volumes; Demo ativo
+permanece na imagem b8 anterior. Falhas intermediárias e diferença entre
+implementado/testado/implantado constam das provas.
 
-[Matriz, hashes, fontes e resultados](../evidence/sigma-compatibility-2026-11-18/README.md).
-[ADR0035](../architecture/decisions/0035-sigma-published-backend-compatibility.md).
-91testes locais passaram após ajustar somente o ambiente do processo de teste
-às credenciais dos serviços de desenvolvimento existentes; a primeira rodada
-teve76passed/15errors de autenticação PostgreSQL, preservados no relatório.
-Pip check/Ruff/mypy passaram. Sem CI integral nova, UI/E2E ou implantação.
+CI integral da fonte69ae1e4:
+[44379443285 SUCCESS](https://github.com/Buraddomoon/AEGIS/actions/runs/44379443285),
+3781Python/9skips existentes e115React. Quatro jobs Python e React conferidos.
+Aceite conjunto#16 atendido com#84/#85/#86; entrega encerrada. Último commit
+somente documental não altera os inputs executáveis validados.
 
-Runtime, locks, snapshot22/10, perfil/hash e histórico preservados; nenhum backend
-instalado/importado. Readiness continua blocked/can_convert=false; a prévia de
-rename não gera consulta. Sem operação SIEM ou Linux/Wazuh, acesso a volumes
-originais, novo marcador ou mudança de autorização.
-
-Retomar somente quando houver distribuição oficial compatível, com nova
-conferência de wheels/METADATA, pins/licenças/imports/segurança. Isso libera a
-implementação de#85, não a presume concluída;#86 depende da API e seus testes.
-Bloqueios e commits/sincronização registrados no GitHub. Sessão encerrada no
-bloqueio externo desta entrega; não avançar automaticamente para outra feature.
+Conversão não consulta SIEM, não valida índice físico, não implanta regra nem
+comprova eficácia. Candidato/hash antigos, scopes, aprovações, evidências e
+histórico preservados. Sem Linux/Wazuh, marcador, volume original, PKI ou qasrc.
+Validação nativa da query pertence à#17, fora desta sessão e sem autorização
+implícita. Commits/sincronização registrados nas issues. Parar sem outra entrega.

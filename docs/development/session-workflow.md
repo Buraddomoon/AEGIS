@@ -179,10 +179,12 @@ conferiu critérios, hashes, encerramento, imagens retidas e sincronização sem
 repetir efeito/abrir volumes. Autorizações/pacotes consumidos, sem operação
 contínua. Entrega encerrada; parar e não iniciar outra feature.
 
-Entrega #16: [checkpoint da pesquisa Sigma](sigma-conversion-checkpoint.md).
-#84 concluiu a reavaliação em18/11 com matriz/ADR e91testes locais: os wheels
-OpenSearch2.0.3/Elasticsearch2.1.1 ainda exigem core<2, incompatíveis com o runtime
-2.0.1 e o candidato2.1.0. Downgrade1.5.1 não é permitido. #85/#86 bloqueadas;
-#16 permanece aberta, sem aceite conjunto. Runtime/locks/snapshot histórico
-preservados; sem backend instalado, conversão, implantação ou operação Lab.
-Parar no bloqueio externo, sem iniciar outra entrega.
+Entrega #16: [checkpoint da conversão Sigma](sigma-conversion-checkpoint.md).
+#84/#85/#86 atendidas em18/11 após pedido explícito de resolver o bloqueio:
+conjunto oficial compatível em venv/processo separados, sem reduzir o parser2.0.1
+da API. Perfil/pipeline/API limitados e UI por versão/hash com download validado.
+139Python pertinentes/115React; Firefox real com query/download e relatórios
+preservados; imagem dedicada testada sem rede/volumes. CI69ae1e4 SUCCESS,
+3781Python/9skips existentes e115React, quatro partições e React conferidos.
+[Provas/aceite conjunto](../evidence/sigma-conversion-2026-11-18/README.md).
+Demo ativo b8 preservado; sem implantação, SIEM ou Lab. Entrega encerrada; parar.

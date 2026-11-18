@@ -147,6 +147,11 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   chaves. Custódia externa permanece adiada até decisão do usuário.
 - Sigma: análise/rename não comprovam conversão, implantação ou eficácia. Não
   instalar backends incompatíveis nem carregar plugins/cache/pipelines externos.
+  #16 em18/11: #84/#85/#86 e aceite conjunto atendidos com conversor oficial em
+  venv/processo separados; parser da API2.0.1 preservado. Perfil novo
+  aegis-marker-lucene/1 gera query offline, sem validar índice/implantar regra.
+  CI69ae1e4 SUCCESS; Demo ativo anterior preservado, sem operação SIEM/Lab.
+  Ver docs/development/sigma-conversion-checkpoint.md. Entrega encerrada; parar.
 - ATT&CK: fonte oficial versionada, prepare/plan/apply controlados, sem atualização
   no startup; fonte ausente não significa revogação. Preservar releases/histórico.
 

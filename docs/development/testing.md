@@ -1,5 +1,25 @@
 # Testes e evidências
 
+## Conversão Sigma offline — #84/#85/#86
+
+`make sigma-converter-setup` prepara o venv dedicado com18pins/hashes e pip check;
+não reduz o parser da aplicação. Executar depois, sequencialmente com PG/Redis15:
+
+```sh
+.venv/bin/pytest tests/test_sigma_converter_worker.py tests/test_sigma_conversion.py tests/test_sigma_readiness.py tests/test_sigma_mapping.py tests/test_sigma_mapping_api.py tests/test_sigma_analysis.py -q
+```
+
+139testes pertinentes verificaram conjunto oficial isolado, golden queries,
+recusas semânticas antes do processo, audit hook/efeitos reais, drift, protocolo,
+timeout/ausência/capacidade e API/RBAC/integridade/histórico. Frontend115testes,
+incluindo17novos para hashes/download/contexto/races, mais21de segurança do glob.
+Firefox E2E gera uma consulta pelo backend/pipeline reais e observa o Blob do
+download sem substituir API ou impedir a ação do navegador; confere JSON,
+histórico e390px. Capturas devem usar caminho próprio para preservar as antigas.
+[Provas e falhas intermediárias](../evidence/sigma-conversion-2026-11-18/README.md).
+Esses ensaios são locais/Demo; não validam mapping do índice, eficácia ou operação
+SIEM. Nenhum teste inicia Linux/Wazuh ou usa volumes originais.
+
 ## Comportamentos Linux fixos — #81/#82
 
 `make test-linux-behaviors` verifica dois perfis opt-in em temporários próprios,
