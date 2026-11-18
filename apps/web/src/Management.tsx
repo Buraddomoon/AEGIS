@@ -6,6 +6,7 @@ import { WazuhBinding } from './WazuhBinding'
 import { RuleTestLinks } from './RuleTestLinks'
 import { RuleAnalysis } from './RuleAnalysis'
 import { RuleReadiness } from './RuleReadiness'
+import { RuleConversion } from './RuleConversion'
 import {
   CheckCircle2,
   FileCode2,
@@ -241,7 +242,8 @@ export function Rules({ user }: { user: User }) {
     [selected, setSelected] = useState<Rule | null>(null),
     [linked, setLinked] = useState<Rule | null>(null),
     [analyzed, setAnalyzed] = useState<Rule | null>(null),
-    [prepared, setPrepared] = useState<Rule | null>(null)
+    [prepared, setPrepared] = useState<Rule | null>(null),
+    [converted, setConverted] = useState<Rule | null>(null)
   return (
     <>
       <PageHeading
@@ -304,6 +306,9 @@ export function Rules({ user }: { user: User }) {
                         <button className="text-link" onClick={() => setPrepared(r)}>
                           Preparação de conversão
                         </button>
+                        <button className="text-link" onClick={() => setConverted(r)}>
+                          Gerar consulta
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -320,6 +325,7 @@ export function Rules({ user }: { user: User }) {
       {creating && <SigmaForm onClose={() => setCreating(false)} />}{' '}
       {selected && <RuleHistory rule={selected} onClose={() => setSelected(null)} />}
       {prepared && <RuleReadiness rule={prepared} onClose={() => setPrepared(null)} />}
+      {converted && <RuleConversion rule={converted} onClose={() => setConverted(null)} />}
       {analyzed && <RuleAnalysis rule={analyzed} onClose={() => setAnalyzed(null)} />}
       {linked && <RuleTestLinks rule={linked} user={user} onClose={() => setLinked(null)} />}
     </>

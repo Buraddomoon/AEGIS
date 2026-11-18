@@ -21,7 +21,7 @@ export function RuleReadiness({ rule, onClose }: { rule: Rule; onClose: () => vo
   return (
     <Modal title={`Preparação Sigma · ${rule.title}`} onClose={onClose}>
       <p className="notice">
-        Diagnóstico offline de campos e requisitos. Conversão e implantação indisponíveis.
+        Diagnóstico offline do perfil candidato. Para gerar uma consulta, use a ação Gerar consulta.
       </p>
       {versions.isLoading || profiles.isLoading ? (
         <Loading />
@@ -105,7 +105,7 @@ function ReadinessResult({
         <br />
         {data.readiness_version} · pySigma {data.pysigma_version}
       </p>
-      <h3>Conversão bloqueada</h3>
+      <h3>Perfil candidato não executável</h3>
       <ul className="readiness-blockers">
         {data.blockers.map((b, i) => (
           <li key={i}>

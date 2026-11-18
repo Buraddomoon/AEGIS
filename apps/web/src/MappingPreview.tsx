@@ -81,7 +81,9 @@ function PreviewResult({ ruleId, saved, profile }: Props) {
       )}
       {data.status === 'previewed' && (
         <>
-          <p className="notice">Somente campos transformados. Conversão SIEM continua bloqueada.</p>
+          <p className="notice">
+            Somente campos transformados. A consulta usa um perfil de conversão separado.
+          </p>
           <h4>Antes · detection normalizada</h4>
           <pre>{JSON.stringify(data.before_detection, null, 2)}</pre>
           <h4>Depois · detection normalizada</h4>

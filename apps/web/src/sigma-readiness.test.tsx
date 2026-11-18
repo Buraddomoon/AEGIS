@@ -113,11 +113,11 @@ it('shows blockers and missing fields; historical mapping does not enable conver
   const fetcher = mount()
   await screen.findByText('Sem mapeamento')
   expect(screen.getByText('Backend exige pySigma anterior à versão instalada.')).toBeInTheDocument()
-  expect(screen.getByText('Conversão bloqueada')).toBeInTheDocument()
+  expect(screen.getByText('Perfil candidato não executável')).toBeInTheDocument()
   await userEvent.selectOptions(screen.getByLabelText('Versão para preparação'), 'version-1')
   await screen.findByText('data.aegis.schema')
   expect(screen.getByText(/Campos declarados mapeados: Sim/)).toBeInTheDocument()
-  expect(screen.getByText('Conversão bloqueada')).toBeInTheDocument()
+  expect(screen.getByText('Perfil candidato não executável')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Converter' })).not.toBeInTheDocument()
   expect(fetcher.mock.calls.every(([, options]) => (options?.method ?? 'GET') === 'GET')).toBe(true)
 })
@@ -134,7 +134,7 @@ it.each(['hash', 'version', 'profile'])('rejects mismatched %s context', async (
   await screen.findByText(
     'O diagnóstico recebido não corresponde à versão e ao perfil selecionados.',
   )
-  expect(screen.queryByText('Conversão bloqueada')).not.toBeInTheDocument()
+  expect(screen.queryByText('Perfil candidato não executável')).not.toBeInTheDocument()
 })
 it('does not show a delayed response for another selected version', async () => {
   let release!: (value: unknown) => void
@@ -167,7 +167,7 @@ it('reports unavailable metadata instead of suggesting compatibility', async () 
 it('handles an empty profile catalog explicitly', async () => {
   mount(async (path) => (path.endsWith('/versions') ? { items: versions } : { items: [], backend }))
   await screen.findByText('Preparação indisponível')
-  expect(screen.queryByText('Conversão bloqueada')).not.toBeInTheDocument()
+  expect(screen.queryByText('Perfil candidato não executável')).not.toBeInTheDocument()
 })
 it('makes unresolved field references visible even when declared names have paths', async () => {
   mount(async (path) => {

@@ -75,7 +75,7 @@ it('requests only after an explicit click and shows real before/after without a 
   await userEvent.click(screen.getByRole('button', { name: 'Gerar prévia de campos' }))
   await screen.findByRole('heading', { name: 'Prévia de campos gerada' })
   expect(screen.getByText(/"data.aegis.schema"/)).toBeInTheDocument()
-  expect(screen.getByText(/Conversão SIEM continua bloqueada/)).toBeInTheDocument()
+  expect(screen.getByText(/A consulta usa um perfil de conversão separado/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Converter' })).not.toBeInTheDocument()
   expect(fetcher.mock.calls[0][0]).toContain('/v1/mapping-preview?profile_id=')
   await userEvent.click(screen.getByRole('button', { name: 'Ocultar prévia de campos' }))

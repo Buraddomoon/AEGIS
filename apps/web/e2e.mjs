@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import puppeteer from 'puppeteer-core'
 
@@ -488,7 +489,7 @@ level: informational
   await importSigma(sigma)
   await button('Preparação de conversão')
   await text('Sem mapeamento')
-  await text('Conversão bloqueada')
+  await text('Perfil candidato não executável')
   await text('dependency_unsatisfied')
   await page.click('dialog button[aria-label="Fechar"]')
   await button('Análise estática')
@@ -562,7 +563,7 @@ level: informational
   await text('AEGIS marker mapping candidate')
   await button('Preparação de conversão')
   await text('Campos declarados mapeados: Sim')
-  await text('Conversão bloqueada')
+  await text('Perfil candidato não executável')
   await text('data.aegis.observation')
   await text('index_mapping_unverified')
   await page.$eval('dialog[open]', (el) => {
@@ -571,7 +572,7 @@ level: informational
   await screenshot('sigma-readiness')
   await button('Gerar prévia de campos')
   await text('Prévia de campos gerada')
-  await text('Conversão SIEM continua bloqueada')
+  await text('A consulta usa um perfil de conversão separado')
   const mapping = await page.$$eval('dialog[open] pre', (nodes) =>
     nodes.map((node) => JSON.parse(node.textContent)),
   )
@@ -612,6 +613,42 @@ level: informational
     reviewedReport,
     'Preparation must not rewrite historical reports',
   )
+  await button('Gerar consulta')
+  await text('Consulta Sigma · AEGIS marker mapping candidate')
+  const queryResponse = page.waitForResponse((r) => /\/versions\/[^/]+\/query\?/.test(r.url()))
+  await button('Gerar consulta offline')
+  const generated = await queryResponse
+  assert.equal(generated.status(), 200)
+  const queryArtifact = await generated.json()
+  assert.equal(queryArtifact.status, 'converted')
+  assert.equal(queryArtifact.contract.profile.id, 'aegis-marker-lucene/1')
+  assert.equal(queryArtifact.contract.packages.pysigma, '1.5.1')
+  assert.equal(queryArtifact.query_sha256, createHash('sha256').update(queryArtifact.query).digest('hex'))
+  assert.equal(queryArtifact.siem_queried, false)
+  assert.equal(queryArtifact.deployment_performed, false)
+  assert.equal(queryArtifact.index_mapping_verified, false)
+  await text('Consulta gerada para revisão')
+  assert.equal(await page.$eval('dialog pre', (el) => el.textContent), queryArtifact.query)
+  // Observe the actual Blob while preserving the browser's real download action.
+  await page.evaluate(() => {
+    const original = URL.createObjectURL
+    URL.createObjectURL = function (blob) {
+      blob.text().then((value) => { globalThis.__sigmaDownloaded = value })
+      return original.call(this, blob)
+    }
+  })
+  await button('Baixar consulta e procedência')
+  await page.waitForFunction(() => !!globalThis.__sigmaDownloaded)
+  const downloaded = JSON.parse(await page.evaluate(() => globalThis.__sigmaDownloaded))
+  assert.deepEqual(downloaded, queryArtifact)
+  await page.bringToFront()
+  await writeFile('../../.local/e2e/sigma-query.json', JSON.stringify(downloaded, null, 2))
+  await screenshot('sigma-query')
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && document.querySelector('dialog').getBoundingClientRect().width <= innerWidth), true)
+  await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
+  await page.click('dialog button[aria-label="Fechar"]')
+  assert.deepEqual(await page.evaluate(async (id) => (await fetch('/api/v1/reports/' + id)).json(), reviewedId), reviewedReport, 'Query generation must preserve the historical report')
   for (const [route, heading] of [
     ['tests', 'Biblioteca de testes'],
     ['reports', 'Relatórios'],
