@@ -29,7 +29,10 @@ def test_complete_demo_and_repeat_compare_report(admin):
     assert coverage["evaluated_techniques"] == 3
     linux_technique = admin.get("/api/v1/techniques/T1059.004?mode=linux").json()
     assert linux_technique["mode"] == "linux"
-    assert linux_technique["coverage_history"] == linux_technique["tests"] == []
+    assert linux_technique["coverage_history"] == []
+    assert [t["id"] for t in linux_technique["tests"]] == ["linux-shell-canary-v1"]
+    assert linux_technique["tests"][0]["available_for_new_scope"] is False
+    assert linux_technique["tests"][0]["execution_kind"] == "linux_marker"
     assert admin.get("/api/v1/techniques/T1059.004?mode=demo").json()["coverage_history"]
     report = admin.get(f"/api/v1/reports/{run['id']}").json()
     assert report["synthetic"] and report["integrity_sha256"]

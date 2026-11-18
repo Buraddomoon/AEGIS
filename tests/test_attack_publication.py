@@ -97,9 +97,14 @@ def test_seed_keeps_adopted_catalog_and_plan_is_read_only(catalog_db):
         reviewed = store.plan(db, candidate(), LICENSE_HASH)
         assert reviewed["format"] == store.PLAN_FORMAT and reviewed["counts"]["active"] == 3
         impacted = {item["id"]: item for item in reviewed["tests_requiring_review"]}
-        assert set(impacted) == {"demo-shell", "atomic-file-permissions-v1"}
+        assert set(impacted) == {
+            "demo-shell",
+            "atomic-file-permissions-v1",
+            "linux-shell-canary-v1",
+        }
         assert impacted["demo-shell"]["technique_id"] == "T1059.004"
         assert impacted["atomic-file-permissions-v1"]["technique_id"] == "T1222.002"
+        assert impacted["linux-shell-canary-v1"]["technique_id"] == "T1059.004"
         assert all(item["approved"] and item["version"] == 1 for item in impacted.values())
         assert not reviewed["blockers"]
     assert fingerprint(engine) == before

@@ -77,6 +77,15 @@ por perfil, contas segregadas, disponibilidade/ausência de coleta e recuperaç�
 Não há autorização herdada de #5/#14 e não existe tentativa nativa desta entrega.
 #15 fica aberta até #83 e aceite conjunto. Ver [checkpoint](../../development/linux-behaviors-checkpoint.md).
 
-CI integral e hash técnico serão registrados depois do push, sem equiparar
+Primeira CI integral [44312253261](https://github.com/Buraddomoon/AEGIS/actions/runs/44312253261),
+fonte `1831dcc9edbbeeba4f13100dd8dffc4d7e99aea2`: a partição1 falhou em dois
+asserts de inventário anteriores à ampliação. `test_flow` esperava zero definições
+Linux em T1059.004; agora deve apresentar o shell novo indisponível, mantendo zero
+histórico Linux após Demo. `test_attack_publication` não incluía a definição nova
+na revisão exigida quando T1059.004 sai do catálogo. Corrigidas expectativas
+exatas, preservando os gates de disponibilidade, modo e catálogo. Sem mudança
+de código runtime, filtros, exclusões ou parâmetros da CI.
+
+CI final e hash da correção serão registrados depois do push, sem equiparar
 validação local a workflow aprovado. Evidências públicas contêm apenas metadados
 de fonte/testes, sem credenciais, dumps, logs ou artefatos privados.
