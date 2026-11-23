@@ -181,6 +181,18 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   implantação/operação Lab. Provas em docs/evidence/attack-context-2026-11-23/README.md
   e checkpoint em docs/development/attack-context-checkpoint.md. Parar nesse escopo.
 
+- #21 em23/11: #97/#98/#99 e aceite conjunto atendidos. Coortes históricas entre
+  laboratórios/modos/períodos/releases, equivalência somente dos registros,
+  descritiva/incomparável e delta condicionado; sem misturar Demo/real. API em
+  RR/READ ONLY com membros/hashes/limites e exports JSON/HTML/PDF revalidados
+  pelo hash completo do preview; UI invalida filtros/respostas/downloads antigos.
+  CI8c1d74e SUCCESS:3930Python/9skips e144React/21glob. Firefox descartável final
+  VERIFIED, três classificações/exports, PDF8páginas, históricos idênticos e
+  recursos próprios encerrados. Demo b8 anterior preservado, sem implantação,
+  migração de originais ou operação Linux/Wazuh. Provas em
+  docs/evidence/coverage-environments-2026-11-23/README.md e checkpoint em
+  docs/development/coverage-environments-checkpoint.md. Entrega encerrada; parar.
+
 Ao terminar: comentário na issue com comportamento entregue, arquivos relevantes,
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e
 sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /compact
