@@ -160,7 +160,16 @@ def compare_cohorts(before, after):
         or not after["valid_tests"]
         or any("origin_mismatch" in r or "integrity_mismatch" in r for r in reasons)
     )
+    differences = None
+    if len(before["cohorts"]) == len(after["cohorts"]) == 1:
+        old, new = before["cohorts"][0]["context"], after["cohorts"][0]["context"]
+        differences = [
+            {"field": key, "before": old.get(key), "after": new.get(key)}
+            for key in sorted(old.keys() | new.keys())
+            if old.get(key) != new.get(key)
+        ]
     return {
+        "context_differences": differences,
         "classification": "incomparable"
         if unavailable
         else "equivalent"

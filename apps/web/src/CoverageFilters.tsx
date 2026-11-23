@@ -60,7 +60,7 @@ export function useCoverageFilters() {
   }
 }
 
-async function releases() {
+export async function releases() {
   const items: CatalogRelease[] = [],
     seen = new Set<string>()
   let total: number | null = null

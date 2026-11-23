@@ -245,9 +245,10 @@ export function Go({ to, children }: { to: string; children: ReactNode }) {
     </a>
   )
 }
-export async function downloadFile(path: string, filename: string) {
+export async function downloadFile(path: string, filename: string, signal?: AbortSignal) {
   const response = await fetch(`/api/v1${path}`, {
     credentials: 'same-origin',
+    signal,
   })
   if (!response.ok) {
     const error = await response.json().catch(() => null)
@@ -259,8 +260,9 @@ export async function downloadFile(path: string, filename: string) {
   ) {
     throw new Error('O servidor não retornou um arquivo PDF válido.')
   }
-  const blob = await response.blob(),
-    url = URL.createObjectURL(blob),
+  const blob = await response.blob()
+  signal?.throwIfAborted()
+  const url = URL.createObjectURL(blob),
     link = document.createElement('a')
   link.href = url
   link.download = filename

@@ -10,11 +10,12 @@ from aegis import analytics
 from aegis import environment_analytics as env
 from aegis.db import session_factory
 from aegis.domain.validation import digest
-from aegis.models import Asset, CampaignRun, Laboratory, ValidationResult
+from aegis.models import Asset, CampaignRun, Laboratory, TelemetryEvent, ValidationResult
+from aegis.models import TestExecution as Execution
 from aegis.worker import claim_next, process_run
 from conftest import create_queued
 from pypdf import PdfReader
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import DBAPIError
 from test_attack_api import catalog_client as _catalog_client
 from test_attack_api import catalog_db as _catalog_db
@@ -66,6 +67,15 @@ def pair(admin):
 
 def test_snapshot_exports_members_origin_and_historical_reports_unchanged(admin):
     params, first, second = pair(admin)
+
+    def counts():
+        with session_factory()() as db:
+            return [
+                db.scalar(select(func.count()).select_from(model))
+                for model in (CampaignRun, Execution, ValidationResult, TelemetryEvent)
+            ]
+
+    original_counts = counts()
     history = {
         f: admin.get(f"/api/v1/reports/{first['id']}?format={f}").content for f in ("json", "html")
     }
@@ -101,6 +111,27 @@ def test_snapshot_exports_members_origin_and_historical_reports_unchanged(admin)
     assert report["integrity_sha256"] in extracted
     for f, original in history.items():
         assert admin.get(f"/api/v1/reports/{first['id']}?format={f}").content == original
+    assert counts() == original_counts
+
+
+def test_viewer_exports_the_same_snapshot(admin):
+    params, _, _ = pair(admin)
+    preview = admin.get(BASE, params=params).json()
+    login = admin.post(
+        "/api/v1/auth/login",
+        headers={"x-aegis-request": "browser"},
+        json={"username": "viewer", "password": "Test-only-randomized-scope-23!"},
+    )
+    assert login.status_code == 200
+    exported = admin.get(
+        BASE + "/report",
+        params={
+            **params,
+            "snapshot_at": preview["snapshot_at"],
+            "expected_snapshot_sha256": preview["integrity_sha256"],
+        },
+    )
+    assert exported.status_code == 200 and exported.json() == preview
 
 
 def test_repeatable_read_readonly_covers_both_sides_and_concurrent_changes(admin):

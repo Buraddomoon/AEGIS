@@ -164,3 +164,17 @@ snapshot antigo alterado. Se estável, JSON/HTML/PDF contêm o mesmo documento d
 preview; PDF continua sujeito aos limites menores próprios, sem truncamento.
 Todos os papéis autenticados podem consultar/exportar; exports mantêm rate limit
 e auditoria apenas de tipo/formato/hash. Relatórios anteriores mantêm contratos.
+
+Na página **Cobertura de detecção**, abra **Escolher dois laboratórios**. Selecione
+laboratório, release e período para A/B; o modo aparece na opção de laboratório.
+**Consultar laboratórios** não inicia campanha ou coleta. A tabela mostra
+detectados, válidos, excluídos e taxa por lado; classificação e motivos explicam
+por que o delta é ausente. Inspecione diferenças, configurações históricas e
+membros/origem. A fonte conectada atual não é inferida desse histórico.
+
+Qualquer alteração dos filtros descarta o preview e os exports; respostas
+atrasadas e downloads pendentes são cancelados/ignorados. Falha de consulta,
+resposta incompatível ou conflito na exportação oculta o sucesso anterior.
+**Exportar laboratórios PDF/HTML/JSON** envia os mesmos filtros e hash/data do
+preview. Em409, consulte novamente; os arquivos anteriores permanecem válidos
+como artefatos históricos, sem substituição silenciosa.

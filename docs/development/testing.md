@@ -1,5 +1,47 @@
 # Testes e evidências
 
+## Comparação entre laboratórios — #21
+
+Somente fixtures sintéticas e PostgreSQL/schema descartável, sem Linux/Wazuh:
+
+```sh
+.venv/bin/pytest tests/test_environment_comparison.py tests/test_environment_analytics.py tests/test_analytics_queries.py tests/test_analytics_api.py tests/test_coverage_comparison.py tests/test_pdf_reporting.py tests/test_pdf_api.py tests/test_analytics_selection.py -q --tb=short
+npm --prefix apps/web test
+make lint
+make build
+make audit
+```
+
+O contrato verifica incompletos/legado/releases diferentes, resultados parciais,
+modos separados, denominadores e delta condicionado; a API verifica RR/READ ONLY
+efetivo e escrita recusada, concorrência nos dois lados, limites sem truncamento,
+drift de resultados/referência, origem contraditória, export/viewer e ausência de
+novas runs/resultados/eventos por consulta. JSON/HTML/PDF compartilham o documento;
+HTML é parseado e PDF conferido por parser/identidades/hash. Relatórios existentes
+mantêm contratos. React cobre seleção, respostas tardias/divergentes, invalidação,
+cancelamento de download, motivos e parâmetros de exportação.
+
+Após build, execute separadamente (PG e Redis15 de testes já disponíveis):
+
+```sh
+.venv/bin/python scripts/environment_comparison_e2e.py
+```
+
+O harness cria schema, dois laboratórios Demo e uma conta UI próprios,
+aplica migrações/seed somente nesse schema, inicia API/worker próprios em18787
+e duas runs **sintéticas** via API normal. Firefox sem interceptar a API exerce
+as três classificações e os três exports. Uma nova solicitação sintética fica
+PENDING_APPROVAL para provocar409 de membros alterados, sem alterar histórico.
+JSON original é preservado para verificar a serialização determinística Python;
+`JSON.stringify` muda representações como0.0 e não implementa esse contrato.
+Compara bytes de relatórios individuais JSON/HTML/PDF antes/depois; captura1440px/
+390px e recusa overflow/erro JS. Provas ficam privadas em
+`.local/environment-comparison/acceptance-*`; falhas também são retidas.
+O finally encerra processos próprios, remove schema e limites da conta própria.
+Nunca inicia contêineres, laboratórios nativos ou migra originais. Não executar
+em paralelo a outras suítes PG/Redis15. Credenciais de infraestrutura são
+selecionadas só no ambiente do processo, sem modificar contas/grants/.env.
+
 ## Revisão administrativa ATT&CK — #19
 
 Executar em sequência, com PG/Redis15 de testes já disponíveis:

@@ -16,6 +16,7 @@ import {
   useData,
 } from './lib'
 import type { Comparison, Coverage } from './types'
+import { EnvironmentComparison } from './EnvironmentComparison'
 
 export function CoveragePage() {
   const filters = useCoverageFilters(),
@@ -315,6 +316,7 @@ export function CoveragePage() {
           </>
         )}
       </Panel>
+      <EnvironmentComparison />
       {c && !data.error && (
         <Panel
           title="Lacunas observadas"
