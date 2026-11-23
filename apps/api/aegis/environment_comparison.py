@@ -73,8 +73,30 @@ def cohort(runs, synthetic):
             for t in definitions
         ):
             reasons.add("unknown_test_context")
-        if not synthetic and (not scope.get("runner") or not scope.get("telemetry")):
-            reasons.add("unknown_defensive_source_or_runner")
+        if not synthetic:
+            runner, source = scope.get("runner") or {}, scope.get("telemetry") or {}
+            if (
+                not all(
+                    runner.get(k)
+                    for k in (
+                        "runner_id",
+                        "laboratory_id",
+                        "asset_id",
+                        "url",
+                        "protocol",
+                        "test_id",
+                        "server_ca_sha256",
+                        "client_cert_sha256",
+                    )
+                )
+                or runner.get("protocol") != "aegis-linux-runner/1"
+                or source.get("provider") != "wazuh-indexer"
+                or not all(
+                    source.get(k)
+                    for k in ("policy", "destination", "binding_id", "configuration_hash")
+                )
+            ):
+                reasons.add("unknown_defensive_source_or_runner")
         if run["state"] != "COMPLETED":
             reasons.add("incomplete_runs")
         if Counter(ids) != Counter(actual) or len(set(ids)) != len(ids):
@@ -107,6 +129,11 @@ def cohort(runs, synthetic):
             )
             if not origin:
                 reasons.add("origin_mismatch")
+            if synthetic and (
+                any(t.get("execution_kind") != "demo" for t in definitions)
+                or any(event.get("source") != "aegis-demo" for event in e.get("events", []))
+            ):
+                reasons.add("unknown_defensive_source_or_runner")
             if result and result["logic_version"] != scope.get("logic_version"):
                 reasons.add("validation_logic_mismatch")
             if outcome not in VALID or (result and not result["collection_complete"]):

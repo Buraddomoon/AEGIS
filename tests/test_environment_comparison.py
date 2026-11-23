@@ -142,3 +142,37 @@ def test_modes_remain_separate_and_incomparable():
     a, b = cohort(facts(), True), cohort([], False)
     result = compare_cohorts(a, b)
     assert result["classification"] == "incomparable" and "different_modes" in result["reasons"]
+
+
+@pytest.mark.parametrize("source", [{}, {"provider": "unavailable"}, {"provider": "wazuh-indexer"}])
+def test_incomplete_real_source_cannot_prove_equivalence_even_when_identical(source):
+    runs = facts()
+    run, execution = runs[0], runs[0]["executions"][0]
+    run["synthetic"] = execution["synthetic"] = execution["result"]["synthetic"] = False
+    run["scope"].update(
+        mode="linux",
+        synthetic=False,
+        runner={
+            "protocol": "aegis-linux-runner/1",
+            "runner_id": "fixture-runner",
+            "laboratory_id": "lab-a",
+            "asset_id": "lab-a",
+            "url": "https://fixture.invalid",
+            "test_id": "test",
+            "server_ca_sha256": "a" * 64,
+            "client_cert_sha256": "b" * 64,
+        },
+        telemetry=source,
+    )
+    run["scope_hash"] = digest(run["scope"])
+    c = cohort(runs, False)
+    assert "unknown_defensive_source_or_runner" in c["reasons"]
+    assert compare_cohorts(c, c)["detected_rate_delta_percentage_points"] is None
+
+
+def test_unrecognized_synthetic_event_source_is_not_assumed_equivalent():
+    runs = facts()
+    runs[0]["executions"][0]["events"] = [{"synthetic": True, "source": "unrecognized"}]
+    c = cohort(runs, True)
+    assert "unknown_defensive_source_or_runner" in c["reasons"]
+    assert not compare_cohorts(c, c)["comparable"]
