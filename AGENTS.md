@@ -164,6 +164,12 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   sem reativação, operação contínua ou nova entrega.
 - ATT&CK: fonte oficial versionada, prepare/plan/apply controlados, sem atualização
   no startup; fonte ausente não significa revogação. Preservar releases/histórico.
+- #19 encerrada em23/11: #92/#93/#94, revisão administrativa opt-in de planos
+  privados e apply ainda host-only. Candidato oficial20.0 já existente publicado
+  apenas em schema descartável; JSON/HTML/PDF anteriores idênticos. CI57f2bba
+  SUCCESS na segunda tentativa,3877Python/9skips e125React; primeira falha SQLite
+  preservada nas provas. Demo anterior preservado, sem implantação ou operação
+  Linux/Wazuh. Ver docs/development/attack-admin-checkpoint.md. Parar nesse escopo.
 
 Ao terminar: comentário na issue com comportamento entregue, arquivos relevantes,
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e

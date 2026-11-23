@@ -198,3 +198,11 @@ Zero recursos próprios/nove volumes sem consumidores; PKI nova separada e origi
 preservados.207testes locais/lint e CI13ff3d8 SUCCESS,3857Python/9skips e115React.
 Sem novo marcador/run/veredicto ou implantação no Demo. Autorizações/pacotes
 consumidos, tentativas anteriores retidas; **parar sem iniciar outra entrega**.
+
+Entrega #19: [checkpoint da revisão administrativa ATT&CK](attack-admin-checkpoint.md).
+#92/#93/#94 e aceite conjunto atendidos em23/11: cache privado opt-in, revisão
+web por hash e publicação host-only, demonstrados com candidato oficial20.0
+preexistente em schema descartável. JSON/HTML/PDF históricos idênticos; nenhuma
+versão nova inventada. CI57f2bba SUCCESS na segunda tentativa,3877Python/9skips
+e125React; falha SQLite da primeira tentativa preservada nas provas. Demo
+anterior/Labs preservados, sem implantação. Entrega encerrada; parar.
