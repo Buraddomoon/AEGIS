@@ -37,6 +37,13 @@ de candidato/destino/projeção/testes/bloqueadores recusam a revisão. A API re
 plano em transação `REPEATABLE READ, READ ONLY`, com prazos de10s por comando e
 1s por lock;60consultas por administrador/minuto e respostas `no-store`.
 
+Na matriz, administradores têm a ação **Revisar atualização ATT&CK**. A tela
+mostra destino, origem/versão/licença/hashes, valores antes/depois paginados,
+impactos e bloqueadores. Ausência de planos ou configuração é explícita.
+Troca de plano, página, recarga ou erro descarta confirmação/instrução; respostas
+atrasadas de outra consulta não podem restaurá-las. A confirmação do hash exige
+revisão integral declarada pelo administrador e nova consulta ao backend.
+
 `/{plan_sha256}/instruction` revalida novamente e fornece o comando host-only
 com candidato/hash/ator exatos apenas se não houver bloqueadores e o artefato
 ainda não estiver aplicado. Essa leitura não concede autorização nem modifica
@@ -119,8 +126,9 @@ Referências fora da release atual não recebem cobertura como se fossem ativas.
 Sessão de qualquer papel consulta `/api/v1/catalog/attack`, `/releases` e
 `/releases/{id}/techniques`. Técnicas aceitam `lifecycle` e
 `catalog_release_id` esperado; 409 informa troca de release. Não há botão de
-publicação decorativo: preparação/aplicação permanecem operações administrativas
-locais. [API](../api/overview.md), [ADR0014](../architecture/decisions/0014-controlled-attack-catalog.md).
+publicação decorativo: a revisão administrativa inspeciona planos preparados,
+enquanto preparação/aplicação permanecem operações administrativas locais.
+[API](../api/overview.md), [ADR0014](../architecture/decisions/0014-controlled-attack-catalog.md).
 
 Mapeamentos Demo: shell Unix→T1059.004, PowerShell→T1059.001,
 enumeração de processos→T1057, todos representados sinteticamente.

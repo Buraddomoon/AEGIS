@@ -206,7 +206,7 @@ export default function App() {
             {page === 'overview' ? (
               <Overview user={user.data} />
             ) : page === 'attack' ? (
-              <Catalog />
+              <Catalog canReview={user.data.role === 'administrator'} />
             ) : page === 'tests' ? (
               <TestLibrary user={user.data} />
             ) : page === 'campaigns' ? (

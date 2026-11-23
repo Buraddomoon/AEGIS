@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { AtomicCatalog } from './AtomicCatalog'
 import { AttackCatalogStatus, lifecycleLabels, loadTechniques } from './AttackCatalog'
+import { AttackReview } from './AttackReview'
 import { Badge, date, Empty, Failure, Go, Loading, Modal, PageHeading, Panel, useData } from './lib'
 import type { Page, RuleTestLink, Technique, Test, User } from './types'
 
@@ -30,7 +31,7 @@ const tactics: Record<string, string> = {
   exfiltration: 'Exfiltração',
   impact: 'Impacto',
 }
-export function Catalog() {
+export function Catalog({ canReview = false }: { canReview?: boolean }) {
   const [mode, setMode] = useState('demo'),
     [lifecycle, setLifecycle] = useState('active'),
     data = useQuery({
@@ -81,6 +82,7 @@ export function Catalog() {
         }
       />
       <AttackCatalogStatus expectedRelease={data.data!.catalog_release_id} onRefresh={refresh} />
+      {canReview && <AttackReview />}
       <div className="toolbar">
         <select
           aria-label="Modo da cobertura ATT&CK"

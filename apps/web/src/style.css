@@ -2208,3 +2208,22 @@ td > small {
 .test-card code {
   overflow-wrap: anywhere;
 }
+
+/* Long catalogue identities and bounded diffs must remain usable on mobile. */
+.attack-review pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 24rem;
+  overflow: auto;
+}
+.review-hash,
+.review-identifiers code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.review-identifiers dd {
+  margin-inline-start: 0;
+}
+.attack-review details {
+  margin-block: 0.75rem;
+}
