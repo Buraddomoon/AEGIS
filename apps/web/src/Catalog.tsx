@@ -14,6 +14,8 @@ import { AttackCatalogStatus, lifecycleLabels, loadTechniques } from './AttackCa
 import { AttackReview } from './AttackReview'
 import { Badge, date, Empty, Failure, Go, Loading, Modal, PageHeading, Panel, useData } from './lib'
 import type { Page, RuleTestLink, Technique, Test, User } from './types'
+import { TechniqueContext } from './TechniqueContext'
+import type { ObservedTelemetry, TechniqueCatalogContext } from './TechniqueContext'
 
 const tactics: Record<string, string> = {
   reconnaissance: 'Reconhecimento',
@@ -308,10 +310,12 @@ export function Catalog({ canReview = false }: { canReview?: boolean }) {
       )}
       {selected && (
         <TechniqueDetails
+          key={`${selected}:${mode}:${data.data!.catalog_release_id}`}
           id={selected}
           mode={mode}
           releaseId={data.data!.catalog_release_id}
           onClose={() => setSelected(null)}
+          onNavigate={setSelected}
         />
       )}
       <p className="scope-note">
@@ -329,11 +333,13 @@ function TechniqueDetails({
   mode,
   releaseId,
   onClose,
+  onNavigate,
 }: {
   id: string
   mode: string
   releaseId: string
   onClose: () => void
+  onNavigate: (id: string) => void
 }) {
   const data = useData<
     Technique & {
@@ -348,6 +354,9 @@ function TechniqueDetails({
       }[]
       limitation: string
       planned_rule_links: RuleTestLink[]
+      mode: string
+      catalog_context?: TechniqueCatalogContext
+      observed_telemetry?: ObservedTelemetry[]
     }
   >(`/techniques/${id}?mode=${mode}&catalog_release_id=${releaseId}`)
   return (
@@ -356,6 +365,12 @@ function TechniqueDetails({
         <Loading />
       ) : data.error ? (
         <Failure error={data.error} />
+      ) : data.data &&
+        (data.data.id !== id ||
+          data.data.mode !== mode ||
+          (data.data.catalog_context &&
+            data.data.catalog_context.catalog.release_id !== releaseId)) ? (
+        <Failure error={new Error('Contexto da técnica mudou; recarregue o catálogo.')} />
       ) : (
         data.data && (
           <>
@@ -374,6 +389,12 @@ function TechniqueDetails({
             <a className="text-link" href={data.data.reference} target="_blank" rel="noreferrer">
               Referência oficial MITRE <ExternalLink size={15} />
             </a>
+            <TechniqueContext
+              context={data.data.catalog_context}
+              observations={data.data.observed_telemetry}
+              mode={mode}
+              onNavigate={onNavigate}
+            />
             <h3>
               {data.data.catalog_status === 'active'
                 ? 'Simulações disponíveis'
@@ -385,7 +406,11 @@ function TechniqueDetails({
                   <FlaskConical size={17} />
                   <span>{t.name}</span>
                   <span className="subtle-tag">
-                    {t.available_for_new_scope === false ? 'Referência indisponível' : 'Sintético'}
+                    {t.available_for_new_scope === false
+                      ? 'Referência indisponível'
+                      : t.execution_kind === 'demo'
+                        ? 'Sintético'
+                        : 'Linux real · autorização separada'}
                   </span>
                 </div>
               ))

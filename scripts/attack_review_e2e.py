@@ -40,6 +40,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate-cache", type=Path, required=True)
     parser.add_argument("--candidate-id", required=True)
+    parser.add_argument("--reference-context", action="store_true")
     args = parser.parse_args()
     import re
 
@@ -51,7 +52,7 @@ def main():
         path.name: hashlib.sha256(path.read_bytes()).hexdigest()
         for path in (args.candidate_cache / args.candidate_id).iterdir()
     }
-    parent = ROOT / ".local/attack-admin"
+    parent = ROOT / (".local/attack-context" if args.reference_context else ".local/attack-admin")
     parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     output = Path(tempfile.mkdtemp(prefix="acceptance-", dir=parent))
     cache = output / "attack-catalog"
@@ -94,9 +95,11 @@ def main():
             raise RuntimeError("Disposable CLI refused; " + result.stderr)
         return json.loads(result.stdout)
 
-    def browser(phase, plan_id, stale_id=None):
+    def browser(phase, plan_id, stale_id=None, *, context=False):
+        from aegis.catalog.context import detail
+
         result = subprocess.run(
-            ["node", "attack-review-e2e.mjs"],
+            ["node", "attack-context-e2e.mjs" if context else "attack-review-e2e.mjs"],
             cwd=ROOT / "apps/web",
             env=env,
             input=json.dumps(
@@ -108,6 +111,7 @@ def main():
                     "plan_id": plan_id,
                     "stale_id": stale_id,
                     "output": str(output),
+                    "expected_context": detail(document, "T1059.001") if context else None,
                 }
             ),
             capture_output=True,
@@ -121,6 +125,10 @@ def main():
     with admin_engine.begin() as conn:
         conn.execute(text(f'CREATE SCHEMA "{schema}"'))
     try:
+        if args.reference_context:
+            enriched = cli("enrich", document.identity)
+            document = artifacts.load(cache, enriched["candidate_id"])
+            summary["context_candidate_id"] = document.identity
         subprocess.run(
             [sys.executable, "-m", "alembic", "upgrade", "head"],
             env=env,
@@ -224,6 +232,8 @@ def main():
             plan = cli("plan", document.identity)
             assert not plan["blockers"]
             summary["counts"] = plan["counts"]
+            if args.reference_context:
+                summary["context_before"] = browser("before", plan["plan_sha256"], context=True)
             summary["review_before"] = browser("before", plan["plan_sha256"])
             published = cli(
                 "apply",
@@ -244,6 +254,8 @@ def main():
             fresh = cli("plan", document.identity)
             assert fresh["action"] == "already_applied"
             summary["review_after"] = browser("after", fresh["plan_sha256"], plan["plan_sha256"])
+            if args.reference_context:
+                summary["context_after"] = browser("after", fresh["plan_sha256"], context=True)
             for kind, raw in reports.items():
                 assert request("GET", f"/reports/{run['id']}?format={kind}").content == raw
             summary["historical_report_sha256"] = {

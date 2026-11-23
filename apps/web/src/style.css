@@ -2232,3 +2232,23 @@ td > small {
   justify-content: flex-start;
   padding-inline: 0;
 }
+
+.technique-context {
+  overflow-wrap: anywhere;
+}
+.technique-context ul,
+.technique-context ol {
+  padding-left: 1.4rem;
+}
+.technique-context li {
+  margin-block: 0.6rem;
+}
+.telemetry-paths > li,
+.telemetry-observation {
+  border-bottom: 1px solid var(--border);
+  padding-block: 0.7rem;
+}
+.technique-context summary {
+  cursor: pointer;
+  padding-block: 0.7rem;
+}

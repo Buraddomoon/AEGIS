@@ -27,6 +27,12 @@ interface Review extends ReviewItem {
   publication_status: 'not_applied' | 'already_applied'
   blockers: string[]
   counts: Record<string, number>
+  reference_context?: {
+    previous_format: string
+    candidate_format: string
+    objects: number
+    relationships: number
+  }
   changes: Page<Change>
   tests_requiring_review: Page<{
     id: string
@@ -289,6 +295,14 @@ function ReviewDetail({
         ))}
       </dl>
       <h4>Impacto e bloqueadores</h4>
+      {plan.reference_context && (
+        <p>
+          Perfil de catálogo: {plan.reference_context.previous_format} →{' '}
+          {plan.reference_context.candidate_format} · {plan.reference_context.objects} referências
+          de contexto · {plan.reference_context.relationships} relações. Publicar uma nova release
+          separa a cobertura atual do histórico, mesmo sem mudança nas técnicas.
+        </p>
+      )}
       <dl>
         {Object.entries(plan.counts).map(([key, value]) => (
           <div key={key}>

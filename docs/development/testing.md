@@ -629,3 +629,41 @@ leitor apesar de label de build herdado. Fixtures/Compose/TLS real de loopback,
 sem startup Wazuh. Aviso conhecido Starlette/httpx. O helper de identidade foi
 também aplicado offline ao runtime salvo; mounts/limites/hashes são checks
 separados. Testes automatizados não substituem o ensaio nativo do relatório.
+
+## Relações ATT&CK e telemetria de referência — #20
+
+O conjunto de catálogo inclui `tests/test_attack_context.py`: STIX sintético
+reduzido com caminhos de estratégia/analítica/componente/log, campos ausentes,
+referências inválidas, legado, IDs/flags, perfil `/1` preservado, enriquecimento
+sem rede e migração com histórico. Integração PG/schema descartável e Redis15
+verifica modo/release, zero fontes sem eventos, ausência de herança de cobertura,
+publicação host-only e JSON/HTML/PDF históricos idênticos. Executar em sequência:
+
+```sh
+.venv/bin/pytest tests/test_attack_context.py tests/test_attack_review.py tests/test_attack_api.py tests/test_attack_publication.py tests/test_attack_cli.py tests/test_attack_artifacts.py tests/test_attack_document.py tests/test_migrations.py -q --tb=short
+.venv/bin/pytest tests/test_atomic_catalog.py tests/test_linux_campaign_preparation.py tests/test_wazuh_cycle_catalog.py -q --tb=short
+npm --prefix apps/web test
+make lint
+make build
+```
+
+`technique-context.test.tsx` cobre navegação com filtros/modo/release mantidos,
+fontes oficiais separadas dos eventos salvos, legado/ausência, erro e respostas
+divergentes/atrasadas. Não aumenta o denominador nem a cobertura do pai.
+
+O harness Firefox já existente tem a opção `--reference-context`, que enriquece
+uma **cópia** de candidato oficial `/1` já disponível e não baixa fonte nova:
+
+```sh
+.venv/bin/python scripts/attack_review_e2e.py \
+  --candidate-cache /CAMINHO/PRIVADO/attack-catalog \
+  --candidate-id SHA256_EXATO_DO_CANDIDATO \
+  --reference-context
+```
+
+Usa schema exclusivo com migração explícita, API/worker próprios em18786,
+Redis15 sequencial, uma run Demo sintética e CLI real sobre a cópia. Firefox
+exercita legado→revisão→apply host-only no schema descartável→contexto oficial,
+pai/subtécnica, modo Linux vazio,1440px/390px e preservação byte a byte dos três
+relatórios. Capturas/resumo privados ficam em `.local/attack-context/acceptance-*`;
+falhas anteriores são retidas. Não inicia contêineres/labs nem migra originais.
