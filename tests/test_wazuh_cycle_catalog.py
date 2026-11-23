@@ -119,10 +119,12 @@ def test_apply_leaves_commit_under_explicit_owner_control(legacy):
     assert proposal(legacy) == reviewed
 
 
-def test_adoption_rejects_atomic_head_without_migration_or_publication(db_ready, pg_engine):
+def test_adoption_rejects_current_head_without_migration_or_publication(db_ready, pg_engine):
     with Session(pg_engine) as db:
         before = db.scalar(text("SELECT version_num FROM alembic_version"))
-    assert before == "c8e4a6d21f90"
+    from aegis.operations.recovery import required_revision
+
+    assert before == required_revision()
     with Session(pg_engine) as db, pytest.raises(ValueError, match="explicit_b7_upgrade"):
         adoption.plan(db, RAW, LICENSE)
     with Session(pg_engine) as db:

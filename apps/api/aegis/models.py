@@ -97,12 +97,18 @@ class AttackCatalogRelease(Base):
     __tablename__ = "attack_catalog_releases"
     __table_args__ = (
         CheckConstraint("provenance in ('bundled','official_commit')", name="catalog_provenance"),
-        UniqueConstraint(
-            "dataset_version", "source_sha256", "license_sha256", "provenance", "document_format"
+        Index(
+            "uq_attack_catalog_releases_source_profile",
+            "dataset_version",
+            "source_sha256",
+            "license_sha256",
+            "provenance",
+            text("coalesce(document->>'format', 'aegis-enterprise-catalog/1')"),
+            unique=True,
         ),
         CheckConstraint(
-            "document_format in ('aegis-enterprise-catalog/1','aegis-enterprise-catalog/2') "
-            "AND document_format = coalesce(document->>'format', 'aegis-enterprise-catalog/1')",
+            "coalesce(document->>'format', 'aegis-enterprise-catalog/1') "
+            "in ('aegis-enterprise-catalog/1','aegis-enterprise-catalog/2')",
             name="catalog_document_format",
         ),
     )
@@ -115,11 +121,6 @@ class AttackCatalogRelease(Base):
     license_sha256: Mapped[str] = mapped_column(String(64))
     # Versioned external document. Domain entities remain relational.
     document: Mapped[dict] = mapped_column(JSONB)
-    document_format: Mapped[str] = mapped_column(
-        String(40),
-        default="aegis-enterprise-catalog/1",
-        server_default="aegis-enterprise-catalog/1",
-    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     applied_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
 

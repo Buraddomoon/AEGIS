@@ -307,10 +307,12 @@ def test_smoke_records_one_attempt_and_cleans_up_after_midflow_failure(
     assert calls == before
 
 
-def test_readiness_refuses_atomic_head_without_implicit_lab_upgrade(db_ready, pg_engine):
+def test_readiness_refuses_current_head_without_implicit_lab_upgrade(db_ready, pg_engine):
     with pg_engine.connect() as connection:
         before = connection.scalar(text("SELECT version_num FROM alembic_version"))
-        assert before == "c8e4a6d21f90"
+        from aegis.operations.recovery import required_revision
+
+        assert before == required_revision()
         connection.rollback()
         with pytest.raises(RuntimeError, match="schema upgrade"):
             check(connection)

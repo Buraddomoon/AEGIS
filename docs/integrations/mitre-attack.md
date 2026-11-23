@@ -172,8 +172,8 @@ licença e técnicas forem idênticos; gera outra release e preserva o documento
 anterior. Reescrita de contexto `/2` e retorno ao perfil antigo são bloqueados.
 Uma nova identidade de release separa a cobertura atual do histórico, mesmo com
 as mesmas técnicas. Preparação nova usa `/2`; nada muda no seed ou no startup.
-Migração explícita `e2a71c9d064b` acrescenta o perfil à unicidade da release e
-confere sua igualdade com o documento. IDs/documentos antigos não mudam; downgrade
+Migração explícita `e2a71c9d064b` inclui o perfil do JSON na unicidade da
+release e restringe os perfis conhecidos, sem nova coluna ou reescrita de linhas. IDs/documentos antigos não mudam; downgrade
 recusa perder releases `/2`. Exige código/imagem e schema compatíveis; backups
 antigos continuam requerendo sua versão de origem. Não migrar Demo/Labs originais
 para testar esta entrega, nem implantar automaticamente.

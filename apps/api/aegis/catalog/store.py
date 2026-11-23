@@ -60,7 +60,6 @@ def add_release(db, document, actor):
         source_sha256=document.source_sha256,
         license_sha256=document.license_sha256,
         document=document.model_dump(mode="json"),
-        document_format=document.format,
         applied_by=actor,
     )
     db.add(record)
@@ -191,7 +190,6 @@ def checked(record):
             ("license_sha256", "license_sha256"),
             ("source_url", "source_url"),
             ("source_commit", "source_commit"),
-            ("document_format", "format"),
         )
     ):
         raise CatalogError("Integridade do histórico ATT&CK divergente.")
