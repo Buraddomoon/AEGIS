@@ -106,3 +106,32 @@ assert hashlib.sha256(encoded).hexdigest() == expected
 Conservar o arquivo original e as evidências. Hash detecta alteração de conteúdo;
 não comprova assinatura/origem ou impede um administrador do banco de alterá-lo.
 [ADR0015](../architecture/decisions/0015-scoped-coverage-reports.md).
+
+## Contrato da comparação entre laboratórios — #21/#97
+
+Dois recortes explícitos identificam laboratório, modo, release e período pela
+data da solicitação. A comparação é offline, sobre fatos históricos, sem consultar
+sensores nem iniciar campanhas. Cada lado conserva sua taxa e denominador; Demo
+e real nunca integram uma taxa agregada. Nenhum resultado histórico é reescrito.
+
+Os membros são agrupados pelo hash de toda a configuração registrada no scope,
+retirando somente IDs de campanha, laboratório e ativo. Testes/versões, ATT&CK,
+regras/vínculos, versão local do ambiente, lógica, janelas, runner e fonte defensiva
+participam da comparação. Campos novos também participam. IDs retirados permanecem
+nos membros; sua diferença não atesta igualdade física. Números iguais de versão
+de ambiente em laboratórios diferentes não são uma certificação externa.
+
+- **Equivalente nos registros**: contexto conhecido e homogêneo por lado,
+  configurações correspondentes, mesma frequência de cada teste, pais/filhos
+  completos, manifesto íntegro e resultados válidos com coleta completa.
+- **Descritiva**: denominadores disponíveis, mas configuração, release,
+  frequência, contexto desconhecido ou resultado parcial impedem equivalência.
+- **Incomparável**: modo diferente, denominador vazio ou integridade/origem
+  contraditória. Origem sintética contraditória suprime a taxa do lado inteiro.
+
+Delta em pontos percentuais existe somente no primeiro caso, calculado pelas
+frações antes do arredondamento. Inconclusivos/falhas/pendências ficam fora do
+denominador e impedem equivalência. Ausência de campo não comprova igualdade;
+legado não recebe contexto retroativo. As diferenças e contextos completos devem
+ser inspecionados. Mesmo uma diferença entre registros equivalentes não demonstra
+melhoria causal, eficácia geral do SIEM ou proteção empresarial.
