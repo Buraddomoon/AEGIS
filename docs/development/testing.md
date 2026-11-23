@@ -5,7 +5,7 @@
 Executar sequencialmente com PG/Redis15 já existentes:
 
 ```sh
-.venv/bin/pytest tests/test_sigma_validation.py tests/test_sigma_index.py tests/test_wazuh_tls.py tests/test_sigma_conversion.py tests/test_sigma_converter_worker.py tests/test_wazuh_collection.py tests/test_wazuh_profiles.py tests/test_sigma_mapping_api.py tests/test_wazuh_availability.py -q --tb=short
+.venv/bin/pytest tests/test_sigma_metadata_acl.py tests/test_sigma_index_probe.py tests/test_sigma_validation.py tests/test_sigma_index.py tests/test_wazuh_tls.py tests/test_sigma_conversion.py tests/test_sigma_converter_worker.py tests/test_wazuh_collection.py tests/test_wazuh_profiles.py tests/test_sigma_mapping_api.py tests/test_wazuh_availability.py -q --tb=short
 ```
 
 Fixtures de metadata, Search/Scroll e falhas verificam drift físico, TLS/destino,
@@ -18,6 +18,12 @@ credenciais locais estiverem desatualizadas, selecionar as dos serviços de test
 somente no processo; não alterar contas, grants, `.env` ou imprimir segredos.
 Ensaio externo exige autorização própria conforme o
 [procedimento](../operations/sigma-query-validation.md).
+`test_sigma_metadata_acl.py` verifica concessão/reversão exatas, resposta perdida,
+drift concorrente e identidade/isolation hash antes dos efeitos. O fixture de PATCH
+aceita somente add/remove, como a API nativa; não simula suporte a test inexistente.
+207casos locais passaram na fonte13ff3d8. O
+[ensaio nativo autorizado de23/11](../evidence/sigma-validation-2026-11-18/VERIFIED-89.md)
+é prova separada: metadata física, positiva1/negativa0, role restaurada e CLEANED.
 
 ## Conversão Sigma offline — #84/#85/#86
 

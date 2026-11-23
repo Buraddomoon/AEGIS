@@ -1,9 +1,11 @@
 # Consulta Sigma limitada — #17 / #87 / #88 / #89
 
-Estado18/11/2026: implementação e testes locais. **Ensaio nativo bloqueado** por
-ausência de autorização específica, snapshot físico revisado e pacote operacional
-novo. As autorizações das #59/#63 estão consumidas. Este documento não autoriza
-startup Wazuh, leitura de volumes originais, consulta externa ou novo marcador.
+Estado23/11/2026: **ensaio nativo verificado e encerrado** após autorizações próprias
+de consulta e manutenção temporária da ACL. Positiva1/negativa0 completas, mapping
+físico conferido, role original restaurada e recursos próprios encerrados.
+[Provas e limites](../evidence/sigma-validation-2026-11-18/VERIFIED-89.md).
+Autorizações/pacotes consumidos. Este documento não autoriza startup, leitura de
+volumes originais, consulta externa, reuso do pacote ou novo marcador.
 
 ## Contrato implementado
 
@@ -31,8 +33,9 @@ O modelo `Scope` em `apps/api/aegis/integrations/sigma_validation.py` rejeita ex
 | approved_at / expires_at | Janela ativa até30min; revalidada entre requisições/chunks |
 
 Hash do escopo: `digest(Scope.model_validate_json(bytes).model_dump(mode="json"))`.
-Não é assinatura. Nenhum arquivo ativo ou pacote operacional foi criado nesta
-entrega. Credenciais e escopos reais permanecem host-only, fora do Git/issue.
+Não é assinatura. No ensaio, o escopo foi temporário em tmpfs do leitor e removido;
+nenhuma configuração ativa foi instalada no Demo. Credenciais e escopos reais
+permanecem host-only, fora do Git/issue.
 
 A API regenera a query da versão exata usando o backend/pipeline/pins fixados na
 #16 e compara os hashes revisados antes da rede. Literais com `<`/`>` são recusados
@@ -77,7 +80,11 @@ classificações, scopes, aprovações, relatórios ou regras implantadas. Um ze
 vale apenas para esse índice/agente/período/query; não comprova ausência de
 telemetria. Flags do conector real em testes de fixture não constituem prova nativa.
 
-## Próximo ensaio da #89 — pendente, sem executar
+## Procedimento do ensaio encerrado da #89 — histórico
+
+A sequência abaixo foi executada sob pacote novo; a negativa403 inicial exigiu
+[autorização adicional e manutenção mínima da ACL](sigma-metadata-acl-proposal.md).
+As tentativas/resultados foram preservados. Não repetir esses operadores.
 
 1. Obter autorização específica para coleta read-only de metadata e consulta ao
    alerta existente da #59, com negativa controlada, sem novo marcador/run.

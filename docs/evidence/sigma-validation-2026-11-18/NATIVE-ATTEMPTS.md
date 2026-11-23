@@ -118,9 +118,10 @@ de37testes de probe/index/TLS é sobreposta, não somável.
 [CI04e9c01 /44389850009](https://github.com/Buraddomoon/AEGIS/actions/runs/44389850009)
 **SUCCESS**, quatro grupos Python e React conferidos:3847passed/9skips existentes
 (962+931+1030+924;2+2+1+4skips),115React/17arquivos. Não se confundem testes em
-fixture, CI verde e resultado nativo INCONCLUSIVE. Os commits posteriores deste
-relato são documentais; fonte executável preservada.
+fixture, CI verde e resultado nativo INCONCLUSIVE. A fonte executável das
+tentativas de18/11 permanece identificada como04e9c01; a manutenção e o
+[ensaio posterior de23/11](VERIFIED-89.md) usam revisão e provas próprias.
 
-**#17 e filhos permanecem abertos.** Próxima execução depende da manutenção de ACL
-explicitamente autorizada, PKI vigente, pacote/intent novos e revisão física;
-o erro403 não autoriza contornar ou enfraquecer os gates.
+Este relato manteve #17 e filhos abertos até a manutenção explicitamente autorizada,
+PKI vigente, pacote/intent novos e revisão física. O erro403 não foi usado para
+contornar ou enfraquecer os gates. O resultado posterior tem registro separado.

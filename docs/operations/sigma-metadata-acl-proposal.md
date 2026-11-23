@@ -1,9 +1,13 @@
-# ACL temporária para a #17 — plano autorizado, ainda não aplicado
+# ACL temporária para a #17 — executada e revertida
 
-23/11/2026. A tentativa autorizada da #89 chegou ao Indexer real, confirmou TLS e
+23/11/2026. A tentativa autorizada de18/11 da #89 chegou ao Indexer real, confirmou TLS e
 o principal `aegis_reader`, mas recebeu HTTP403 em
 `GET /wazuh-alerts-4.x-2026.11.16/_mapping`. As consultas Sigma não foram executadas.
 [Provas e encerramento](../evidence/sigma-validation-2026-11-18/NATIVE-ATTEMPTS.md).
+
+Após autorização adicional, a manutenção foi executada e revertida em23/11;
+[ensaio verificado/CLEANED](../evidence/sigma-validation-2026-11-18/VERIFIED-89.md).
+Role final igual ao snapshot inicial; autorizações/pacotes consumidos, sem reuso.
 
 O escopo registrado antes dos efeitos vedava alterar mapping/ACL para passar.
 Esta proposta é uma operação administrativa adicional. Em23/11, após apresentação

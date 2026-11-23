@@ -33,7 +33,11 @@ consulta de uma versão revisada, com escopo privado/temporário e hashes fixado
 Reutilizam o transporte TLS e exigem o gate físico antes/depois da busca. Hits
 preservam origem, têm verificação literal independente e completude explícita.
 Não há persistência/reclassificação histórica nem implantação de regra. Implementação
-testada em fixtures/DB/API locais; o ensaio real da #89 permanece bloqueado.
+testada em fixtures/DB/API locais. O
+[ensaio real da #89](../evidence/sigma-validation-2026-11-18/VERIFIED-89.md)
+verificou quatro campos físicos, positiva1/negativa0 completas e origem idêntica ao
+alerta preservado da #59, após manutenção mínima autorizada da ACL e sua reversão.
+Recursos encerrados; sem novo marcador, eficácia geral ou implantação Wazuh/Demo.
 
 ## Conversão offline isolada — #85, 18/11/2026
 

@@ -1,5 +1,10 @@
 # Preparação da validação Sigma — #17
 
+Registro histórico da preparação de18/11. A retomada autorizada teve
+[tentativas encerradas](NATIVE-ATTEMPTS.md) e, em23/11,
+[ensaio nativo verificado/CLEANED](VERIFIED-89.md). Os bloqueios abaixo descrevem
+o estado inicial; suas provas e limitações foram preservadas.
+
 18/11/2026. Escopo exclusivo #17 e filhos #87/#88/#89. Dependências nativas
 #16 e #7 conferidas CLOSED. **Aceite nativo pendente**: não existe autorização
 específica desta entrega para iniciar/consultar o laboratório. Nenhuma subissue

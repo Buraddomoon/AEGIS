@@ -188,3 +188,13 @@ preservados; imagem dedicada testada sem rede/volumes. CI69ae1e4 SUCCESS,
 3781Python/9skips existentes e115React, quatro partições e React conferidos.
 [Provas/aceite conjunto](../evidence/sigma-conversion-2026-11-18/README.md).
 Demo ativo b8 preservado; sem implantação, SIEM ou Lab. Entrega encerrada; parar.
+
+Entrega #17: [checkpoint da validação Sigma](sigma-validation-checkpoint.md).
+#87/#88/#89 e [aceite conjunto](../evidence/sigma-validation-2026-11-18/ACCEPTANCE-17.md)
+atendidos em23/11. Ensaio novo autorizado SIGMA_NATIVE_QUERY_VERIFIED/CLEANED:
+quatro campos físicos, positiva1/negativa0 sobre alerta original da #59 idêntico,
+duas limpezas de cursor e role original restaurada após grant mínimo temporário.
+Zero recursos próprios/nove volumes sem consumidores; PKI nova separada e originais
+preservados.207testes locais/lint e CI13ff3d8 SUCCESS,3857Python/9skips e115React.
+Sem novo marcador/run/veredicto ou implantação no Demo. Autorizações/pacotes
+consumidos, tentativas anteriores retidas; **parar sem iniciar outra entrega**.

@@ -152,11 +152,16 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   aegis-marker-lucene/1 gera query offline, sem validar índice/implantar regra.
   CI69ae1e4 SUCCESS; Demo ativo anterior preservado, sem operação SIEM/Lab.
   Ver docs/development/sigma-conversion-checkpoint.md. Entrega encerrada; parar.
-- #17 em18/11: gates físicos#87 e consulta limitada#88 implementados/testados
-  localmente,193testes pertinentes/lint e CIf8e20ee aprovados. Ensaio#89 e aceite nativo
-  dependem de autorização específica, metadata/ACL reais e pacote novo.
-  Ver docs/development/sigma-validation-checkpoint.md. Sem startup/consulta SIEM,
-  implantação ou novo marcador; pai/filhos abertos, parar no bloqueio.
+- #17 encerrada em23/11: #87/#88/#89 e aceite conjunto atendidos. Após autorizações
+  específicas de consulta e ACL temporária com reversão, pacoteeae8345c:
+  SIGMA_NATIVE_QUERY_VERIFIED/CLEANED, positiva1/negativa0, quatro campos físicos
+  e alerta original#59 idêntico. Role original restaurada, zero recursos próprios/
+  nove volumes sem consumidores; PKI temporária separada, originais preservados.
+  Sem novo marcador/run/veredicto ou implantação no Demo. CI13ff3d8 SUCCESS,
+  3857Python/9skips e115React. Provas em docs/evidence/sigma-validation-2026-11-18/VERIFIED-89.md
+  e ACCEPTANCE-17.md; checkpoint em docs/development/sigma-validation-checkpoint.md.
+  Tentativas/erros anteriores retidos. Pacotes/autorizações consumidos; parar,
+  sem reativação, operação contínua ou nova entrega.
 - ATT&CK: fonte oficial versionada, prepare/plan/apply controlados, sem atualização
   no startup; fonte ausente não significa revogação. Preservar releases/histórico.
 
