@@ -6,6 +6,7 @@ operator must durably retain snapshot output before invoking grant or restore.
 
 import copy
 import json
+import re
 import sys
 import time
 
@@ -78,11 +79,20 @@ def temporary(before):
 def maintain(payload, phase, *, factory=WazuhIndexerProvider, peer=wait_for_peer):
     if (
         not isinstance(payload, dict)
-        or set(payload) != {"username", "password", "expected_certificate_der_sha256", "snapshot"}
+        or set(payload)
+        != {
+            "username",
+            "password",
+            "expected_certificate_der_sha256",
+            "snapshot",
+            "exclusive_scope_sha256",
+        }
         or payload["username"] != "admin"
         or not isinstance(payload["password"], str)
         or not 1 <= len(payload["password"]) <= 256
         or phase not in {"snapshot", "grant", "restore"}
+        or not isinstance(payload["exclusive_scope_sha256"], str)
+        or not re.fullmatch(r"[a-f0-9]{64}", payload["exclusive_scope_sha256"])
     ):
         raise ValueError("invalid_maintenance_scope")
     identity = peer()
@@ -116,10 +126,10 @@ def maintain(payload, phase, *, factory=WazuhIndexerProvider, peer=wait_for_peer
         if phase == "grant":
             if canonical(current) != canonical(before):
                 raise ValueError("role_drift_before_grant")
-            patch = [
-                {"op": "test", "path": "/index_permissions", "value": current["index_permissions"]},
-                {"op": "add", "path": "/index_permissions/-", "value": ENTRY},
-            ]
+            # Security 2.19 only accepts add/replace/remove, not RFC6902 test.
+            # The trusted operator must prove an isolated single-writer scope;
+            # exact GET checks surround the narrow mutation. This is not CAS.
+            patch = [{"op": "add", "path": "/index_permissions/-", "value": ENTRY}]
             reader._request("PATCH", PATH, patch)
             observed = read()
             if canonical(observed) != canonical(after):
@@ -133,10 +143,7 @@ def maintain(payload, phase, *, factory=WazuhIndexerProvider, peer=wait_for_peer
         if canonical(current) != canonical(before):
             if canonical(current) != canonical(after):
                 raise ValueError("role_drift_before_restore")
-            patch = [
-                {"op": "test", "path": "/index_permissions", "value": current["index_permissions"]},
-                {"op": "remove", "path": "/index_permissions/1"},
-            ]
+            patch = [{"op": "remove", "path": "/index_permissions/1"}]
             reader._request("PATCH", PATH, patch)
         observed = read()
         if canonical(observed) != canonical(before):

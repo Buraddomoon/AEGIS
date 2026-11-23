@@ -30,6 +30,7 @@ PAYLOAD = {
     "password": "private-maintenance-fixture",
     "expected_certificate_der_sha256": "a" * 64,
     "snapshot": BEFORE,
+    "exclusive_scope_sha256": "b" * 64,
 }
 PEER = {"certificate_der_sha256": "a" * 64, "tls_version": "TLSv1.3"}
 
@@ -50,12 +51,10 @@ class Indexer:
             return httpx.Response(200, json={acl.ROLE: self.role})
         assert request.method == "PATCH"
         patch = json.loads(request.content)
-        assert patch[0] == {
-            "op": "test",
-            "path": "/index_permissions",
-            "value": self.role["index_permissions"],
-        }
-        operation = patch[1]
+        # The native Security API rejects test, move and copy; do not let a
+        # permissive HTTP fixture hide another unsupported native request.
+        assert len(patch) == 1 and patch[0]["op"] in {"add", "remove"}
+        operation = patch[0]
         if operation["op"] == "add":
             assert operation["path"] == "/index_permissions/-" and operation["value"] == acl.ENTRY
             self.role["index_permissions"].append(operation["value"])
@@ -139,6 +138,10 @@ def test_identity_and_operation_refused_before_authenticated_effect():
         acl.maintain({**PAYLOAD, "username": "reader"}, "grant", factory=forbidden, peer=forbidden)
     with pytest.raises(ValueError):
         acl.maintain(PAYLOAD, "arbitrary", factory=forbidden, peer=forbidden)
+    with pytest.raises(ValueError):
+        acl.maintain(
+            {**PAYLOAD, "exclusive_scope_sha256": None}, "grant", factory=forbidden, peer=forbidden
+        )
     with pytest.raises(ValueError):
         acl.maintain(
             PAYLOAD, "grant", factory=forbidden, peer=lambda: {"certificate_der_sha256": "b" * 64}

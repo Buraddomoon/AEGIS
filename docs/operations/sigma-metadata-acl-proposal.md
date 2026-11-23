@@ -37,9 +37,13 @@ de permissão para **um índice concreto**, preservando as entradas atuais:
 ```
 
 Destino único: `PATCH /_plugins/_security/api/roles/aegis_reader`. O JSON acima é o
-acréscimo revisável; antes do PATCH efetivo, inserir uma precondição `test` do
-`index_permissions` observado no GET autenticado da mesma role. Não adivinhar a
-representação ativa a partir do arquivo YAML. Rejeitar drift, privilégio adicional
+acréscimo revisável. A tentativa inicial de23/11 enviou uma precondição JSON Patch
+`test` e recebeu400; a reversão conferiu a role original. O
+[código oficial Security2.19](https://github.com/opensearch-project/security/blob/2.19.0.0/src/main/java/org/opensearch/security/dlic/rest/api/AbstractApiAction.java)
+aceita somente add/replace/remove. A continuação usa operações suportadas, GET
+exato imediatamente antes/depois e isolamento de um único escritor administrativo
+comprovado pelo operador. Isso **não é compare-and-swap no servidor**. Não adivinhar
+a representação ativa a partir do arquivo YAML. Rejeitar drift, privilégio adicional
 inesperado, role reservada ou resposta ambígua, preservando o snapshot host-only.
 Não conceder `manage`, wildcard administrativo, acesso à API Security para o reader
 ou permissão de escrita de documentos.
@@ -62,7 +66,9 @@ versão nativa faz parte do ensaio posterior; não ampliar a lista automaticamen
    pacote e ser limitada ao Indexer/leitores temporários, sem atualizar consumidores
    ou arquivos originais. Não aceitar certificado expirado ou desabilitar TLS.
 2. Salvar a role ativa e seu hash antes da mudança; registrar INTENT da manutenção.
-   Aplicar somente o acréscimo acima com a precondição exata. Sem retry automático
+   Conferir topologia isolada, ausência de portas/endpoints externos e de outro
+   helper administrativo em execução; vincular o hash dessa observação ao intent.
+   Aplicar somente o acréscimo acima após o GET exato. Sem retry automático
    após resposta perdida: reler/reconciliar o estado antes de qualquer ação.
 3. Conferir por GET a role resultante exata. Usando somente o reader, comprovar
    leitura de mapping/settings/aliases e manter as negativas de Security. Se os
@@ -71,7 +77,8 @@ versão nativa faz parte do ensaio posterior; não ampliar a lista automaticamen
    preservado da #59, com as versões/hashes e o período fixados no pacote novo.
    Preservar resultado positivo/negativo, completude, origem e limpeza de cursores.
 5. Em sucesso, falha ou cancelamento, remover exclusivamente a entrada acrescentada,
-   com precondição que confirme o estado temporário exato. Conferir igualdade da
+   somente após GET que confirme o estado temporário exato, sob o mesmo isolamento.
+   Conferir igualdade da
    role final com o snapshot inicial, sem sobrescrever mudanças de terceiros.
    Reversão incerta exige reconciliação; não declarar restaurado por um404.
 6. Parar/remover apenas os recursos próprios; conferir zero consumidores dos nove
