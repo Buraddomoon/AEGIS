@@ -9,9 +9,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from aegis.catalog.context import Context, normalize_context
 from aegis.domain.validation import digest
 
 FORMAT = "aegis-enterprise-catalog/1"
+CONTEXT_FORMAT = "aegis-enterprise-catalog/2"
 VERSION = r"(?:0|[1-9][0-9]{0,2})\.(?:0|[1-9][0-9]{0,2})"
 HEX64 = r"[a-f0-9]{64}"
 COMMIT = r"[a-f0-9]{40}"
@@ -100,7 +102,7 @@ class Technique(StrictModel):
 
 
 class Document(StrictModel):
-    format: Literal["aegis-enterprise-catalog/1"] = FORMAT
+    format: Literal["aegis-enterprise-catalog/1", "aegis-enterprise-catalog/2"] = FORMAT
     provenance: Literal["bundled", "official_commit"]
     version: str = Field(pattern="^" + VERSION + "$")
     source_url: str
@@ -110,9 +112,15 @@ class Document(StrictModel):
     collection_id: str | None = None
     collection_modified: str | None = None
     techniques: list[Technique] = Field(min_length=1, max_length=10_000)
+    context: Context | None = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def identities(self):
+        if self.format == FORMAT:
+            if self.context is not None:
+                raise ValueError("Legacy catalog cannot carry enriched context")
+        elif self.context is None or self.provenance != "official_commit":
+            raise ValueError("Context requires pinned official provenance")
         if self.provenance == "official_commit":
             if (
                 self.source_commit is None
@@ -146,6 +154,8 @@ class Document(StrictModel):
                     raise ValueError("Active subtechnique has no active parent")
             elif t.parent_id is not None and t.parent_id not in lookup:
                 raise ValueError("Missing historical parent")
+        if self.context is not None:
+            self.context.validate_graph(self.techniques)
         return self
 
     @property
@@ -179,7 +189,9 @@ def boolean(item, key):
     return value
 
 
-def normalize(raw, version, commit, license_raw):
+def normalize(raw, version, commit, license_raw, *, profile=CONTEXT_FORMAT):
+    if profile not in (FORMAT, CONTEXT_FORMAT):
+        raise ValueError("Unknown catalog profile")
     url = source_url(version, commit)
     if not isinstance(license_raw, bytes) or not 0 < len(license_raw) <= MAX_LICENSE:
         raise ValueError("Invalid license file")
@@ -304,6 +316,7 @@ def normalize(raw, version, commit, license_raw):
             )
         )
     return Document(
+        format=profile,
         provenance="official_commit",
         version=version,
         source_url=url,
@@ -313,6 +326,7 @@ def normalize(raw, version, commit, license_raw):
         collection_id=collection["id"],
         collection_modified=collection["modified"],
         techniques=sorted(techniques, key=lambda t: t.id),
+        context=normalize_context(objects, techniques) if profile == CONTEXT_FORMAT else None,
     )
 
 

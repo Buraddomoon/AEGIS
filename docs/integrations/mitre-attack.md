@@ -135,3 +135,54 @@ enumeração de processos→T1057, todos representados sinteticamente.
 Marcador genérico Linux/Demo permanece sem ATT&CK. Fonte atual contém867
 referências (706ativas/149revogadas/12descontinuadas); os161 registros retirados
 adicionais não aumentam o denominador de técnicas ativas.
+
+## Relações e referências de telemetria — #20
+
+O perfil `aegis-enterprise-catalog/2` mantém a projeção das técnicas e acrescenta
+um grafo de referência no documento imutável da release. Preserva IDs STIX/ATT&CK,
+modificações, flags e relações `subtechnique-of`/`detects`. Estratégias apontam
+para analíticas e estas para componentes e nomes/canais de logs. Referências
+legadas diretas de componente e fonte também são preservadas quando existem.
+Não há herança de telemetria/cobertura entre pai e subtécnica. Na fonte20.0 fixada
+em `c2494b29dd268c46a5d0ea0990553e4327cd2253`, há2622objetos de contexto e1184
+relações desse subconjunto; não existem `x_mitre_data_sources` nas técnicas.
+Fontes antigas descontinuadas não são apresentadas como sensores ativos.
+Modelo consultado: [documentação oficial MITRE](https://mitre-attack.github.io/attack-data-model/).
+
+O perfil `/1` continua legível e com identidade idêntica: ausência de contexto é
+`legacy_unavailable`, nunca uma lista inventada. `/2` sem relação de telemetria
+é `not_provided`; ID ausente da release atual é `technique_absent`. Pai/filhos
+legados podem navegar pelos IDs já preservados, com proveniência da relação
+explicitamente indisponível. O detalhe fixa `catalog_release_id`; publicação
+concorrente retorna409 e exige recarga. Nenhuma consulta baixa STIX ou toca labs.
+
+Um candidato oficial `/1` existente pode ser enriquecido **offline**, sem
+sobrescrever arquivos nem publicar automaticamente:
+
+```sh
+.venv/bin/python scripts/update_attack.py enrich ID_DO_CANDIDATO_EXISTENTE
+.venv/bin/python scripts/update_attack.py plan NOVO_ID_DO_CANDIDATO
+# Revisar destino, hashes, impactos e a nova identidade antes de eventual apply.
+```
+
+O enriquecimento revalida manifesto/bytes/permissões e normalização do perfil
+anterior antes de criar o candidato `/2`. Publicar exige o fluxo host-only já
+documentado. Uma extensão `/1`→`/2` da mesma versão só passa se fonte, commit,
+licença e técnicas forem idênticos; gera outra release e preserva o documento
+anterior. Reescrita de contexto `/2` e retorno ao perfil antigo são bloqueados.
+Uma nova identidade de release separa a cobertura atual do histórico, mesmo com
+as mesmas técnicas. Preparação nova usa `/2`; nada muda no seed ou no startup.
+Migração explícita `e2a71c9d064b` acrescenta o perfil à unicidade da release e
+confere sua igualdade com o documento. IDs/documentos antigos não mudam; downgrade
+recusa perder releases `/2`. Exige código/imagem e schema compatíveis; backups
+antigos continuam requerendo sua versão de origem. Não migrar Demo/Labs originais
+para testar esta entrega, nem implantar automaticamente.
+
+`GET /api/v1/techniques/{id}` acrescenta `catalog_context` com catálogo/perfil,
+pai/filhos e caminhos oficiais, além de `observed_telemetry` (até30avaliações do
+modo escolhido). Esta última resume somente `telemetry_events` persistidos por
+execução/fonte/tipo/synthetic, com release histórica e flags da avaliação. Um
+teste disponível, recibo ou vínculo Sigma não produz fonte observada. Eventos
+registrados não comprovam conexão atual, correlação ou detecção; acessar as
+provas da execução. Zero eventos não prova ausência de telemetria. As listas não
+alteram veredictos, cobertura, evidências ou relatórios históricos.

@@ -236,6 +236,48 @@ def technique_outcomes(db: Session, mode: str = "demo") -> dict[str, str]:
     return result
 
 
+def observed_telemetry(db, rows):
+    """Stored events only: neither allowlist entries nor runner receipts are sensors."""
+    identifiers = [execution.id for _, execution, _ in rows]
+    grouped = {}
+    if identifiers:
+        for execution_id, source, kind, synthetic, count in db.execute(
+            select(
+                TelemetryEvent.execution_id,
+                TelemetryEvent.source,
+                TelemetryEvent.kind,
+                TelemetryEvent.synthetic,
+                func.count(),
+            )
+            .where(TelemetryEvent.execution_id.in_(identifiers))
+            .group_by(
+                TelemetryEvent.execution_id,
+                TelemetryEvent.source,
+                TelemetryEvent.kind,
+                TelemetryEvent.synthetic,
+            )
+            .order_by(TelemetryEvent.source, TelemetryEvent.kind)
+        ):
+            grouped.setdefault(execution_id, []).append(
+                {"source": source, "kind": kind, "synthetic": synthetic, "event_count": count}
+            )
+    return [
+        {
+            "execution_id": execution.id,
+            "run_id": run.id,
+            "synthetic": run.synthetic,
+            "catalog_release_id": analytics.catalog_identity(run.scope),
+            "catalog_version": run.scope.get("attack_catalog", {}).get("version"),
+            "outcome": result.outcome,
+            "collection_complete": result.collection_complete,
+            "telemetry_available": result.telemetry_available,
+            "alerts_available": result.alerts_available,
+            "sources": grouped.get(execution.id, []),
+        }
+        for result, execution, run in rows
+    ]
+
+
 def scope_changes(before: dict, after: dict) -> dict:
     def differences(old: dict, new: dict) -> list[dict]:
         return [

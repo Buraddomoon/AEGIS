@@ -162,7 +162,11 @@ def load(root, identity):
     if document.provenance != "official_commit" or document.identity != identity:
         raise ValueError("Candidate provenance/identity mismatch")
     rebuilt = normalize(
-        raw["bundle.json"], document.version, document.source_commit, raw["LICENSE.txt"]
+        raw["bundle.json"],
+        document.version,
+        document.source_commit,
+        raw["LICENSE.txt"],
+        profile=document.format,
     )
     if rebuilt != document:
         raise ValueError("Normalized candidate does not match its original source")
@@ -189,6 +193,24 @@ def prepare(root, version, commit, *, transport=None):
     private(root, True)
     raw, license_raw = asyncio.run(fetch(version, commit, transport))
     document = normalize(raw, version, commit, license_raw)
+    return save_candidate(root, document, raw, license_raw)
+
+
+def enrich(root, identity):
+    """Reproject a verified local source into a new artifact, preserving the old one."""
+    previous = load(root, identity)
+    raw = read(root / identity / "bundle.json", MAX_BUNDLE)
+    license_raw = read(root / identity / "LICENSE.txt", MAX_LICENSE)
+    document = normalize(raw, previous.version, previous.source_commit, license_raw)
+    if (
+        document.source_sha256 != previous.source_sha256
+        or document.license_sha256 != previous.license_sha256
+    ):
+        raise ValueError("Source changed during enrichment")
+    return save_candidate(root, document, raw, license_raw)
+
+
+def save_candidate(root, document, raw, license_raw):
     normalized = encode(document.model_dump(mode="json"))
     if len(normalized) > MAX_NORMALIZED:
         raise ValueError("Normalized candidate exceeds reviewed profile limit")

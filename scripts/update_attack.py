@@ -51,6 +51,8 @@ def main(argv=None):
     preparation = sub.add_parser("prepare")
     preparation.add_argument("--version", required=True)
     preparation.add_argument("--commit", required=True)
+    enrichment = sub.add_parser("enrich")
+    enrichment.add_argument("candidate_id", type=fingerprint)
     review = sub.add_parser("plan")
     review.add_argument("candidate_id", type=fingerprint)
     publish = sub.add_parser("apply")
@@ -63,12 +65,17 @@ def main(argv=None):
         reviewed_license = hashlib.sha256(
             (settings().fixtures_path / "attack/LICENSE.txt").read_bytes()
         ).hexdigest()
-        if args.action == "prepare":
-            identity = artifacts.prepare(CACHE, args.version, args.commit)
+        if args.action in ("prepare", "enrich"):
+            identity = (
+                artifacts.prepare(CACHE, args.version, args.commit)
+                if args.action == "prepare"
+                else artifacts.enrich(CACHE, args.candidate_id)
+            )
             document = artifacts.load(CACHE, identity)
             result = {
                 "status": "prepared_not_applied",
                 "candidate_id": identity,
+                "document_format": document.format,
                 "version": document.version,
                 "source_commit": document.source_commit,
                 "source_sha256": document.source_sha256,

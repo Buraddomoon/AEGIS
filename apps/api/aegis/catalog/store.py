@@ -2,7 +2,7 @@
 
 from sqlalchemy import func, select, text
 
-from aegis.catalog.document import Document, Technique, bundled_document
+from aegis.catalog.document import CONTEXT_FORMAT, FORMAT, Document, Technique, bundled_document
 from aegis.config import require_normal_operation
 from aegis.domain.states import TERMINAL
 from aegis.domain.validation import digest
@@ -60,6 +60,7 @@ def add_release(db, document, actor):
         source_sha256=document.source_sha256,
         license_sha256=document.license_sha256,
         document=document.model_dump(mode="json"),
+        document_format=document.format,
         applied_by=actor,
     )
     db.add(record)
@@ -190,6 +191,7 @@ def checked(record):
             ("license_sha256", "license_sha256"),
             ("source_url", "source_url"),
             ("source_commit", "source_commit"),
+            ("document_format", "format"),
         )
     ):
         raise CatalogError("Integridade do histórico ATT&CK divergente.")
@@ -201,6 +203,17 @@ def logical(document):
     for key in ("source_commit", "source_url"):
         data.pop(key)
     return digest(data)
+
+
+def context_upgrade(previous, candidate):
+    # A new profile is a new release, never a rewrite of an old official document.
+    # Only the same raw source/license and identical technique projection qualify.
+    if previous.format != FORMAT or candidate.format != CONTEXT_FORMAT:
+        return False
+    data = candidate.model_dump(mode="json")
+    data.pop("context")
+    data["format"] = FORMAT
+    return data == previous.model_dump(mode="json")
 
 
 def plan(db, document, license_sha256):
@@ -265,6 +278,7 @@ def plan(db, document, license_sha256):
         if d.provenance == "official_commit"
         and d.version == document.version
         and logical(d) != logical(document)
+        and not context_upgrade(d, document)
     ]
     if conflicts:
         blockers.append("immutable_version_conflict")
@@ -334,6 +348,12 @@ def plan(db, document, license_sha256):
         "base_projection_sha256": digest(rows),
         "candidate_id": document.identity,
         "candidate_version": document.version,
+        "reference_context": {
+            "previous_format": current.format,
+            "candidate_format": document.format,
+            "objects": len(document.context.objects) if document.context else 0,
+            "relationships": len(document.context.relationships) if document.context else 0,
+        },
         "source_commit": document.source_commit,
         "source_sha256": document.source_sha256,
         "license_sha256": document.license_sha256,

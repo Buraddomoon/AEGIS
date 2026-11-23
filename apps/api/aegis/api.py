@@ -415,10 +415,11 @@ def technique_detail(
             TestDefinition.execution_kind == ("demo" if mode == "demo" else "linux_marker"),
         )
     ).all()
-    history = []
+    history, observed = [], []
     for result, execution, run in queries.completed_results(db, mode):
         scoped = next(t for t in run.scope["test_definitions"] if t["id"] == execution.test_id)
         if scoped["technique_id"] == technique_id:
+            observed.append((result, execution, run))
             history.append(
                 {
                     "run_id": run.id,
@@ -438,6 +439,14 @@ def technique_detail(
                     ),
                 }
             )
+    from aegis.catalog.context import detail as context_detail
+    from aegis.models import AttackCatalogRelease
+
+    document = catalog.checked(db.get(AttackCatalogRelease, current["release_id"]))
+    context = context_detail(document, technique_id)
+    context["catalog"] = current
+    context["document_format"] = document.format
+    observations = queries.observed_telemetry(db, observed[-30:])
     return {
         **queries.record(technique),
         "catalog_status": catalog.lifecycle(technique),
@@ -455,7 +464,11 @@ def technique_detail(
         ],
         "coverage_history": history[-30:],
         "mode": mode,
-        "telemetry_sources": ["aegis-demo"] if tests else [],
+        "catalog_context": context,
+        "observed_telemetry": observations,
+        "telemetry_sources": sorted(
+            {source["source"] for row in observations for source in row["sources"]}
+        ),
         "operational_rules": [],
         "planned_rule_links": rule_links.snapshot_links(db, [t.id for t in tests]),
         "limitation": "Regras Sigma cadastradas não são regras implantadas no SIEM.",
