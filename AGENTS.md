@@ -171,6 +171,16 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   preservada nas provas. Demo anterior preservado, sem implantação ou operação
   Linux/Wazuh. Ver docs/development/attack-admin-checkpoint.md. Parar nesse escopo.
 
+- #20 em23/11: #95/#96 e aceite conjunto atendidos. Perfil de contexto ATT&CK `/2`
+  com IDs/release/flags e enriquecimento offline; `/1` e relatórios preservados.
+  Modal navega pai/subtécnicas e separa referência oficial de eventos registrados,
+  sem herdar cobertura ou inferir fonte conectada. Migração explícitae2a71c9d064b
+  usa perfil do JSON na unicidade, sem reescrita de linhas; não aplicada ao Demo
+  ou labs originais. CI975a155 SUCCESS:3897Python/9skips e136React/21glob;
+  Firefox/schema descartável verificados e encerrados. Demo b8 preservado, sem
+  implantação/operação Lab. Provas em docs/evidence/attack-context-2026-11-23/README.md
+  e checkpoint em docs/development/attack-context-checkpoint.md. Parar nesse escopo.
+
 Ao terminar: comentário na issue com comportamento entregue, arquivos relevantes,
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e
 sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /compact

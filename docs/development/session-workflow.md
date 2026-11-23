@@ -206,3 +206,13 @@ preexistente em schema descartável. JSON/HTML/PDF históricos idênticos; nenhu
 versão nova inventada. CI57f2bba SUCCESS na segunda tentativa,3877Python/9skips
 e125React; falha SQLite da primeira tentativa preservada nas provas. Demo
 anterior/Labs preservados, sem implantação. Entrega encerrada; parar.
+
+Entrega #20: [checkpoint de relações ATT&CK](attack-context-checkpoint.md).
+#95/#96 e aceite conjunto atendidos em23/11: contexto oficial versionado `/2`,
+enriquecimento offline e modal com pai/subtécnicas e eventos registrados separados
+das referências. Legado/ausência explícitos, sem herança de cobertura. Migração
+explícitae2a71c9d064b testada somente em schemas descartáveis; histórico/relatórios
+preservados. CI975a155 SUCCESS,3897Python/9skips e136React/21glob; Firefox1440px/390px
+verificado e recursos próprios encerrados. Demo b8 anterior preservado, sem
+implantação ou operação Linux/Wazuh. Provas/falhas anteriores e sincronização nos
+comentários/checkpoint. Parar neste escopo; não iniciar outra entrega.
