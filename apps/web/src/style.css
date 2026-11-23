@@ -2227,3 +2227,8 @@ td > small {
 .attack-review details {
   margin-block: 0.75rem;
 }
+.attack-review-pagination {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding-inline: 0;
+}

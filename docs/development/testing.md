@@ -1,5 +1,46 @@
 # Testes e evidências
 
+## Revisão administrativa ATT&CK — #19
+
+Executar em sequência, com PG/Redis15 de testes já disponíveis:
+
+```sh
+.venv/bin/pytest tests/test_attack_review.py tests/test_attack_api.py tests/test_attack_publication.py tests/test_attack_cli.py tests/test_attack_artifacts.py tests/test_attack_document.py tests/test_migrations.py -q --tb=short
+npm --prefix apps/web test
+make lint
+make build
+```
+
+97casos Python pertinentes passaram em23/11, incluindo20novos de revisão:
+RBAC/opt-in, hash/destino/drift, limites, arquivos não regulares, leitura SQL
+efetivamente read-only e ausência de efeito web. Publicação já testa locks
+concorrentes/rollback, imutabilidade, escopos anteriores e relatórios preservados.
+Os fixtures reduzidos de transição continuam explicitamente sintéticos.
+React125casos/18arquivos, incluindo10novos de revisão/races;21casos do glob à parte.
+
+Para o percurso offline no Firefox, com SPA já construída e candidato oficial
+**já preparado e revisado** em cache privado:
+
+```sh
+.venv/bin/python scripts/attack_review_e2e.py \
+  --candidate-cache /CAMINHO/PRIVADO/attack-catalog \
+  --candidate-id SHA256_EXATO_DO_CANDIDATO
+```
+
+O roteiro revalida a fonte, copia somente esse candidato para um temporário
+privado, cria schema exclusivo, aplica Alembic/seed ali, inicia API/worker próprios
+em18786 e usa Redis15 em sequência. A CLI real é carregada com `runpy`, mudando
+somente seu caminho de cache para a cópia temporária. O navegador não intercepta
+nem substitui a API. Uma run Demo sintética fornece JSON/HTML/PDF históricos.
+Revisão/paginação/instrução→apply host-only→recusa do plano antigo→novo plano já
+aplicado; bytes dos três relatórios e documento da release anterior preservados.
+Capturas1440px/390px e resumo ficam em `.local/attack-admin/acceptance-*`;
+processos próprios são encerrados, schema removido e chaves de rate limit do
+usuário próprio removidas. Não inicia contêineres/labs nem altera o cache original.
+Falha deixa provas locais e não anuncia aceite. Não repetir se não houver
+candidato legítimo; não fabricar uma versão nova. O aceite utilizou a mesma
+versão20.0 já documentada, promovendo proveniência bundled→official_commit.
+
 ## Validação de consultas Sigma — #17
 
 Executar sequencialmente com PG/Redis15 já existentes:

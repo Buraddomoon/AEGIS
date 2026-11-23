@@ -176,7 +176,7 @@ function Pagination({
   onPage: (page: number) => void
 }) {
   return (
-    <div className="pagination" aria-label={`Paginação de ${label}`}>
+    <div className="pagination attack-review-pagination" aria-label={`Paginação de ${label}`}>
       <button className="button" disabled={!page} onClick={() => onPage(page - 1)}>
         Anterior · {label}
       </button>
