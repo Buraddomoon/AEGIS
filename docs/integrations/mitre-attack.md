@@ -16,6 +16,36 @@ administrativa de implantação em DATABASE_URL; não exponha a senha em argumen
 Runtime API/worker só consulta as três tabelas do catálogo. Não existe endpoint
 de atualização, download no startup ou upload web de STIX.
 
+### Revisão administrativa web (opt-in)
+
+Após `prepare` e `plan` no host, a implantação pode definir `ATTACK_REVIEW_CACHE`
+com o caminho absoluto do mesmo cache privado. Não há descoberta remota de
+versões. Cache, seu pai imediato e `plans` devem pertencer ao UID da API e ter
+modo0700; arquivos0600. Em contêiner, montar o pai/cache somente leitura para
+esse mesmo UID, sem credenciais SQL de publicação. Não copiar o cache para a SPA
+ou para Git. A conexão runtime e a CLI precisam usar host/porta/banco/schema
+idênticos: o destino faz parte do hash. Não editar o plano para adaptar um
+destino; gerar outro usando o destino legítimo. Configuração ausente significa
+revisão desabilitada; cache ausente/alterado é erro explícito.
+
+Somente administradores ativos consultam `/api/v1/catalog/attack/reviews` e
+`/{plan_sha256}`. Inventário limitado a100entradas (inclusive arquivos extras),
+paginação1–50; diff e impactos usam páginas independentes `offset`/`test_offset`
+e `limit`1–50. Planos têm no máximo12MB e mantêm os limites do candidato.
+Arquivos não regulares, symlinks, permissões abertas, hash divergente ou alteração
+de candidato/destino/projeção/testes/bloqueadores recusam a revisão. A API refaz o
+plano em transação `REPEATABLE READ, READ ONLY`, com prazos de10s por comando e
+1s por lock;60consultas por administrador/minuto e respostas `no-store`.
+
+`/{plan_sha256}/instruction` revalida novamente e fornece o comando host-only
+com candidato/hash/ator exatos apenas se não houver bloqueadores e o artefato
+ainda não estiver aplicado. Essa leitura não concede autorização nem modifica
+catálogo, aprovações ou auditoria. A CLI continua exigindo credencial de
+implantação e revalidação sob locks no instante do apply. Após publicação,
+o plano antigo fica desatualizado; gerar outro para consultar `already_applied`.
+Arquivar planos antigos no host quando o inventário atingir o limite, preservando
+as provas necessárias. Não alterar arquivos para forçar uma confirmação.
+
 ```bash
 # Fonte efetivamente verificada; revisar o plano antes de aplicar.
 .venv/bin/python scripts/update_attack.py prepare --version 20.0 \

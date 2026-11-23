@@ -11,6 +11,7 @@ Sessão por cookie HttpOnly. Login JSON exige `X-Aegis-Request: browser`; origem
 | labs/assets | GET lista, PATCH lab authorization, POST linux/register e preflight, GET verifications, POST recover (admin para mutações) |
 | techniques | GET pesquisa/filtros/paginação; GET detalhe/history/simulações |
 | catalog/attack | GET estado/proveniência; GET releases paginadas; GET releases/{id}/techniques snapshot pesquisável |
+| catalog/attack/reviews | Administrador: GET inventário de planos host-only; GET {plan_sha256} diff/impacto revalidado; GET {plan_sha256}/instruction instrução local sem publicar |
 | tests | GET allowlist Demo e marcador Linux revisado |
 | campaigns | GET/POST; POST `/{id}/runs` com idempotency_key |
 | executions | GET lista/detalhe, POST approve/start/cancel/reject |
@@ -31,7 +32,9 @@ ATT&CK: `lifecycle=active|revoked|deprecated|absent|all` (padrão active) e
 409 recusa paginação/detalhe após troca de catálogo. Respostas incluem referência
 de catálogo e ciclo de vida; cobertura atual requer mesma release/mode.
 `catalog/attack/releases` aceita limit1–100/offset; snapshots limit1–1000/offset/q.
-Rotas do catálogo só leem, autenticadas para todos os papéis. Publicação é CLI
+Rotas de estado/releases só leem, autenticadas para todos os papéis; revisão de
+planos é exclusiva de administradores e opt-in por `ATTACK_REVIEW_CACHE`.
+Publicação é CLI
 host-only, com credencial de implantação e plano confirmado; não existe POST web.
 Histórico de técnica informa versão registrada ou contexto desconhecido.
 

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     demo_step_seconds: float = Field(default=0.15, ge=0, le=5)
     web_dist: Path = Path("apps/web/dist")
     fixtures_path: Path = Path("fixtures")
+    attack_review_cache: Path | None = None
     wazuh_url: str | None = None
     wazuh_username: str | None = None
     wazuh_password: str | None = None
