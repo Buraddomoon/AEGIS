@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from aegis import analytics, queries
+from aegis import analytics, environment_analytics, queries
 from aegis.db import get_db
 from aegis.models import CampaignRun, User
 from aegis.report_downloads import pdf_download
@@ -160,3 +160,22 @@ def comparison_report(
             build_report(queries.execution_detail(snapshot, after)),
         )
     return deliver(db, user, report, format)
+
+
+EnvironmentPair = Annotated[environment_analytics.PairQuery, Query()]
+
+
+@router.get("/environments")
+def environment_comparison(user: Viewer, db: DB, pair: EnvironmentPair):
+    with analytics.read_snapshot(db) as snapshot:
+        return environment_analytics.build(snapshot, pair)
+
+
+@router.get("/environments/report", responses={200: {"content": {"application/pdf": {}}}})
+def environment_report(user: Viewer, db: DB, pair: EnvironmentPair):
+    if not pair.expected_snapshot_sha256 or not pair.snapshot_at:
+        raise HTTPException(422, "Consulte primeiro; informe hash e data do snapshot apresentado.")
+    rate_limit("analysis-report:" + user.id, 30, 60)
+    with analytics.read_snapshot(db) as snapshot:
+        report = environment_analytics.build(snapshot, pair)
+    return deliver(db, user, report, pair.format)

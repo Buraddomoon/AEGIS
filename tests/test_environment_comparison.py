@@ -20,7 +20,18 @@ def facts(lab="lab-a", outcome="DETECTED"):
         "attack_techniques": [],
         "clock_skew_seconds": 5,
         "ingestion_window_seconds": 120,
-        "test_definitions": [{"id": "test", "version": 1}],
+        "test_definitions": [
+            {
+                "id": "test",
+                "version": 1,
+                "technique_id": None,
+                "behavior": "fixture",
+                "expected_rule": "fixture",
+                "execution_kind": "demo",
+                "cleanup": "in-memory",
+                "demo_outcome": "DETECTED",
+            }
+        ],
         "rule_versions": {},
         "rule_test_links": [],
     }

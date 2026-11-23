@@ -19,6 +19,16 @@ REQUIRED = {
     "rule_versions",
     "rule_test_links",
 }
+TEST_FIELDS = {
+    "id",
+    "version",
+    "technique_id",
+    "behavior",
+    "expected_rule",
+    "execution_kind",
+    "cleanup",
+    "demo_outcome",
+}
 LIMITATION = (
     "Equivalência limitada aos fatos e configurações registrados, sem atestar igualdade física "
     "dos laboratórios. Diferença de taxa não demonstra melhoria causal ou proteção geral. "
@@ -42,7 +52,7 @@ def cohort(runs, synthetic):
     for run in runs:
         scope = run["scope"]
         executions = run["executions"]
-        definitions = scope.get("test_definitions", [])
+        definitions = scope.get("test_definitions") or []
         ids = [t.get("id") for t in definitions]
         actual = [e["test_id"] for e in executions]
         states[run["state"]] += 1
@@ -53,7 +63,15 @@ def cohort(runs, synthetic):
         catalog = scope.get("attack_catalog") or {}
         if not catalog.get("release_id") or not catalog.get("version"):
             reasons.add("unknown_catalog_context")
-        if not definitions or any(not t.get("id") or not t.get("version") for t in definitions):
+        if not definitions or any(
+            not TEST_FIELDS.issubset(t)
+            or not t.get("id")
+            or not t.get("version")
+            or not t.get("behavior")
+            or not t.get("cleanup")
+            or not t.get("execution_kind")
+            for t in definitions
+        ):
             reasons.add("unknown_test_context")
         if not synthetic and (not scope.get("runner") or not scope.get("telemetry")):
             reasons.add("unknown_defensive_source_or_runner")

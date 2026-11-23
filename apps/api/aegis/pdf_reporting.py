@@ -185,6 +185,23 @@ class PDFReportExporter:
             add(metrics["denominator"])
             for outcome, count in sorted(metrics["outcomes"].items()):
                 add(f"{outcome}: {count}")
+        elif report["kind"] == "environment-comparison":
+            add("Comparação entre laboratórios", heading)
+            add(f"Snapshot UTC: {report['snapshot_at']}")
+            add(
+                f"Classificação: {report['comparison']['classification']} · limitada aos registros."
+            )
+            for side in ("before", "after"):
+                c = report[side]
+                add(f"{side} · laboratório {c['laboratory_id']}", heading)
+                add(
+                    f"{c['total_runs']} execuções; {c['detected_tests']} detectados / {c['valid_tests']} testes válidos; taxa: {c['detected_percentage']}."
+                )
+                add(c["denominator"])
+            delta = report["comparison"]["detected_rate_delta_percentage_points"]
+            add(f"Delta em pontos percentuais: {delta if delta is not None else 'não calculado'}.")
+            for reason in report["comparison"]["reasons"]:
+                add(reason)
         else:
             comparison, summary = report["comparison"], report["summary"]
             add("Comparação entre execuções", heading)

@@ -217,6 +217,23 @@ def export_analysis_html(report: dict) -> str:
             f"<tr><td>{escape(k)}</td><td>{escape(v)}</td></tr>" for k, v in c["outcomes"].items()
         )
         details = f"<p>Snapshot UTC: {escape(c['snapshot_at'])}</p><p>{escape(c['denominator'])}</p><table><tr><th>Resultado</th><th>Quantidade</th></tr>{rows}</table>"
+    elif report["kind"] == "environment-comparison":
+        title = "Comparação entre laboratórios"
+        comparison = report["comparison"]
+        summary = (
+            f"Classificação: {comparison['classification']}. Equivalência limitada aos registros."
+        )
+        details = f"<p>Snapshot UTC: {escape(report['snapshot_at'])}</p>"
+        for side in ("before", "after"):
+            c = report[side]
+            details += f"<p>{escape(side)} · laboratório {escape(c['laboratory_id'])} · {c['total_runs']} execuções · {c['detected_tests']} detectados / {c['valid_tests']} válidos · taxa {escape(c['detected_percentage'])}.</p>"
+        delta = comparison["detected_rate_delta_percentage_points"]
+        details += f"<p>Delta em pontos percentuais: {escape(delta if delta is not None else 'não calculado')}.</p>"
+        details += (
+            "<p>Motivos: "
+            + escape(", ".join(comparison["reasons"]) or "contexto registrado correspondente")
+            + "</p>"
+        )
     else:
         title = "Comparação entre execuções"
         c, s = report["comparison"], report["summary"]

@@ -135,3 +135,32 @@ denominador e impedem equivalência. Ausência de campo não comprova igualdade;
 legado não recebe contexto retroativo. As diferenças e contextos completos devem
 ser inspecionados. Mesmo uma diferença entre registros equivalentes não demonstra
 melhoria causal, eficácia geral do SIEM ou proteção empresarial.
+
+### API dos dois recortes — #98
+
+`GET /api/v1/coverage/environments` recebe os parâmetros obrigatórios
+`before_laboratory_id`, `after_laboratory_id`, `before_mode`, `after_mode`.
+Por lado, aceita `before_catalog_release`/`after_catalog_release` (padrão `all`),
+`before_requested_from`/`after_requested_from` e
+`before_requested_before`/`after_requested_before`, com as mesmas regras RFC3339
+e intervalo UTC do recorte existente. Os laboratórios devem ser distintos.
+Revogação atual não impede leitura de fatos históricos; consulta não autoriza
+reativação. `mode` filtra a origem registrada na run, sem inferir fonte conectada.
+
+Um snapshot **REPEATABLE READ READ ONLY** próprio lê os dois lados, resultados,
+eventos e vínculos de evidência. Limites por lado:100runs,1000testes,5000eventos e
+5000vínculos; documento completo até2MiB, SQL15s por statement. Exceder retorna422,
+sem resultado parcial. Não é promessa de escala. Membros incluem scope original,
+IDs, estados, resultados/hashes e metadados/hashes de eventos; payload bruto de
+evento e recibos do executor não são incluídos nessa projeção.
+
+`GET /api/v1/coverage/environments/report` recebe os mesmos filtros mais
+`snapshot_at` e `expected_snapshot_sha256` obtidos do preview (`integrity_sha256`),
+e `format=json|html|pdf`. Reconstitui a projeção em nova transação somente leitura,
+usando a data original para verificar seu hash completo. Se membros, resultados,
+eventos, contexto ou referência mudarem, retorna409 e exige nova consulta. Não
+mantém cache de sucesso, não promete leitura temporal do banco nem recria um
+snapshot antigo alterado. Se estável, JSON/HTML/PDF contêm o mesmo documento do
+preview; PDF continua sujeito aos limites menores próprios, sem truncamento.
+Todos os papéis autenticados podem consultar/exportar; exports mantêm rate limit
+e auditoria apenas de tipo/formato/hash. Relatórios anteriores mantêm contratos.
