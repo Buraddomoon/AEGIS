@@ -22,6 +22,7 @@ const screenshotDirectory = process.env.AEGIS_E2E_SCREENSHOTS ?? '../../docs/ima
 await mkdir(screenshotDirectory, { recursive: true })
 async function button(text, selector = 'button') {
   console.log(JSON.stringify({ browserAction: 'button', label: text }))
+  await page.bringToFront()
   await page.waitForFunction(
     (text, selector) =>
       [...document.querySelectorAll(selector)].some(
@@ -123,8 +124,10 @@ async function verifyRecommendations(id) {
   await button(`Inspecionar evidência ${linked.evidence[0].event_id}`)
   await page.waitForSelector('dialog[open] pre')
   await page.click('dialog button[aria-label="Fechar"]')
+  await page.evaluate(() => scrollTo(0, 0))
   await screenshot('recommendations')
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
+  await page.waitForFunction(() => document.querySelector('.sidebar').getBoundingClientRect().right <= 0, { polling: 100 })
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
   await screenshot('recommendations-mobile')
   await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
@@ -138,6 +141,8 @@ async function verifyRecommendations(id) {
     return historical
   }, id)
   assert.deepEqual(after, source.historical)
+  await page.bringToFront()
+  assert.equal(await page.evaluate(() => document.visibilityState), 'visible')
   console.log(
     JSON.stringify({
       recommendations: 'VERIFIED',
@@ -172,7 +177,9 @@ async function approveAndRun() {
   await button('Revisar e aprovar')
   await page.click('dialog input[type="checkbox"]')
   await button('Aprovar escopo', 'dialog button')
-  await page.waitForFunction(() => !document.querySelector('dialog[open]'))
+  // Native downloads/viewport changes can suspend animation frames in Firefox.
+  // Check the same closed-dialog condition without depending on a repaint.
+  await page.waitForFunction(() => !document.querySelector('dialog[open]'), { polling: 100 })
   await button('Confirmar e iniciar')
   await text('Execução e cleanup demonstrativos concluídos.')
   await text('Detectado')
