@@ -220,7 +220,7 @@ def stop_schedule(db: Session, identifier: str, actor: User, *, revoke: bool) ->
 
 
 def authorization_valid(db: Session, run: CampaignRun, approval: Approval | None) -> bool:
-    """Check the EXACT originating grant, never a replacement grant. No row locks."""
+    """Check the exact originating grant; never lock schedule/grant from a worker."""
     if not run.schedule_id:
         return approval is not None and approval.schedule_authorization_id is None
     if not approval or not approval.schedule_authorization_id:

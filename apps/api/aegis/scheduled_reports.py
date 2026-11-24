@@ -36,6 +36,24 @@ class GenerationError(ValueError):
     """Closed error code; do not retain arbitrary driver or document messages."""
 
 
+def source_origin_valid(run: dict) -> bool:
+    synthetic = run.get("synthetic")
+    scope = run.get("scope") or {}
+    executions = run.get("executions") or []
+    return bool(
+        type(synthetic) is bool
+        and scope.get("mode") == ("demo" if synthetic else "linux")
+        and scope.get("synthetic") is synthetic
+        and executions
+        and all(
+            execution.get("synthetic") is synthetic
+            and (not execution.get("result") or execution["result"].get("synthetic") is synthetic)
+            and all(event.get("synthetic") is synthetic for event in execution.get("events", []))
+            for execution in executions
+        )
+    )
+
+
 def previous_run(db: Session, occurrence: ScheduleOccurrence) -> str | None:
     return db.scalar(
         select(ScheduleOccurrence.run_id)
@@ -85,9 +103,7 @@ def source_detail(db: Session, item: ScheduledReport, run_id: str) -> dict:
     synthetic = detail["synthetic"]
     if (
         not schedule
-        or type(synthetic) is not bool
-        or detail["scope"].get("mode") != ("demo" if synthetic else "linux")
-        or detail["scope"].get("synthetic") is not synthetic
+        or not source_origin_valid(detail)
         or schedule.scope.get("synthetic") is not synthetic
         or detail["scope_hash"] != schedule.scope_hash
         or detail["schedule_id"] != item.schedule_id
@@ -99,7 +115,6 @@ def source_detail(db: Session, item: ScheduledReport, run_id: str) -> dict:
         or occurrence.get("authorization_id") != item.authorization_id
         or occurrence.get("run_id") != run_id
         or occurrence.get("status") != "QUEUED"
-        or any(execution["synthetic"] is not synthetic for execution in detail["executions"])
     ):
         raise GenerationError("CONTEXT_MISMATCH")
     return detail

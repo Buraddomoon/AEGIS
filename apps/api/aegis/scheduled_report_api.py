@@ -99,7 +99,7 @@ def checked_document(item: ScheduledReport) -> dict:
         key not in automation or automation[key] != value for key, value in expected.items()
     ):
         raise HTTPException(409, "Contexto do relatório automático não confirmado.")
-    from aegis.scheduled_reports import POLICY_VERSION, REAL_POLICY_VERSION
+    from aegis.scheduled_reports import POLICY_VERSION, REAL_POLICY_VERSION, source_origin_valid
 
     synthetic = document["synthetic"]
     if automation.get("policy_version") != (POLICY_VERSION if synthetic else REAL_POLICY_VERSION):
@@ -110,8 +110,7 @@ def checked_document(item: ScheduledReport) -> dict:
             isinstance(source, dict)
             and source.get("id") == item.run_id
             and source.get("synthetic") is synthetic
-            and source.get("scope", {}).get("synthetic") is synthetic
-            and source.get("scope", {}).get("mode") == ("demo" if synthetic else "linux")
+            and source_origin_valid(source)
             and digest(source) == document.get("integrity_sha256")
         )
     else:
@@ -123,6 +122,10 @@ def checked_document(item: ScheduledReport) -> dict:
             and document.get("contains_synthetic") is synthetic
             and all(
                 document.get(side, {}).get("synthetic") is synthetic for side in ("before", "after")
+            )
+            and all(
+                source_origin_valid(document.get(side, {}).get("run", {}))
+                for side in ("before", "after")
             )
             and digest({key: value for key, value in document.items() if key != "integrity_sha256"})
             == document.get("integrity_sha256")

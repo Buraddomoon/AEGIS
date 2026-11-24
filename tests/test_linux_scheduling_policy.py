@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from aegis.config import settings
 from aegis.models import Schedule
+from aegis.scheduled_reports import source_origin_valid
 from aegis.scheduling import plan, real_scope_allowed
 
 
@@ -23,6 +24,32 @@ def test_real_scheduling_is_opt_in(monkeypatch):
     assert not real_scope_allowed(marker_scope())
     monkeypatch.setattr(settings(), "linux_scheduling_enabled", True)
     assert real_scope_allowed(marker_scope())
+
+
+@pytest.mark.parametrize("synthetic", [False, True])
+@pytest.mark.parametrize("change", [None, "scope", "execution", "result", "event", "empty"])
+def test_automatic_snapshots_require_consistent_origin(synthetic, change):
+    source = {
+        "synthetic": synthetic,
+        "scope": {"synthetic": synthetic, "mode": "demo" if synthetic else "linux"},
+        "executions": [
+            {
+                "synthetic": synthetic,
+                "result": {"synthetic": synthetic},
+                "events": [{"synthetic": synthetic}],
+            }
+        ],
+    }
+    if change == "scope":
+        source["scope"]["synthetic"] = not synthetic
+    elif change == "execution":
+        source["executions"][0]["synthetic"] = not synthetic
+    elif change in ("result", "event"):
+        child = source["executions"][0]
+        (child["result"] if change == "result" else child["events"][0])["synthetic"] = not synthetic
+    elif change == "empty":
+        source["executions"] = []
+    assert source_origin_valid(source) is (change is None)
 
 
 @pytest.mark.parametrize(

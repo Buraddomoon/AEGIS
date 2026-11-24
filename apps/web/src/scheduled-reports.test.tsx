@@ -33,6 +33,7 @@ function mount(
   items: ScheduledReport[] = [report],
   returnedSchedule = 'schedule-one',
   downloadError = false,
+  synthetic = true,
 ) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, retryDelay: 0 } } })
   const notify = vi.fn()
@@ -64,12 +65,23 @@ function mount(
   render(
     <QueryClientProvider client={client}>
       <NoticeContext.Provider value={notify}>
-        <ScheduledReports scheduleId="schedule-one" />
+        <ScheduledReports scheduleId="schedule-one" synthetic={synthetic} />
       </NoticeContext.Provider>
     </QueryClientProvider>,
   )
   return { client, notify, fetcher, click }
 }
+
+it('shows real snapshots only when the selected schedule has the same origin', async () => {
+  mount([{ ...report, synthetic: false }], 'schedule-one', false, false)
+  await screen.findByText('Comparação automática')
+  expect(screen.getByText(/Snapshots Linux reais/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Baixar PDF/ })).toBeInTheDocument()
+  cleanup()
+  mount([{ ...report, synthetic: true }], 'schedule-one', false, false)
+  await screen.findByText('A lista recebida não corresponde ao agendamento selecionado.')
+  expect(screen.queryByRole('button', { name: /Baixar PDF/ })).not.toBeInTheDocument()
+})
 
 it('shows frozen pair and downloads with exact schedule report and document hash', async () => {
   const { fetcher, click, notify } = mount()
