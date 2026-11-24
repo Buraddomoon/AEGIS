@@ -83,7 +83,11 @@ export function Scheduling({ user, id }: { user: User; id?: string }) {
                         </strong>
                         <small>
                           {s.id.slice(0, 8)} ·{' '}
-                          {s.scope.mode === 'demo' ? 'Demo · sintético' : 'Linux · real'}
+                          {s.scope.mode === 'demo' && s.scope.synthetic === true
+                            ? 'Demo · sintético'
+                            : s.scope.mode === 'linux' && s.scope.synthetic === false
+                              ? 'Linux · real'
+                              : 'Origem desconhecida'}
                         </small>
                       </td>
                       <td>
@@ -151,13 +155,18 @@ export function ScheduleForm({ onClose }: { onClose: () => void }) {
     [error, setError] = useState(''),
     [confirmedReal, setConfirmedReal] = useState(false)
   const selected = campaigns.data?.items.find((item) => item.id === campaign)
-  const real =
-    labs.data?.items.find((item) => item.id === selected?.laboratory_id)?.kind === 'linux'
+  const selectedLab = labs.data?.items.find((item) => item.id === selected?.laboratory_id)
+  const real = selectedLab?.kind === 'linux'
+  const supported = ['demo', 'linux'].includes(selectedLab?.kind ?? '')
   return (
     <Modal title="Novo agendamento" onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
+          if (!supported || (real && !confirmedReal)) {
+            setError('Confirme o modo do laboratório e a intenção real antes de propor o plano.')
+            return
+          }
           if (
             interval < duration ||
             new Date(end) <= new Date(start) ||
@@ -186,6 +195,7 @@ export function ScheduleForm({ onClose }: { onClose: () => void }) {
         }}
       >
         {campaigns.error && <Failure error={campaigns.error} />}
+        {labs.error && <Failure error={labs.error} />}
         <label>
           Campanha
           <select
@@ -202,7 +212,9 @@ export function ScheduleForm({ onClose }: { onClose: () => void }) {
                 {c.name} ·{' '}
                 {labs.data?.items.find((l) => l.id === c.laboratory_id)?.kind === 'linux'
                   ? 'Linux real'
-                  : 'Demo'}
+                  : labs.data?.items.find((l) => l.id === c.laboratory_id)?.kind === 'demo'
+                    ? 'Demo'
+                    : 'Modo indisponível'}
               </option>
             ))}
           </select>
@@ -295,7 +307,7 @@ export function ScheduleForm({ onClose }: { onClose: () => void }) {
           <button type="button" className="button" onClick={onClose}>
             Cancelar
           </button>
-          <Submit busy={busy || !campaign || (real && !confirmedReal)}>Criar plano</Submit>
+          <Submit busy={busy || !supported || (real && !confirmedReal)}>Criar plano</Submit>
         </div>
       </form>
     </Modal>

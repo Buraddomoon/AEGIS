@@ -23,24 +23,31 @@ afterEach(() => {
 function wrap(child: React.ReactNode, notify = vi.fn()) {
   return render(
     <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      client={new QueryClient({ defaultOptions: { queries: { retry: false, retryDelay: 0 } } })}
     >
       <NoticeContext.Provider value={notify}>{child}</NoticeContext.Provider>
     </QueryClientProvider>,
   )
 }
-const campaign = { id: 'demo-campaign', name: 'Campanha de teste' }
+const campaign = { id: 'demo-campaign', name: 'Campanha de teste', laboratory_id: 'lab-demo' }
 it('keeps failed plans open and reports the API error without authorizing anything', async () => {
   const close = vi.fn(),
     notify = vi.fn()
-  const fetcher = vi.fn().mockImplementation(async (_path, options) =>
+  const fetcher = vi.fn().mockImplementation(async (path: string, options) =>
     options?.method === 'POST'
       ? {
           ok: false,
           status: 409,
           json: async () => ({ error: { message: 'Laboratório revogado' } }),
         }
-      : { ok: true, status: 200, json: async () => ({ items: [campaign], total: 1 }) },
+      : {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: path.includes('/labs') ? [{ id: 'lab-demo', kind: 'demo' }] : [campaign],
+            total: 1,
+          }),
+        },
   )
   vi.stubGlobal('fetch', fetcher)
   wrap(<ScheduleForm onClose={close} />, notify)
@@ -86,6 +93,24 @@ it('requires explicit real intent before proposing a Linux schedule', async () =
   )
   const posted = fetcher.mock.calls.find(([, options]) => options?.method === 'POST')!
   expect(JSON.parse(posted[1]!.body as string).confirm_real_execution).toBe(true)
+})
+
+it('withholds creation when laboratory mode cannot be confirmed', async () => {
+  const fetcher = vi.fn(async (path: string) =>
+    path.includes('/labs')
+      ? {
+          ok: false,
+          status: 503,
+          json: async () => ({ error: { message: 'Laboratórios indisponíveis' } }),
+        }
+      : { ok: true, status: 200, json: async () => ({ items: [campaign], total: 1 }) },
+  )
+  vi.stubGlobal('fetch', fetcher)
+  wrap(<ScheduleForm onClose={vi.fn()} />)
+  await screen.findByText('Laboratórios indisponíveis')
+  await userEvent.selectOptions(screen.getByLabelText('Campanha'), campaign.id)
+  expect(screen.getByRole('option', { name: /Modo indisponível/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Criar plano' })).toBeDisabled()
 })
 
 const realSchedule = {
