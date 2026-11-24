@@ -38,10 +38,18 @@ Validações locais efetivas, PG/Redis15 sequenciais:
 
 CI final da fonte:
 [45454864685](https://github.com/Buraddomoon/AEGIS/actions/runs/45454864685),
-`bce1f874bf111923267eb522cd015e30d508de2c`. Resultado integral deve ser conferido
-nos quatro jobs Python e React; registro final será acrescentado após conclusão.
+`bce1f874bf111923267eb522cd015e30d508de2c`: **SUCCESS**, quatro jobs Python e
+React conferidos. Partições0/1/2/3:982/1011/1060/1017passed, respectivamente;
+**4070Python/9skips**, sem falhas. React: **154testes/21arquivos** aprovados,
+incluindo lint/formato/build e revisão de dependências. Revisão de entrega da
+documentação a292c79/45455424610 também SUCCESS.
 CI anterior cb9dd59/45447954364 SUCCESS, de parte da implementação. As execuções
 intermediárias canceladas por pushes seguintes permanecem distintas da CI final.
+
+Aceite técnico #64/#65: código e testes completos, com snapshot consistente,
+custódia protegida, restore novo em quarentena e nenhuma retomada de jobs ou
+liberação por ausência/404. O ensaio da fixture descrito neste documento é synthetic=true;
+o aceite histórico dos dois perfis permanece exclusivamente na #66 e no pai #9.
 
 ## Ensaio real de fixture, separado dos originais
 

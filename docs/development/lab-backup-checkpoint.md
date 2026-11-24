@@ -30,8 +30,10 @@ explícito `tests/native_lab_recovery.py`; sem rota web ou migração nova.
 Starlette/httpx. Inclui59casos novos da retomada e os anteriores; mais8casos de
 runtime reconferidos após acrescentar duas negativas de rede efetiva. São rodadas
 sobrepostas, não somar como suíte única. `make lint` completo aprovado; checks staged/segredos/
-whitespace/release antes de cada commit. Conferir CI final nos quatro jobs Python
-e React antes de fechar os filhos técnicos.
+whitespace/release antes de cada commit. CI final bce1f87/45454864685 **SUCCESS**:
+quatro jobs Python conferidos,4070passed/9skips; React154testes/21arquivos,
+lint/tipos/formato/build e revisão de dependências aprovados. #64/#65 têm aceite
+técnico; a prova histórica e o aceite conjunto continuam pendentes na #66/#9.
 
 O ensaio explícito já executou pg_dump/pg_restore, helpers tar, extração e
 reabertura de cópia fria reais: inventários iguais,36tabelas/734linhas do schema
