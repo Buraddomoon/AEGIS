@@ -331,8 +331,12 @@ def _inspect(db, identity, expected):
     }
 
 
-def review(root: Path, identity: RunnerIdentity, expected: dict[UUID, JobView]):
-    """For an authorized stopped-volume probe; tests pass temporary journals only."""
+def capture(root: Path, identity: RunnerIdentity, expected: dict[UUID, JobView]):
+    """Return reviewed bytes under the same source lock; no source repair.
+
+    Host-only backup callers must protect the returned private journal contents.
+    Physical volume access still requires independent authorization and binding.
+    """
     if (
         not isinstance(identity, RunnerIdentity)
         or not isinstance(expected, dict)
@@ -397,7 +401,7 @@ def review(root: Path, identity: RunnerIdentity, expected: dict[UUID, JobView]):
                     or _read(fd, FILES[name]) != original[name]
                 ):
                     raise ContinuityError("journal_source_changed")
-            return result
+            return result, original
     except ContinuityError:
         raise
     except (
@@ -410,3 +414,8 @@ def review(root: Path, identity: RunnerIdentity, expected: dict[UUID, JobView]):
         sqlite3.Error,
     ):
         raise ContinuityError("journal_review_failed") from None
+
+
+def review(root: Path, identity: RunnerIdentity, expected: dict[UUID, JobView]):
+    """For an authorized stopped-volume probe; tests pass temporary journals only."""
+    return capture(root, identity, expected)[0]

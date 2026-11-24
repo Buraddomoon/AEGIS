@@ -1,5 +1,9 @@
 # Backup e recuperação do Demo
 
+Para os laboratórios reais, consultar a
+[preparação de snapshot #9/#64](lab-backup.md). Esse fluxo ainda não tem aceite
+operacional; backup/restore do Demo não inclui os journals/fences dos labs.
+
 O banco é a fonte durável; Redis guarda limites e heartbeat. Há uma ferramenta
 operacional real para criar backup consistente e verificar restauração num
 PostgreSQL efêmero **sem rede, portas, API, workers ou scheduler**. Ela não troca

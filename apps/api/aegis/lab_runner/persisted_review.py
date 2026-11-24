@@ -24,6 +24,7 @@ def collect(
     old_descriptor_sha256: str,
     *,
     verify: Callable[[Connection], None] | None = None,
+    snapshot_id: str | None = None,
 ) -> dict:
     """No settings, credentials, runner client, audit writes, or lifecycle effects.
 
@@ -50,11 +51,22 @@ def collect(
         not isinstance(identity, RunnerIdentity)
         or not isinstance(old_descriptor_sha256, str)
         or not re.fullmatch(r"[a-f0-9]{64}", old_descriptor_sha256)
+        or (
+            snapshot_id is not None
+            and (
+                not isinstance(snapshot_id, str)
+                or not re.fullmatch(r"[0-9A-Fa-f-]{1,128}", snapshot_id)
+            )
+        )
     ):
         raise ContinuityError("persisted_review_inputs_invalid")
     with Session(engine, autoflush=False, expire_on_commit=False) as db:
         db.connection(execution_options={"isolation_level": "REPEATABLE READ"})
         db.execute(text("SET TRANSACTION READ ONLY"))
+        if snapshot_id is not None:
+            # Server-issued exported snapshot, imported before the first query.
+            # SET TRANSACTION does not accept a bound SQL parameter here.
+            db.execute(text("SET TRANSACTION SNAPSHOT '" + snapshot_id + "'"))
         db.execute(text("SET LOCAL statement_timeout='15s'"))
         # This does not bypass RLS: PostgreSQL raises if a policy would hide rows.
         db.execute(text("SET LOCAL row_security=off"))
