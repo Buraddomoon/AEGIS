@@ -16,10 +16,12 @@ const page = await browser.newPage(),
 page.on('pageerror', (e) => errors.push(e.message))
 page.setDefaultTimeout(20000)
 await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
-let screenshotCount = 0
+let screenshotCount = 0,
+  pdfExportCount = 0
 const screenshotDirectory = process.env.AEGIS_E2E_SCREENSHOTS ?? '../../docs/images'
 await mkdir(screenshotDirectory, { recursive: true })
 async function button(text, selector = 'button') {
+  console.log(JSON.stringify({ browserAction: 'button', label: text }))
   await page.waitForFunction(
     (text, selector) =>
       [...document.querySelectorAll(selector)].some(
@@ -67,6 +69,7 @@ async function exportPdf(label, path, filename) {
   assert.equal(bytes.subarray(0, 5).toString(), '%PDF-')
   assert.match(response.headers()['x-aegis-report-sha256'], /^[a-f0-9]{64}$/)
   await writeFile(`../../.local/e2e/${filename}.pdf`, bytes)
+  pdfExportCount += 1
   const visibilityAfterDownload = await page.evaluate(() => document.visibilityState)
   // Firefox may focus its download UI; return as a user would before following
   // another run. TanStack Query deliberately pauses polling in a hidden tab.
@@ -109,7 +112,10 @@ async function verifyRecommendations(id) {
     await writeFile(`../../.local/e2e/recommendations.${format}`, bytes)
     if (format === 'json') assert.deepEqual(JSON.parse(bytes.toString()).analysis, source.analysis)
     if (format === 'html') assert(bytes.toString().includes(source.analysis.policy_sha256))
-    if (format === 'pdf') assert.equal(bytes.subarray(0, 5).toString(), '%PDF-')
+    if (format === 'pdf') {
+      assert.equal(bytes.subarray(0, 5).toString(), '%PDF-')
+      pdfExportCount += 1
+    }
     await page.bringToFront()
   }
   const linked = source.analysis.items.find((item) => item.evidence.some((e) => e.event_present))
@@ -779,7 +785,7 @@ level: informational
         executed: atomicAfter.runs.total - atomicBefore.runs.total,
         allowlistUnchanged: true,
       },
-      pdfExports: 4,
+      pdfExports: pdfExportCount,
       automaticReports: 2,
       browserErrors: errors.length,
     }),

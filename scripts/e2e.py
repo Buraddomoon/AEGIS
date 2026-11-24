@@ -98,7 +98,9 @@ with session_factory()() as db:
         cwd=root / "apps/web",
         env=env,
         check=True,
-        timeout=180,
+        # The full flow includes a real 60-second schedule cadence plus browser
+        # exports. Keep every assertion, with a bounded whole-browser deadline.
+        timeout=360,
     )
 finally:
     for process, stream in processes:

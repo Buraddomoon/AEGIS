@@ -63,6 +63,7 @@ jobs:
             .local/e2e/recommendations.pdf
             .local/e2e/screenshots/recommendations.png
             .local/e2e/screenshots/recommendations-mobile.png
+            .local/e2e/failure.png
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
