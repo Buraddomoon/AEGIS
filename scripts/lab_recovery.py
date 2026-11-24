@@ -50,7 +50,7 @@ VOLUME_FORMAT = (
     '"project":{{json (index .Labels "com.docker.compose.project")}},'
     '"volume":{{json (index .Labels "com.docker.compose.volume")}}}'
 )
-IMAGE_FORMAT = '{"id":{{json .Id}},"os":{{json .Os}},"arch":{{json .Architecture}},"volumes":{{json .Config.Volumes}}}'
+IMAGE_FORMAT = '{"id":{{json .Id}},"os":{{json .Os}},"arch":{{json .Architecture}},"volumes":{{json (index .Config "Volumes")}}}'
 SOURCE_FILES = (
     "scripts/lab_recovery.py",
     "scripts/lab_recovery_runtime.py",

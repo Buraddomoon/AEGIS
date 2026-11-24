@@ -225,3 +225,42 @@ def test_ambient_libpq_cannot_redirect_or_inject_before_any_work(monkeypatch, na
         coordinator.run("a" * 32, "b" * 64, "b" * 64, True)
     with pytest.raises(snapshot.SnapshotError, match="libpq_environment_refused"):
         runtime.start_postgres(None, None, None, None, fresh=False)
+
+
+@pytest.mark.parametrize(
+    "problem", ["optional_missing", "postgres_extra_volume", "wrong_id", "wrong_os"]
+)
+def test_image_inventory_accepts_optional_absence_without_loosening_pg_profile(
+    monkeypatch, problem
+):
+    values = {
+        role: "sha256:" + code * 64
+        for role, code in zip(("application", "runner", "postgres", "redis"), "abcd", strict=True)
+    }
+
+    def query(args, **_):
+        assert args[:2] == ["image", "inspect"]
+        identifier = args[-1]
+        item = {
+            "id": identifier,
+            "os": "linux",
+            "arch": "amd64",
+            "volumes": {runtime.DATA: {}} if identifier == values["postgres"] else None,
+        }
+        if problem == "postgres_extra_volume" and identifier == values["postgres"]:
+            item["volumes"]["/unexpected"] = {}
+        elif problem == "wrong_id":
+            item["id"] = "sha256:" + "0" * 64
+        elif problem == "wrong_os":
+            item["os"] = "windows"
+        return json.dumps(item).encode()
+
+    monkeypatch.setattr(transport, "run", query)
+    images = {name: dict(values) for name in coordinator.PROFILES}
+    if problem == "optional_missing":
+        result = coordinator.image_metadata(images)
+        assert result["linux"]["application"]["volumes"] is None
+        assert result["wazuh"]["postgres"]["volumes"] == {runtime.DATA: {}}
+    else:
+        with pytest.raises(snapshot.SnapshotError):
+            coordinator.image_metadata(images)
