@@ -104,3 +104,11 @@ Ele exige a infraestrutura descartável e navegador do guia de testes; não inic
 laboratórios nativos. Usar `AEGIS_E2E_SCREENSHOTS` em diretório privado novo para
 preservar capturas anteriores. Roteiro preparado não significa roteiro executado;
 conferir provas e bloqueios da sessão antes de declarar aceite.
+
+Quando a infraestrutura local não estiver disponível, o workflow manual
+**Recommendation Demo acceptance** usa serviços CI efêmeros e o mesmo E2E completo.
+Em Actions, execute-o em `main`; não inicia Linux/Wazuh nem usa volumes originais.
+O job exige Firefox já presente, mantém o prazo global limitado360s e preserva
+todos os asserts/cadências. Após o navegador, `scripts/verify_recommendation_e2e.py`
+valida os downloads reais e imprime hashes. O pacote de prova contém só arquivos
+e capturas sintéticos; credenciais e logs da aplicação ficam fora do artefato.

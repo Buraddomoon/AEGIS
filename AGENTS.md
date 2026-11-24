@@ -193,6 +193,18 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   docs/evidence/coverage-environments-2026-11-23/README.md e checkpoint em
   docs/development/coverage-environments-checkpoint.md. Entrega encerrada; parar.
 
+- #22 em24/11: #100/#101 e aceite conjunto atendidos. Política determinística
+  `aegis-recommendations/1` com documento/hash/fatos/vínculos; ordem técnica sem
+  risco inferido ou mudança de veredicto. Detalhes em RR/READ ONLY, análise nova
+  separada e exports JSON/HTML/PDF por hash esperado; histórico/congelados mantidos.
+  UI inspeciona evento por ID/hash e cancela download antigo. CIa7266c0 SUCCESS:
+  3963Python/9skips e154React/21glob. E2E completo45316212021 SUCCESS, Firefox/
+  schema descartável,5runs/20testes sintéticos,5PDFs,0erros JS; pacote verificado,
+  PDF18páginas e1440/390px. Duas falhas de harness retidas, sem exclusão de checks.
+  Sem implantação ou acesso/operação Linux/Wazuh/originais. Provas em
+  docs/evidence/recommendations-2026-11-23/README.md e checkpoint em
+  docs/development/recommendations-checkpoint.md. Entrega encerrada; parar.
+
 Ao terminar: comentário na issue com comportamento entregue, arquivos relevantes,
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e
 sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /compact
