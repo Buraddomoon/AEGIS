@@ -45,10 +45,18 @@ devem ser somadas. Escritor de dump é fixture explícita, sem restore PostgreSQ
 real. `make lint` completo aprovado: Ruff/formato/mypy/TypeScript/Prettier.
 Nenhuma UI mudou, portanto build/E2E não foram repetidos localmente.
 
-O commit da implementação referencia #64/#9 sem fechar nenhuma issue. Checks de
-staged/segredos/whitespace/release obrigatórios antes de cada commit; push direto
-em main. Hashes, sincronização e CI integral ficam nos comentários da #9/#64;
-sucesso local não é declaração de workflow verde.
+Implementação `5ead4907edb8237536fc5a2b36430384e919ffb5`,
+`feat(recovery): prepare consistent private lab snapshots (Refs #64, #9)`, enviada
+a origin/main. [CI45402749488](https://github.com/Buraddomoon/AEGIS/actions/runs/45402749488)
+**SUCCESS**: quatro partições Python conferidas,4005passed/9skips existentes;
+React154passed em21arquivos, build/lint/tipos/auditorias aprovados. Revisão de
+fonte45402749351 também SUCCESS. O commit posterior acrescenta somente provas
+Markdown; não muda o código validado. [Provas e resultados por job](../evidence/lab-backup-2026-11-24/README.md).
+
+Nenhuma issue fechada. Checks staged/segredos/whitespace/release aprovados antes
+do commit da implementação e exigidos novamente na consolidação documental;
+push direto em main. Último hash/mensagem e sincronização final constam nos
+comentários da #9/#64.
 
 Ao registrar as provas finais, **parar neste escopo**; não iniciar #65/#66 nem
 outra entrega a partir deste checkpoint sem resolver os bloqueios descritos.
