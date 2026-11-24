@@ -2,6 +2,11 @@
 
 ## Recorrência Linux delimitada — #23
 
+Preparação do ensaio nativo da #104: `tests/test_scheduling_native_preparation.py`
+verifica pacote, autorização exata/TTL/ator/host, receita sem originais/portas/
+socket, colisões, fence e inspeção independente de imagem/limites/mounts/comando.
+Não chama Docker nem executa marcador. [Procedimento e aprovação](../operations/scheduling-native.md).
+
 Política e origem de snapshots, sem PostgreSQL/rede/runner:
 
 ```sh

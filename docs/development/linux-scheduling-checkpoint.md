@@ -32,3 +32,9 @@ imagem/código, hashes, isolamento, janela UTC, intervalo/duração, concorrênc
 orçamento exato e cleanup/recuperação revisados, além de autorização humana nova.
 Este checkpoint não concede essa autorização. Não habilitar a flag, reutilizar
 pacotes históricos, iniciar laboratórios ou avançar para outra entrega.
+
+Retomada sob novo pedido de concluir toda a #23: preparação de workflow nativo
+separado em VM Linux nova do GitHub Actions, com duas ocorrências e barreira de
+aprovação pelo hash concreto. Sem laboratório nesta etapa. Ver
+[procedimento fechado](../operations/scheduling-native.md); não publicar chaves
+nem iniciar efeitos a partir do pedido genérico ou da CI.
