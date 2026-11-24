@@ -1,4 +1,4 @@
-"""Automatic Demo document snapshots. No execution, SIEM or external I/O adapters."""
+"""Automatic document snapshots. No execution, SIEM or external I/O adapters."""
 
 import json
 import logging
@@ -15,6 +15,7 @@ from aegis.domain.states import TERMINAL
 from aegis.domain.validation import digest
 from aegis.models import (
     CampaignRun,
+    Schedule,
     ScheduleAuthorization,
     ScheduledReport,
     ScheduleOccurrence,
@@ -24,6 +25,7 @@ from aegis.reporting import build_comparison_report, build_report, seal_analysis
 from aegis.security import audit
 
 POLICY_VERSION = "scheduled-demo-report/1"
+REAL_POLICY_VERSION = "scheduled-linux-report/1"
 MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
 MAX_ATTEMPTS = 3
 RETRY_SECONDS = (10, 30)
@@ -51,7 +53,16 @@ def previous_run(db: Session, occurrence: ScheduleOccurrence) -> str | None:
 def request_report(db: Session, occurrence: ScheduleOccurrence) -> ScheduledReport:
     """Caller holds schedule lock; transaction also includes occurrence and enqueue."""
     run = db.get(CampaignRun, occurrence.run_id)
-    if not run or run.synthetic is not True or run.scope.get("mode") != "demo":
+    schedule = db.get(Schedule, occurrence.schedule_id)
+    if (
+        not run
+        or not schedule
+        or run.scope.get("mode") not in ("demo", "linux")
+        or run.synthetic is not (run.scope.get("mode") == "demo")
+        or run.scope.get("synthetic") is not run.synthetic
+        or run.schedule_id != schedule.id
+        or run.scope_hash != schedule.scope_hash
+    ):
         raise GenerationError("CONTEXT_MISMATCH")
     previous = previous_run(db, occurrence)
     report = ScheduledReport(
@@ -70,10 +81,15 @@ def source_detail(db: Session, item: ScheduledReport, run_id: str) -> dict:
     detail = queries.execution_detail(db, run_id)
     approval = detail.get("approval") or {}
     occurrence = detail.get("schedule_occurrence") or {}
+    schedule = db.get(Schedule, item.schedule_id)
+    synthetic = detail["synthetic"]
     if (
-        detail["synthetic"] is not True
-        or detail["scope"].get("mode") != "demo"
-        or detail["scope"].get("synthetic") is not True
+        not schedule
+        or type(synthetic) is not bool
+        or detail["scope"].get("mode") != ("demo" if synthetic else "linux")
+        or detail["scope"].get("synthetic") is not synthetic
+        or schedule.scope.get("synthetic") is not synthetic
+        or detail["scope_hash"] != schedule.scope_hash
         or detail["schedule_id"] != item.schedule_id
         or approval.get("schedule_authorization_id") != item.authorization_id
         or not approval.get("used_at")
@@ -83,7 +99,7 @@ def source_detail(db: Session, item: ScheduledReport, run_id: str) -> dict:
         or occurrence.get("authorization_id") != item.authorization_id
         or occurrence.get("run_id") != run_id
         or occurrence.get("status") != "QUEUED"
-        or any(execution["synthetic"] is not True for execution in detail["executions"])
+        or any(execution["synthetic"] is not synthetic for execution in detail["executions"])
     ):
         raise GenerationError("CONTEXT_MISMATCH")
     return detail
@@ -117,7 +133,7 @@ def build_document(db: Session, item: ScheduledReport) -> tuple[dict, datetime]:
     else:
         report = build_report(current)
     report["automation"] = {
-        "policy_version": POLICY_VERSION,
+        "policy_version": POLICY_VERSION if current["synthetic"] else REAL_POLICY_VERSION,
         "report_id": item.id,
         "kind": item.kind,
         "schedule_id": item.schedule_id,
@@ -189,7 +205,7 @@ def process_one(at: datetime | None = None) -> bool:
                 item.id,
                 kind=item.kind,
                 document_sha256=item.document_sha256,
-                synthetic=True,
+                synthetic=document["synthetic"],
             )
         if item.state == "FAILED":
             audit(
@@ -199,7 +215,7 @@ def process_one(at: datetime | None = None) -> bool:
                 item.id,
                 error_code=item.error_code,
                 attempts=item.attempts,
-                synthetic=True,
+                synthetic=db.get(CampaignRun, item.run_id).synthetic,
             )
         db.commit()
         return True

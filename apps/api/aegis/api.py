@@ -651,7 +651,7 @@ def schedule_detail(schedule_id: str, user: Viewer, db: DB) -> dict:
         **queries.record(item),
         "authorizations": [queries.record(g) for g in grants],
         "plan": scheduling.plan(item),
-        "synthetic": True,
+        "synthetic": item.scope["synthetic"],
     }
 
 
@@ -672,7 +672,11 @@ def schedule_occurrences(
 
 @router.post("/schedules/{schedule_id}/approve", tags=["Scheduling"])
 def approve_schedule(schedule_id: str, data: schemas.ScheduleApprove, user: Admin, db: DB) -> dict:
-    return queries.record(scheduling.approve(db, schedule_id, user, data.confirm_plan_hash))
+    return queries.record(
+        scheduling.approve(
+            db, schedule_id, user, data.confirm_plan_hash, confirm_real=data.confirm_real_execution
+        )
+    )
 
 
 @router.post("/schedules/{schedule_id}/pause", tags=["Scheduling"])

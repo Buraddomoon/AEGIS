@@ -505,7 +505,7 @@ def main() -> None:
         "AEGIS worker: transactional PostgreSQL queue; Demo and opt-in allowlisted Linux marker"
     )
     scheduler = threading.Thread(
-        target=scheduler_loop, args=(stop,), name="demo-scheduler", daemon=True
+        target=scheduler_loop, args=(stop,), name="campaign-scheduler", daemon=True
     )
     scheduler.start()
     reporter = threading.Thread(target=report_loop, args=(stop,), name="demo-reports", daemon=True)

@@ -301,6 +301,13 @@ def preflight(db: Session, lab: Laboratory, actor: User) -> LabVerification:
 def approval_valid(db: Session, run: CampaignRun, approval: Approval | None) -> bool:
     if run.synthetic:
         return True
+    if run.schedule_id:
+        from aegis.scheduling import authorization_valid
+
+        if not authorization_valid(db, run, approval):
+            return False
+    elif approval and approval.schedule_authorization_id:
+        return False
     scoped = run.scope.get("test_definitions", [])
     if len(scoped) != 1:
         return False
@@ -332,8 +339,7 @@ def approval_valid(db: Session, run: CampaignRun, approval: Approval | None) -> 
     except HTTPException:
         return False
     return bool(
-        not run.schedule_id
-        and approval
+        approval
         and requester
         and requester.active
         and requester.role in ("operator", "administrator")
