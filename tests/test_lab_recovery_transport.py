@@ -32,7 +32,7 @@ def test_transport_timeout_overflow_kills_reaps_and_never_echoes_bytes(monkeypat
 
     monkeypatch.setattr(transport.subprocess, "Popen", child)
     with pytest.raises(snapshot.SnapshotError, match=code) as error:
-        transport.run(["version"], timeout=0.1)
+        transport.run(["version"], timeout=0.1 if code == "timeout" else 5)
     assert "private-value" not in str(error.value)
     assert children and all(
         c.poll() is not None and c.stdout.closed and c.stderr.closed for c in children

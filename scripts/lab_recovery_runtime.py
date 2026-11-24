@@ -44,6 +44,7 @@ class Operation:
         self.workspace = None
         self.deadline = deadline if deadline is not None else time.monotonic() + 900
         self.before_effect = before_effect
+        self.scope_failed = False
         self.event("begin", {"id": self.identifier, "plan_sha256": plan_hash})
 
     def event(self, kind, data):
@@ -85,6 +86,7 @@ class Operation:
         ):
             raise snapshot.SnapshotError("recovery_event_identity")
         obj.workspace, obj.resources, obj.deadline, obj.before_effect = None, {}, 0, None
+        obj.scope_failed = True
         for event in events[1:]:
             data, kind = event["data"], event["kind"]
             if kind == "workspace":
@@ -120,8 +122,14 @@ class Operation:
     def guard(self):
         if time.monotonic() >= self.deadline:
             raise snapshot.SnapshotError("recovery_effect_deadline_expired")
+        if self.scope_failed:
+            raise snapshot.SnapshotError("recovery_scope_previously_failed")
         if self.before_effect is not None:
-            self.before_effect()
+            try:
+                self.before_effect()
+            except BaseException:
+                self.scope_failed = True
+                raise
         if time.monotonic() >= self.deadline:
             raise snapshot.SnapshotError("recovery_effect_deadline_expired")
 
@@ -306,6 +314,17 @@ class Operation:
             or host["LogConfig"]["Type"] != "none"
         ):
             raise snapshot.SnapshotError("recovery_runtime_mismatch")
+        networks = result.get("networks") or {}
+        if (
+            set(networks) - {"none"}
+            or (result["state"] == "running" and set(networks) != {"none"})
+            or any(
+                endpoint.get(key)
+                for endpoint in networks.values()
+                for key in ("IPAddress", "GlobalIPv6Address", "Gateway", "IPv6Gateway")
+            )
+        ):
+            raise snapshot.SnapshotError("recovery_actual_network_mismatch")
         expected = {m["target"]: m for m in spec["mounts"]}
         configured = host.get("Mounts") or []
         if len(configured) != len(expected):
@@ -456,6 +475,7 @@ def postgres_files(operation, role):
     vault.write_private(
         root / "pgconf", b"# Fixed quarantine startup; source configuration remains archived.\n"
     )
+    vault.write_private(root / "passfile", b"")
     return root
 
 
@@ -470,23 +490,13 @@ def postgres_mounts(root):
     ]
 
 
-def start_postgres(operation, role, image, root, *, fresh):
-    if any(
-        name in os.environ
-        for name in (
-            "PGHOST",
-            "PGPORT",
-            "PGDATABASE",
-            "PGUSER",
-            "PGPASSWORD",
-            "PGPASSFILE",
-            "PGSERVICE",
-            "PGSERVICEFILE",
-            "PGOPTIONS",
-            "PGSYSCONFDIR",
-        )
-    ):
+def check_environment():
+    if any(name.startswith("PG") for name in os.environ):
         raise snapshot.SnapshotError("recovery_libpq_environment_refused")
+
+
+def start_postgres(operation, role, image, root, *, fresh):
+    check_environment()
     if fresh:
         init_role = role + "-init"
         operation.create(
@@ -554,7 +564,9 @@ def start_postgres(operation, role, image, root, *, fresh):
                 ["-h", "/socket", "-U", "aegis", "-d", "postgres"],
             )
             break
-        except snapshot.SnapshotError:
+        except snapshot.SnapshotError as error:
+            if operation.scope_failed or str(error) != "recovery_transport_failed":
+                raise
             time.sleep(0.2)
     else:
         raise snapshot.SnapshotError("recovery_postgres_not_ready")
@@ -565,7 +577,11 @@ def start_postgres(operation, role, image, root, *, fresh):
             database="postgres" if fresh else "aegis",
             query={"host": str(root / "socket")},
         ),
-        connect_args={"connect_timeout": 5},
+        connect_args={
+            "connect_timeout": 5,
+            "passfile": str(root / "passfile"),
+            "sslmode": "disable",
+        },
     )
 
 
@@ -643,14 +659,16 @@ def restore(operation, folder, manifest_hash, image, properties):
             ),
             connect_args={
                 "connect_timeout": 5,
+                "passfile": str(root / "passfile"),
+                "sslmode": "disable",
                 "options": "-csearch_path=" + context.database_schema + " -ctimezone=UTC",
             },
         )
-        if context.database_schema == "public":
-            with engine.begin() as conn:
-                conn.execute(text("SET LOCAL default_transaction_read_only=off"))
-                conn.execute(text("SET TRANSACTION READ WRITE"))
-                conn.execute(text("DROP SCHEMA public"))
+        # Only our newly created template0 database: remove its empty default
+        # schema without CASCADE, before the dump recreates its source schemas.
+        with engine.begin() as conn:
+            conn.execute(text("SET TRANSACTION READ WRITE"))
+            conn.execute(text("DROP SCHEMA public"))
         if database_properties(engine) != properties:
             raise snapshot.SnapshotError("recovery_database_properties_mismatch")
         archive = snapshot._read(folder / "database.dump", snapshot.MAX_DUMP)

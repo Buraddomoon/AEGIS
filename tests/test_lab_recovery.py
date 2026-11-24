@@ -33,6 +33,9 @@ def projection(spec, identifier, operation):
         "args": spec["arguments"],
         "state": "created",
         "exit": 0,
+        "networks": {
+            "none": {"IPAddress": "", "GlobalIPv6Address": "", "Gateway": "", "IPv6Gateway": ""}
+        },
         "mounts": [
             {
                 "Destination": m["target"],
@@ -185,7 +188,10 @@ def test_ambiguous_create_is_not_retried_and_absence_is_not_cleanup_proof(owned,
     assert sum(a[0] == "create" for a in daemon.calls) == 1
 
 
-@pytest.mark.parametrize("problem", ["image", "owner", "network", "memory", "rw", "mount_extra"])
+@pytest.mark.parametrize(
+    "problem",
+    ["image", "owner", "network", "extra_network", "address", "memory", "rw", "mount_extra"],
+)
 def test_changed_runtime_retains_owned_resources_for_review(owned, problem):
     operation, daemon = owned
     operation.create("fixture", IMAGE, "/bin/tar", ["fixture"], [])
@@ -197,6 +203,10 @@ def test_changed_runtime_retains_owned_resources_for_review(owned, problem):
         item["labels"][runtime.LABEL] = "foreign"
     elif problem == "network":
         item["host"]["NetworkMode"] = "host"
+    elif problem == "extra_network":
+        item["networks"]["bridge"] = {}
+    elif problem == "address":
+        item["networks"]["none"]["IPAddress"] = "192.0.2.10"
     elif problem == "memory":
         item["host"]["Memory"] = 0
     elif problem == "rw":
@@ -295,3 +305,22 @@ def test_database_properties_reject_unreviewed_or_sql_like_input_before_restore(
         value["format"] = "unknown/2"
     with pytest.raises(snapshot.SnapshotError, match="properties_unsupported"):
         runtime.restore(None, None, None, None, value)
+
+
+@pytest.mark.parametrize(
+    "code", ["recovery_original_consumer_present", "recovery_transport_failed"]
+)
+def test_postgres_readiness_does_not_retry_a_failed_scope_gate(owned, code):
+    operation, _ = owned
+    root = runtime.postgres_files(operation, "fixture-source")
+    checks = []
+
+    def guard():
+        checks.append(True)
+        if len(checks) > 2:
+            raise snapshot.SnapshotError(code)
+
+    operation.before_effect = guard
+    with pytest.raises(snapshot.SnapshotError, match=code):
+        runtime.start_postgres(operation, "fixture-source", IMAGE, root, fresh=False)
+    assert len(checks) == 3

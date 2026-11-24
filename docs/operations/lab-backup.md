@@ -1,10 +1,10 @@
 # Preparação de snapshots dos laboratórios — #9/#64
 
-Estado em24/11/2026: biblioteca de preparação e verificações locais; **não é um
-backup operacional aceito nem um restore demonstrado**. #64 permanece aberta.
-#65 depende do aceite da #64; #66 depende da #65 e de autorização específica.
-A dependência de produto #4 está concluída, mas suas autorizações já foram
-consumidas. Nenhum procedimento desta página autoriza abrir volumes originais.
+Estado em24/11/2026, retomada da #9: biblioteca e coordenador de cópia fria/restore
+implementados. Há ensaio real de dump/restore e reabertura de cópia fria **com
+dados descartáveis**, separado do ensaio histórico da #66. A execução sobre os
+originais exige plano concreto e autorização específica. A dependência #4 está
+concluída; suas autorizações antigas continuam consumidas.
 
 ## Contrato implementado
 
@@ -18,7 +18,8 @@ contexto público, bytes dos fences previamente exportados e um escritor de dump
 que importa o snapshot exportado. Esses parâmetros não vêm de YAML ou upload.
 `create` não consulta `.env`, não inicializa Journal/Runner e não abre SQLite na
 origem. O escritor é código confiável do host, não um comando livre recebido do
-usuário. O adaptador nativo desse escritor ainda não foi implementado/aceito.
+usuário. O adaptador nativo limitado e o coordenador estão em
+`scripts/lab_recovery*.py`; ver [procedimento nativo](lab-recovery-native.md).
 
 O contexto versionado inclui projeto fechado, commit, IDs do runner/lab/ativo,
 descritor público completo e hash, fingerprints públicos de CA/cliente,
@@ -70,22 +71,19 @@ permanecem **false**. Editá-las invalida o perfil mesmo com um hash recalculado
 Um snapshot SQL não impede um consumidor externo de aparecer; a comparação
 antes/depois também não substitui exclusão de consumidores durante a operação.
 
-## Bloqueios e trabalho restante
+## Coordenador e aceite histórico
 
-Para concluir #64, ainda é necessário definir/revisar o coordenador nativo que
-identifica volumes/dados exatos, imagem/schema compatíveis e PKI pública atual;
-coleta completa de fences/configurações privados; quiescência externa contínua;
-e adaptador de dump com transporte limitado. Essa preparação deve produzir um
-pacote concreto de escopo, efeitos, orçamento e encerramento. Depois, obter
-autorização específica antes de acessar originais. O pedido genérico da #9 não a
-concede; nenhuma autorização histórica pode ser reutilizada.
+O coordenador acrescenta um envelope de evidência independente: metadados do
+daemon/imagens/volumes, custódia dos arquivos privados selecionados, duas leituras
+RO de cada volume, quiescência observada em cada etapa, cópia PostgreSQL parada,
+dump real e restore em cluster novo. O manifesto `/1` acima permanece imutável,
+com suas flags false; não é editado para representar evidência física posterior.
 
-#65 ainda não está implementada/aceita. Seu restore deve usar destino novo isolado,
-ownership e intenção durável próprios, PostgreSQL compatível sem portas/rede ou
-mounts originais, sem worker/runner/API normal/SIEM. Deve comparar todo inventário
-restaurado e diário/fences, preservar sessões/aprovações/histórico como dados
-inertes, nunca reconciliar como Demo ou retomar jobs. Ambiguidade e falha de
-cleanup precisam continuar explícitas, sem publicar sucesso ou apagar fences.
+O restore da #65 não inicia app, worker, runner, scheduler ou SIEM. Mantém os
+registros históricos como dados, inclusive sessões/aprovações/fences, sem
+reconciliar como Demo ou reutilizar autorização. Encoding, provider/locale,
+schema, todas as linhas/estruturas e hashes de diário/custódia são comparados.
+O recibo verificado só é publicado depois do encerramento dos recursos próprios.
 
 #66 só pode ensaiar esse fluxo depois das dependências, com origem/destino
 identificados e autorização específica para os dados/volumes definidos. Não
@@ -94,13 +92,15 @@ não existe limpeza automática nem autorização de exclusão.
 
 ## Verificação local
 
-As suítes usam schemas PostgreSQL e SQLite descartáveis. O escritor de dump dos
-testes grava um cabeçalho sintético e **não representa pg_dump/pg_restore real**.
-As provas e as consultas PostgreSQL são reais; os labs originais não são usados.
-Executar em sequência com PG/Redis15 já configurados:
+As suítes regulares usam schemas PostgreSQL/SQLite descartáveis e daemon simulado.
+O escritor de dump de `test_lab_backup.py` continua sintético; há outro ensaio
+explícito com pg_dump/pg_restore, helper tar, cópia fria e PostgreSQL reais, usando
+somente fixture descartável. Nenhum deles representa o aceite histórico da #66.
+Executar sequencialmente com PG/Redis15 já configurados:
 
 ```sh
-.venv/bin/pytest tests/test_lab_backup.py tests/test_runner_journal_continuity.py tests/test_runner_persisted_review.py tests/test_runner_journal_probe.py tests/test_runner_persisted_probe.py tests/test_backup_inventory.py -q --tb=short
+make test-lab-recovery
+make test-lab-recovery-native-fixture
 ```
 
 Contagens, falhas e commits da sessão ficam no

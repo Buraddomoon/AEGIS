@@ -4,10 +4,12 @@ Run via make test-lab-recovery-native-fixture. Not an automatic lab/CI startup.
 Shared PG/Redis fixtures remain sequential; only a new isolated PG is started.
 """
 
+import hashlib
 import io
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from uuid import uuid4
@@ -215,6 +217,23 @@ def test_real_dump_restores_in_fresh_offline_cluster_and_cleans_every_resource(p
         "cold_manifest_sha256": digest(cold_manifest),
         "cleanup_verified": True,
         "normal_operation_permitted": False,
+        "tool_commit": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parents[1], text=True
+        ).strip(),
+        "tool_sources_sha256": digest(
+            {
+                name: hashlib.sha256(
+                    (Path(__file__).resolve().parents[1] / name).read_bytes()
+                ).hexdigest()
+                for name in (
+                    "scripts/lab_recovery_runtime.py",
+                    "scripts/lab_recovery_transport.py",
+                    "apps/api/aegis/operations/lab_archive.py",
+                    "apps/api/aegis/operations/lab_backup.py",
+                    "tests/native_lab_recovery.py",
+                )
+            }
+        ),
     }
     vault.write_json(folder / "verified.json", receipt)
     print(

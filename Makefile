@@ -89,6 +89,15 @@ backup-retention-plan:
 test-recovery:
 	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py tests/test_backup_vault.py tests/test_recovery_guards.py tests/test_recovery_api.py tests/test_recovery_probe.py tests/test_recovery_reconciliation.py tests/test_recovered_demo_cycle.py tests/test_recovery_cycle_runtime.py -q
 
+# Historical Lab recovery tools are host-only. Unit tests never open Lab volumes.
+.PHONY: test-lab-recovery test-lab-recovery-native-fixture
+test-lab-recovery:
+	$(VENV)/pytest tests/test_lab_backup.py tests/test_lab_archive.py tests/test_lab_recovery_transport.py tests/test_lab_recovery.py tests/test_lab_recovery_plan.py tests/test_runner_journal_continuity.py tests/test_runner_persisted_review.py tests/test_runner_journal_probe.py tests/test_runner_persisted_probe.py tests/test_backup_inventory.py -q
+# Explicit test only: a real dump of a disposable schema and a fresh offline PG.
+# This does not execute the separately authorized original-volume plan.
+test-lab-recovery-native-fixture:
+	$(VENV)/pytest tests/native_lab_recovery.py -q -s --tb=short
+
 .PHONY: recovery-app-build verify-recovered-app
 recovery-app-build:
 	docker build --pull=false -t aegis-recovery-local:0.2 .
