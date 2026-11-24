@@ -92,7 +92,7 @@ test-recovery:
 # Historical Lab recovery tools are host-only. Unit tests never open Lab volumes.
 .PHONY: test-lab-recovery test-lab-recovery-native-fixture
 test-lab-recovery:
-	$(VENV)/pytest tests/test_lab_backup.py tests/test_lab_archive.py tests/test_lab_recovery_transport.py tests/test_lab_recovery.py tests/test_lab_recovery_plan.py tests/test_runner_journal_continuity.py tests/test_runner_persisted_review.py tests/test_runner_journal_probe.py tests/test_runner_persisted_probe.py tests/test_backup_inventory.py -q
+	$(VENV)/pytest tests/test_lab_backup.py tests/test_lab_archive.py tests/test_lab_recovery_transport.py tests/test_lab_recovery.py tests/test_lab_recovery_plan.py tests/test_lab_recovery_budget.py tests/test_runner_journal_continuity.py tests/test_runner_persisted_review.py tests/test_runner_journal_probe.py tests/test_runner_persisted_probe.py tests/test_backup_inventory.py -q
 # Explicit test only: a real dump of a disposable schema and a fresh offline PG.
 # This does not execute the separately authorized original-volume plan.
 test-lab-recovery-native-fixture:

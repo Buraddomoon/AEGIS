@@ -20,12 +20,29 @@ import lab_recovery_runtime as runtime  # noqa: E402
 import lab_recovery_transport as transport  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def capped_host_fixture(monkeypatch):
+    # Plan/daemon fixtures have no real data effects. The cgroup guard is tested
+    # separately, including rejection before any original-volume access.
+    monkeypatch.setattr(runtime, "check_host_budget", lambda: None)
+
+
 def test_missing_specific_authorization_stops_before_any_metadata_or_effect(monkeypatch):
     monkeypatch.setattr(coordinator, "lock", lambda: pytest.fail("No work without authorization"))
     with pytest.raises(snapshot.SnapshotError, match="specific_authorization"):
         coordinator.run("a" * 32, "b" * 64, "c" * 64, True)
     with pytest.raises(snapshot.SnapshotError, match="specific_authorization"):
         coordinator.run("a" * 32, "b" * 64, "b" * 64, False)
+
+
+def test_uncapped_host_stops_before_metadata_or_original_access(monkeypatch):
+    def uncapped():
+        raise snapshot.SnapshotError("recovery_host_disk_limit_required")
+
+    monkeypatch.setattr(runtime, "check_host_budget", uncapped)
+    monkeypatch.setattr(coordinator, "lock", lambda: pytest.fail("No uncapped data effects"))
+    with pytest.raises(snapshot.SnapshotError, match="host_disk_limit_required"):
+        coordinator.run("a" * 32, "b" * 64, "b" * 64, True)
 
 
 @pytest.mark.parametrize(

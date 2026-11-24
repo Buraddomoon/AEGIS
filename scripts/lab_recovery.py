@@ -40,8 +40,11 @@ SCOPE = {
     "retention_deletion": False,
     "host_records_include_private_pki_and_environment": True,
     "maximum_container_memory": runtime.MEMORY,
+    "maximum_container_cpu_nanoseconds": runtime.CPU_NANOSECONDS,
+    "io_device": runtime.IO_DEVICE,
+    "maximum_io_bytes_per_second": runtime.IO_BYTES_PER_SECOND,
     "maximum_seconds": 900,
-    "minimum_available_memory": 1536 * 1024**2,
+    "minimum_available_memory": 4 * 1024**3,
     "minimum_free_disk": 4 * 1024**3,
 }
 VOLUME_FORMAT = (
@@ -496,6 +499,7 @@ def run(identifier, expected_hash, authorized_hash, confirm):
     if confirm is not True or authorized_hash != expected_hash:
         raise snapshot.SnapshotError("recovery_specific_authorization_required")
     runtime.check_environment()
+    runtime.check_host_budget()
     with lock():
         plan_folder, plan = load(identifier, expected_hash)
         if (plan_folder / "requested.json").exists() or (

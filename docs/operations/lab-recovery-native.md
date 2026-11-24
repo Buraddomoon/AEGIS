@@ -66,13 +66,22 @@ Expirados/consumidos são preservados, sem executar ou liberar nenhum deles.
    receita/mounts/limites precisam coincidir. Scratch só é removido após ausência
    dos recursos próprios confirmada. Depois são publicados os recibos verificados.
 
-Até16containers sequenciais nos dois perfis, **no máximo um simultâneo**; CPU1,
+Até16containers sequenciais nos dois perfis, **no máximo um simultâneo**; CPU0,25,
 até384MiB,64PIDs, rootfsRO, sem capabilities, no-new-privileges, sem restart/log
 driver. Entradas/saídas privadas limitadas, stderr até64KiB, dump128MiB e arquivo
 frio512MiB, kill/reap/deadline no transporte. Prazo900s para novos efeitos, cleanup
-continua permitido depois. Preflight mínimo1536MiB de RAM disponível e4GiB de disco;
+continua permitido depois. Preflight mínimo4GiB de RAM disponível e4GiB de disco;
 não reduzir gates ou parar terceiros para passar. São limites do perfil pequeno,
 não promessa de escala ou medição de consumo do host inteiro.
+
+Após o incidente da primeira tentativa, o perfil desta estação exige limites
+também no coordenador do host: CPU0,25, memória384MiB, swap0,32tasks e disco
+2MiB/s em cada direção. Os containers também têm CPU0,25 e disco2MiB/s.
+O dispositivo fechado é `/dev/nvme0n1`, que atende este checkout e Docker;
+outra estação exige revisão do perfil, não remoção do limite. `run` confere
+`cpu.max`, `memory.max`, `memory.swap.max`, `pids.max` e `io.max` do próprio
+cgroup antes dos efeitos. Nice/IO idle complementam os tetos. Sem alterar
+configuração global do host, serviços terceiros ou limites para passar gates.
 
 Uma falha do gate encerra novos efeitos desse contexto; apenas o pg_isready fixo
 tem repetição limitada de prontidão. Ambiguidade de create não é repetida. Ausência
@@ -93,7 +102,13 @@ Conferir plano em `.local/lab-recovery/plans/PLAN_ID/plan.json`, hash e escopo.
 **Somente após aprovação humana específica**:
 
 ```sh
-.venv/bin/python scripts/lab_recovery.py run \
+systemd-run --user --wait --pipe --collect --unit=aegis-lab-recovery-PLAN_ID \
+  -p CPUQuota=25% -p MemoryMax=384M -p MemorySwapMax=0 -p TasksMax=32 \
+  -p Nice=15 -p IOSchedulingClass=idle \
+  -p 'IOReadBandwidthMax=/dev/nvme0n1 2M' \
+  -p 'IOWriteBandwidthMax=/dev/nvme0n1 2M' \
+  -p WorkingDirectory=/home/IVPTER/AEGIS \
+  /home/IVPTER/AEGIS/.venv/bin/python /home/IVPTER/AEGIS/scripts/lab_recovery.py run \
   --plan-id PLAN_ID --plan-sha256 PLAN_SHA256 \
   --authorized-plan-sha256 PLAN_SHA256 --confirm-original-volume-read-only
 ```

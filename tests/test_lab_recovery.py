@@ -55,7 +55,13 @@ def projection(spec, identifier, operation):
             "SecurityOpt": ["no-new-privileges:true"],
             "Memory": spec["memory"],
             "MemorySwap": spec["memory"],
-            "NanoCpus": 1_000_000_000,
+            "NanoCpus": runtime.CPU_NANOSECONDS,
+            "BlkioDeviceReadBps": [
+                {"Path": runtime.IO_DEVICE, "Rate": runtime.IO_BYTES_PER_SECOND}
+            ],
+            "BlkioDeviceWriteBps": [
+                {"Path": runtime.IO_DEVICE, "Rate": runtime.IO_BYTES_PER_SECOND}
+            ],
             "PidsLimit": 64,
             "RestartPolicy": {"Name": "no"},
             "AutoRemove": False,

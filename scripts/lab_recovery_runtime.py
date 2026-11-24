@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import tempfile
 import time
 from datetime import UTC, datetime
@@ -24,6 +25,44 @@ from sqlalchemy.engine import URL
 LABEL = "io.aegis.lab-recovery"
 DATA = "/var/lib/postgresql/data"
 MEMORY = 384 * 1024**2
+CPU_NANOSECONDS = 250_000_000
+# Closed workstation profile. Refuse another device rather than silently losing
+# the disk limit; this is not a portable, unbounded Docker runner.
+IO_DEVICE = "/dev/nvme0n1"
+IO_BYTES_PER_SECOND = 2 * 1024**2
+CGROUP_ROOT = Path("/sys/fs/cgroup")
+
+
+def check_host_budget():
+    """Require a private capped user service before historical data effects."""
+    device = Path(IO_DEVICE).stat()
+    if not stat.S_ISBLK(device.st_mode):
+        raise snapshot.SnapshotError("recovery_io_device_required")
+    group = Path("/proc/self/cgroup").read_text().strip()
+    if not group.startswith("0::/") or ".." in Path(group[3:]).parts:
+        raise snapshot.SnapshotError("recovery_host_cgroup_required")
+    directory = CGROUP_ROOT / group[4:]
+    quota, period = (directory / "cpu.max").read_text().split()
+    if quota == "max" or int(quota) * 4 > int(period):
+        raise snapshot.SnapshotError("recovery_host_cpu_limit_required")
+    for name, maximum in (("memory.max", MEMORY), ("memory.swap.max", 0), ("pids.max", 32)):
+        value = (directory / name).read_text().strip()
+        if value == "max" or int(value) > maximum:
+            raise snapshot.SnapshotError("recovery_host_memory_tasks_limit_required")
+    identifier = f"{os.major(device.st_rdev)}:{os.minor(device.st_rdev)}"
+    devices = {
+        fields[0]: dict(item.split("=", 1) for item in fields[1:])
+        for line in (directory / "io.max").read_text().splitlines()
+        if (fields := line.split())
+    }
+    limits = devices.get(identifier, {})
+    if any(
+        limits.get(key, "max") == "max" or int(limits[key]) > IO_BYTES_PER_SECOND
+        for key in ("rbps", "wbps")
+    ):
+        raise snapshot.SnapshotError("recovery_host_disk_limit_required")
+
+
 PROJECTION = (
     '{"id":{{json .Id}},"name":{{json .Name}},"image":{{json .Image}},'
     '"labels":{{json .Config.Labels}},"user":{{json .Config.User}},'
@@ -208,7 +247,9 @@ class Operation:
             "--security-opt=no-new-privileges:true",
             "--memory=" + str(memory),
             "--memory-swap=" + str(memory),
-            "--cpus=1",
+            "--cpus=0.25",
+            "--device-read-bps=" + IO_DEVICE + ":" + str(IO_BYTES_PER_SECOND),
+            "--device-write-bps=" + IO_DEVICE + ":" + str(IO_BYTES_PER_SECOND),
             "--pids-limit=64",
             "--ipc=private",
             "--cgroupns=private",
@@ -298,7 +339,9 @@ class Operation:
             or host["SecurityOpt"] != ["no-new-privileges:true"]
             or host["Memory"] != spec["memory"]
             or host["MemorySwap"] != spec["memory"]
-            or host["NanoCpus"] != 1_000_000_000
+            or host["NanoCpus"] != CPU_NANOSECONDS
+            or host.get("BlkioDeviceReadBps") != [{"Path": IO_DEVICE, "Rate": IO_BYTES_PER_SECOND}]
+            or host.get("BlkioDeviceWriteBps") != [{"Path": IO_DEVICE, "Rate": IO_BYTES_PER_SECOND}]
             or host["PidsLimit"] != 64
             or host["RestartPolicy"]["Name"] != "no"
             or host["AutoRemove"]

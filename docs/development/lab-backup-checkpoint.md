@@ -50,6 +50,13 @@ coordenador; originais, PKI, rede qasrc e Demo preservados.
 
 ## Etapa restante para fechar #9
 
+Atualização após aprovação: o usuário autorizou o escopo apresentado. A primeira
+tentativa ad529621 foi interrompida por reboot, sem restore; cleanup separado
+confirmado, tentativa preservada/consumida. [Incidente e novos tetos](../evidence/lab-backup-2026-11-24/INCIDENT-66.md).
+Antes de continuar, coordenador e containers passam a ter CPU0,25/disco2MiB/s,
+host384MiB/swap0/32tasks e cgroup obrigatório; piso disponível4GiB. Não repetir
+o plano anterior ou tratar o cleanup como prova de restore.
+
 #66 requer plano nativo de24h e aprovação específica dos quatro volumes e arquivos
 de custódia definidos. O coordenador está implementado; não confundir essa
 aprovação com trabalho de código ainda faltante. Após CI/fixture/plano concretos,
