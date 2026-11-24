@@ -57,6 +57,13 @@ Antes de continuar, coordenador e containers passam a ter CPU0,25/disco2MiB/s,
 host384MiB/swap0/32tasks e cgroup obrigatório; piso disponível4GiB. Não repetir
 o plano anterior ou tratar o cleanup como prova de restore.
 
+A tentativa limitada0d448be9/b1a9e8f9 também foi encerrada sem restore, pelo monitor
+durante a custódia; volumes não abertos e cleanup confirmado. Custódia nova `/2`
+usa um único pack durável para reduzir fsyncs de metadados, mantendo arquivos/
+hashes/PKI e verificação do `/1` retido. 57casos unitários locais passaram sob
+tetos, sem rodada integral local adicional. CI5edaf6f SUCCESS:4083Python/9skips e
+154React; o pack novo ainda exige CI/plano atualizados. Ver incidente para detalhes.
+
 #66 requer plano nativo de24h e aprovação específica dos quatro volumes e arquivos
 de custódia definidos. O coordenador está implementado; não confundir essa
 aprovação com trabalho de código ainda faltante. Após CI/fixture/plano concretos,

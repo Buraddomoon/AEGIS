@@ -1,6 +1,7 @@
 """Private cold-copy archives. Manual extraction; never tar.extract or repair."""
 
 import hashlib
+import io
 import json
 import os
 import stat
@@ -196,35 +197,54 @@ def capture_records(roots: dict[str, Path], expected: dict, destination: Path):
         raise snapshot.SnapshotError("recovery_host_records_changed")
     snapshot._new(destination)
     inventory = {}
-    # A flat hash-addressed directory is deliberately inert: no historical path
-    # or symlink is recreated on restore, and no imported JSON is executed.
-    for name, metadata in expected.items():
-        target_name = hashlib.sha256(name.encode()).hexdigest()
-        if metadata["kind"] == "link_record":
-            data = json.dumps(metadata, sort_keys=True).encode()
-        else:
-            path = source_path(roots, name)
-            vault.no_symlink_parents(path)
-            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-            with os.fdopen(fd, "rb") as stream:
-                before = snapshot.continuity._signature(os.fstat(stream.fileno()))
-                if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
-                    raise snapshot.SnapshotError("recovery_host_file_unsafe")
-                data = stream.read(16 * 1024**2 + 1)
-                if len(data) != metadata["bytes"] or before != snapshot.continuity._signature(
-                    os.fstat(stream.fileno())
-                ):
-                    raise snapshot.SnapshotError("recovery_host_file_changed")
-        vault.write_private(destination / target_name, data)
-        inventory[name] = {
-            **metadata,
-            "stored_as": target_name,
-            "sha256": hashlib.sha256(data).hexdigest(),
-        }
+    # A single durable pack avoids thousands of synchronous filesystem metadata
+    # updates on a workstation. Members remain inert hash names, never paths to
+    # recreate or JSON/configuration to execute. Publish the inventory last.
+    fd = os.open(
+        destination / "records.tar", os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600
+    )
+    with os.fdopen(fd, "w+b") as output:
+        with tarfile.open(fileobj=output, mode="w|", format=tarfile.USTAR_FORMAT) as writer:
+            for name, metadata in expected.items():
+                target_name = hashlib.sha256(name.encode()).hexdigest()
+                if metadata["kind"] == "link_record":
+                    data = json.dumps(metadata, sort_keys=True).encode()
+                else:
+                    path = source_path(roots, name)
+                    vault.no_symlink_parents(path)
+                    source_fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+                    with os.fdopen(source_fd, "rb") as stream:
+                        before = snapshot.continuity._signature(os.fstat(stream.fileno()))
+                        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+                            raise snapshot.SnapshotError("recovery_host_file_unsafe")
+                        data = stream.read(16 * 1024**2 + 1)
+                        if len(data) != metadata[
+                            "bytes"
+                        ] or before != snapshot.continuity._signature(os.fstat(stream.fileno())):
+                            raise snapshot.SnapshotError("recovery_host_file_changed")
+                member = tarfile.TarInfo(target_name)
+                member.mode, member.size = 0o600, len(data)
+                writer.addfile(member, io.BytesIO(data))
+                if output.tell() > MAX_ARCHIVE:
+                    raise snapshot.SnapshotError("recovery_host_pack_limit")
+                inventory[name] = {
+                    **metadata,
+                    "stored_as": target_name,
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                }
+        output.flush()
+        os.fsync(output.fileno())
+        size = output.tell()
+        if size > MAX_ARCHIVE:
+            raise snapshot.SnapshotError("recovery_host_pack_limit")
+        output.seek(0)
+        pack = {"bytes": size, "sha256": hashlib.file_digest(output, "sha256").hexdigest()}
+    vault.sync_directory(destination)
     if record_paths(roots) != expected:
         raise snapshot.SnapshotError("recovery_host_records_changed")
     result = {
-        "format": "aegis-lab-host-custody/1",
+        "format": "aegis-lab-host-custody/2",
+        "pack": pack,
         "files": inventory,
         "inventory_sha256": digest(inventory),
         "links_followed": False,
@@ -239,17 +259,69 @@ def verify_records(folder: Path, expected_hash: str):
     inventory = snapshot._json(snapshot._read(folder / "inventory.json", snapshot.MAX_JSON))
     if (
         digest(inventory) != expected_hash
-        or inventory["format"] != "aegis-lab-host-custody/1"
+        or inventory["format"] not in {"aegis-lab-host-custody/1", "aegis-lab-host-custody/2"}
         or digest(inventory["files"]) != inventory["inventory_sha256"]
     ):
         raise snapshot.SnapshotError("recovery_host_inventory_integrity")
     names = {v["stored_as"] for v in inventory["files"].values()}
-    if set(os.listdir(folder)) != names | {"inventory.json"}:
+    legacy = inventory["format"] == "aegis-lab-host-custody/1"
+    if set(os.listdir(folder)) != ({"inventory.json"} | (names if legacy else {"records.tar"})):
         raise snapshot.SnapshotError("recovery_host_inventory_files")
     for name, item in inventory["files"].items():
         if item["stored_as"] != hashlib.sha256(name.encode()).hexdigest():
             raise snapshot.SnapshotError("recovery_host_inventory_path")
-        content = snapshot._read(folder / item["stored_as"], 16 * 1024**2)
-        if hashlib.sha256(content).hexdigest() != item["sha256"]:
-            raise snapshot.SnapshotError("recovery_host_inventory_integrity")
+        if legacy:
+            content = snapshot._read(folder / item["stored_as"], 16 * 1024**2)
+            if hashlib.sha256(content).hexdigest() != item["sha256"]:
+                raise snapshot.SnapshotError("recovery_host_inventory_integrity")
+    if not legacy:
+        _verify_packed_records(folder, inventory)
     return inventory
+
+
+def _verify_packed_records(folder, inventory):
+    expected = {item["stored_as"]: item for item in inventory["files"].values()}
+    with vault.private_file(folder / "records.tar", maximum=MAX_ARCHIVE) as stream:
+        before = snapshot.continuity._signature(os.fstat(stream.fileno()))
+        if inventory["pack"] != {
+            "bytes": os.fstat(stream.fileno()).st_size,
+            "sha256": hashlib.file_digest(stream, "sha256").hexdigest(),
+        }:
+            raise snapshot.SnapshotError("recovery_host_inventory_integrity")
+        stream.seek(0)
+        seen = set()
+        with tarfile.open(fileobj=stream, mode="r|") as reader:
+            for member in reader:
+                if (
+                    member.name not in expected
+                    or member.name in seen
+                    or len(seen) >= MAX_ENTRIES
+                    or not member.isfile()
+                    or member.pax_headers
+                    or member.issparse()
+                    or not 0 <= member.size <= 16 * 1024**2
+                    or (
+                        expected[member.name]["kind"] == "file"
+                        and member.size != expected[member.name]["bytes"]
+                    )
+                ):
+                    raise snapshot.SnapshotError("recovery_host_pack_entry")
+                seen.add(member.name)
+                source = reader.extractfile(member)
+                if source is None:
+                    raise snapshot.SnapshotError("recovery_host_pack_entry")
+                with source:
+                    content = source.read(16 * 1024**2 + 1)
+                if (
+                    len(content) != member.size
+                    or hashlib.sha256(content).hexdigest() != expected[member.name]["sha256"]
+                ):
+                    raise snapshot.SnapshotError("recovery_host_inventory_integrity")
+        if seen != set(expected) or any(
+            snapshot.continuity._signature(info) != before
+            for info in (
+                os.fstat(stream.fileno()),
+                (folder / "records.tar").stat(follow_symlinks=False),
+            )
+        ):
+            raise snapshot.SnapshotError("recovery_host_inventory_integrity")

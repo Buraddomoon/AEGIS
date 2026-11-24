@@ -37,6 +37,14 @@ não aparecem no contexto público, stdout, Git, CI ou issues. Logs, wheels e pr
 alheios não são incluídos. Links são registros inertes, nunca seguidos/recriados.
 Expirados/consumidos são preservados, sem executar ou liberar nenhum deles.
 
+Custódia nova usa `aegis-lab-host-custody/2`: um `records.tar` privado com nomes
+planos SHA256 dos paths, mais `inventory.json` publicado por último. Há hash e
+tamanho do pack inteiro, hash por arquivo e metadados originais. O pack é
+sincronizado antes do manifesto; evita milhares de fsyncs individuais. A inspeção
+streaming não extrai arquivos, rejeita membros desconhecidos/duplicados, links,
+PAX/sparse e tamanhos inconsistentes. A verificação do formato `/1` anterior
+permanece disponível; tentativas/manifestos antigos não são convertidos.
+
 ## Execução e isolamento
 
 1. Plano de24h, hash independente, código Python/locks, daemon, imagens, identidade
@@ -82,6 +90,16 @@ outra estação exige revisão do perfil, não remoção do limite. `run` confer
 `cpu.max`, `memory.max`, `memory.swap.max`, `pids.max` e `io.max` do próprio
 cgroup antes dos efeitos. Nice/IO idle complementam os tetos. Sem alterar
 configuração global do host, serviços terceiros ou limites para passar gates.
+
+No ensaio desta estação, o operador também acompanha memória disponível/PSI,
+ocupação do NVMe e pressão de I/O do cgroup da sessão gráfica, fora do serviço
+limitado. Espera de I/O global sozinha não mede ocupação física do NVMe. O monitor
+interrompe o coordenador por SIGINT após três amostras de5s com memória abaixo
+de4GiB, PSI de memória >=1%, PSI de I/O da interface >=1%, ou PSI global de I/O
+>=20% junto com NVMe >=80% ocupado. Ausência/reinício do cgroup gráfico também
+interrompe. Os tetos rígidos e gates de dados/identidade/cleanup continuam exigidos.
+Saída zero de systemd após SIGINT não prova restore: conferir recibo verificado
+e pin independente em closed.json; monitor interrompido nunca declara sucesso.
 
 Uma falha do gate encerra novos efeitos desse contexto; apenas o pg_isready fixo
 tem repetição limitada de prontidão. Ambiguidade de create não é repetida. Ausência

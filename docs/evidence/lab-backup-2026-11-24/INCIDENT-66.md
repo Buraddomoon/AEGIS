@@ -34,3 +34,34 @@ A aprovação do usuário permanece para concluir a recuperação com esses limi
 mais restritos. Nova execução exige novo plano/inventário/hash; o pedido e os
 registros anteriores permanecem consumidos e preservados. #66/#9 continuam abertas
 até prova dos dois perfis e encerramento. Nenhuma operação normal autorizada.
+
+## Retomada limitada e custódia em pack
+
+Fonte5edaf6f teve CI45462987138 SUCCESS:4083Python/9skips e154React/21arquivos,
+quatro partições e React conferidos. Testes unitários locais dos limites:
+40passed, pico153,1MiB/swap0. A rodada ampla local foi interrompida deliberadamente
+para manter a suíte integral nos runners remotos; não é rodada aprovada.
+
+Plano0d448be9518e4246b360be476ad59923 teve um preflight UNCONFIRMED antes do
+pedido; causa não exposta pela CLI genérica. Diagnóstico seguinte de código e
+metadados passou sob os mesmos limites. A retomada com registro privado de erros
+consumiu o plano na run b1a9e8f9c6b14e6ab16c29c49abcf241. O monitor interrompeu
+durante a custódia (2355arquivos presentes), por PSI global de I/O sustentado.
+Sem diretórios de perfis, leitura de volumes ou PostgreSQL. failed.json mantém
+UNCONFIRMED e closed.json CLEANED_WITHOUT_VERIFIED_RESTORE; zero recursos próprios.
+O retorno zero do serviço após SIGINT não foi confundido com prova de restore.
+
+Verificação limitada do arquivo frio retido confirmou novamente seu SHA acima:
+6,31s, pico64MiB/swap0, ocupação NVMe máxima14,5% na amostragem de1s. Isso não
+estabelece a causa dos travamentos anteriores. Medidas de PSI e ocupação física
+são registradas separadamente; o monitor passa a observar também o cgroup gráfico.
+
+Para reduzir operações síncronas de metadados, custódia `/2` grava os mesmos bytes
+em um único pack USTAR0600, com hashes por arquivo e do pack, manifesto durável por
+último. Verificador streaming, sem extração/execução de configuração; `/1` retido
+continua verificável. Não reescrever tentativas anteriores. Extração PostgreSQL
+permanece no scratch `/tmp`, confirmado tmpfs nesta estação.
+
+57testes locais de arquivo/limites/plano passaram sob os tetos, pico154,6MiB/swap0;
+incluem legado, corrupção, membros inválidos e manifesto ausente após falha.
+Novo código exige nova CI e novo plano, antes de outra leitura original.
