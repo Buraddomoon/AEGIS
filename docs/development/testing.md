@@ -1,5 +1,38 @@
 # Testes e evidências
 
+## Recorrência Linux delimitada — #23
+
+Política e origem de snapshots, sem PostgreSQL/rede/runner:
+
+```sh
+.venv/bin/pytest tests/test_linux_scheduling_policy.py -q --tb=short
+```
+
+Integração requer Linux, PostgreSQL e Redis de testes já disponíveis. Executar
+em sequência, usando somente schema descartável/Redis15 e runner em temporários:
+
+```sh
+.venv/bin/pytest tests/test_linux_scheduling.py tests/test_scheduling.py tests/test_scheduled_reports.py tests/test_scheduled_report_api.py tests/test_linux_campaigns.py -q --tb=short
+npm --prefix apps/web test
+make lint
+make build
+```
+
+O runner fixture executa apenas o marcador benigno local em diretórios temporários,
+com transporte HTTP em memória. Verifica opt-in desligado, confirmação real,
+segregação, expiração de preflight, revogação/mudança de confiança/usuários, emissão
+concorrente, locks de identidade, pausa/reaprovação, resposta perdida de start,
+cleanup indisponível/reserva retida, rollback e dois snapshots/exports reais de
+fixture. Não é ensaio nativo, mTLS de laboratório ou prova de conectividade SIEM.
+Não adicionar skips para contornar Windows (`fcntl` é requisito do runner Linux).
+
+`scheduling.test.tsx` e `scheduled-reports.test.tsx` verificam confirmação real,
+orçamento, segregação e origem contraditória. O E2E Demo existente em
+`scripts/e2e.py` cobre criação/aprovação/emissão e snapshots no Firefox, somente
+com dados sintéticos. Ensaio nativo da #104 exige ambiente e pacote especificamente
+aprovados conforme [operação](../operations/scheduling.md); não é iniciado por
+esses testes nem pela flag de opt-in.
+
 ## Comparação entre laboratórios — #21
 
 Somente fixtures sintéticas e PostgreSQL/schema descartável, sem Linux/Wazuh:
