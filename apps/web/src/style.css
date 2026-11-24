@@ -521,6 +521,11 @@ footer {
   font-size: 10px;
   min-height: 30px;
 }
+.recommendation-evidence {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .text-link {
   display: inline-flex;
   align-items: center;

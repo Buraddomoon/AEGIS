@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CoverageFilters, useCoverageFilters } from './CoverageFilters'
+import { Recommendations } from './Recommendations'
 import {
   ArrowLeft,
   ArrowRight,
@@ -600,6 +601,11 @@ export function ExecutionDetail({ id, user }: { id: string; user: User }) {
           ))}
         </div>
       </Panel>
+      <Recommendations
+        run={r}
+        onEvent={setEvent}
+        onRefresh={() => data.refetch({ throwOnError: true })}
+      />
       <Panel title="Trilha da execução" subtitle="Transições validadas e persistidas pelo backend.">
         <div className="timeline">
           {r.steps

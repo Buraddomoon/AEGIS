@@ -180,6 +180,7 @@ export interface Execution {
   evidence: { id: string; event_id: string; reason: string }[]
 }
 export interface RunDetail extends Run {
+  recommendation_analysis?: import('./Recommendations').RecommendationAnalysis
   campaign_name: string
   objective: string
   schedule_occurrence: ScheduleOccurrence | null

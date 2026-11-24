@@ -4,6 +4,7 @@ from collections import Counter
 
 from fastapi.encoders import jsonable_encoder
 
+from aegis.domain.recommendations import analyze_recommendations
 from aegis.domain.validation import digest
 
 LIMITATION = "Dados sintéticos. Ausência de alerta não comprova comprometimento, vulnerabilidade explorável ou risco de negócio. Este relatório não valida proteção de ambiente real."
@@ -133,6 +134,24 @@ def seal_analysis(content: dict) -> dict:
     return {**content, "integrity_sha256": digest(content)}
 
 
+def build_recommendation_report(detail: dict) -> dict:
+    """Separate analysis artifact; existing report builders stay byte-compatible."""
+    source = jsonable_encoder(detail)
+    analysis = analyze_recommendations(source)
+    return seal_analysis(
+        {
+            "product": "ÆGIS",
+            "report_version": "aegis-recommendation-report/1",
+            "kind": "recommendations",
+            "synthetic": source["synthetic"],
+            "contains_synthetic": source["synthetic"],
+            "analysis": analysis,
+            "source_snapshot": source,
+            "limitations": analysis["limitations"],
+        }
+    )
+
+
 def build_coverage_report(metrics: dict) -> dict:
     return seal_analysis(
         {
@@ -209,7 +228,25 @@ def export_analysis_html(report: dict) -> str:
         if report["contains_synthetic"]
         else "LABORATÓRIO REAL · LIMITAÇÕES DAS FONTES REGISTRADAS"
     )
-    if report["kind"] == "coverage":
+    if report["kind"] == "recommendations":
+        analysis = report["analysis"]
+        title = "Recomendações · análise nova separada"
+        summary = f"Execução {analysis['run_id']} · Política {analysis['policy']['version']} · Prioridade técnica, sem classificação de risco."
+        details = f"<p>SHA256 da política: {escape(analysis['policy_sha256'])}</p><p>SHA256 da entrada: {escape(analysis['input_sha256'])}</p>"
+        for item in analysis["items"]:
+            details += f"<h3>{escape(item['test_id'])} · {escape(item['code'])} · ordem {item['priority']}</h3><p>{escape(item['reason'])}</p><p>{escape(item['action'])}</p>"
+            details += (
+                "<pre>"
+                + escape(
+                    json.dumps(
+                        {"facts": item["facts"], "evidence": item["evidence"]},
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                )
+                + "</pre>"
+            )
+    elif report["kind"] == "coverage":
         c = report["metrics"]
         title = "Cobertura no recorte selecionado"
         summary = f"{c['total_runs']} runs no recorte; {c['completed_tests']} testes concluídos; {c['outcomes'].get('DETECTED', 0)} detectados em {c['valid_tests']} testes válidos."

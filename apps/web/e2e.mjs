@@ -74,6 +74,73 @@ async function exportPdf(label, path, filename) {
   assert.equal(await page.evaluate(() => document.visibilityState), 'visible')
   console.log(JSON.stringify({ pdfExport: filename, visibilityAfterDownload }))
 }
+async function verifyRecommendations(id) {
+  await text('Recomendações por evidência')
+  const source = await page.evaluate(async (id) => {
+    const detail = await (await fetch(`/api/v1/executions/${id}`)).json()
+    const historical = {}
+    for (const format of ['json', 'html', 'pdf']) {
+      const response = await fetch(`/api/v1/reports/${id}?format=${format}`)
+      if (!response.ok) throw new Error('Historical export failed')
+      historical[format] = Array.from(new Uint8Array(await response.arrayBuffer()))
+    }
+    return { analysis: detail.recommendation_analysis, historical }
+  }, id)
+  assert.equal(source.analysis.kind, 'new_analysis')
+  assert.equal(source.analysis.synthetic, true)
+  assert.equal(source.analysis.policy.version, 'aegis-recommendations/1')
+  const codes = source.analysis.items.map((item) => item.code)
+  for (const code of ['detected', 'observed_not_alerted', 'no_telemetry', 'inconclusive'])
+    assert(codes.includes(code))
+  for (const format of ['json', 'html', 'pdf']) {
+    const waiting = page.waitForResponse(
+      (response) =>
+        response.url().includes(`/reports/${id}/recommendations?`) &&
+        new URL(response.url()).searchParams.get('format') === format,
+    )
+    await button(`Exportar recomendações ${format.toUpperCase()}`)
+    const response = await waiting
+    assert.equal(response.status(), 200)
+    assert.equal(
+      new URL(response.url()).searchParams.get('expected_analysis_sha256'),
+      source.analysis.integrity_sha256,
+    )
+    const bytes = await response.buffer()
+    await writeFile(`../../.local/e2e/recommendations.${format}`, bytes)
+    if (format === 'json') assert.deepEqual(JSON.parse(bytes.toString()).analysis, source.analysis)
+    if (format === 'html') assert(bytes.toString().includes(source.analysis.policy_sha256))
+    if (format === 'pdf') assert.equal(bytes.subarray(0, 5).toString(), '%PDF-')
+    await page.bringToFront()
+  }
+  const linked = source.analysis.items.find((item) => item.evidence.some((e) => e.event_present))
+  assert(linked)
+  await button(`Inspecionar evidência ${linked.evidence[0].event_id}`)
+  await page.waitForSelector('dialog[open] pre')
+  await page.click('dialog button[aria-label="Fechar"]')
+  await screenshot('recommendations')
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
+  assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+  await screenshot('recommendations-mobile')
+  await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
+  const after = await page.evaluate(async (id) => {
+    const historical = {}
+    for (const format of ['json', 'html', 'pdf']) {
+      const response = await fetch(`/api/v1/reports/${id}?format=${format}`)
+      if (!response.ok) throw new Error('Historical export failed')
+      historical[format] = Array.from(new Uint8Array(await response.arrayBuffer()))
+    }
+    return historical
+  }, id)
+  assert.deepEqual(after, source.historical)
+  console.log(
+    JSON.stringify({
+      recommendations: 'VERIFIED',
+      formats: ['json', 'html', 'pdf'],
+      policy: source.analysis.policy.version,
+      analysis_sha256: source.analysis.integrity_sha256,
+    }),
+  )
+}
 async function selectComparisonPair(before, after) {
   await page.waitForFunction(
     (id) => {
@@ -282,6 +349,7 @@ try {
   assert.equal(report.summary.excluded_tests, 1)
   assert.equal(report.summary.detected_percentage, 33.3)
   await exportPdf('Exportar PDF', `/reports/${firstId}?`, 'execution-report')
+  await verifyRecommendations(firstId)
   await button('Repetir campanha')
   await page.waitForFunction((id) => location.hash !== `#executions/${id}`, {}, firstId)
   const secondId = await page.evaluate(() => location.hash.split('/')[1])
@@ -623,7 +691,10 @@ level: informational
   assert.equal(queryArtifact.status, 'converted')
   assert.equal(queryArtifact.contract.profile.id, 'aegis-marker-lucene/1')
   assert.equal(queryArtifact.contract.packages.pysigma, '1.5.1')
-  assert.equal(queryArtifact.query_sha256, createHash('sha256').update(queryArtifact.query).digest('hex'))
+  assert.equal(
+    queryArtifact.query_sha256,
+    createHash('sha256').update(queryArtifact.query).digest('hex'),
+  )
   assert.equal(queryArtifact.siem_queried, false)
   assert.equal(queryArtifact.deployment_performed, false)
   assert.equal(queryArtifact.index_mapping_verified, false)
@@ -633,7 +704,9 @@ level: informational
   await page.evaluate(() => {
     const original = URL.createObjectURL
     URL.createObjectURL = function (blob) {
-      blob.text().then((value) => { globalThis.__sigmaDownloaded = value })
+      blob.text().then((value) => {
+        globalThis.__sigmaDownloaded = value
+      })
       return original.call(this, blob)
     }
   })
@@ -645,10 +718,21 @@ level: informational
   await writeFile('../../.local/e2e/sigma-query.json', JSON.stringify(downloaded, null, 2))
   await screenshot('sigma-query')
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && document.querySelector('dialog').getBoundingClientRect().width <= innerWidth), true)
+  assert.equal(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <= innerWidth + 1 &&
+        document.querySelector('dialog').getBoundingClientRect().width <= innerWidth,
+    ),
+    true,
+  )
   await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
   await page.click('dialog button[aria-label="Fechar"]')
-  assert.deepEqual(await page.evaluate(async (id) => (await fetch('/api/v1/reports/' + id)).json(), reviewedId), reviewedReport, 'Query generation must preserve the historical report')
+  assert.deepEqual(
+    await page.evaluate(async (id) => (await fetch('/api/v1/reports/' + id)).json(), reviewedId),
+    reviewedReport,
+    'Query generation must preserve the historical report',
+  )
   for (const [route, heading] of [
     ['tests', 'Biblioteca de testes'],
     ['reports', 'Relatórios'],

@@ -46,5 +46,61 @@ recuperação e mudanças de regra dependem de escopo e autorização próprios.
 
 Os testes são fixtures offline: todos os outcomes, indisponibilidade, janela,
 incompletude, falhas, ordem técnica, imutabilidade, hashes, origem e vínculos
-órfãos. Não comprovam ensaio nativo ou implantação. A integração com detalhes e
-exports pertence à subissue #101.
+órfãos. Não comprovam ensaio nativo ou implantação.
+
+## Detalhes e exports separados — #101
+
+`GET /api/v1/executions/{run_id}` acrescenta `recommendation_analysis`, sobre
+uma leitura REPEATABLE READ READ ONLY própria. A interface apresenta motivos,
+próximos passos e fatos; **Inspecionar evidência** abre somente o evento do mesmo
+teste cujo ID/hash corresponde ao vínculo. Fonte ou evento ausente fica explícito.
+Dados sintéticos e política/entrada/análise SHA256 ficam identificados.
+
+**Exportar recomendações JSON/HTML/PDF** usa um artefato separado de versão
+`aegis-recommendation-report/1`, com análise e `source_snapshot` completo. O hash
+do documento cobre tudo, retirando somente `integrity_sha256`. O hash da entrada
+na análise corresponde ao snapshot. Não é um relatório histórico reescrito.
+Os relatórios individuais `/reports/{run_id}` continuam em1.2 e os documentos
+automáticos congelados mantêm seu conteúdo, política e contrato originais.
+
+```text
+GET /api/v1/reports/{run_id}/recommendations?format=json&expected_analysis_sha256=HASH_DA_ANALISE
+```
+
+O hash esperado obrigatório é `recommendation_analysis.integrity_sha256` do
+detalhe exibido. Mudança de fatos, contexto ou política retorna409; falta/formato
+inválido retorna422. Reconsultar a execução antes de exportar novamente. Não é
+armazenamento temporal: conservar o arquivo original para a análise anterior.
+A UI cancela downloads pendentes quando muda o hash ou a execução e recusa
+contrato/origem/identidade incompatíveis. Falha bloqueia exports até reconsulta.
+
+Todos os papéis autenticados podem ler/exportar no workspace. Exports usam o
+limite analítico30/min/usuário, auditoria de tipo/formato/hash e o limite adicional
+PDF10/min. Não registram payload bruto em auditoria. PDF conserva limites próprios
+e recusa o arquivo inteiro quando excedidos; HTML/JSON continuam disponíveis.
+HTML escapa conteúdo, sem recursos externos; PDF usa o adaptador textual existente.
+
+## Verificações de integração
+
+Executar em sequência com PostgreSQL/Redis de testes já disponíveis:
+
+```sh
+.venv/bin/pytest tests/test_recommendations.py tests/test_recommendation_reports.py tests/test_recommendation_api.py tests/test_pdf_reporting.py tests/test_pdf_api.py -q --tb=short
+npm --prefix apps/web test
+make lint
+make build
+```
+
+Os testes HTTP sem banco em `test_recommendation_reports.py` substituem storage e
+autenticação explicitamente: não são prova de RBAC/isolamento PostgreSQL reais.
+`test_recommendation_api.py` usa os fixtures existentes PG/Redis15 e verifica três
+papéis, snapshot efetivo, nenhum novo resultado/evento/run e preservação dos três
+exports históricos. Os parsers verificam HTML e PDF reais, hashes e conteúdo.
+React verifica contratos, inspeção do evento,409/reconsulta e download tardio.
+
+O E2E Demo existente (`make e2e`) inclui o painel, os três downloads por clique,
+ID/hash/política, inspeção de evento,390px/1440px e igualdade dos bytes históricos.
+Ele exige a infraestrutura descartável e navegador do guia de testes; não inicia
+laboratórios nativos. Usar `AEGIS_E2E_SCREENSHOTS` em diretório privado novo para
+preservar capturas anteriores. Roteiro preparado não significa roteiro executado;
+conferir provas e bloqueios da sessão antes de declarar aceite.

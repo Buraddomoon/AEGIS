@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 import httpx
 import yaml
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 from redis.exceptions import RedisError
 from sigma.exceptions import SigmaError
@@ -23,12 +24,14 @@ from aegis import (
     telemetry,
 )
 from aegis.analytics_api import Scope as AnalyticsScope
+from aegis.analytics_api import deliver as deliver_analysis
 from aegis.analytics_api import router as analytics_router
 from aegis.atomic_api import router as atomic_router
 from aegis.catalog import store as catalog
 from aegis.catalog.api import router as catalog_router
 from aegis.config import settings
 from aegis.db import get_db
+from aegis.domain.recommendations import analyze_recommendations
 from aegis.domain.validation import digest
 from aegis.integrations import sigma_conversion, sigma_mapping, sigma_readiness, sigma_validation
 from aegis.integrations.sigma_analysis import analyze as analyze_sigma
@@ -53,7 +56,7 @@ from aegis.models import (
     User,
 )
 from aegis.report_downloads import pdf_download
-from aegis.reporting import HTMLReportExporter, build_report
+from aegis.reporting import HTMLReportExporter, build_recommendation_report, build_report
 from aegis.scheduled_report_api import router as scheduled_report_router
 from aegis.security import (
     DUMMY_HASH,
@@ -571,7 +574,27 @@ def executions(
 
 @router.get("/executions/{run_id}", tags=["Executions"])
 def execution_detail(run_id: str, user: Viewer, db: DB) -> dict:
-    return queries.execution_detail(db, run_id)
+    with analytics.read_snapshot(db) as snapshot:
+        detail = jsonable_encoder(queries.execution_detail(snapshot, run_id))
+        return {**detail, "recommendation_analysis": analyze_recommendations(detail)}
+
+
+@router.get("/reports/{run_id}/recommendations", tags=["Reports"])
+def recommendation_report(
+    run_id: str,
+    user: Viewer,
+    db: DB,
+    expected_analysis_sha256: Annotated[str, Query(pattern=r"^[a-f0-9]{64}$")],
+    format: Literal["json", "html", "pdf"] = "json",
+):
+    rate_limit("analysis-report:" + user.id, 30, 60)
+    with analytics.read_snapshot(db) as snapshot:
+        data = build_recommendation_report(queries.execution_detail(snapshot, run_id))
+        if data["analysis"]["integrity_sha256"] != expected_analysis_sha256:
+            raise HTTPException(
+                409, "Análise ou política mudou; recarregue a execução antes de exportar."
+            )
+    return deliver_analysis(db, user, data, format)
 
 
 @router.post("/executions/{run_id}/approve", tags=["Executions"])

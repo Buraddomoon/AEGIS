@@ -173,6 +173,26 @@ class PDFReportExporter:
             add("Recomendações", heading)
             for recommendation in report["recommendations"]:
                 add(recommendation)
+        elif report["kind"] == "recommendations":
+            analysis = report["analysis"]
+            add("Recomendações · análise nova separada", heading)
+            add(f"Execução: {analysis['run_id']}")
+            add(f"Política: {analysis['policy']['version']} · SHA256: {analysis['policy_sha256']}")
+            add(f"Entrada SHA256: {analysis['input_sha256']}")
+            for item in analysis["items"]:
+                add(
+                    f"{item['test_id']} · {item['code']} · ordem técnica {item['priority']}",
+                    heading,
+                )
+                add(item["reason"])
+                add(item["action"])
+                add(
+                    f"Estado: {item['facts']['execution_state']} · Resultado: {item['facts']['outcome']}"
+                )
+                for evidence in item["evidence"]:
+                    add(
+                        f"Evento {evidence['event_id']} · fonte {evidence['source']} · SHA256 {evidence['sha256']}"
+                    )
         elif report["kind"] == "coverage":
             metrics = report["metrics"]
             add("Cobertura no recorte selecionado", heading)

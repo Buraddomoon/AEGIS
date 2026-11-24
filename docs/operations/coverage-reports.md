@@ -1,5 +1,9 @@
 # Cobertura por período/release e exportação
 
+Para próximos passos técnicos por teste, veja as
+[recomendações determinísticas](recommendations.md). Elas são uma análise nova
+separada, sem reescrever relatórios individuais ou automáticos históricos.
+
 Em **Cobertura de detecção**, escolha ambiente, catálogo e período, depois
 **Aplicar recorte**. Alterar campos mantém os indicadores anteriores identificados
 como último recorte aplicado e bloqueia comparações/exportação até aplicar.
