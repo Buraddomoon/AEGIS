@@ -1,10 +1,11 @@
-# Preparação de snapshots dos laboratórios — #9/#64
+# Backup e restore dos laboratórios em quarentena — #9
 
-Estado em24/11/2026, retomada da #9: biblioteca e coordenador de cópia fria/restore
-implementados. Há ensaio real de dump/restore e reabertura de cópia fria **com
-dados descartáveis**, separado do ensaio histórico da #66. A execução sobre os
-originais exige plano concreto e autorização específica. A dependência #4 está
-concluída; suas autorizações antigas continuam consumidas.
+Estado em24/11/2026: biblioteca, coordenador e ensaio histórico dos dois perfis
+verificados. [Prova real e aceite conjunto #9](../evidence/lab-backup-2026-11-24/VERIFIED-66.md):
+b7/33tabelas, Linux871/Wazuh855linhas iguais no restore, originais byte a byte
+iguais antes/depois e cleanup confirmado. Fixture descartável permanece separada.
+As autorizações/plano do ensaio foram consumidos; não repetir ou ativar operação
+normal. Outra execução exige escopo/plano e autorização específicos próprios.
 
 ## Contrato implementado
 
@@ -43,9 +44,9 @@ Sequência da preparação:
    byte a byte. SQLite interpreta somente scratch privado, com os limites e
    verificações já existentes. WAL parcial/corrompido não é reparado ou truncado.
 5. Dump privado exclusivo; checagem conservadora do cabeçalho PGDMP e limite
-   de128MiB após escrita. Isso **não valida o arquivo como um restore**. O futuro
-   escritor nativo também precisa de timeout e orçamento de saída/disco durante
-   a exportação; o limite posterior não limita um subprocesso em execução.
+   de128MiB após escrita. Isso **não valida o arquivo como um restore**. O
+   escritor nativo acrescenta timeout e orçamento de saída/disco durante a
+   exportação; o limite posterior sozinho não limita um subprocesso em execução.
 6. Provas e diário reconferidos após o dump; inventário PostgreSQL fresco precisa
    coincidir. Só `reviewed_at` da observação do revisor é desconsiderado na
    comparação; o bundle original não é editado. Drift de dados ou histórico

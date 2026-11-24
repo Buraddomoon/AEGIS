@@ -1,80 +1,65 @@
-# Recuperação dos laboratórios — #9
+# Recuperação dos laboratórios — #9 concluída
 
-Retomada em24/11/2026, restrita a #9/#64/#65/#66. O usuário pediu concluir toda
-a entrega após a preparação parcial inicial. Dependência #4 encerrada; suas
-autorizações antigas continuam consumidas. Consultar issues, este checkpoint e
-os procedimentos; PROGRESS/chat antigo não são necessários.
+Entrega restrita a #9/#64/#65/#66, concluída em24/11/2026. Dependência nativa #4
+fechada. [Prova histórica e aceite conjunto](../evidence/lab-backup-2026-11-24/VERIFIED-66.md).
+Ler issues, este checkpoint e procedimentos; PROGRESS/chat antigo não são necessários.
 
-## Implementação da retomada
+## Resultado verificado
 
-- #64: biblioteca existente acrescida de coordenador de cópia fria RO, identidade
-  de volumes/imagens, observações de quiescência, duas leituras byte a byte e
-  custódia privada de configurações/PKI/fences selecionados, incluindo expirados e
-  consumidos. JSON é dado inerte; nenhum histórico é corrigido para passar.
-- #65: cluster novo offline, banco vazio e restore com inventário completo;
-  locale/encoding/search_path preservados, sem reescrever sessões/aprovações/jobs,
-  sem app/worker/runner/SIEM. Recibo verificado só depois de cleanup confirmado.
-- Transporte limitado/saneado, intent antes dos efeitos, plano/hash de uso único;
-  create ambíguo não é repetido, ausência sem ID não libera reserva, gate falho
-  encerra novos efeitos e cleanup próprio continua permitido.
+Plano db6aa7b2dee9454c9ae255bc6c782304, SHA
+7998c53385171cc8e24f5011505253511af0b7dff189b515a2035146587203a8;
+run12107d563cbe491b8900ba96ce4c6ea9, **COLD_BACKUP_RESTORE_VERIFIED/CLEANED**,
+synthetic=false. Aprovação expressa do usuário registrada antes dos efeitos,
+continuada com limites mais restritos após relato de travamento.
 
-Arquivos: `operations/lab_archive.py`, `scripts/lab_recovery*.py`, testes
-`test_lab_{archive,recovery,recovery_plan,recovery_transport}.py` e ensaio
-explícito `tests/native_lab_recovery.py`; sem rota web ou migração nova.
-[Contrato de dados](../operations/lab-backup.md),
-[procedimento nativo](../operations/lab-recovery-native.md).
+- #64: snapshot RR/READ ONLY e pg_dump no mesmo snapshot, banco/diário/contexto,
+  descritor/PKI/imagens/schema e custódia protegida; ambiguidades bloqueiam.
+- #65: clusters e bancos novos isolados, sem app/worker/runner/SIEM ou replay;
+  inventários completos iguais, reservas e histórico preservados, cleanup por ID.
+- #66: Linux b7/33tabelas/871linhas e Wazuh b7/33tabelas/855linhas iguais no
+  restore; originais RO/nocopy iguais byte a byte antes/depois. UTF8/libc,
+  en_US.utf8 e collation_version null preservados.16containers próprios
+  sequenciais removidos, scratchs ausentes; metadados/quiescência reconferidos.
 
-## Validação e limites
+Recibo canônico5c224f34847eecf76f46aa4f19c50d9a931656f2d71d80ced0d5c6489077e65b,
+igual ao pin de closed.json/operador. Artefatos e chaves privados somente no host,
+0700/0600, em .local/lab-recovery/operations/RUN_ID e plans/PLAN_ID. Nada em Git/upload.
 
-`make test-lab-recovery`: **297passed**,54,34s, zero skips; um aviso upstream
-Starlette/httpx. Inclui59casos novos da retomada e os anteriores; mais8casos de
-runtime reconferidos após acrescentar duas negativas de rede efetiva. São rodadas
-sobrepostas, não somar como suíte única. `make lint` completo aprovado; checks staged/segredos/
-whitespace/release antes de cada commit. CI final bce1f87/45454864685 **SUCCESS**:
-quatro jobs Python conferidos,4070passed/9skips; React154testes/21arquivos,
-lint/tipos/formato/build e revisão de dependências aprovados. #64/#65 têm aceite
-técnico; a prova histórica e o aceite conjunto continuam pendentes na #66/#9.
+## Recursos, falhas e validação
 
-O ensaio explícito já executou pg_dump/pg_restore, helpers tar, extração e
-reabertura de cópia fria reais: inventários iguais,36tabelas/734linhas do schema
-descartável e2, encoding/locale preservados e recursos próprios encerrados.
-É synthetic=true, não prova dos originais b7. A primeira tentativa recusou a
-estrutura por search_path diferente; a comparação não foi relaxada. Artefatos
-privados/tentativa preservados; há regressão PG real para esse contexto. Ajustes
-de fixtures de cleanup/hash também constam nas provas da retomada.
+CPU0,25/384MiB/swap0/disco2MiB/s por cgroup, host32tasks/nice15/IO idle e piso4GiB.
+Serviço8min59,217s, pico384MiB incluindo cache; mínimo5,29GiB RAM disponível,
+PSI de memória/interface0, NVMe máximo9,98%, sem interrupção do monitor final.
+Custódia /2 em pack único: mesmos3689arquivos/20.457.443bytes, hash por arquivo
+mais pack inteiro, manifesto por último; /1 retido continua verificável.
 
-Somente metadados dos quatro volumes originais foram consultados; sem consumidores
-na observação. Censo host-only:3689arquivos/20.457.443bytes/zero links no perfil.
-Conteúdo dos volumes/chaves/configurações históricas não foi lido por este
-coordenador; originais, PKI, rede qasrc e Demo preservados.
+[Incidente e tentativas](../evidence/lab-backup-2026-11-24/INCIDENT-66.md): reboot
+na primeira tentativa ad529621 após um tar Linux; cleanup posterior confirmado.
+Plano0d448be9/b1a9e8f9 interrompido durante custódia por PSI, sem abrir volumes,
+cleanup confirmado. Preflights UNCONFIRMED não consumiram pedidos. Nenhuma falha
+foi reescrita como sucesso. Monitor final correlaciona PSI global com NVMe e
+observa cgroup gráfico, sem reduzir tetos ou gates de dados/ownership/cleanup.
 
-## Etapa restante para fechar #9
+Fonte final1c36563500fa9473d9e1d73853b1d7e943dab2f3, CI45467586540 **SUCCESS**:
+quatro partições Python982/1023/1060/1025 =4090passed/9skips,154React/21arquivos;
+lint/tipos/formato/build/advisories aprovados.57testes pequenos locais passaram
+sob tetos; rodada integral local interrompida deliberadamente, não aprovada.
+Fixture sintética anterior fica separada na [retomada](../evidence/lab-backup-2026-11-24/RESUMPTION.md).
+Auditoria final independente de recibos/inventários/custódia/permissões/cleanup
+aprovada; path relativo recusado primeiro, corrigido no operador sem afrouxar guarda.
 
-Atualização após aprovação: o usuário autorizou o escopo apresentado. A primeira
-tentativa ad529621 foi interrompida por reboot, sem restore; cleanup separado
-confirmado, tentativa preservada/consumida. [Incidente e novos tetos](../evidence/lab-backup-2026-11-24/INCIDENT-66.md).
-Antes de continuar, coordenador e containers passam a ter CPU0,25/disco2MiB/s,
-host384MiB/swap0/32tasks e cgroup obrigatório; piso disponível4GiB. Não repetir
-o plano anterior ou tratar o cleanup como prova de restore.
+Arquivos: operations/lab_backup.py, lab_archive.py, continuity.py, persisted_review.py;
+scripts/lab_recovery*.py e testes correspondentes. [Contrato](../operations/lab-backup.md)
+e [procedimento](../operations/lab-recovery-native.md). Commits/cadeia completa,
+hashes e último estado local/remoto nas issues e provas vinculadas.
 
-A tentativa limitada0d448be9/b1a9e8f9 também foi encerrada sem restore, pelo monitor
-durante a custódia; volumes não abertos e cleanup confirmado. Custódia nova `/2`
-usa um único pack durável para reduzir fsyncs de metadados, mantendo arquivos/
-hashes/PKI e verificação do `/1` retido. 57casos unitários locais passaram sob
-tetos, sem rodada integral local adicional. CI5edaf6f SUCCESS:4083Python/9skips e
-154React; o pack novo ainda exige CI/plano atualizados. Ver incidente para detalhes.
+## Limite encerrado
 
-#66 requer plano nativo de24h e aprovação específica dos quatro volumes e arquivos
-de custódia definidos. O coordenador está implementado; não confundir essa
-aprovação com trabalho de código ainda faltante. Após CI/fixture/plano concretos,
-solicitar o aceite do escopo; não abrir originais antes disso.
+Dados AEGIS dos labs de marcador; não é restore integral do produto Wazuh/Indexer/
+Manager/Redis. Sem novo marcador/campanha/veredicto, cutover, migração, renovação
+PKI/binding, implantação ou ativação de jobs/aprovações. Qasrc, originais, Demo,
+imagens, fences/candidatos expirados e tentativas preservados. Sem exclusão de
+backups. Manifestos /1/flags false não editados; evidência nativa em envelope próprio.
 
-O ensaio deve produzir recibos reais dos dois perfis, comparar origem/destino e
-encerramento, preservar tentativas/autorizações consumidas e só então fechar #66
-e o pai. Sem outros labs, marcador, migração, cutover, exclusão ou operação normal.
-Falha/ambiguidade continua explícita e impede fechar #9.
-
-Commits da retomada até a integração:46a6ba8 (arquivos frios/custódia),75b8e33
-(transporte),cb9dd59 (restore). Último hash, CI, plano e sincronização constam nas
-issues. [Provas iniciais preservadas](../evidence/lab-backup-2026-11-24/README.md).
-Após aceite conjunto, registrar provas e **parar neste escopo**.
+Planos/autorizações consumidos; sem replay ou operação normal. #64/#65 técnicos
+aceitos, #66 histórico e #9 conjunto atendidos. Registrar fechamento e **parar**.

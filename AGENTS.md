@@ -205,6 +205,16 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   docs/evidence/recommendations-2026-11-23/README.md e checkpoint em
   docs/development/recommendations-checkpoint.md. Entrega encerrada; parar.
 
+- #9 concluída em24/11: #64/#65/#66 e aceite conjunto, backup frio RO e restore
+  novo em quarentena dos dados AEGIS Linux/Wazuh b7/33;871/855linhas iguais,
+  originais byte a byte iguais e cleanup confirmado. Run12107d56,
+  COLD_BACKUP_RESTORE_VERIFIED/synthetic=false; custódia/PKI privada host-only.
+  CI1c36563 SUCCESS:4090Python/9skips e154React. Falhas/reboot anteriores retidos;
+  execução final limitada, sem pressão registrada na interface. Planos/autorizações
+  consumidos; sem replay, marcador, cutover, migração ou operação normal. Ver
+  docs/evidence/lab-backup-2026-11-24/VERIFIED-66.md e checkpoint lab-backup.
+  Entrega encerrada; parar neste escopo.
+
 Ao terminar: comentário na issue com comportamento entregue, arquivos relevantes,
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e
 sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /compact

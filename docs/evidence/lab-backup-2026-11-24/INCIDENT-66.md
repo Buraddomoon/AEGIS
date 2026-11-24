@@ -1,5 +1,9 @@
 # Tentativa interrompida e limites adicionais — #66
 
+**Estado final: ensaio concluído, com tentativas anteriores preservadas.**
+[VERIFIED-66 / aceite #9](VERIFIED-66.md). O relato abaixo conserva a sequência
+de falhas/mitigações; não é autorização de replay ou incidente ainda sem cleanup.
+
 O usuário aprovou o plano d8665fed após apresentação do escopo de volumes RO e
 custódia privada. A aprovação foi registrada no host antes da execução, não
 inferida dos flags da CLI. Pedido consumido em24/11/2026 às18:18:53UTC;
@@ -65,3 +69,24 @@ permanece no scratch `/tmp`, confirmado tmpfs nesta estação.
 57testes locais de arquivo/limites/plano passaram sob os tetos, pico154,6MiB/swap0;
 incluem legado, corrupção, membros inválidos e manifesto ausente após falha.
 Novo código exige nova CI e novo plano, antes de outra leitura original.
+
+## Ensaio final
+
+Fonte1c36563/CI45467586540 SUCCESS:4090Python/9skips e154React. Novo plano db6aa7b2,
+run12107d56, recibo5c224f34: COLD_BACKUP_RESTORE_VERIFIED/CLEANED, synthetic=false,
+Linux33/871 e Wazuh33/855 iguais no restore, quatro originais byte a byte iguais
+antes/depois.16containers removidos, scratchs ausentes, custódia privada /2 íntegra.
+
+Serviço8min59,217s, pico384MiB por cgroup host/swap0; mínimo5,29GiB RAM disponível,
+PSI memória/interface0, NVMe máximo9,98%. PSI global chegou32,49%, registrado
+separadamente da ocupação física e da interface. Monitor final não interrompeu.
+O preflight do prepare sob tetos retornou UNCONFIRMED uma vez, sem plano/pedido;
+diagnóstico com aquecimento limitado do cliente/metadados passou. Sem reduzir
+limites de CPU/RAM/disco, gates de identidade ou provas de dados/cleanup.
+
+Auditoria auxiliar recusou path relativo; repetida com path absoluto, confirmando
+recibo/pin, inventários JSON completos, custódia e permissões, quiescência e zero
+containers próprios. Nenhuma repetição do ensaio ou leitura original nessa auditoria.
+Falhas anteriores não foram editadas/contadas como sucesso. A causa do reboot não
+foi estabelecida; a execução final controlada e suas métricas estão nas provas.
+Autorizações/pedidos consumidos, sem nova operação normal ou outra entrega.

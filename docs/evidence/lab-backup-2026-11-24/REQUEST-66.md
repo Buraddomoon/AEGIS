@@ -1,5 +1,11 @@
 # Pedido de ensaio histórico — #66, plano d8665fed
 
+**Proposta histórica de18:01UTC.** Foi aprovada e consumida na tentativa inicial,
+depois encerrada; não reutilizar. Após limites adicionais/custódia em pack, o
+plano db6aa7b2 e a run12107d56 concluíram o escopo:
+[VERIFIED-66 / aceite #9](VERIFIED-66.md). Texto original abaixo registra o estado
+anterior à aprovação, sem conceder nova autorização. [Tentativas](INCIDENT-66.md).
+
 **PREPARED_NOT_AUTHORIZED.** Código/testes e plano concretos; nenhum conteúdo dos
 volumes originais foi aberto. Aprovação humana específica ainda necessária.
 

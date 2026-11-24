@@ -1,4 +1,12 @@
-# Retomada da #9 — implementação completa, ensaio histórico pendente
+# Retomada da #9 — implementação e ensaio histórico
+
+**Concluída em24/11/2026:** [VERIFIED-66 e aceite conjunto](VERIFIED-66.md).
+Plano final db6aa7b2/run12107d56, COLD_BACKUP_RESTORE_VERIFIED/CLEANED,
+synthetic=false, Linux33/871 e Wazuh33/855 iguais no restore; originais iguais,
+recursos próprios encerrados. Fonte1c36563, CI45467586540 SUCCESS:
+4090Python/9skips e154React. [Incidente e tentativas preservados](INCIDENT-66.md).
+As seções abaixo registram a preparação anterior à aprovação; não são permissão
+atual ou pedido pendente. Autorizações consumidas, sem replay/operação normal.
 
 O usuário pediu concluir o escopo todo após a preparação parcial inicial. A
 implementação restante foi feita antes de solicitar aprovação do ensaio real.
@@ -86,7 +94,7 @@ na imagem de aplicação; uso de `index` para campo opcional corrigido, mantendo
 exigência exata do volume declarado PostgreSQL. Nenhuma dessas falhas foi ensaio
 histórico ou produziu recibo real da #66.
 
-## Plano histórico pronto, sem autorização consumida
+## Preparação histórica anterior à autorização
 
 Metadados apenas: quatro volumes originais sem consumidores e censo de3689arquivos/
 20.457.443bytes/zero links. Plano

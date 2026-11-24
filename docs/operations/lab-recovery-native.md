@@ -1,5 +1,10 @@
 # Cópia fria e restore histórico em quarentena — #64/#65/#66
 
+Ensaio histórico de24/11/2026 encerrado e verificado:
+[VERIFIED-66 / aceite #9](../evidence/lab-backup-2026-11-24/VERIFIED-66.md).
+Planos/autorizações consumidos; os comandos abaixo são procedimento para outro
+escopo especificamente aprovado, não permissão de replay/ativação atual.
+
 Ferramentas do host, sem endpoint web. `prepare` consulta metadados e estatísticas
 de arquivos; não abre volumes nem lê o conteúdo das chaves/configurações privadas.
 `run` exige plano/hash conferidos e autorização humana específica; a confirmação
