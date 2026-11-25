@@ -2257,3 +2257,27 @@ td > small {
   cursor: pointer;
   padding-block: 0.7rem;
 }
+
+.account-controls {
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  padding: 0 22px 22px;
+}
+.session-controls {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.session-controls ul {
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.account-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}

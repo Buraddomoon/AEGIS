@@ -12,10 +12,12 @@ export function AccountSettings({ user }: { user: User }) {
   const [changing, setChanging] = useState(false)
   return (
     <Panel title="Minha conta" subtitle={`${user.username} · Senha e sessões pessoais.`}>
-      <button className="button" onClick={() => setChanging(true)}>
-        Trocar minha senha
-      </button>
-      <SessionsControl user={user} self />
+      <div className="account-controls">
+        <button className="button" onClick={() => setChanging(true)}>
+          Trocar minha senha
+        </button>
+        <SessionsControl user={user} self />
+      </div>
       {changing && <PasswordForm onClose={() => setChanging(false)} />}
     </Panel>
   )
@@ -112,7 +114,7 @@ export function SessionsControl({ user, self }: { user: User; self: boolean }) {
     [confirming, setConfirming] = useState(false),
     { busy, run } = useAction()
   return (
-    <div>
+    <div className="session-controls">
       <h3>Sessões de {user.username}</h3>
       {data.isLoading ? (
         <Loading />
@@ -222,7 +224,7 @@ export function UserMaintenance({
               <option value="administrator">Administrador</option>
             </select>
           </label>
-          <label>
+          <label className="account-confirm">
             <input
               type="checkbox"
               checked={active}
@@ -237,7 +239,7 @@ export function UserMaintenance({
             Alterar papel ou situação encerra todas as sessões da conta e revalida autorizações de
             execução. O último administrador ativo é protegido.
           </p>
-          <label>
+          <label className="account-confirm">
             <input
               type="checkbox"
               checked={confirmed}
