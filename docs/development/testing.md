@@ -1,5 +1,34 @@
 # Testes e evidências
 
+## Registro fechado e múltiplos laboratórios — #25
+
+Com PG/Redis de testes disponíveis, credenciais apenas no processo e sem outras
+suítes compartilhadas, executar em sequência:
+
+```sh
+.venv/bin/pytest tests/test_lab_registry.py tests/test_lab_registry_api.py tests/test_multi_lab_execution.py tests/test_linux_campaigns.py tests/test_binding_review.py tests/test_transactions.py tests/test_scheduling.py tests/test_linux_scheduling.py tests/test_wazuh_campaigns.py tests/test_security.py tests/test_flow.py tests/test_migrations.py -q --tb=short
+npm --prefix apps/web test
+make lint
+make build
+.venv/bin/python scripts/lab_registry_e2e.py
+```
+
+Os contratos puros verificam SSRF/perfis/caminhos, symlink/FIFO/permissões/limites,
+identidades duplicadas e drift. PG/HTTP em memória verifica dois runners com
+artefatos temporários próprios, reservas/claims/dispatches/cleanup separados,
+RBAC/CSRF, revisão/hash, mudança durante preflight, FK composta, downgrade seguro,
+Windows recusado e escopos históricos preservados. Não é transporte nativo.
+
+O E2E cria schema, conta e API/worker próprios em18789; Alembic/seed afetam somente
+o schema descartável. Firefox sem interceptar a API registra uma conexão Linux
+**offline**, revogada/desconectada, com PKI de fixture inválida para transporte;
+mostra Windows sem capacidade e executa duas campanhas Demo sintéticas em labs
+separados, selecionando ativos pela UI e verificando histórico exato. Capturas
+1440/390px, erros e provas ficam em `.local/lab-registry/acceptance-*`.
+Finally encerra processos próprios e remove schema/limites da conta própria.
+Não inicia contêineres/Labs, não consulta SIEM, não implanta ou migra originais.
+Ver [operação](../operations/lab-registry.md).
+
 ## Contas, papéis e sessões — #24
 
 Com PostgreSQL e Redis de testes já disponíveis e credenciais verificadas apenas

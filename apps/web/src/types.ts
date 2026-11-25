@@ -89,6 +89,17 @@ export interface Technique {
   deprecated: boolean
   present_in_current: boolean
 }
+export interface Asset {
+  id: string
+  laboratory_id: string
+  name: string
+  platform: string
+  external_id: string
+  synthetic: boolean
+  authorized: boolean
+  connection_status: string
+  available_test_ids: string[]
+}
 export interface Campaign {
   id: string
   name: string

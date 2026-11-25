@@ -36,7 +36,7 @@ import {
   useAction,
   useData,
 } from './lib'
-import type { Campaign, EventRecord, Lab, Page, Run, RunDetail, Test, User } from './types'
+import type { Asset, Campaign, EventRecord, Lab, Page, Run, RunDetail, Test, User } from './types'
 
 export function Campaigns({ user }: { user: User }) {
   const labs = useData<Page<Lab>>('/labs'),
@@ -120,6 +120,10 @@ function CampaignForm({ onClose }: { onClose: () => void }) {
     [name, setName] = useState(''),
     [objective, setObjective] = useState(''),
     [lab, setLab] = useState(''),
+    [assetId, setAssetId] = useState(''),
+    assets = useData<Page<Asset>>(
+      `/assets${lab ? '?laboratory_id=' + encodeURIComponent(lab) : ''}`,
+    ),
     [selected, setSelected] = useState<string[]>([]),
     { busy, run } = useAction()
   return (
@@ -130,7 +134,13 @@ function CampaignForm({ onClose }: { onClose: () => void }) {
           void run(async () => {
             await api('/campaigns', {
               method: 'POST',
-              body: JSON.stringify({ name, objective, laboratory_id: lab, test_ids: selected }),
+              body: JSON.stringify({
+                name,
+                objective,
+                laboratory_id: lab,
+                asset_id: assetId || null,
+                test_ids: selected,
+              }),
             })
             onClose()
             navigate('campaigns')
@@ -166,6 +176,7 @@ function CampaignForm({ onClose }: { onClose: () => void }) {
             value={lab}
             onChange={(e) => {
               setLab(e.target.value)
+              setAssetId('')
               setSelected([])
             }}
           >
@@ -179,11 +190,41 @@ function CampaignForm({ onClose }: { onClose: () => void }) {
               ))}
           </select>
         </label>
+        <label>
+          Ativo autorizado
+          <select
+            required
+            value={assetId}
+            onChange={(event) => {
+              setAssetId(event.target.value)
+              setSelected([])
+            }}
+          >
+            <option value="">Selecione o ativo do laboratório</option>
+            {assets.data?.items
+              .filter(
+                (asset) =>
+                  asset.laboratory_id === lab &&
+                  asset.authorized &&
+                  asset.available_test_ids.length > 0,
+              )
+              .map((asset) => (
+                <option key={asset.id} value={asset.id}>
+                  {asset.name} · {asset.platform} · {asset.synthetic ? 'sintético' : 'real'}
+                </option>
+              ))}
+          </select>
+        </label>
+        {assets.error && <Failure error={assets.error} />}
         <fieldset>
           <legend>Simulações do escopo</legend>
           {tests.data?.items
             .filter(
               (t) =>
+                (assets.data?.items
+                  .find((asset) => asset.id === assetId && asset.laboratory_id === lab)
+                  ?.available_test_ids.includes(t.id) ??
+                  false) &&
                 t.approved &&
                 t.available_for_new_scope !== false &&
                 t.execution_kind ===

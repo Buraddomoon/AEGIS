@@ -2281,3 +2281,17 @@ td > small {
   gap: 8px;
   overflow-wrap: anywhere;
 }
+
+.lab-asset,
+.registry-review {
+  display: block;
+  min-width: 0;
+}
+.lab-asset p,
+.registry-review p {
+  overflow-wrap: anywhere;
+}
+.lab-asset .text-link {
+  text-align: left;
+  white-space: normal;
+}

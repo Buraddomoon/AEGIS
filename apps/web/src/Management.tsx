@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AccountSettings, UserMaintenance } from './AccountSettings'
+import { LabAssets } from './LabAssets'
 import { LinuxRegistration } from './LinuxRegistration'
 import { BindingReview } from './BindingReview'
 import { LinuxTrust } from './LinuxTrust'
@@ -93,7 +94,7 @@ export function Laboratories({ user }: { user: User }) {
                   {l.synthetic
                     ? 'Adaptadores sintéticos'
                     : l.execution_capability === 'linux-marker-only'
-                      ? 'Marcador Linux revisado'
+                      ? 'Perfil Linux revisado'
                       : 'Desconectado'}
                 </strong>
               </div>
@@ -103,13 +104,14 @@ export function Laboratories({ user }: { user: User }) {
               {l.isolation}
             </div>
             <p className="mono muted-text">ID {l.id}</p>
-            {!l.synthetic && <LinuxTrust lab={l} />}
-            {!l.synthetic && (
+            <LabAssets laboratoryId={l.id} />
+            {l.kind === 'linux' && <LinuxTrust lab={l} />}
+            {l.kind === 'linux' && (
               <button className="button" onClick={() => setTelemetryLab(l)}>
                 Revisar coleta Wazuh
               </button>
             )}
-            {!l.synthetic && (
+            {l.kind === 'linux' && (
               <button className="text-link" onClick={() => setSelected(l.id)}>
                 Histórico de verificações mTLS
               </button>
@@ -122,14 +124,14 @@ export function Laboratories({ user }: { user: User }) {
                 </a>
               </p>
             )}
-            {user.role === 'administrator' && (
+            {user.role === 'administrator' && (l.kind === 'demo' || l.kind === 'linux') && (
               <div className="inline-actions">
-                {!l.synthetic && (
+                {l.kind === 'linux' && (
                   <button className="button" onClick={() => setBindingLab(l)}>
                     Revisar pendências do vínculo
                   </button>
                 )}
-                {!l.synthetic && (
+                {l.kind === 'linux' && (
                   <button
                     className="button"
                     disabled={busy}
@@ -192,8 +194,9 @@ export function Laboratories({ user }: { user: User }) {
       )}
       <div className="notice">
         <Radio size={18} />
-        Linux é opt-in e aceita somente o marcador benigno fixado na implantação. Sem coleta SIEM, o
-        resultado defensivo é inconclusivo. Windows e agendamentos Linux permanecem indisponíveis.
+        Laboratórios reais exigem perfil revisado, preflight vigente e autorização específica.
+        Recibo do runner não comprova detecção. Windows não possui adaptador de execução nesta
+        versão.
       </div>
       {telemetryLab && (
         <WazuhBinding lab={telemetryLab} user={user} onClose={() => setTelemetryLab(null)} />

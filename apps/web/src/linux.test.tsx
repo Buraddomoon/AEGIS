@@ -123,13 +123,27 @@ it('shows only Linux-compatible tests when creating a real campaign', async () =
                   { id: 'demo', name: 'Simulação Demo', execution_kind: 'demo', approved: true },
                 ],
               }
-            : { items: [] },
+            : url.includes('/assets')
+              ? {
+                  items: [
+                    {
+                      id: 'asset-linux',
+                      laboratory_id: 'linux',
+                      name: 'Endpoint real',
+                      platform: 'Linux',
+                      authorized: true,
+                      available_test_ids: ['marker'],
+                    },
+                  ],
+                }
+              : { items: [] },
       ),
     ),
   )
   mount(<Campaigns user={administrator} />)
   await screen.findByRole('option', { name: /Linux Lab/ })
   await userEvent.selectOptions(screen.getByLabelText('Laboratório'), 'linux')
+  await userEvent.selectOptions(await screen.findByLabelText('Ativo autorizado'), 'asset-linux')
   expect(await screen.findByText('Marcador real')).toBeInTheDocument()
   expect(screen.queryByText('Simulação Demo')).not.toBeInTheDocument()
 })
@@ -137,11 +151,15 @@ it('shows only Linux-compatible tests when creating a real campaign', async () =
 it('registration has no arbitrary target or command fields and displays API failures', async () => {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue({
-      ok: false,
-      status: 409,
-      json: async () => ({ error: { message: 'Runner Linux desconectado' } }),
-    }),
+    vi.fn(async (url: string) =>
+      url.includes('/connections')
+        ? respond({ mode: 'legacy', items: [] })
+        : {
+            ok: false,
+            status: 409,
+            json: async () => ({ error: { message: 'Runner Linux desconectado' } }),
+          },
+    ),
   )
   const notify = vi.fn()
   mount(<LinuxRegistration onClose={vi.fn()} />, notify)

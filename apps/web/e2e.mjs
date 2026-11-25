@@ -331,6 +331,13 @@ try {
   )
   const labValue = await page.$eval('dialog select', (el) => el.options[1].value)
   await page.select('dialog select', labValue)
+  await page.waitForFunction(
+    () => document.querySelectorAll('dialog select')[1]?.options.length > 1,
+  )
+  const assetValue = await page.$$eval('dialog select', (elements) => elements[1].options[1].value)
+  const assetSelect = (await page.$$('dialog select'))[1]
+  await assetSelect.select(assetValue)
+  await page.waitForSelector('dialog fieldset input[type="checkbox"]')
   const checks = await page.$$('dialog input[type="checkbox"]')
   for (const check of checks) await check.click()
   await button('Criar campanha', 'dialog button')
