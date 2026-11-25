@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from aegis import binding_review
+from aegis import binding_review, lab_registry
 from aegis.config import settings
 from aegis.domain.validation import digest
 from aegis.integrations.linux_runner import LinuxRunnerClient, RunnerConnection
@@ -50,7 +50,10 @@ def connection() -> RunnerConnection:
 
 
 def descriptor() -> dict:
-    config = connection()
+    return describe(connection())
+
+
+def describe(config: RunnerConnection) -> dict:
     try:
         value = {
             "runner_id": str(config.runner_id),
@@ -83,9 +86,64 @@ def configured_hash() -> str | None:
         return None
 
 
+def deployment_descriptor(laboratory_id: str) -> dict:
+    if settings().linux_runner_registry is None:
+        value = descriptor()
+    else:
+        try:
+            entry = lab_registry.entry_for(laboratory_id=laboratory_id)
+            value = {
+                **describe(entry.connection),
+                "registry": lab_registry.public(entry),
+            }
+        except (ValueError, OSError):
+            raise HTTPException(409, "Registro revisado indisponível ou inválido.") from None
+    if value["laboratory_id"] != laboratory_id:
+        raise HTTPException(409, "Conexão não pertence ao laboratório selecionado.")
+    return value
+
+
+def deployment_hash(laboratory_id: str) -> str | None:
+    try:
+        return digest(deployment_descriptor(laboratory_id))
+    except HTTPException:
+        return None
+
+
+def deployment_client(laboratory_id: str) -> LinuxRunnerClient:
+    if settings().linux_runner_registry is None:
+        deployment_descriptor(laboratory_id)
+        return client()
+    try:
+        return LinuxRunnerClient(lab_registry.entry_for(laboratory_id=laboratory_id).connection)
+    except (ValueError, OSError):
+        raise HTTPException(409, "Conexão revisada indisponível.") from None
+
+
+def scoped_client(run: CampaignRun) -> LinuxRunnerClient:
+    expected = run.scope["runner"]
+    remote = deployment_client(run.laboratory_id)
+    try:
+        if (
+            describe(remote.config) != {k: v for k, v in expected.items() if k != "registry"}
+            or deployment_descriptor(run.laboratory_id) != expected
+        ):
+            raise HTTPException(409, "Conexão mudou; preservar reserva e runner original.")
+        return remote
+    except BaseException:
+        remote.close()
+        raise
+
+
 def test_matches(test: TestDefinition, identity: dict) -> bool:
     if identity.get("test_id") == TEST_ID:
-        return test.id == TEST_DEFINITION_ID
+        return bool(
+            test.id == TEST_DEFINITION_ID
+            and test.platform == "Linux"
+            and test.execution_kind == "linux_marker"
+            and test.version == 1
+            and test.behavior == "temporary-marker"
+        )
     if identity.get("test_id") in behavior_policy.TEST_IDS.values():
         kind = behavior_policy.kind_for(identity["test_id"])
         profile = behavior_policy.PROFILES[kind]
@@ -119,14 +177,18 @@ def reviewed_profile_available(test: TestDefinition) -> bool:
     }:
         return True
     try:
+        if settings().linux_runner_registry is not None:
+            return any(
+                test_matches(test, describe(e.connection)) for e in lab_registry.load().entries
+            )
         return test_matches(test, descriptor())
-    except HTTPException:
+    except (HTTPException, ValueError, OSError):
         return False
 
 
 def binding_valid(db: Session, lab: Laboratory) -> bool:
     binding = db.get(LinuxLabBinding, lab.id)
-    return bool(binding and binding.configuration_hash == configured_hash())
+    return bool(binding and binding.configuration_hash == deployment_hash(lab.id))
 
 
 def verified(db: Session, lab: Laboratory) -> bool:
@@ -141,7 +203,7 @@ def verified(db: Session, lab: Laboratory) -> bool:
         and latest.success
         and latest.expires_at > now()
         and latest.environment_version == lab.environment_version
-        and latest.configuration_hash == configured_hash()
+        and latest.configuration_hash == deployment_hash(lab.id)
         and binding_valid(db, lab)
     )
 
@@ -151,7 +213,7 @@ def trust_status(db: Session, lab: Laboratory) -> dict | None:
     if lab.kind != "linux":
         return None
     binding = db.get(LinuxLabBinding, lab.id)
-    current = configured_hash()
+    current = deployment_hash(lab.id)
     review = db.scalar(
         select(AuditEvent)
         .where(AuditEvent.action == "lab.linux_register", AuditEvent.resource_id == lab.id)
@@ -168,7 +230,25 @@ def trust_status(db: Session, lab: Laboratory) -> dict | None:
 
 
 def register(db: Session, data, actor: User, *, continuity_review=None) -> Laboratory:
-    identity = descriptor()
+    entry = None
+    if settings().linux_runner_registry is not None:
+        try:
+            if not data.registry_id or not data.confirm_registry_hash:
+                raise ValueError("Seleção explícita obrigatória.")
+            entry = lab_registry.entry_for(entry_id=data.registry_id)
+            if lab_registry.public(entry)["review_hash"] != data.confirm_registry_hash:
+                raise ValueError("Revisão mudou.")
+            if data.owner != entry.owner:
+                raise ValueError("Responsável difere do registro host-only.")
+            identity = deployment_descriptor(str(entry.connection.laboratory_id))
+            if identity["registry"]["review_hash"] != data.confirm_registry_hash:
+                raise ValueError("Revisão mudou durante o cadastro.")
+        except (ValueError, OSError):
+            raise HTTPException(409, "Selecione a revisão atual da conexão aprovada.") from None
+    else:
+        if data.registry_id or data.confirm_registry_hash:
+            raise HTTPException(409, "Registro opt-in ausente.")
+        identity = descriptor()
     lab = db.scalar(
         select(Laboratory)
         .where(Laboratory.id == identity["laboratory_id"])
@@ -176,7 +256,14 @@ def register(db: Session, data, actor: User, *, continuity_review=None) -> Labor
         .execution_options(populate_existing=True)
     )
     if lab:
+        if lab.kind != "linux":
+            raise HTTPException(409, "Identidade pertence a outro tipo de laboratório.")
         binding_review.require_review(db, lab)
+    other_asset = db.get(Asset, identity["asset_id"])
+    if other_asset and (
+        other_asset.laboratory_id != identity["laboratory_id"] or other_asset.synthetic
+    ):
+        raise HTTPException(409, "Identidade de ativo já pertence a outro escopo.")
     if continuity_review is not None:
         from aegis.lab_runner.activation_review import require_current
         from aegis.lab_runner.continuity import ContinuityError
@@ -202,7 +289,7 @@ def register(db: Session, data, actor: User, *, continuity_review=None) -> Labor
             kind="linux",
             authorized=False,
             description="Runner Linux real: somente o teste fixo do binding revisado.",
-            isolation=data.isolation_review,
+            isolation=entry.isolation if entry else data.isolation_review,
         )
         db.add(lab)
         db.flush()
@@ -218,17 +305,27 @@ def register(db: Session, data, actor: User, *, continuity_review=None) -> Labor
         )
     else:
         asset = db.get(Asset, identity["asset_id"])
-        if not asset or asset.laboratory_id != lab.id or asset.synthetic:
+        if (
+            not asset
+            or asset.laboratory_id != lab.id
+            or asset.synthetic
+            or asset.platform != "Linux"
+        ):
             raise HTTPException(
                 409, "Ativo original difere da configuração; revisão manual necessária."
             )
-        lab.name, lab.owner, lab.isolation = data.name, data.owner, data.isolation_review
+        lab.name, lab.owner, lab.isolation = (
+            data.name,
+            data.owner,
+            entry.isolation if entry else data.isolation_review,
+        )
         lab.environment_version += 1
     lab.authorized = False
     binding = db.get(LinuxLabBinding, lab.id)
     if binding is None:
         binding = LinuxLabBinding(laboratory_id=lab.id)
         db.add(binding)
+    binding.registry_id = entry.id if entry else None
     binding.runner_id, binding.configuration_hash = identity["runner_id"], digest(identity)
     binding.reviewed_by, binding.isolation_review = actor.id, data.isolation_review
     audit(
@@ -239,6 +336,7 @@ def register(db: Session, data, actor: User, *, continuity_review=None) -> Labor
         configuration_hash=binding.configuration_hash,
         environment_version=lab.environment_version,
         authorized=False,
+        registry=identity.get("registry"),
     )
     db.commit()
     return lab
@@ -247,14 +345,14 @@ def register(db: Session, data, actor: User, *, continuity_review=None) -> Labor
 def preflight(db: Session, lab: Laboratory, actor: User) -> LabVerification:
     if lab.kind != "linux" or not binding_valid(db, lab):
         raise HTTPException(409, "Binding Linux não corresponde à implantação revisada.")
-    fingerprint, version = configured_hash(), lab.environment_version
+    fingerprint, version = deployment_hash(lab.id), lab.environment_version
     success, reason = (
         False,
         "Preflight mTLS falhou; verifique runner, identidade, rede e certificados.",
     )
     remote = None
     try:
-        remote = client()
+        remote = deployment_client(lab.id)
         identity = remote.preflight()
         success = str(identity.laboratory_id) == lab.id
         if success:
@@ -278,7 +376,7 @@ def preflight(db: Session, lab: Laboratory, actor: User) -> LabVerification:
     if (
         current is None
         or current.environment_version != version
-        or configured_hash() != fingerprint
+        or deployment_hash(lab.id) != fingerprint
         or not binding_valid(db, current)
     ):
         success = False
@@ -326,6 +424,7 @@ def approval_valid(db: Session, run: CampaignRun, approval: Approval | None) -> 
         or scoped[0]["behavior"] != test.behavior
         or not asset
         or asset.synthetic
+        or asset.platform != "Linux"
         or asset.laboratory_id != run.laboratory_id
         or asset.id != run.scope.get("runner", {}).get("asset_id")
     ):
@@ -339,7 +438,7 @@ def approval_valid(db: Session, run: CampaignRun, approval: Approval | None) -> 
         return False
     current_identity = None
     try:
-        current_identity = descriptor()
+        current_identity = deployment_descriptor(run.laboratory_id)
     except HTTPException:
         return False
     return bool(
@@ -432,11 +531,11 @@ def recover(db: Session, run: CampaignRun) -> None:
     ]
     if not any(dispatch for _, dispatch in dispatches):
         return  # No durable intent means no remote preparation was permitted.
-    if run.scope.get("runner") != descriptor():
+    if run.scope.get("runner") != deployment_descriptor(run.laboratory_id):
         raise HTTPException(
             409, "Configuração original mudou; recuperação manual do runner original necessária."
         )
-    remote = client()
+    remote = scoped_client(run)
     try:
         remote.preflight()
         for item, dispatch in dispatches:

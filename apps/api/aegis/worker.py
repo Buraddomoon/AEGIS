@@ -200,9 +200,9 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
                 contexts[item.id] = context_for(run, item, tests[item.test_id])
         guard(run_id)
         if not run.synthetic:
-            if run.scope["runner"] != linux_labs.descriptor():
+            if run.scope["runner"] != linux_labs.deployment_descriptor(run.laboratory_id):
                 raise ValueError("Configuração Linux mudou antes da preparação.")
-            remote = linux_labs.client()
+            remote = linux_labs.scoped_client(run)
             adapter = LinuxMarkerAdapter(
                 remote, run.deadline_at, run.scope_hash, lambda: guard(run_id)
             )

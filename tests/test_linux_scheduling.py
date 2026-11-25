@@ -1,5 +1,6 @@
 """Real PostgreSQL with a local runner fixture; never operates a native Lab."""
 
+import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -161,7 +162,10 @@ def test_each_occurrence_revalidates_trust_and_users_before_any_dispatch(
     if change == "opt_in":
         monkeypatch.setattr(settings(), "linux_scheduling_enabled", False)
     elif change == "config":
-        monkeypatch.setattr(linux_labs, "configured_hash", lambda: "0" * 64)
+        path = settings().linux_runner_config
+        original = json.loads(path.read_text())
+        original["url"] = "https://192.168.253.6:8443"
+        path.write_text(json.dumps(original))
     else:
         with session_factory()() as db:
             grant = db.scalar(

@@ -77,16 +77,27 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
         raise HTTPException(409, str(error)) from None
     if not synthetic and (
         len(tests) != 1
-        or not linux_labs.test_matches(tests[0], linux_labs.descriptor())
+        or not linux_labs.test_matches(tests[0], linux_labs.deployment_descriptor(lab.id))
         or not linux_labs.verified(db, lab)
     ):
         raise HTTPException(409, "Linux exige teste fixo revisado e preflight vigente do binding.")
-    asset = db.scalar(
-        select(Asset).where(Asset.laboratory_id == lab.id, Asset.synthetic.is_(synthetic))
-    )
+    asset_query = select(Asset).where(Asset.laboratory_id == lab.id, Asset.synthetic.is_(synthetic))
+    if campaign.asset_id:
+        asset_query = asset_query.where(Asset.id == campaign.asset_id)
+    elif not synthetic:
+        asset_query = asset_query.where(
+            Asset.id == linux_labs.deployment_descriptor(lab.id)["asset_id"]
+        )
+    candidates = db.scalars(asset_query).all()
+    if len(candidates) != 1:
+        raise HTTPException(409, "Selecione um ativo inequívoco do laboratório.")
+    asset = candidates[0]
     if not asset:
         raise HTTPException(409, "Ativo autorizado do laboratório não está cadastrado.")
-    if not synthetic and asset.id != linux_labs.descriptor()["asset_id"]:
+    if not synthetic and (
+        asset.platform != "Linux"
+        or asset.id != linux_labs.deployment_descriptor(lab.id)["asset_id"]
+    ):
         raise HTTPException(409, "Ativo não corresponde ao runner revisado.")
     scope = {
         "campaign_id": campaign.id,
@@ -118,7 +129,7 @@ def snapshot_scope(db: Session, campaign: Campaign) -> dict:
         "rule_test_links": rule_links.snapshot_links(db, [t.id for t in tests]),
     }
     if not synthetic:
-        scope["runner"] = linux_labs.descriptor()
+        scope["runner"] = linux_labs.deployment_descriptor(lab.id)
         scope["telemetry"] = telemetry.scope_for(db, lab, asset)
         if scope["telemetry"]["provider"] == "wazuh-indexer":
             policy = scope["telemetry"]["policy"]

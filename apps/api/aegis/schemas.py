@@ -45,6 +45,7 @@ class UserRead(BaseModel):
 
 
 class CampaignCreate(Input):
+    asset_id: str | None = Field(default=None, min_length=36, max_length=36)
     name: str = Field(min_length=3, max_length=160)
     objective: str = Field(min_length=5, max_length=4000)
     laboratory_id: str = Field(min_length=36, max_length=36)
@@ -71,6 +72,8 @@ class LabAuthorization(Input):
 
 
 class LinuxRegistration(Input):
+    registry_id: str | None = Field(default=None, pattern=r"^[a-z][a-z0-9-]{2,63}$")
+    confirm_registry_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     name: str = Field(min_length=3, max_length=120)
     owner: str = Field(min_length=3, max_length=120)
     isolation_review: str = Field(min_length=20, max_length=4000)

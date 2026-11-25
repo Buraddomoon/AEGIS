@@ -16,6 +16,7 @@ from aegis import (
     analytics,
     binding_review,
     identities,
+    lab_registry,
     linux_labs,
     queries,
     rule_links,
@@ -54,6 +55,7 @@ from aegis.models import (
     ScheduleAuthorization,
     ScheduleOccurrence,
     TestDefinition,
+    TestExecution,
     User,
 )
 from aegis.models import (
@@ -239,9 +241,13 @@ def revoke_sessions(user_id: str, data: schemas.Confirm, user: Viewer, request: 
 
 
 @router.get("/labs", tags=["Laboratories"])
-def labs(user: Viewer, db: DB) -> dict:
-    items = db.scalars(select(Laboratory).order_by(Laboratory.name)).all()
+def labs(user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 1000) -> dict:
+    result = queries.page(
+        db, select(Laboratory).order_by(Laboratory.name, Laboratory.id), offset, limit
+    )
+    items = [db.get(Laboratory, item["id"]) for item in result["items"]]
     return {
+        **result,
         "items": [
             {
                 **queries.record(lab),
@@ -256,12 +262,16 @@ def labs(user: Viewer, db: DB) -> dict:
                 else ("connected" if linux_labs.verified(db, lab) else "disconnected"),
                 "execution_capability": "demo-only"
                 if lab.kind == "demo"
-                else ("linux-marker-only" if linux_labs.binding_valid(db, lab) else "disabled"),
+                else (
+                    "linux-marker-only"
+                    if lab.kind == "linux" and linux_labs.binding_valid(db, lab)
+                    else "disabled"
+                ),
                 "telemetry_source": "aegis-demo" if lab.kind == "demo" else None,
                 "trust": linux_labs.trust_status(db, lab),
             }
             for lab in items
-        ]
+        ],
     }
 
 
@@ -292,10 +302,31 @@ def authorize_lab(lab_id: str, data: schemas.LabAuthorization, user: Admin, db: 
     return queries.record(lab)
 
 
+@router.get("/labs/linux/connections", tags=["Laboratories"])
+def linux_connections(user: Admin, offset: Offset = 0, limit: Limit = 25) -> dict:
+    if settings().linux_runner_registry is None:
+        return {"mode": "legacy", "items": [], "total": 0, "offset": offset, "limit": limit}
+    try:
+        entries = lab_registry.load().entries
+        return {
+            "mode": "registry",
+            "items": [lab_registry.public(e) for e in entries[offset : offset + limit]],
+            "total": len(entries),
+            "offset": offset,
+            "limit": limit,
+        }
+    except (ValueError, OSError):
+        raise HTTPException(409, "Registro host-only inválido ou indisponível.") from None
+
+
 @router.post("/labs/linux/register", status_code=201, tags=["Laboratories"])
 def register_linux(data: schemas.LinuxRegistration, user: Admin, db: DB) -> dict:
     rate_limit("linux-register:" + user.id, 10, 3600)
-    return queries.record(linux_labs.register(db, data, user))
+    try:
+        return queries.record(linux_labs.register(db, data, user))
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Nome ou identidade já cadastrado; revise o registro.") from None
 
 
 @router.post("/labs/{lab_id}/preflight", tags=["Laboratories"])
@@ -391,8 +422,61 @@ def remove_wazuh_binding(lab_id: str, data: schemas.Confirm, user: Admin, db: DB
 
 
 @router.get("/assets", tags=["Laboratories"])
-def assets(user: Viewer, db: DB) -> dict:
-    return {"items": [queries.record(a) for a in db.scalars(select(Asset).order_by(Asset.name))]}
+def assets(
+    user: Viewer, db: DB, laboratory_id: str | None = None, offset: Offset = 0, limit: Limit = 1000
+) -> dict:
+    query = select(Asset).order_by(Asset.name, Asset.id)
+    if laboratory_id:
+        services.get_or_404(db, Laboratory, laboratory_id)
+        query = query.where(Asset.laboratory_id == laboratory_id)
+    result = queries.page(db, query, offset, limit)
+    definitions = db.scalars(
+        select(TestDefinition).where(TestDefinition.approved).order_by(TestDefinition.id)
+    ).all()
+    for item in result["items"]:
+        lab = db.get(Laboratory, item["laboratory_id"])
+        if lab.kind == "demo" and item["synthetic"]:
+            allowed = [t.id for t in definitions if t.execution_kind == "demo"]
+        elif lab.kind == "linux" and item["platform"] == "Linux" and not item["synthetic"]:
+            try:
+                identity = linux_labs.deployment_descriptor(lab.id)
+                if not linux_labs.binding_valid(db, lab):
+                    raise HTTPException(409, "Binding revisado indisponível.")
+                allowed = [
+                    t.id
+                    for t in definitions
+                    if identity["asset_id"] == item["id"] and linux_labs.test_matches(t, identity)
+                ]
+            except HTTPException:
+                allowed = []
+        else:
+            allowed = []
+        item.update(
+            authorized=lab.authorized,
+            available_test_ids=allowed,
+            connection_status="synthetic"
+            if item["synthetic"] and lab.kind == "demo"
+            else "connected"
+            if allowed and linux_labs.verified(db, lab)
+            else "disconnected",
+        )
+    return result
+
+
+@router.get("/assets/{asset_id}/history", tags=["Laboratories"])
+def asset_history(
+    asset_id: str, user: Viewer, db: DB, offset: Offset = 0, limit: Limit = 25
+) -> dict:
+    asset = services.get_or_404(db, Asset, asset_id)
+    return queries.page(
+        db,
+        select(TestExecution)
+        .join(CampaignRun, CampaignRun.id == TestExecution.run_id)
+        .where(TestExecution.asset_id == asset.id, CampaignRun.laboratory_id == asset.laboratory_id)
+        .order_by(TestExecution.created_at.desc(), TestExecution.id),
+        offset,
+        limit,
+    )
 
 
 @router.get("/techniques", tags=["ATT&CK"])
@@ -588,8 +672,16 @@ def create_campaign(data: schemas.CampaignCreate, user: Operator, db: DB) -> dic
             "demo" if lab.kind == "demo" else "linux_marker"
         ):
             raise HTTPException(409, "Teste fora da allowlist ou incompatível com laboratório.")
+    if data.asset_id:
+        asset = services.get_or_404(db, Asset, data.asset_id)
+        if asset.laboratory_id != lab.id or asset.synthetic != (lab.kind == "demo"):
+            raise HTTPException(409, "Ativo não pertence ao laboratório/modo selecionado.")
     campaign = Campaign(
-        name=data.name, objective=data.objective, laboratory_id=lab.id, created_by=user.id
+        name=data.name,
+        objective=data.objective,
+        laboratory_id=lab.id,
+        created_by=user.id,
+        asset_id=data.asset_id,
     )
     db.add(campaign)
     db.flush()
@@ -1037,6 +1129,13 @@ def connectors(user: Viewer) -> dict:
         worker = redis_client().get("aegis:worker:heartbeat") is not None
     except RedisError:
         worker = False
+    if settings().linux_runner_registry is not None:
+        try:
+            configured = bool(lab_registry.load().entries)
+        except (ValueError, OSError):
+            configured = False
+    else:
+        configured = bool(linux_labs.configured_hash())
     return {
         "items": [
             {
@@ -1056,7 +1155,7 @@ def connectors(user: Viewer) -> dict:
         ],
         "worker_online": worker,
         "scheduling": "approved_demo_only",
-        "lab_mode": "linux_opt_in" if linux_labs.configured_hash() else "not_configured",
+        "lab_mode": "linux_opt_in" if configured else "not_configured",
     }
 
 

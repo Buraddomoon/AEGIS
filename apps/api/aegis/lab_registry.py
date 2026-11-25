@@ -1,5 +1,6 @@
 """Closed, host-owned deployment registry. Reading it never contacts a runner."""
 
+import hashlib
 import json
 import os
 import stat
@@ -45,15 +46,21 @@ def protected_read(path: Path, limit: int, *, private: bool = True) -> bytes:
     """Absolute regular files, no symlink components, bounded read on the checked fd."""
     if not path.is_absolute() or ".." in path.parts:
         raise ValueError("Caminho deve ser absoluto e sem travessia.")
-    parent = Path(path.anchor)
-    for part in path.parts[1:-1]:
-        parent /= part
-        info = parent.lstat()
-        if not stat.S_ISDIR(info.st_mode) or info.st_mode & 0o022:
+    directory = os.open(path.anchor, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        for part in path.parts[1:-1]:
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory)
+            os.close(directory)
+            directory = child
+            info = os.fstat(directory)
             # Sticky system temporary directories are allowed for isolated fixtures.
-            if not (stat.S_ISDIR(info.st_mode) and info.st_mode & stat.S_ISVTX):
+            if (info.st_uid not in {0, os.geteuid()} or info.st_mode & 0o022) and not (
+                info.st_mode & stat.S_ISVTX and info.st_uid == 0
+            ):
                 raise ValueError("Diretório de configuração sem proteção.")
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        fd = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+    finally:
+        os.close(directory)
     with os.fdopen(fd, "rb") as stream:
         info = os.fstat(stream.fileno())
         if (
@@ -117,5 +124,15 @@ def public(entry: RegistryEntry) -> dict:
         "asset_id": str(config.asset_id),
         "platform": "Linux",
         "test_id": config.test_id,
-        "review_hash": digest(entry.model_dump(mode="json")),
+        "review_hash": digest(
+            {
+                "entry": entry.model_dump(mode="json"),
+                "server_ca_sha256": hashlib.sha256(
+                    protected_read(config.server_ca, 65536, private=False)
+                ).hexdigest(),
+                "client_cert_sha256": hashlib.sha256(
+                    protected_read(config.client_cert, 65536, private=False)
+                ).hexdigest(),
+            }
+        ),
     }

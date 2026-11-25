@@ -147,3 +147,23 @@ def test_review_metadata_and_public_cert_drift_are_observable(registry):
         lab_registry.public(lab_registry.entry_for(entry_id="reviewed-0"))["review_hash"]
         != before["review_hash"]
     )
+
+
+def test_certificate_change_invalidates_the_confirmed_review_hash(registry):
+    path, document = registry
+    before = lab_registry.public(lab_registry.entry_for(entry_id="reviewed-0"))["review_hash"]
+    from pathlib import Path
+
+    Path(document["entries"][0]["connection"]["server_ca"]).write_text(
+        "changed public certificate fixture"
+    )
+    assert (
+        lab_registry.public(lab_registry.entry_for(entry_id="reviewed-0"))["review_hash"] != before
+    )
+
+
+def test_oversized_document_is_rejected_before_parsing(registry):
+    path, _ = registry
+    path.write_bytes(b" " * 262145)
+    with pytest.raises(ValueError):
+        lab_registry.load()

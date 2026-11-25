@@ -67,6 +67,7 @@ class Laboratory(Entity, Base):
 
 class Asset(Entity, Base):
     __tablename__ = "assets"
+    __table_args__ = (UniqueConstraint("id", "laboratory_id", name="uq_assets_id_laboratory_id"),)
     laboratory_id: Mapped[str] = mapped_column(ForeignKey("laboratories.id"), index=True)
     name: Mapped[str] = mapped_column(String(120))
     platform: Mapped[str] = mapped_column(String(40))
@@ -156,6 +157,7 @@ class TestDefinition(Base):
 
 class LinuxLabBinding(Base):
     __tablename__ = "linux_lab_bindings"
+    registry_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     laboratory_id: Mapped[str] = mapped_column(ForeignKey("laboratories.id"), primary_key=True)
     runner_id: Mapped[str] = mapped_column(String(36), unique=True)
     configuration_hash: Mapped[str] = mapped_column(String(64))
@@ -176,6 +178,14 @@ class LabVerification(Entity, Base):
 
 class Campaign(Entity, Base):
     __tablename__ = "campaigns"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["asset_id", "laboratory_id"],
+            ["assets.id", "assets.laboratory_id"],
+            name="fk_campaigns_asset_laboratory",
+        ),
+    )
+    asset_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     name: Mapped[str] = mapped_column(String(160))
     objective: Mapped[str] = mapped_column(Text)
     laboratory_id: Mapped[str] = mapped_column(ForeignKey("laboratories.id"), index=True)
