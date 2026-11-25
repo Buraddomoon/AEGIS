@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from aegis.catalog import store
 from aegis.domain.validation import digest
-from aegis.models import AttackTechnique, Campaign, CampaignRun, Laboratory, User, uid
+from aegis.models import AttackTechnique, CampaignRun, Laboratory, User, now, uid
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import text
@@ -25,36 +25,45 @@ LICENSE = (ROOT / "fixtures/attack/LICENSE.txt").read_bytes()
 def legacy(db_ready, pg_engine):
     config = Config("alembic.ini")
     command.downgrade(config, adoption.REVISION)
-    # Model the upgraded historical DB with its existing technique projection,
-    # while clearing only this test's version metadata and revoking its Demo lab.
-    with pg_engine.begin() as connection:
-        connection.execute(text("TRUNCATE attack_catalog_state, attack_catalog_releases"))
-        connection.execute(text("UPDATE laboratories SET authorized=false"))
-    with Session(pg_engine) as db, db.begin():
-        actor = db.query(User).filter_by(role="administrator").one()
-        lab = db.query(Laboratory).first()
-        campaign = Campaign(
-            name="Historical fixture only",
-            objective="Preserve the existing scope during explicit adoption.",
-            laboratory_id=lab.id,
-            created_by=actor.id,
-        )
-        db.add(campaign)
-        db.flush()
-        scope = {"historical_fixture": True, "synthetic": False}
-        db.add(
-            CampaignRun(
-                campaign_id=campaign.id,
-                laboratory_id=lab.id,
-                requested_by=actor.id,
-                idempotency_key=uid(),
-                state="COMPLETED",
-                synthetic=False,
-                scope=scope,
-                scope_hash=digest(scope),
-            )
-        )
     try:
+        # Model the upgraded historical DB with its existing technique projection,
+        # while clearing only this test's version metadata and revoking its Demo lab.
+        with pg_engine.begin() as connection:
+            connection.execute(text("TRUNCATE attack_catalog_state, attack_catalog_releases"))
+            connection.execute(text("UPDATE laboratories SET authorized=false"))
+        with Session(pg_engine) as db, db.begin():
+            actor = db.query(User).filter_by(role="administrator").one()
+            lab = db.query(Laboratory).first()
+            # Freeze the b7 physical projection: the current ORM has additive
+            # campaign columns which must not be inserted into a historical schema.
+            campaign_id = uid()
+            db.execute(
+                text(
+                    "INSERT INTO campaigns (id, created_at, name, objective, laboratory_id, created_by) "
+                    "VALUES (:id, :created_at, :name, :objective, :laboratory_id, :created_by)"
+                ),
+                {
+                    "id": campaign_id,
+                    "created_at": now(),
+                    "name": "Historical fixture only",
+                    "objective": "Preserve the existing scope during explicit adoption.",
+                    "laboratory_id": lab.id,
+                    "created_by": actor.id,
+                },
+            )
+            scope = {"historical_fixture": True, "synthetic": False}
+            db.add(
+                CampaignRun(
+                    campaign_id=campaign_id,
+                    laboratory_id=lab.id,
+                    requested_by=actor.id,
+                    idempotency_key=uid(),
+                    state="COMPLETED",
+                    synthetic=False,
+                    scope=scope,
+                    scope_hash=digest(scope),
+                )
+            )
         yield pg_engine
     finally:
         command.upgrade(config, "head")

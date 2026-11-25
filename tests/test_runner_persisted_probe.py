@@ -610,3 +610,28 @@ def test_late_inheritance_cannot_expand_validated_root_relation_snapshot(binding
     finally:
         with pg_engine.begin() as cleanup:
             cleanup.exec_driver_sql(f"DROP TABLE IF EXISTS {child}")
+
+
+@pytest.mark.parametrize("change", ["absent", "type", "nullable"])
+def test_registry_column_is_optional_for_legacy_journal_but_checked_when_present(pg_engine, change):
+    with pg_engine.connect() as connection:
+        namespace = connection.scalar(text("SELECT current_schema()"))
+        assert namespace.startswith("aegis_test_") and namespace.isidentifier()
+        table = f'"{namespace}".linux_lab_bindings'
+        if change == "absent":
+            connection.exec_driver_sql(f"ALTER TABLE {table} DROP COLUMN registry_id")
+            probe._require_schema(connection, namespace)
+        else:
+            if change == "nullable":
+                connection.exec_driver_sql(
+                    f"UPDATE {table} SET registry_id='fixture-'||laboratory_id"
+                )
+            sql = (
+                "ALTER COLUMN registry_id TYPE text"
+                if change == "type"
+                else "ALTER COLUMN registry_id SET NOT NULL"
+            )
+            connection.exec_driver_sql(f"ALTER TABLE {table} {sql}")
+            with pytest.raises(ContinuityError, match="schema_unsupported"):
+                probe._require_schema(connection, namespace)
+        connection.rollback()

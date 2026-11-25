@@ -157,7 +157,10 @@ class TestDefinition(Base):
 
 class LinuxLabBinding(Base):
     __tablename__ = "linux_lab_bindings"
-    registry_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    # Legacy journal/rotation readers must not require the additive registry column.
+    registry_id: Mapped[str | None] = mapped_column(
+        String(64), unique=True, nullable=True, deferred=True, deferred_raiseload=True
+    )
     laboratory_id: Mapped[str] = mapped_column(ForeignKey("laboratories.id"), primary_key=True)
     runner_id: Mapped[str] = mapped_column(String(36), unique=True)
     configuration_hash: Mapped[str] = mapped_column(String(64))

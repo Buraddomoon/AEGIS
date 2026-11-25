@@ -278,6 +278,16 @@ def _require_schema(connection, namespace):
         }
         for model in models
     }
+    # The journal /1 reader also supports preserved b7/d446 bindings. Registry
+    # selection is additive and is not read by this probe (ORM defers it with
+    # raiseload). Validate its shape when present, without requiring a migration
+    # merely to read the original immutable journal prerequisites.
+    optional = {
+        "linux_lab_bindings": {"registry_id": required["linux_lab_bindings"].pop("registry_id")}
+    }
+    expected_types = {
+        name: {**columns, **optional.get(name, {})} for name, columns in required.items()
+    }
     # Runtime role cannot SELECT alembic_version. Inspect required capabilities,
     # rejecting row hiding, views/foreign tables/inheritance and custom data types.
     rows = connection.execute(
@@ -313,7 +323,7 @@ def _require_schema(connection, namespace):
         ):
             raise ContinuityError("persisted_probe_schema_unsupported")
         if type(not_null) is not bool or (
-            column in required[name] and (data_type, not_null) != required[name][column]
+            column in expected_types[name] and (data_type, not_null) != expected_types[name][column]
         ):
             raise ContinuityError("persisted_probe_schema_unsupported")
         columns[name].add(column)

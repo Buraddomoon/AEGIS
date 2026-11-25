@@ -325,7 +325,8 @@ def register(db: Session, data, actor: User, *, continuity_review=None) -> Labor
     if binding is None:
         binding = LinuxLabBinding(laboratory_id=lab.id)
         db.add(binding)
-    binding.registry_id = entry.id if entry else None
+    if entry is not None:
+        binding.registry_id = entry.id
     binding.runner_id, binding.configuration_hash = identity["runner_id"], digest(identity)
     binding.reviewed_by, binding.isolation_review = actor.id, data.isolation_review
     audit(
