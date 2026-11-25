@@ -1,5 +1,36 @@
 # Testes e evidências
 
+## Contas, papéis e sessões — #24
+
+Com PostgreSQL e Redis de testes já disponíveis e credenciais verificadas apenas
+no ambiente do processo, executar em sequência, sem outras suítes PG/Redis15:
+
+```sh
+.venv/bin/pytest tests/test_user_maintenance.py tests/test_user_authorization_lifecycle.py tests/test_security.py tests/test_cleanup.py tests/test_scheduling.py tests/test_linux_campaigns.py -q --tb=short
+.venv/bin/pytest tests/test_flow.py tests/test_transactions.py tests/test_wazuh_campaigns.py tests/test_scheduled_reports.py -q --tb=short
+npm --prefix apps/web test
+make lint
+make build
+.venv/bin/python scripts/user_maintenance_e2e.py
+```
+
+O roteiro cria schema exclusivo e três contas descartáveis; Alembic/seed afetam
+somente esse schema. Inicia apenas API própria em18788, sem worker/contêineres/Labs,
+e Firefox real sem interceptar ou substituir a API. Exercita proteção do último
+administrador, viewer/operator, papel, senha administrativa/própria, desativação/
+reativação e sessões antigas; captura1440/390px após estabilizar a navegação.
+Finally encerra API e remove schema/chaves próprias. Provas e falhas ficam em
+`.local/user-maintenance/acceptance-*`, sem senhas nos resumos. Campos de senha
+são usados apenas em stdin/memória/formulário, sem contas fixas no produto.
+
+API/worker verificam PostgreSQL concorrente, dependência administrativa lida antes
+do lock, login concorrente à senha, expiração/CSRF/limites, revogação antes do start,
+na fila, durante execução e cleanup. Aprovação/escopo/resultado anterior mantêm
+identidade/hash/conteúdo; nenhum desses fixtures comprova transporte nativo.
+Ver [checkpoint](user-maintenance-checkpoint.md) e provas da #24; CI remota da
+fonte local não foi executada devido ao bloqueio de sincronização.
+
+
 ## Comparação entre laboratórios — #21
 
 Somente fixtures sintéticas e PostgreSQL/schema descartável, sem Linux/Wazuh:
