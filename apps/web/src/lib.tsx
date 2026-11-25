@@ -23,6 +23,13 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     },
   })
   if (!response.ok) {
+    if (response.status === 401 && path !== '/auth/login') {
+      window.dispatchEvent(
+        new CustomEvent('aegis-session-ended', {
+          detail: 'Sessão expirada ou revogada. Entre novamente.',
+        }),
+      )
+    }
     const error = await response.json().catch(() => null)
     throw new Error(error?.error?.message ?? `A API retornou HTTP ${response.status}`)
   }

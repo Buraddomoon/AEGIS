@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AccountSettings, UserMaintenance } from './AccountSettings'
 import { LinuxRegistration } from './LinuxRegistration'
 import { BindingReview } from './BindingReview'
 import { LinuxTrust } from './LinuxTrust'
@@ -462,10 +463,11 @@ export function Settings({ user }: { user: User }) {
         title="Configurações"
         description="Integrações, identidade e auditoria. Permissões verificadas pelo backend."
       />
+      <AccountSettings user={user} />
       <IntegrationSettings user={user} />
       {user.role === 'administrator' ? (
         <>
-          <UserSettings />
+          <UserSettings current={user} />
           <AuditLog />
         </>
       ) : (
@@ -531,7 +533,8 @@ function IntegrationSettings({ user }: { user: User }) {
   )
 }
 
-function UserSettings() {
+function UserSettings({ current }: { current: User }) {
+  const [selected, setSelected] = useState<User | null>(null)
   const data = useData<Page<User>>('/users?limit=1000'),
     [creating, setCreating] = useState(false),
     [username, setUsername] = useState(''),
@@ -559,6 +562,7 @@ function UserSettings() {
                 <th>Usuário</th>
                 <th>Papel</th>
                 <th>Situação</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -569,23 +573,42 @@ function UserSettings() {
                     <Badge value={u.role} />
                   </td>
                   <td>{u.active ? 'Ativo' : 'Desativado'}</td>
+                  <td>
+                    <button className="button" onClick={() => setSelected(u)}>
+                      Administrar {u.username}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+      {selected && (
+        <UserMaintenance target={selected} current={current} onClose={() => setSelected(null)} />
+      )}
       {creating && (
-        <Modal title="Adicionar usuário" onClose={() => setCreating(false)}>
+        <Modal
+          title="Adicionar usuário"
+          onClose={() => {
+            if (!busy) {
+              setPassword('')
+              setCreating(false)
+            }
+          }}
+        >
           <form
             onSubmit={(e) => {
               e.preventDefault()
               void run(async () => {
-                await api('/users', {
-                  method: 'POST',
-                  body: JSON.stringify({ username, password, role }),
-                })
-                setPassword('')
+                try {
+                  await api('/users', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password, role }),
+                  })
+                } finally {
+                  setPassword('')
+                }
                 setUsername('')
                 setCreating(false)
               }, 'Usuário criado.')

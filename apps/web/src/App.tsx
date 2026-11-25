@@ -84,8 +84,19 @@ export default function App() {
   const [route, setRoute] = useState(location.hash.slice(1) || 'overview'),
     [mobile, setMobile] = useState(false)
   const [notice, setNotice] = useState<{ message: string; error: boolean } | null>(null)
-  const user = useData<User>('/auth/me'),
+  const [sessionMessage, setSessionMessage] = useState('')
+  const user = useData<User>('/auth/me', 30000),
     cache = useQueryClient()
+  useEffect(() => {
+    const ended = (event: Event) => {
+      setSessionMessage((event as CustomEvent<string>).detail)
+      void cache.cancelQueries()
+      cache.clear()
+      cache.setQueryData(['/auth/me'], null)
+    }
+    addEventListener('aegis-session-ended', ended)
+    return () => removeEventListener('aegis-session-ended', ended)
+  }, [cache])
   useEffect(() => {
     const update = () => {
       setRoute(location.hash.slice(1) || 'overview')
@@ -105,7 +116,16 @@ export default function App() {
         <Loading />
       </div>
     )
-  if (!user.data) return <Login onLogin={() => cache.invalidateQueries()} />
+  if (!user.data)
+    return (
+      <Login
+        message={sessionMessage}
+        onLogin={() => {
+          setSessionMessage('')
+          return cache.invalidateQueries()
+        }}
+      />
+    )
   const page = route.split(/[/?]/)[0],
     title = navigation.flatMap((g) => g.items).find((n) => n.id === page)?.label ?? 'Execução'
   const logout = async () => {
@@ -256,7 +276,7 @@ export default function App() {
   )
 }
 
-function Login({ onLogin }: { onLogin: () => void }) {
+function Login({ onLogin, message }: { onLogin: () => void; message?: string }) {
   const [username, setUsername] = useState(''),
     [password, setPassword] = useState(''),
     [error, setError] = useState(''),
@@ -320,6 +340,11 @@ function Login({ onLogin }: { onLogin: () => void }) {
         <span className="eyebrow">SEU WORKSPACE DE VALIDAÇÃO</span>
         <h2>Bem-vindo ao ÆGIS</h2>
         <p>Entre com sua conta local para continuar.</p>
+        {message && (
+          <div className="notice" role="status">
+            {message}
+          </div>
+        )}
         <label>
           Usuário
           <input
