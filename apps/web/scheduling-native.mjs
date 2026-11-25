@@ -83,6 +83,27 @@ async function login(role) {
   page.setDefaultTimeout(25000)
   await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
   await page.goto(plan.origin, { waitUntil: 'networkidle0' })
+  try {
+    await page.waitForSelector('input[autocomplete="username"]')
+  } catch (error) {
+    // Capture only the pre-login screen, before entering either password.
+    await save(
+      `login-${role}-failure.json`,
+      JSON.stringify(
+        {
+          stage: 'before_credentials',
+          url: page.url(),
+          title: await page.title(),
+          text: await page.evaluate(() => document.body.innerText.slice(0, 2000)),
+          browser_errors: errors,
+        },
+        null,
+        2,
+      ),
+    )
+    await page.screenshot({ path: `${output}/login-${role}-failure.png`, fullPage: true })
+    throw error
+  }
   const account = accounts.find((x) => x.role === role)
   await page.type('input[autocomplete="username"]', account.username)
   await page.type('input[autocomplete="current-password"]', account.password)
