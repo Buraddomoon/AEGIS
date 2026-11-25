@@ -185,6 +185,16 @@ def test_attempt_fence_is_exclusive_and_preserves_first_bytes(assay, tmp_path):
     assert path.read_bytes() == before
 
 
+def test_browser_gets_home_without_workflow_tokens_proxies_or_loader_hooks(assay, monkeypatch):
+    for name in ("GH_TOKEN", "HTTPS_PROXY", "LD_PRELOAD", "NODE_OPTIONS"):
+        monkeypatch.setenv(name, "private-untrusted-value")
+    values = assay.browser_environment()
+    assert values["HOME"] and values["PATH"]
+    assert not any(
+        name in values for name in ("GH_TOKEN", "HTTPS_PROXY", "LD_PRELOAD", "NODE_OPTIONS")
+    )
+
+
 @pytest.mark.parametrize(
     "change", [None, "image", "memory", "uid", "networks", "command", "mount", "privileged"]
 )

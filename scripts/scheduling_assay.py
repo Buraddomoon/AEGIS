@@ -66,15 +66,27 @@ def sync_directory(path):
         os.close(directory)
 
 
-def command(args, *, timeout=30, data=None, limit=4 * 1024**2, build_log=False):
-    result = subprocess.run(args, input=data, capture_output=True, timeout=timeout, env=SAFE_ENV)
+def command(
+    args,
+    *,
+    timeout=30,
+    data=None,
+    limit=4 * 1024**2,
+    build_log=False,
+    environment=None,
+    redactions=(),
+):
+    result = subprocess.run(
+        args, input=data, capture_output=True, timeout=timeout, env=environment or SAFE_ENV
+    )
     if result.returncode or len(result.stdout) + len(result.stderr) > limit:
-        if build_log:
-            # Only committed, secret-free image build/pull operations use this.
-            print(
-                (result.stdout + result.stderr)[-6000:].decode("utf-8", errors="replace"),
-                file=sys.stderr,
-            )
+        if build_log or redactions:
+            # Build inputs contain no secrets; browser diagnostics redact the
+            # two own passwords before any bounded output reaches CI logs.
+            diagnostic = (result.stdout + result.stderr).decode("utf-8", errors="replace")
+            for value in redactions:
+                diagnostic = diagnostic.replace(value, "[private]")
+            print(diagnostic[-6000:], file=sys.stderr)
         raise Blocked("operation_unconfirmed_no_replay")
     return result.stdout
 
@@ -87,6 +99,40 @@ def docker(*args, timeout=30, data=None):
             data=data,
             build_log=bool(args and args[0] in {"build", "pull"}),
         )
+
+
+def browser_environment():
+    # Firefox needs its normal own HOME/profile environment. Never inherit tokens,
+    # proxy settings, loader hooks or NODE_OPTIONS from the workflow process.
+    values = {
+        "PATH": os.environ["PATH"],
+        "HOME": str(Path.home()),
+        "LANG": "C.UTF-8",
+        "TMPDIR": tempfile.gettempdir(),
+    }
+    runtime = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime and Path(runtime).is_dir():
+        values["XDG_RUNTIME_DIR"] = runtime
+    return values
+
+
+def check_browser():
+    node = shutil.which("node")
+    if not node:
+        raise Blocked("node_unavailable")
+    program = (
+        "import {createRequire} from 'node:module';"
+        f"const require=createRequire({json.dumps(str(ROOT / 'apps/web/package.json'))});"
+        "const p=require('puppeteer-core');const puppeteer=p.default||p;"
+        "const b=await puppeteer.launch({browser:'firefox',executablePath:'/usr/bin/firefox',headless:true});"
+        "try{const page=await b.newPage();await page.goto('about:blank');console.log('HOSTED_BROWSER_READY_NO_LAB')}finally{await b.close()}"
+    )
+    command(
+        [node, "--input-type=module", "-e", program],
+        timeout=45,
+        environment=browser_environment(),
+        build_log=True,
+    )
 
 
 def github_context():
@@ -353,6 +399,7 @@ def recipe(folder, plan):
 
 def prepare():
     run, actor = github_context()
+    check_browser()
     if command(["git", "status", "--porcelain"], timeout=10).strip():
         raise Blocked("clean_committed_source_required")
     source = command(["git", "rev-parse", "HEAD"]).decode().strip()
@@ -715,6 +762,7 @@ def run():
     )
     failure = None
     safe = False
+    stage = "startup"
     try:
         compose(
             folder,
@@ -729,7 +777,9 @@ def run():
             "runner",
             timeout=90,
         )
+        stage = "bootstrap"
         compose(folder, plan, "run", "--rm", "--no-deps", "-T", "admin", "bootstrap", timeout=90)
+        stage = "runtime"
         compose(folder, plan, "up", "--no-build", "--pull", "never", "-d", "api", "worker")
         runtime_check(folder, plan)
         with httpx.Client(timeout=2, trust_env=False) as client:
@@ -742,10 +792,12 @@ def run():
                 time.sleep(1)
             else:
                 raise Blocked("api_not_ready")
+        stage = "browser"
+        own_accounts = json.loads((folder / "inputs/accounts").read_text())
         client_input = {
             "plan": plan,
             "package_sha256": fingerprint,
-            "accounts": json.loads((folder / "inputs/accounts").read_text()),
+            "accounts": own_accounts,
             "proof_directory": str(PUBLIC),
         }
         node = shutil.which("node")
@@ -755,6 +807,8 @@ def run():
             [node, str(ROOT / "apps/web/scheduling-native.mjs")],
             timeout=240,
             data=canonical(client_input),
+            environment=browser_environment(),
+            redactions=[row["password"] for row in own_accounts],
         )
         assert (
             json.loads((PUBLIC / "browser.json").read_text())["status"]
@@ -824,6 +878,7 @@ def run():
             "approved_occurrences": EFFECTS,
             "cleanup_confirmed": safe,
             "failure_code": failure,
+            "last_stage": stage,
             "originals_accessed": False,
             "host_disposal": plan["host_disposal"],
         }
