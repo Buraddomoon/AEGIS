@@ -134,18 +134,15 @@ def guard(run_id: str) -> None:
             or lab.environment_version != run.scope["environment_version"]
         ):
             raise Interrupted(State.FAILED, "Autorização ou versão do laboratório mudou.")
-        if not run.synthetic:
-            approval = db.scalar(select(Approval).where(Approval.run_id == run.id))
-            if not linux_labs.approval_valid(db, run, approval):
-                raise Interrupted(
-                    State.CANCELLED, "Autorização/identidade/configuração Linux mudou."
-                )
         if stop.is_set():
             raise Interrupted(State.CANCELLED, "Worker encerrando de forma controlada.")
         if run.schedule_id:
             approval = db.scalar(select(Approval).where(Approval.run_id == run.id))
             if not authorization_valid(db, run, approval):
                 raise Interrupted(State.CANCELLED, "Autorização recorrente deixou de ser válida.")
+        approval = db.scalar(select(Approval).where(Approval.run_id == run.id))
+        if not linux_labs.approval_valid(db, run, approval):
+            raise Interrupted(State.CANCELLED, "Autorização ou identidades da aprovação mudaram.")
         run.heartbeat_at = now()
         db.commit()
 
@@ -382,6 +379,12 @@ def process_run(run_id: str, adapter: ExecutionAdapter | None = None) -> None:
                     target, error = State.CANCELLED, "Cancelamento confirmado durante cleanup."
                 if target == State.COMPLETED and current.deadline_at <= now():
                     target, error = State.TIMED_OUT, "Prazo excedido durante cleanup."
+                if target == State.COMPLETED:
+                    approval = db.scalar(select(Approval).where(Approval.run_id == current.id))
+                    from aegis.identities import approval_identities_valid
+
+                    if not approval_identities_valid(db, current, approval):
+                        target, error = State.CANCELLED, "Identidade revogada durante cleanup."
                 if target == State.COMPLETED and current.schedule_id:
                     approval = db.scalar(select(Approval).where(Approval.run_id == current.id))
                     if not authorization_valid(db, current, approval):

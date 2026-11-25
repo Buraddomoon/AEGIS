@@ -20,6 +20,22 @@ class UserCreate(Login):
     role: Literal["administrator", "operator", "viewer"]
 
 
+class UserUpdate(Input):
+    role: Literal["administrator", "operator", "viewer"]
+    active: bool = Field(strict=True)
+    confirm: Literal[True]
+
+
+class PasswordReset(Input):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+    new_password: str = Field(min_length=12, max_length=128)
+    confirm: Literal[True]
+
+
+class PasswordChange(PasswordReset):
+    current_password: str = Field(min_length=1, max_length=128)
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str

@@ -299,6 +299,10 @@ def preflight(db: Session, lab: Laboratory, actor: User) -> LabVerification:
 
 
 def approval_valid(db: Session, run: CampaignRun, approval: Approval | None) -> bool:
+    from aegis.identities import approval_identities_valid
+
+    if not approval_identities_valid(db, run, approval):
+        return False
     if run.synthetic:
         return True
     scoped = run.scope.get("test_definitions", [])

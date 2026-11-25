@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from aegis import (
     analytics,
     binding_review,
+    identities,
     linux_labs,
     queries,
     rule_links,
@@ -54,6 +55,9 @@ from aegis.models import (
     ScheduleOccurrence,
     TestDefinition,
     User,
+)
+from aegis.models import (
+    now as models_now,
 )
 from aegis.report_downloads import pdf_download
 from aegis.reporting import HTMLReportExporter, build_recommendation_report, build_report
@@ -108,6 +112,7 @@ def login(data: schemas.Login, request: Request, response: Response, db: DB) -> 
     host = request.client.host if request.client else "unknown"
     rate_limit("login-ip:" + host, 40)
     rate_limit("login-account:" + data.username.lower(), 10)
+    identities.lock(db)
     user = db.scalar(select(User).where(User.username == data.username.lower()))
     valid = verify_password(user.password_hash if user else DUMMY_HASH, data.password)
     if not user or not valid or not user.active:
@@ -159,7 +164,8 @@ def users(user: Admin, db: DB, offset: Offset = 0, limit: Limit = 50) -> dict:
 
 
 @router.post("/users", response_model=schemas.UserRead, status_code=201, tags=["Identity"])
-def create_user(data: schemas.UserCreate, user: Admin, db: DB):
+def create_user(data: schemas.UserCreate, user: Admin, request: Request, db: DB):
+    user = identities.actor(db, request, admin=True)
     rate_limit("user-create:" + user.id, 30, 3600)
     if db.scalar(select(User).where(User.username == data.username.lower())):
         raise HTTPException(409, "Nome de usuário já cadastrado.")
@@ -171,6 +177,65 @@ def create_user(data: schemas.UserCreate, user: Admin, db: DB):
     audit(db, user.id, "user.create", item.id, role=item.role)
     db.commit()
     return item
+
+
+@router.patch("/users/{user_id}", response_model=schemas.UserRead, tags=["Identity"])
+def update_user(user_id: str, data: schemas.UserUpdate, user: Admin, request: Request, db: DB):
+    user = identities.actor(db, request, admin=True)
+    item = identities.target(db, user_id)
+    identities.update(db, user, item, data.role, data.active)
+    db.commit()
+    return item
+
+
+@router.post("/auth/password", status_code=204, tags=["Identity"])
+def change_password(data: schemas.PasswordChange, user: Viewer, request: Request, db: DB):
+    user = identities.actor(db, request)
+    identities.password(db, user, user, data.new_password, data.current_password)
+    db.commit()
+
+
+@router.post("/users/{user_id}/password", status_code=204, tags=["Identity"])
+def reset_password(
+    user_id: str, data: schemas.PasswordReset, user: Admin, request: Request, db: DB
+):
+    user = identities.actor(db, request, admin=True)
+    if user_id == user.id:
+        raise HTTPException(409, "Use a troca própria de senha com a senha atual.")
+    identities.password(db, user, identities.target(db, user_id), data.new_password)
+    db.commit()
+
+
+@router.get("/users/{user_id}/sessions", tags=["Identity"])
+def user_sessions(user_id: str, user: Viewer, request: Request, db: DB) -> dict:
+    if user.id != user_id and user.role != "administrator":
+        raise HTTPException(403, "Seu papel não permite esta operação.")
+    identities.target(db, user_id)
+    sessions = db.scalars(
+        select(LoginSession)
+        .where(LoginSession.user_id == user_id, LoginSession.expires_at > models_now())
+        .order_by(LoginSession.expires_at)
+    ).all()
+    return {
+        "items": [
+            {
+                "expires_at": s.expires_at,
+                "current": s.token_hash == request.state.session.token_hash,
+            }
+            for s in sessions
+        ],
+        "total": len(sessions),
+    }
+
+
+@router.post("/users/{user_id}/sessions/revoke", status_code=204, tags=["Identity"])
+def revoke_sessions(user_id: str, data: schemas.Confirm, user: Viewer, request: Request, db: DB):
+    user = identities.actor(db, request)
+    if user.id != user_id and user.role != "administrator":
+        raise HTTPException(403, "Seu papel não permite esta operação.")
+    count = identities.revoke(db, identities.target(db, user_id))
+    audit(db, user.id, "user.sessions_revoke", user_id, revoked_sessions=count)
+    db.commit()
 
 
 @router.get("/labs", tags=["Laboratories"])

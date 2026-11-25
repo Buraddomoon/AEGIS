@@ -261,7 +261,7 @@ def start_run(
     if digest(fresh) != run.scope_hash or approval.scope_hash != run.scope_hash:
         raise HTTPException(409, "Configuração mudou após revisão; solicite nova execução.")
     if not linux_labs.approval_valid(db, run, approval):
-        raise HTTPException(409, "Autorização Linux ou identidades deixaram de ser válidas.")
+        raise HTTPException(409, "Autorização ou identidades deixaram de ser válidas.")
     approval.used_at = instant
     lab.active_run_id = run.id
     # Absolute queue+execution deadline prevents indefinitely reserved laboratories.
