@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, defer
 from aegis import analytics, services
 from aegis.db import get_db
 from aegis.domain.validation import digest
-from aegis.models import Schedule, ScheduledReport, User
+from aegis.models import CampaignRun, Schedule, ScheduledReport, User
 from aegis.report_downloads import pdf_download
 from aegis.reporting import HTMLReportExporter, export_analysis_html
 from aegis.security import audit, current_user, rate_limit
@@ -20,7 +20,7 @@ DB = Annotated[Session, Depends(get_db)]
 Viewer = Annotated[User, Depends(current_user)]
 
 
-def metadata(item: ScheduledReport) -> dict:
+def metadata(item: ScheduledReport, synthetic: bool = True) -> dict:
     return {
         key: getattr(item, key)
         for key in (
@@ -39,7 +39,7 @@ def metadata(item: ScheduledReport) -> dict:
             "document_sha256",
             "generated_at",
         )
-    } | {"synthetic": True}
+    } | {"synthetic": synthetic}
 
 
 @router.get("/{schedule_id}/reports")
@@ -52,20 +52,24 @@ def list_reports(
 ):
     with analytics.read_snapshot(db) as snapshot:
         services.get_or_404(snapshot, Schedule, schedule_id)
-        query = select(ScheduledReport).where(ScheduledReport.schedule_id == schedule_id)
+        query = (
+            select(ScheduledReport, CampaignRun.synthetic)
+            .join(CampaignRun, ScheduledReport.run_id == CampaignRun.id)
+            .where(ScheduledReport.schedule_id == schedule_id)
+        )
         total = snapshot.scalar(
             select(func.count())
             .select_from(ScheduledReport)
             .where(ScheduledReport.schedule_id == schedule_id)
         )
-        rows = snapshot.scalars(
+        rows = snapshot.execute(
             query.order_by(ScheduledReport.created_at.desc(), ScheduledReport.id.desc())
             .options(defer(ScheduledReport.document, raiseload=True))
             .offset(offset)
             .limit(limit)
         )
         return {
-            "items": [metadata(item) for item in rows],
+            "items": [metadata(item, synthetic) for item, synthetic in rows],
             "total": total,
             "offset": offset,
             "limit": limit,
@@ -77,7 +81,7 @@ def checked_document(item: ScheduledReport) -> dict:
     document = item.document
     if (
         not isinstance(document, dict)
-        or document.get("synthetic") is not True
+        or type(document.get("synthetic")) is not bool
         or digest(document) != item.document_sha256
     ):
         raise HTTPException(409, "Integridade do relatório automático não confirmada.")
@@ -95,11 +99,18 @@ def checked_document(item: ScheduledReport) -> dict:
         key not in automation or automation[key] != value for key, value in expected.items()
     ):
         raise HTTPException(409, "Contexto do relatório automático não confirmado.")
+    from aegis.scheduled_reports import POLICY_VERSION, REAL_POLICY_VERSION, source_origin_valid
+
+    synthetic = document["synthetic"]
+    if automation.get("policy_version") != (POLICY_VERSION if synthetic else REAL_POLICY_VERSION):
+        raise HTTPException(409, "Origem do relatório automático não confirmada.")
     if item.kind == "BASELINE":
         source = document.get("run")
         valid = (
             isinstance(source, dict)
             and source.get("id") == item.run_id
+            and source.get("synthetic") is synthetic
+            and source_origin_valid(source)
             and digest(source) == document.get("integrity_sha256")
         )
     else:
@@ -108,6 +119,14 @@ def checked_document(item: ScheduledReport) -> dict:
             isinstance(comparison, dict)
             and comparison.get("before_id") == item.previous_run_id
             and comparison.get("after_id") == item.run_id
+            and document.get("contains_synthetic") is synthetic
+            and all(
+                document.get(side, {}).get("synthetic") is synthetic for side in ("before", "after")
+            )
+            and all(
+                source_origin_valid(document.get(side, {}).get("run", {}))
+                for side in ("before", "after")
+            )
             and digest({key: value for key, value in document.items() if key != "integrity_sha256"})
             == document.get("integrity_sha256")
         )

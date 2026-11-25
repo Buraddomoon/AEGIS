@@ -215,6 +215,21 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   docs/evidence/lab-backup-2026-11-24/VERIFIED-66.md e checkpoint lab-backup.
   Entrega encerrada; parar neste escopo.
 
+- #23 preparada em24/11: #102/#103 com aceite técnico; opt-in Linux desligado por
+  padrão, marcador fixo, grant segregado, fila/cleanup e snapshots reais. CI da
+  fonted46850c SUCCESS:4131Python/9skips e159React/21glob; E2E Demo45504677648
+  SUCCESS,5runs/20testes sintéticos/2snapshots/5PDFs. #104 e pai continuam abertos:
+  falta ambiente/pacote/autorizações novas do ensaio nativo. Nenhuma implantação
+  ou operação Lab. Ver docs/development/linux-scheduling-checkpoint.md. Parar;
+  não habilitar flag, iniciar labs ou reutilizar autorizações históricas.
+
+  Retomada posterior da mesma #23: fonte178e7df prepara ensaio novo em VM Linux
+  efêmera do GitHub Actions, sem originais. CI45514261833 SUCCESS,
+  4164Python/9skips e159React/21glob. Pacote concreto28de3e3f no workflow45514289124
+  aguarda aprovação humana exata para duas ocorrências; nenhum Lab iniciado.
+  Ver docs/evidence/linux-scheduling-2026-11-24/REQUEST-104-28de3e3f.md. Pedido
+  genérico/CI/build não autorizam efeitos; respeitar validade, sem renovação automática.
+
 Ao terminar: comentário na issue com comportamento entregue, arquivos relevantes,
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e
 sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /compact

@@ -17,7 +17,15 @@ import {
   useAction,
   useData,
 } from './lib'
-import type { Campaign, Page, Schedule, ScheduleDetail, ScheduleOccurrence, User } from './types'
+import type {
+  Campaign,
+  Lab,
+  Page,
+  Schedule,
+  ScheduleDetail,
+  ScheduleOccurrence,
+  User,
+} from './types'
 
 export function Scheduling({ user, id }: { user: User; id?: string }) {
   const [creating, setCreating] = useState(false),
@@ -29,7 +37,7 @@ export function Scheduling({ user, id }: { user: User; id?: string }) {
       <PageHeading
         eyebrow="AUTOMAÇÃO CONTROLADA"
         title="Agendamentos"
-        description="Campanhas Demo recorrentes, com autorização explícita e limites persistentes."
+        description="Campanhas recorrentes, com modo, autorização explícita e limites persistentes."
         action={
           user.role !== 'viewer' && (
             <button className="button primary" onClick={() => setCreating(true)}>
@@ -39,9 +47,9 @@ export function Scheduling({ user, id }: { user: User; id?: string }) {
         }
       />
       <div className="notice">
-        <CalendarClock size={19} /> Dados sintéticos. Cada horário executado ou descartado consome o
-        limite aprovado. Atrasos acima de 30 segundos e laboratório ocupado não geram execução
-        retroativa.
+        <CalendarClock size={19} /> Demo usa dados sintéticos; Linux opera um marcador real sob
+        revisão segregada. Cada horário executado ou descartado consome o limite aprovado. Atrasos
+        acima de 30 segundos e laboratório ocupado não geram execução retroativa.
       </div>
       <Panel
         title="Planos de execução"
@@ -73,7 +81,14 @@ export function Scheduling({ user, id }: { user: User; id?: string }) {
                           {campaigns.data?.items.find((c) => c.id === s.campaign_id)?.name ??
                             s.campaign_id.slice(0, 8)}
                         </strong>
-                        <small>{s.id.slice(0, 8)} · Demo Lab</small>
+                        <small>
+                          {s.id.slice(0, 8)} ·{' '}
+                          {s.scope.mode === 'demo' && s.scope.synthetic === true
+                            ? 'Demo · sintético'
+                            : s.scope.mode === 'linux' && s.scope.synthetic === false
+                              ? 'Linux · real'
+                              : 'Origem desconhecida'}
+                        </small>
                       </td>
                       <td>
                         <Badge value={s.state} />
@@ -117,7 +132,7 @@ export function Scheduling({ user, id }: { user: User; id?: string }) {
           </Empty>
         )}
       </Panel>
-      {id && <ScheduleView id={id} user={user} />}
+      {id && <ScheduleView key={id} id={id} user={user} />}
       {creating && <ScheduleForm onClose={() => setCreating(false)} />}
     </>
   )
@@ -129,6 +144,7 @@ function localTime(value: Date) {
 
 export function ScheduleForm({ onClose }: { onClose: () => void }) {
   const campaigns = useData<Page<Campaign>>('/campaigns?limit=1000'),
+    labs = useData<Page<Lab>>('/labs?limit=1000'),
     { busy, run } = useAction()
   const [campaign, setCampaign] = useState(''),
     [interval, setInterval] = useState(3600),
@@ -136,12 +152,21 @@ export function ScheduleForm({ onClose }: { onClose: () => void }) {
     [duration, setDuration] = useState(60),
     [start, setStart] = useState(() => localTime(new Date(Date.now() + 120000))),
     [end, setEnd] = useState(() => localTime(new Date(Date.now() + 86400000))),
-    [error, setError] = useState('')
+    [error, setError] = useState(''),
+    [confirmedReal, setConfirmedReal] = useState(false)
+  const selected = campaigns.data?.items.find((item) => item.id === campaign)
+  const selectedLab = labs.data?.items.find((item) => item.id === selected?.laboratory_id)
+  const real = selectedLab?.kind === 'linux'
+  const supported = ['demo', 'linux'].includes(selectedLab?.kind ?? '')
   return (
-    <Modal title="Novo agendamento Demo" onClose={onClose}>
+    <Modal title="Novo agendamento" onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault()
+          if (!supported || (real && !confirmedReal)) {
+            setError('Confirme o modo do laboratório e a intenção real antes de propor o plano.')
+            return
+          }
           if (
             interval < duration ||
             new Date(end) <= new Date(start) ||
@@ -161,6 +186,7 @@ export function ScheduleForm({ onClose }: { onClose: () => void }) {
                 max_duration_seconds: duration,
                 starts_at: new Date(start).toISOString(),
                 ends_at: new Date(end).toISOString(),
+                ...(real ? { confirm_real_execution: confirmedReal } : {}),
               }),
             })
             onClose()
@@ -169,17 +195,48 @@ export function ScheduleForm({ onClose }: { onClose: () => void }) {
         }}
       >
         {campaigns.error && <Failure error={campaigns.error} />}
+        {labs.error && <Failure error={labs.error} />}
         <label>
           Campanha
-          <select required value={campaign} onChange={(e) => setCampaign(e.target.value)}>
-            <option value="">Selecione a campanha Demo</option>
+          <select
+            required
+            value={campaign}
+            onChange={(e) => {
+              setCampaign(e.target.value)
+              setConfirmedReal(false)
+            }}
+          >
+            <option value="">Selecione a campanha</option>
             {campaigns.data?.items.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name}
+                {c.name} ·{' '}
+                {labs.data?.items.find((l) => l.id === c.laboratory_id)?.kind === 'linux'
+                  ? 'Linux real'
+                  : labs.data?.items.find((l) => l.id === c.laboratory_id)?.kind === 'demo'
+                    ? 'Demo'
+                    : 'Modo indisponível'}
               </option>
             ))}
           </select>
         </label>
+        {real && (
+          <>
+            <p className="notice">
+              Linux real: somente o marcador benigno original, uma execução por laboratório. Criar o
+              plano não autoriza efeitos. Um administrador diferente do solicitante revisará o
+              escopo, a validade e o orçamento exatos.
+            </p>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                required
+                checked={confirmedReal}
+                onChange={(e) => setConfirmedReal(e.target.checked)}
+              />{' '}
+              Estou propondo execuções reais delimitadas neste laboratório.
+            </label>
+          </>
+        )}
         <div className="form-grid">
           <label>
             Início (horário local)
@@ -250,7 +307,7 @@ export function ScheduleForm({ onClose }: { onClose: () => void }) {
           <button type="button" className="button" onClick={onClose}>
             Cancelar
           </button>
-          <Submit busy={busy || !campaign}>Criar plano</Submit>
+          <Submit busy={busy || !supported || (real && !confirmedReal)}>Criar plano</Submit>
         </div>
       </form>
     </Modal>
@@ -271,7 +328,18 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
   if (data.error) return <Failure error={data.error} />
   if (!data.data) return null
   const s = data.data,
-    canApprove = ['PENDING_APPROVAL', 'PAUSED'].includes(s.state) && user.role === 'administrator'
+    real = s.scope.mode === 'linux' && s.scope.synthetic === false,
+    canApprove =
+      ['PENDING_APPROVAL', 'PAUSED'].includes(s.state) &&
+      user.role === 'administrator' &&
+      (!real || s.created_by !== user.id)
+  if (
+    s.id !== id ||
+    s.synthetic !== s.scope.synthetic ||
+    !['demo', 'linux'].includes(s.scope.mode) ||
+    s.scope.synthetic !== (s.scope.mode === 'demo')
+  )
+    return <Failure error={new Error('Modo ou plano recebido não corresponde ao agendamento.')} />
   return (
     <>
       <Panel
@@ -281,7 +349,7 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
         <div className="schedule-detail">
           <div className="toolbar">
             <Badge value={s.state} />
-            <span className="subtle-tag">SINTÉTICO</span>
+            <span className="subtle-tag">{real ? 'LINUX REAL' : 'SINTÉTICO'}</span>
           </div>
           <div className="schedule-facts">
             <p>
@@ -297,10 +365,22 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
               {s.occurrences_count} de {s.max_occurrences} horários
             </p>
             <p>
-              <small>Ambiente</small>Demo · versão {s.scope.environment_version}
+              <small>Ambiente</small>
+              {real ? 'Linux real' : 'Demo'} · versão {s.scope.environment_version}
+            </p>
+            <p>
+              <small>Concorrência máxima</small>Uma execução por laboratório; cleanup falho mantém a
+              reserva.
             </p>
           </div>
           <p>{s.scope.test_definitions.map((t) => `${t.name} (v${t.version})`).join(' · ')}</p>
+          {real && (
+            <p className="notice">
+              Ativo {s.scope.asset_id}. Preflight, usuários e confiança são revalidados em cada
+              ocorrência. Recibo do runner não comprova detecção; revogação não dispensa cleanup.
+            </p>
+          )}
+          {real && s.created_by === user.id && <p>Revisão exige outro administrador ativo.</p>}
           <p className="muted-text">
             Versões de regras no snapshot: {Object.keys(s.scope.rule_versions).length}. Cadastro
             Sigma não significa implantação no SIEM.
@@ -419,7 +499,7 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
           </Empty>
         )}
       </Panel>
-      <ScheduledReports key={id} scheduleId={id} />
+      <ScheduledReports key={id} scheduleId={id} synthetic={s.synthetic} />
       {intent && (
         <Modal
           title={
@@ -440,7 +520,11 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
                     method: 'POST',
                     body: JSON.stringify(
                       intent === 'approve'
-                        ? { confirm_plan_hash: s.plan_hash, confirm_automatic_execution: true }
+                        ? {
+                            confirm_plan_hash: s.plan_hash,
+                            confirm_automatic_execution: true,
+                            ...(real ? { confirm_real_execution: true } : {}),
+                          }
                         : { confirm: true },
                     ),
                   })
@@ -455,8 +539,9 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
             {intent === 'approve' ? (
               <>
                 <p>
-                  Autorize o início automático das simulações Demo sem novas confirmações por
-                  execução.
+                  {real
+                    ? 'Autorize o início automático de efeitos reais do marcador benigno original neste laboratório.'
+                    : 'Autorize o início automático das simulações Demo sem novas confirmações por execução.'}
                 </p>
                 <ul>
                   <li>Cadência: {s.interval_seconds} segundos.</li>
@@ -481,7 +566,9 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
                     checked={confirmed}
                     onChange={(e) => setConfirmed(e.target.checked)}
                   />{' '}
-                  Revisei o escopo e autorizo a execução automática deste plano sintético.
+                  {real
+                    ? 'Revisei ativo, teste, versões, confiança, isolamento e limites; autorizo este plano real.'
+                    : 'Revisei o escopo e autorizo a execução automática deste plano sintético.'}
                 </label>
               </>
             ) : (
@@ -499,7 +586,9 @@ function ScheduleView({ id, user }: { id: string; user: User }) {
               </button>
               <Submit busy={busy || (intent === 'approve' && !confirmed)}>
                 {intent === 'approve'
-                  ? 'Autorizar plano Demo'
+                  ? real
+                    ? 'Autorizar plano real'
+                    : 'Autorizar plano Demo'
                   : intent === 'pause'
                     ? 'Confirmar pausa'
                     : 'Confirmar revogação'}

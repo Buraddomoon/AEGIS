@@ -21,7 +21,13 @@ const errors: Record<string, string> = {
   RECOVERY_RECONCILED: 'Pedido restaurado encerrado durante a recuperação. Histórico preservado.',
 }
 
-export function ScheduledReports({ scheduleId }: { scheduleId: string }) {
+export function ScheduledReports({
+  scheduleId,
+  synthetic = true,
+}: {
+  scheduleId: string
+  synthetic?: boolean
+}) {
   const [offset, setOffset] = useState(0)
   const query = useData<Page<ScheduledReport> & { schedule_id: string }>(
     `/schedules/${scheduleId}/reports?limit=25&offset=${offset}`,
@@ -32,11 +38,11 @@ export function ScheduledReports({ scheduleId }: { scheduleId: string }) {
   const mismatch =
     data &&
     (data.schedule_id !== scheduleId ||
-      data.items.some((item) => item.schedule_id !== scheduleId || item.synthetic !== true))
+      data.items.some((item) => item.schedule_id !== scheduleId || item.synthetic !== synthetic))
   return (
     <Panel
       title="Relatórios automáticos"
-      subtitle="Snapshots sintéticos por autorização. Documento pronto confirma geração; não confirma detecção ou melhora."
+      subtitle={`${synthetic ? 'Snapshots sintéticos' : 'Snapshots Linux reais'} por autorização. Documento pronto confirma geração; não confirma detecção ou melhora.`}
     >
       <p className="muted-text scheduled-report-intro">
         A primeira execução de cada autorização produz um relatório inicial. As seguintes comparam

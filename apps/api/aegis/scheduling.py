@@ -1,4 +1,4 @@
-"""Bounded Demo schedules. PostgreSQL owns slots, grants and the durable queue."""
+"""Bounded schedules. PostgreSQL owns slots, grants and the durable queue."""
 
 import logging
 import secrets
@@ -9,8 +9,8 @@ from fastapi import HTTPException
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from aegis import scheduled_reports, services
-from aegis.config import require_normal_operation
+from aegis import linux_labs, scheduled_reports, services
+from aegis.config import require_normal_operation, settings
 from aegis.db import session_factory
 from aegis.domain.states import TERMINAL
 from aegis.domain.validation import digest
@@ -34,8 +34,9 @@ OPEN_STATES = ("PENDING_APPROVAL", "ACTIVE", "PAUSED")
 
 
 def plan(schedule: Schedule) -> dict:
+    real = schedule.scope.get("mode") == "linux"
     return {
-        "version": "aegis-demo-schedule/1.0",
+        "version": "aegis-linux-schedule/1" if real else "aegis-demo-schedule/1.0",
         "campaign_id": schedule.campaign_id,
         "laboratory_id": schedule.laboratory_id,
         "created_by": schedule.created_by,
@@ -46,7 +47,22 @@ def plan(schedule: Schedule) -> dict:
         "starts_at": schedule.starts_at.astimezone(UTC).isoformat(),
         "ends_at": schedule.ends_at.astimezone(UTC).isoformat(),
         "late_grace_seconds": LATE_GRACE_SECONDS,
+        **({"max_concurrency": 1, "missed_slots_consume_budget": True} if real else {}),
     }
+
+
+def real_scope_allowed(scope: dict) -> bool:
+    """Opt-in only for the original fixed benign marker; no imported executors."""
+    tests = scope.get("test_definitions", [])
+    return bool(
+        settings().linux_scheduling_enabled
+        and scope.get("mode") == "linux"
+        and scope.get("synthetic") is False
+        and scope.get("runner", {}).get("test_id") == "linux-file-marker/v1"
+        and len(tests) == 1
+        and tests[0].get("id") == linux_labs.TEST_DEFINITION_ID
+        and tests[0].get("execution_kind") == "linux_marker"
+    )
 
 
 def create(db: Session, data: ScheduleCreate, actor: User) -> Schedule:
@@ -64,10 +80,12 @@ def create(db: Session, data: ScheduleCreate, actor: User) -> Schedule:
         raise HTTPException(409, "Limite global de 64 agendamentos abertos atingido.")
     campaign = services.get_or_404(db, Campaign, data.campaign_id)
     scope = services.snapshot_scope(db, campaign)
-    if scope.get("mode") != "demo":
-        raise HTTPException(409, "Agendamento habilitado somente para Demo.")
+    if scope.get("mode") != "demo" and (
+        not data.confirm_real_execution or not real_scope_allowed(scope)
+    ):
+        raise HTTPException(409, "Agenda Linux exige opt-in e confirmação do marcador fixo real.")
     item = Schedule(
-        **data.model_dump(),
+        **data.model_dump(exclude={"confirm_real_execution"}),
         laboratory_id=campaign.laboratory_id,
         created_by=actor.id,
         scope=scope,
@@ -79,7 +97,14 @@ def create(db: Session, data: ScheduleCreate, actor: User) -> Schedule:
     item.plan_hash = digest(plan(item))
     db.add(item)
     db.flush()
-    audit(db, actor.id, "schedule.create", item.id, plan_hash=item.plan_hash, synthetic=True)
+    audit(
+        db,
+        actor.id,
+        "schedule.create",
+        item.id,
+        plan_hash=item.plan_hash,
+        synthetic=scope["synthetic"],
+    )
     db.commit()
     return item
 
@@ -92,7 +117,7 @@ def locked(db: Session, identifier: str) -> Schedule:
 
 
 def fresh_scope(db: Session, item: Schedule) -> bool:
-    if item.scope.get("mode") != "demo":
+    if item.scope.get("mode") != "demo" and not real_scope_allowed(item.scope):
         return False
     if digest(plan(item)) != item.plan_hash or digest(item.scope) != item.scope_hash:
         return False
@@ -104,8 +129,20 @@ def fresh_scope(db: Session, item: Schedule) -> bool:
 
 
 def identities_valid(db: Session, item: Schedule, grant: ScheduleAuthorization) -> bool:
-    creator = db.get(User, item.created_by)
-    approver = db.get(User, grant.approved_by)
+    # Serialize identity changes with issuance. Shared locks in stable order are
+    # compatible with concurrent workers and held only for the SQL transaction.
+    people = {
+        person.id: person
+        for person in db.scalars(
+            select(User)
+            .where(User.id.in_((item.created_by, grant.approved_by)))
+            .order_by(User.id)
+            .with_for_update(read=True)
+            .execution_options(populate_existing=True)
+        )
+    }
+    creator = people.get(item.created_by)
+    approver = people.get(grant.approved_by)
     return bool(
         creator
         and creator.active
@@ -113,12 +150,17 @@ def identities_valid(db: Session, item: Schedule, grant: ScheduleAuthorization) 
         and approver
         and approver.active
         and approver.role == "administrator"
+        and (item.scope.get("mode") == "demo" or approver.id != creator.id)
     )
 
 
-def approve(db: Session, identifier: str, actor: User, confirmed_hash: str) -> Schedule:
+def approve(
+    db: Session, identifier: str, actor: User, confirmed_hash: str, *, confirm_real: bool = False
+) -> Schedule:
     db.execute(text("SELECT pg_advisory_xact_lock(16490871)"))
     item = locked(db, identifier)
+    if item.scope.get("mode") != "demo" and not confirm_real:
+        raise HTTPException(409, "Confirme explicitamente a execução automática real.")
     if item.state not in ("PENDING_APPROVAL", "PAUSED") or item.ends_at <= now():
         raise HTTPException(409, "Agendamento não permite aprovação ou sua validade acabou.")
     if not secrets.compare_digest(item.plan_hash, confirmed_hash) or not fresh_scope(db, item):
@@ -178,7 +220,7 @@ def stop_schedule(db: Session, identifier: str, actor: User, *, revoke: bool) ->
 
 
 def authorization_valid(db: Session, run: CampaignRun, approval: Approval | None) -> bool:
-    """Check the EXACT originating grant, never a replacement grant. No row locks."""
+    """Check the exact originating grant; never lock schedule/grant from a worker."""
     if not run.schedule_id:
         return approval is not None and approval.schedule_authorization_id is None
     if not approval or not approval.schedule_authorization_id:
@@ -192,6 +234,9 @@ def authorization_valid(db: Session, run: CampaignRun, approval: Approval | None
         and occurrence
         and occurrence.schedule_id == item.id
         and occurrence.authorization_id == grant.id
+        and occurrence.status == "QUEUED"
+        and occurrence.run_id == run.id
+        and item.starts_at <= occurrence.scheduled_for < item.ends_at
         and grant.schedule_id == item.id
         and grant.revoked_at is None
         and grant.expires_at > now()
@@ -199,6 +244,15 @@ def authorization_valid(db: Session, run: CampaignRun, approval: Approval | None
         and item.state in ("ACTIVE", "EXHAUSTED")
         and grant.plan_hash == item.plan_hash
         and run.scope_hash == item.scope_hash
+        and digest(run.scope) == run.scope_hash
+        and run.requested_by == item.created_by
+        and run.campaign_id == item.campaign_id
+        and run.laboratory_id == item.laboratory_id
+        and run.synthetic is item.scope.get("synthetic")
+        and approval.approved_by == grant.approved_by
+        and approval.scope_hash == item.scope_hash
+        and approval.expires_at == min(item.ends_at, grant.expires_at)
+        and approval.max_duration_seconds == item.max_duration_seconds
         and identities_valid(db, item, grant)
         and fresh_scope(db, item)
     )
@@ -257,6 +311,10 @@ def dispatch_one(at: datetime | None = None) -> bool:
                             db, item.campaign_id, actor, "schedule-" + uid(), commit=False
                         )
                         run.schedule_id = item.id
+                        if run.scope_hash != item.scope_hash:
+                            raise HTTPException(
+                                409, "Escopo mudou antes da emissão; revise o plano."
+                            )
                         db.add(
                             Approval(
                                 run_id=run.id,
@@ -267,6 +325,18 @@ def dispatch_one(at: datetime | None = None) -> bool:
                                 schedule_authorization_id=grant.id,
                             )
                         )
+                        db.flush()
+                        # Persist the exact grant link before Linux start validation. The whole
+                        # savepoint (including this occurrence) rolls back if reservation fails.
+                        occurrence = ScheduleOccurrence(
+                            schedule_id=item.id,
+                            authorization_id=grant.id,
+                            scheduled_for=slot,
+                            run_id=run.id,
+                            status="QUEUED",
+                            reason="Autorização recorrente delimitada consumiu um slot.",
+                        )
+                        db.add(occurrence)
                         db.flush()
                         services.start_run(db, run.id, actor, commit=False, at=instant)
                         run_id, status, reason = (
@@ -281,15 +351,16 @@ def dispatch_one(at: datetime | None = None) -> bool:
                         "SKIPPED_BUSY",
                         "Laboratório reservado; slot descartado sem execução.",
                     )
-            occurrence = ScheduleOccurrence(
-                schedule_id=item.id,
-                authorization_id=grant.id,
-                scheduled_for=slot,
-                run_id=run_id,
-                status=status,
-                reason=reason,
-            )
-            db.add(occurrence)
+            if run_id is None:
+                occurrence = ScheduleOccurrence(
+                    schedule_id=item.id,
+                    authorization_id=grant.id,
+                    scheduled_for=slot,
+                    run_id=None,
+                    status=status,
+                    reason=reason,
+                )
+                db.add(occurrence)
             if run_id is not None:
                 db.flush()
                 scheduled_reports.request_report(db, occurrence)
@@ -311,7 +382,7 @@ def dispatch_one(at: datetime | None = None) -> bool:
                 run_id=run_id,
                 scheduled_for=slot.isoformat(),
                 authorization_id=grant.id,
-                synthetic=True,
+                synthetic=item.scope["synthetic"],
             )
         if item.reason:
             audit(db, None, "schedule.stop", item.id, state=item.state, reason=item.reason)
@@ -328,5 +399,5 @@ def scheduler_loop(stop: threading.Event) -> None:
                 if stop.is_set() or not dispatch_one():
                     break
         except Exception:
-            log.exception("Demo scheduler tick failed; transaction rolled back")
+            log.exception("Scheduler tick failed; transaction rolled back")
         stop.wait(0.5)

@@ -1,4 +1,4 @@
-# Relatórios automáticos de agendamentos Demo
+# Relatórios automáticos de agendamentos
 
 Abra **Agendamentos → Detalhes → Relatórios automáticos**. Cada nova ocorrência
 efetivamente emitida solicita um documento no banco junto com a run e seu grant.
@@ -20,7 +20,14 @@ necessário manter o navegador aberto ou solicitar geração manualmente.
 manual exigem escopo/contexto/conclusão íntegros para declarar comparabilidade.
 Delta fica ausente quando não há equivalência ou denominador. Execução falha,
 cancelamento ou cleanup falho não vira detecção nem proteção empresarial.
-Todos os documentos desse recurso são identificados como sintéticos.
+Documentos Demo permanecem `synthetic=true`, política `scheduled-demo-report/1`.
+Ocorrências Linux opt-in preservam `synthetic=false`, política separada
+`scheduled-linux-report/1`; não recebem guards nem telemetria sintética do Demo.
+Origem de escopo, plano, run e execuções deve concordar para publicar. O grant
+original e o par congelado são preservados, mesmo após revogação. Download não
+depende de reativar laboratório, preflight, opt-in ou grant e nunca executa testes.
+Recibo do runner não é alerta defensivo; coleta ausente/incompleta continua
+explícita nos resultados e limitações. Nenhum veredicto é criado pelo relatório.
 
 O snapshot mantém plano, ocorrência, autorização, execuções, resultados e
 evidências como estavam na geração. Alterar regras, revogar o grant ou baixar

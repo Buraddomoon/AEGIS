@@ -139,6 +139,7 @@ class RunRead(BaseModel):
 
 
 class ScheduleCreate(Input):
+    confirm_real_execution: bool = False
     campaign_id: str = Field(min_length=36, max_length=36)
     interval_seconds: int = Field(ge=60, le=2592000)
     max_occurrences: int = Field(ge=1, le=100)
@@ -156,5 +157,6 @@ class ScheduleCreate(Input):
 
 
 class ScheduleApprove(Input):
+    confirm_real_execution: bool = False
     confirm_plan_hash: str = Field(min_length=64, max_length=64)
     confirm_automatic_execution: Literal[True]

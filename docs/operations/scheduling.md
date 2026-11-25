@@ -1,6 +1,42 @@
-# Agendamentos Demo sob aprovação
+# Agendamentos sob aprovação delimitada
 
-O agendamento usa as mesmas campanhas, reservas, máquina de estados, worker, correlação e relatórios das execuções manuais. Toda simulação e evidência continua sintética. Não há agendamento para Lab Mode ou Wazuh externo.
+O agendamento usa as mesmas campanhas, reservas, máquina de estados, worker,
+correlação e relatórios das execuções manuais. Demo mantém evidência sintética.
+Linux tem opt-in separado e desativado por padrão, limitado ao marcador benigno
+`linux-file-marker/v1`. Não permite Atomic, shell, processos adicionais ou alvos
+livres. Um binding Wazuh já revisado pode fornecer telemetria; agenda não instala
+regras, configura conectores nem inicia laboratórios.
+
+## Linux: preparação e autorização
+
+`LINUX_SCHEDULING_ENABLED=true` permite a funcionalidade na implantação revisada;
+não é autorização para iniciar um laboratório ou reutilizar os pacotes históricos.
+Antes de qualquer ensaio nativo, revisar pacote com imagem/código, lab/ativo,
+teste/versões, hashes de confiança e isolamento, período UTC, intervalo, duração,
+número exato de ocorrências, teto de concorrência1 e procedimento de recuperação.
+Obter aprovação humana específica desse pacote. As autorizações anteriores estão
+consumidas. Não habilitar a opção no Demo ou nos labs originais para testar a UI.
+
+Criação Linux exige `confirm_real_execution: true`, binding revisado, laboratório
+autorizado e preflight mTLS vigente. O snapshot existente fixa ativo, ambiente,
+teste/versões, runner/certificados públicos, catálogo e binding de telemetria.
+O plano `aegis-linux-schedule/1` também fixa concorrência1 e consumo de descartes.
+A aprovação exige `confirm_automatic_execution: true`, hash exato e
+`confirm_real_execution: true`, por administrador ativo diferente do criador.
+Os limites de calendário/orçamento/duração abaixo se aplicam aos dois modos.
+
+Cada ocorrência e cada fase revalidam usuários, grant original, escopo, opt-in e
+preflight vigente. Não há renovação automática de preflight nem acesso externo
+pelo scheduler. Expiração, revogação, mudança de versão/PKI/binding ou retirada
+do opt-in impede novas execuções; cleanup do efeito existente continua obrigatório.
+Reaprovar não altera calendário/consumo nem reativa ocorrências antigas.
+
+Emissão, aprovação derivada, ocorrência, reserva, fila e pedido de relatório são
+uma única transação. O worker persiste dispatch antes de qualquer RPC ao runner;
+lease/fences e supervisor permanecem os mesmos do fluxo manual. Crash/efeito
+ambíguo não dispara retry de efeito. Cleanup não confirmado retém reserva;
+próximos horários ocupados consomem orçamento como `SKIPPED_BUSY`. Recuperar
+somente o job original pelo procedimento administrativo já existente, sem replay.
 
 ## Operação na interface
 
@@ -22,7 +58,7 @@ Não há botão de disparo imediato que contorne aprovação ou calendário. Uma
 
 | Controle | Política |
 |---|---|
-| Ambiente | somente Demo Lab autorizado; ativo sintético e allowlist |
+| Ambiente | Demo sintético ou Linux opt-in com marcador fixo, ativo e binding revisados |
 | Início | futuro, no máximo 30 dias após criação |
 | Fim | posterior ao início, até 90 dias após criação |
 | Cadência | 60 segundos a 30 dias; maior ou igual à duração máxima |
@@ -48,7 +84,7 @@ Mudanças no ambiente, allowlist, testes ou versões do inventário Sigma invali
 - A aprovação de cada run referencia o grant que realmente a originou. Pausar e reaprovar não ressuscita uma run antiga.
 - Consumo do slot, criação da run/testes, aprovação derivada, reserva e enqueue são uma transação PostgreSQL. Savepoint remove efeitos parciais se o laboratório está ocupado.
 - Claim e fases do worker revalidam o grant original. Revogação cancela fila e solicita cancelamento cooperativo durante execução. Uma fase já iniciada pode terminar antes de observar revogação; cleanup sempre é tentado. Não há interruptor forçado para adaptadores bloqueantes, que continuam vedados em Lab Mode.
-- Locks de controle seguem `schedule → run → laboratory`. Worker bloqueia run e lê grant/plan sem row lock, evitando inversão.
+- Locks de controle seguem `schedule → run → laboratory`. Usuários recebem locks compartilhados ordenados durante a revalidação SQL; worker lê grant/plan sem bloquear suas linhas, evitando inversão.
 - Dispatcher roda em thread leve do processo worker, com sessão SQL própria por transação. Uma simulação não bloqueia a consulta dos horários. Não há daemon extra, cron do host ou job serializado no Redis.
 - No papel SQL runtime, plano só permite UPDATE de estado/contador/próximo horário/motivo; grant só permite UPDATE de revogação. Ocorrências são append-only. Nenhum desses históricos permite DELETE no runtime.
 
@@ -59,7 +95,7 @@ A instância continua sendo um workspace único: operadores compartilham campanh
 - `GET/POST /api/v1/schedules` — lista paginada/criação por operador.
 - `GET /api/v1/schedules/{id}` — plano, snapshot e histórico de autorizações.
 - `GET /api/v1/schedules/{id}/occurrences` — histórico paginado de horários.
-- `POST /api/v1/schedules/{id}/approve` — admin; `confirm_plan_hash` e `confirm_automatic_execution: true` obrigatórios.
+- `POST /api/v1/schedules/{id}/approve` — admin; `confirm_plan_hash` e `confirm_automatic_execution: true` obrigatórios; Linux exige também `confirm_real_execution: true` e revisão segregada.
 - `POST /api/v1/schedules/{id}/pause` — operador/admin; `confirm: true`.
 - `POST /api/v1/schedules/{id}/revoke` — admin; `confirm: true`.
 
