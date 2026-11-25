@@ -153,9 +153,9 @@ try {
     laboratory_id: lab.id,
     test_ids: [plan.definition_id],
   })
-  await operator.evaluate(() => {
-    location.hash = 'schedules'
-  })
+  // API setup bypasses useAction's query invalidation. Load a fresh document so
+  // the overview's cached empty campaign list cannot mask the new campaign.
+  await operator.goto(`${plan.origin}/#schedules`, { waitUntil: 'networkidle0' })
   await button(operator, 'Novo agendamento')
   await operator.waitForFunction(
     (id) =>
