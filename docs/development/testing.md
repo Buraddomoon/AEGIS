@@ -27,8 +27,9 @@ API/worker verificam PostgreSQL concorrente, dependência administrativa lida an
 do lock, login concorrente à senha, expiração/CSRF/limites, revogação antes do start,
 na fila, durante execução e cleanup. Aprovação/escopo/resultado anterior mantêm
 identidade/hash/conteúdo; nenhum desses fixtures comprova transporte nativo.
-Ver [checkpoint](user-maintenance-checkpoint.md) e provas da #24; CI remota da
-fonte local não foi executada devido ao bloqueio de sincronização.
+Ver [checkpoint](user-maintenance-checkpoint.md) e [provas integradas da #24](../evidence/user-maintenance-2026-11-25/INTEGRATED-24.md).
+O bloqueio inicial de sincronização foi resolvido; os registros distinguem a fase
+local anterior da fonte integrada e de sua CI.
 
 ## Recorrência Linux delimitada — #23
 

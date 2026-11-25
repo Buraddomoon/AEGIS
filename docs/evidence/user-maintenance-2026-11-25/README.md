@@ -1,5 +1,9 @@
 # Manutenção de contas — #24, 25/11/2026
 
+> Registro preservado da fase local anterior. A sincronização descrita abaixo
+> foi resolvida na retomada autorizada; fonte publicada e validação integrada em
+> [INTEGRATED-24](INTEGRATED-24.md). Falhas e provas originais mantidas.
+
 **Implementação/validação locais; sincronização bloqueada.** #24 e #105/#106/#107
 permanecem abertas. A fonte local não foi publicada nem combinada com o avanço
 concorrente do remoto; não há CI desta fonte nem implantação. O

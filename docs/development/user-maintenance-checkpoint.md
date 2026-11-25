@@ -1,31 +1,35 @@
 # Contas, papéis e sessões — #24
 
-Estado em25/11/2026: implementação e validação **locais** de #105/#106/#107.
-A entrega não está encerrada no GitHub: sincronização bloqueada por avanço
-concorrente de `origin/main`. Não fechar filhos/pai nem anunciar implantação.
+Estado em25/11/2026: #105/#106/#107 e aceite conjunto da #24 atendidos.
+Fonte integrada publicada em `origin/main`, CI integral aprovada e sincronização
+resolvida. Entrega encerrada; parar neste escopo, sem iniciar outra feature.
 
-- Base local `5f6f880`; API `c0a0aa8`, UI `e1efb92`, apresentação `11c7601`,
-  QA/roteiro `e468e73`.166Python,161React/21glob, lint/build e Firefox aprovados
-  localmente; três contas/capturas, zero erros JS, sete schemas próprios removidos.
-- Contas existentes podem ser ativadas/desativadas e trocar papel; último admin
-  protegido por lock PostgreSQL. Senhas Argon2id e sessões revogadas por conta.
-- Senha própria exige senha atual; redefinição administrativa para outra conta.
-  Viewer/operator gerenciam apenas a própria senha/sessões. RBAC/CSRF/limites
-  são do backend; interface confirma efeitos e descarta identidade/cache em401.
-- Start/fila/worker/cleanup revalidam as identidades sem reescrever aprovações,
-  escopos, resultados ou históricos. Testes usam schemas/contas descartáveis.
-- Provas, comandos, falhas, capturas privadas e limitações no
-  [registro de evidências](../evidence/user-maintenance-2026-11-25/README.md).
-  Contratos operacionais em [autorização](../security/authorization.md).
+- Fonte `38f2fee8ddef409ed60b5503ca9b52694d5759b3` combina os pais locais
+  `f174e33` e remoto `5e4737a`, preservando os dois históricos. Único conflito
+  textual no guia de testes, resolvido mantendo ambas as seções;22arquivos
+  alterados apenas pelo remoto idênticos. Sem rebase/force push/branch/PR.
+- Contas existentes: ativação/desativação, papel e último admin protegido por
+  lock PostgreSQL; senha própria exige senha atual, redefinição administrativa
+  para outra conta, Argon2id e revogação de todas as sessões afetadas.
+  Reativação não restaura tokens antigos. Nenhuma exclusão de usuário/histórico.
+- Viewer/operator gerenciam apenas sua senha/sessões. Backend aplica RBAC/CSRF/
+  limites/auditoria; UI confirma efeitos, limpa segredos e descarta cache/identidade
+  em401. Start/fila/worker/cleanup revalidam as contas e mantêm a limpeza obrigatória.
+- Recorrência preservada: quatro casos adicionais mudam contas pela API contra
+  grants existentes, sem emissão/efeito e sem reescrever aprovação ou escopo.
+- Validação integrada local:255Python,166React/21glob, lint/build e Firefox
+  aprovados. Três contas/capturas1440/390px, zero erros JS, cleanup conferido no PG.
+  O grupo focado42está incluído nesses255; não somar rodadas sobrepostas.
+- CI integral [45677946104](https://github.com/Buraddomoon/AEGIS/actions/runs/45677946104):
+  **SUCCESS**,4188Python/9skips opcionais existentes e166React/21glob.
+  Quatro partições Python e React conferidos; sem exclusões novas. Revisão de
+  fonte45677946198 SUCCESS no mesmo commit.
+- [Provas integradas](../evidence/user-maintenance-2026-11-25/INTEGRATED-24.md),
+  [fase local anterior/falhas](../evidence/user-maintenance-2026-11-25/README.md)
+  e [contratos de autorização](../security/authorization.md).
 
-O push de `c0a0aa8` foi rejeitado (`fetch first`). Fetch apenas de leitura confirmou
-`origin/main=5e4737a`, dez commits posteriores à base, com sobreposição em
-`api.py`, `linux_labs.py`, `schemas.py`, `worker.py`. Conforme AGENTS, sincronização
-interrompida; sem merge, rebase, force push ou sobrescrita do remoto. Os commits
-seguintes permanecem locais. A combinação com a fonte remota ainda não foi validada.
-
-Demo b8 anterior preservado; nenhum deploy, alteração de conta humana, operação
-Linux/Wazuh, volume original, marcador ou migração original. O roteiro Firefox
-inicia somente API própria e aplica Alembic em schema novo, removido ao terminar.
-Não iniciar outra entrega; retomar somente para resolver a sincronização e
-revalidar a fonte integrada sob as instruções vigentes.
+O bloqueio inicial de sincronização foi resolvido sob pedido explícito do usuário.
+Demo/API/worker b8 anteriores preservados, sem implantação ou operação Linux/Wazuh,
+contas humanas, volumes originais, marcador, PKI, rede ou migração de originais.
+Workflows nativos não foram acionados. Os ensaios de uso único anteriores seguem
+encerrados; esta entrega não autoriza reativação ou operação contínua.

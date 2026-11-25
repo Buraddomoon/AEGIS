@@ -230,6 +230,17 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   Ver docs/evidence/linux-scheduling-2026-11-24/REQUEST-104-28de3e3f.md. Pedido
   genérico/CI/build não autorizam efeitos; respeitar validade, sem renovação automática.
 
+- #24 encerrada em25/11: #105/#106/#107 e aceite conjunto atendidos. Contas/papéis,
+  senha própria/reset administrativo e sessões via API/UI; último admin protegido,
+  lock/CSRF/RBAC/limites/auditoria sem segredos. Start/fila/worker/cleanup revalidam
+  contas e grants existentes, com limpeza e histórico preservados. Divergência
+  conciliada preservando os dois históricos; fonte38f2fee publicada e
+  CI45677946104 SUCCESS:4188Python/9skips e166React/21glob, quatro partições
+  conferidas. Local255Python e Firefox/schema descartável VERIFIED, três contas/
+  capturas, zero erros JS; recursos próprios removidos. Demo b8 preservado, sem
+  implantação ou operação Linux/Wazuh/originais. Ver docs/development/user-maintenance-checkpoint.md
+  e docs/evidence/user-maintenance-2026-11-25/INTEGRATED-24.md. Parar nesta entrega.
+
 Ao terminar: comentário na issue com comportamento entregue, arquivos relevantes,
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e
 sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /compact
