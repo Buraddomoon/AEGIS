@@ -223,6 +223,13 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   ou operação Lab. Ver docs/development/linux-scheduling-checkpoint.md. Parar;
   não habilitar flag, iniciar labs ou reutilizar autorizações históricas.
 
+  Retomada posterior da mesma #23: fonte178e7df prepara ensaio novo em VM Linux
+  efêmera do GitHub Actions, sem originais. CI45514261833 SUCCESS,
+  4164Python/9skips e159React/21glob. Pacote concreto28de3e3f no workflow45514289124
+  aguarda aprovação humana exata para duas ocorrências; nenhum Lab iniciado.
+  Ver docs/evidence/linux-scheduling-2026-11-24/REQUEST-104-28de3e3f.md. Pedido
+  genérico/CI/build não autorizam efeitos; respeitar validade, sem renovação automática.
+
 Ao terminar: comentário na issue com comportamento entregue, arquivos relevantes,
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e
 sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /compact

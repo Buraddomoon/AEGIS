@@ -38,3 +38,8 @@ separado em VM Linux nova do GitHub Actions, com duas ocorrências e barreira de
 aprovação pelo hash concreto. Sem laboratório nesta etapa. Ver
 [procedimento fechado](../operations/scheduling-native.md); não publicar chaves
 nem iniciar efeitos a partir do pedido genérico ou da CI.
+
+Pacote concreto [28de3e3f](../evidence/linux-scheduling-2026-11-24/REQUEST-104-28de3e3f.md)
+preparado no workflow45514289124: sem Lab iniciado, aguardando autorização humana
+específica. CI45514261833 SUCCESS na fonte178e7df,4164Python/9skips e159React/21glob.
+Prazo UTC e descarte do host efêmero estão no pacote; não renovar silenciosamente.

@@ -139,3 +139,40 @@ Não foi fabricado pacote com hashes/identidades sem inspeção. Autorizações
 históricas estão consumidas. #104 e o pai #23 permanecem abertos até ensaio real
 especificamente aprovado e aceite conjunto. Fixture/CI/E2E Demo não substituem
 esse ensaio. Parar neste escopo.
+
+## Retomada: ambiente nativo preparado, aguardando autorização
+
+Após o pedido de concluir todo o escopo, a fonte
+`178e7df14e14e58ad2b2db2b480b07fbfcd340bc` acrescentou um procedimento nativo
+fechado em VM Linux nova do GitHub Actions. O bloqueio de runtime local foi
+contornado sem instalar stack neste Windows ou tocar em originais. O ambiente
+foi **somente preparado**: imagens construídas, identidades e PKI novas, manifesto
+concreto publicado; nenhum serviço de laboratório ou marcador nativo iniciado.
+
+[Pacote28de3e3f para revisão](REQUEST-104-28de3e3f.md),
+[manifesto14975638954](https://github.com/Buraddomoon/AEGIS/actions/runs/45514289124/artifacts/14975638954)
+e [procedimento](../../operations/scheduling-native.md). SHA256 integral
+`28de3e3f53ad79c39651feec2dd3f3d6013acf0ac63ff3b3ed71ca347fe2d65d`.
+Propõe duas ocorrências reais do marcador benigno,60s/30s/concorrência1, sem
+Wazuh/originais, com cleanup e descarte do host efêmero expressamente incluídos.
+Autorização específica foi solicitada ao usuário; ainda não registrada.
+O workflow45514289124 permanece na barreira de aprovação, com prazo fixo no pacote.
+
+[CI45514261833](https://github.com/Buraddomoon/AEGIS/actions/runs/45514261833)
+**SUCCESS** na fonte178e7df, quatro partições Python e React conferidos:
+**4164Python/9skips existentes,159React/21arquivos e21checks glob**.
+Partições:1004/2skips,1023/2,1060/1 e1077/4. Inclui33casos novos de preparação,
+autorização/TTL/ator/host, receita, colisões, fence e inspeção independente do runtime.
+Todos são testes sem Docker/efeito. O fsync POSIX de diretório é real na CI Linux.
+
+Localmente passaram55casos combinados de preparação/política, lint/formatação,
+mypy, sintaxe/formatação do cliente browser e checks de staged/release.
+Primeira rodada teve29aprovações/2falhas por ausência de O_DIRECTORY no Windows;
+o fixture passou a simular somente essa primitiva POSIX, mantendo o gate nativo
+exclusivamente Linux. Não foi adicionada exceção ao runner ou à execução real.
+
+Commits adicionais:178e7df (`test(scheduling): prepare isolated native assay with
+exact human gate (Refs #104)`) e4a66f5b (pacote concreto documental).
+Nenhum comentário de autorização foi fabricado a partir do pedido genérico,
+silêncio, build ou CI. #104 e #23 continuam abertas até efeito/cleanup comprovados
+e aceite conjunto, ou encerramento sem efeito se o pacote expirar sem aprovação.
