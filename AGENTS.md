@@ -257,3 +257,14 @@ Ao terminar: comentário na issue com comportamento entregue, arquivos relevante
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e
 sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /compact
 (não há ferramenta para isso), métricas ou evidência. Não iniciar outra entrega.
+
+- #26 com aceite offline em27/11: #111/#112/#113 atendidas. Catálogo host-only
+  opt-in de perfis Wazuh, referências privadas, revisão/hash, diagnóstico de um
+  GET/ e desativação; drift invalida binding/escopo, sem fallback para ambiente.
+  Sem nova migração; histórico preservado. Fonteb3b00a5 e CI46007425372 SUCCESS:
+  4255Python/9skips existentes e177React/21glob; quatro partições conferidas.
+  Firefox/API/TLS loopback VERIFIED,1440/390px, zero erros JS/uma requisição,
+  schema/API/TLS próprios encerrados. Falhas anteriores retidas; sem implantação
+  ou operação Linux/Wazuh/SIEM/originais. Demo b8 anterior preservado. Ver
+  docs/development/defensive-profiles-checkpoint.md e
+  docs/evidence/defensive-profiles-2026-11-27/README.md. Parar nesta entrega.

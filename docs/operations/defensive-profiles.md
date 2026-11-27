@@ -45,3 +45,8 @@ reativação de laboratórios nem reutilização de pacotes consumidos.
 
 Sem `DEFENSIVE_PROFILES`, mantém-se o binding de ambiente legado. Não há nova
 migração de banco nem alteração/implantação automática no Demo ou originais.
+
+O catálogo desta entrega atende binding/coleta e diagnóstico Wazuh. A validação
+Sigma nativa conserva seu escopo host-only legado separado; no opt-in de perfis,
+ela não adota um perfil implicitamente e permanece bloqueada, sem fallback. Esta
+entrega não renova autorizações nem pacotes de validação Sigma históricos.
