@@ -1,32 +1,35 @@
 # Checkpoint — retenção de histórico #27
 
-Em 27/11/2026, fonte 46a03b1 implementa os artefatos de #114/#115/#116 no perfil
-host-only de snapshots completos/cópias próprias cadastradas. Plano sem exclusão,
-política explícita com holds/piso30 dias/sete inventários distintos verificados,
-arquivo age com todos os membros e restore isolado, apply com hash/prazo/lock/
-aprovação operacional/uso único/auditoria. Sem TTL ou DELETE nas tabelas. #114/#115 têm aceite técnico desse perfil;
-#116 permanece parcial quanto ao controle de crescimento do banco ativo.
+Retomada de 27/11/2026 conclui os critérios técnicos de #116 e o aceite conjunto
+com #114/#115 no perfil de **snapshots completos e cópias próprias cadastradas**.
+Política explícita: pelo menos 30 dias/sete inventários distintos verificados,
+legal hold, plano por hash/validade/área; arquivo age com todos os membros;
+aplicação host-only com aprovação específica, lock, uso único e auditoria.
+Não há TTL/DELETE de linhas ou mudança nos guards/grants do banco ativo.
 
-Validação final local:48 testes de retenção,1 roundtrip PostgreSQL real de fixture
-reduzida (9 tabelas/10 linhas),235 testes de recuperação e lint completo aprovados.
-CI da fonte final [46054659557](https://github.com/Buraddomoon/AEGIS/actions/runs/46054659557)
-SUCCESS na tentativa 2:4303 Python/9 skips existentes e186 React/24 arquivos; quatro
-partições e React conferidos. Primeira falha de expiração em teste Sigma
-preexistente mantida nas provas; apenas o job falho foi repetido, sem alterar
-Sigma/filtros/validade/timeout. Não confundir CI com o ensaio nativo local.
+O bloqueio do primeiro handoff exigia expurgo do banco ativo, que não consta no
+critério da #116. Essa interpretação foi corrigida, preservando o registro
+anterior e sem ampliar qualquer autorização. O alcance da política é explícito;
+não declarar redução das tabelas ativas ou descarte de arquivos cifrados.
 
-Falhas iniciais de configuração PG/Redis registradas, resolvidas somente no
-ambiente do processo. Fonte/recibos preservados; recursos nativos próprios e
-staging encerrados. Ver [provas e limites](../evidence/history-retention-2026-11-27/README.md)
-e [operação](../operations/history-retention.md).
+Complemento fdd8a59: 49 testes de retenção e lint completo aprovados; ensaio real
+da CLI em PostgreSQL novo, schema f3b/36 tabelas, fixture sintética/34 linhas.
+Nove snapshots distintos restaurados; uma cópia elegível removida, oito mantidas
+(mínimo de sete + legal hold), 119783 bytes lógicos de arquivos removidos. Banco,
+fontes e arquivos protegidos idênticos; restore após remoção, drift, dry-run,
+replay e cleanup verificados. Não há mock de restore nesse ensaio.
 
-**#27 e #116 abertas para decisão e aceite do objetivo mais amplo:** o perfil remove
-apenas cópias em claro cadastradas e mantém todos os arquivos cifrados e dados
-do banco ativo. Não declarar que o crescimento das tabelas foi controlado.
-Descarte desse histórico depende de política específica e autorização nova;
-não introduzir bypass de append-only, TTL genérico ou exclusão no ambiente humano.
+[Provas do aceite e correção do handoff](../evidence/history-retention-2026-11-27/ACCEPTANCE-116.md),
+[histórico inicial/falhas](../evidence/history-retention-2026-11-27/README.md) e
+[operação](../operations/history-retention.md). CI do complemento fdd8a59:
+[46058984159](https://github.com/Buraddomoon/AEGIS/actions/runs/46058984159)
+SUCCESS na primeira tentativa, quatro partições conferidas: 4304 Python/9 skips
+existentes e 186 React/24 arquivos. CI anterior 46054659557/46a03b1 e primeira
+falha Sigma mantidas no histórico. Não confundir CI com o ensaio nativo local.
 
-Demo anterior e originais Linux/Wazuh preservados; sem implantação/migração,
-marcador, replay, operação SIEM, descarte de backups/chaves ou custódia externa.
-Autorizações históricas não foram reutilizadas. Nenhum pacote humano desta
-retenção foi aprovado. Encerrar a sessão neste escopo após registrar as provas.
+Demo anterior e originais Linux/Wazuh preservados, sem implantação/migração,
+marcador, operação SIEM, remoção de backup/chave humana ou custódia externa.
+Recursos descartáveis próprios encerrados e staging vazio. Nenhuma autorização
+histórica reutilizada ou pacote de exclusão humana preparado. Critérios de
+#114/#115/#116 e aceite conjunto de #27 atendidos, com encerramento e sincronização
+registrados nas issues. Parar nesta entrega.

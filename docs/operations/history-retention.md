@@ -129,3 +129,25 @@ atual de todas as chaves nem custódia independente. Os arquivos cifrados nunca
 são removidos por esta versão. Assim, crescimento de armazenamento de arquivos
 cifrados e tabelas ativas permanece fora da aplicação destrutiva: alterar essa
 política exige decisão explícita e trabalho próprio, preservando append-only.
+
+## Unidade de retenção e aceite da entrega
+
+A política da #114 escolhe o **snapshot completo** como unidade de retenção. A
+#116 aplica essa política às cópias próprias em claro da área cadastrada, mantendo
+as dependências e o arquivo recuperável completo. Não há requisito de contornar
+append-only ou apagar tabelas ativas para aceitar o artefato host-only; esse foi
+um bloqueio interpretativo indevido do primeiro handoff, corrigido na retomada.
+O alcance da política permanece o mesmo, sem ampliar a autorização destrutiva.
+
+O aceite integrado usa `make test-retention-native-apply`: schema atual completo
+em PostgreSQL descartável, CLI real, nove snapshots distintos restaurados, mínimo
+de sete mais um hold, dry-run/drift/aprovação/replay e remoção de uma cópia seguida
+de novo restore só pelo arquivo cifrado. Fonte e históricos ficam idênticos;
+redução de bytes se refere somente à cópia em claro removida. O arquivo de
+aprovação do ensaio identifica expressamente uma fixture, nunca um operador real.
+
+A disponibilidade desse comando não autoriza uso no ambiente humano. Para esse
+uso continuam obrigatórios política, plano/hash/validade, escopo e nova aprovação
+específica; nenhum pacote humano é preparado ou executado no aceite. Redução do
+banco ativo, descarte dos arquivos cifrados, custódia externa e implantação não
+são alegados por esta entrega. Ver [aceite integrado](../evidence/history-retention-2026-11-27/ACCEPTANCE-116.md).

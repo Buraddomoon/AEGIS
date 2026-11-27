@@ -268,3 +268,16 @@ sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /c
   ou operação Linux/Wazuh/SIEM/originais. Demo b8 anterior preservado. Ver
   docs/development/defensive-profiles-checkpoint.md e
   docs/evidence/defensive-profiles-2026-11-27/README.md. Parar nesta entrega.
+
+- #27 encerrada em 27/11: #114/#115/#116 e aceite conjunto atendidos no perfil de
+  snapshots completos/cópias próprias em claro. Plano/holds/piso de 30 dias/sete
+  inventários distintos, arquivo age/restore e apply com aprovação/lock/uso único.
+  Complemento fdd8a59: 49 testes locais e CLI real em schema f3b/36 tabelas/34 linhas
+  sintéticas; nove snapshots verificados, uma cópia removida/119783 bytes lógicos,
+  oito mantidas (sete + hold), fonte/arquivo protegido iguais e restore posterior.
+  CI46058984159 SUCCESS na primeira tentativa: 4304 Python/9 skips existentes,
+  186 React/24 arquivos; quatro partições conferidas. Sem implantação, expurgo de
+  tabelas ativas/arquivos cifrados ou operação humana/Linux/Wazuh/SIEM. Bloqueio
+  interpretativo anterior corrigido, histórico preservado; não é autorização real.
+  Ver docs/development/history-retention-checkpoint.md e
+  docs/evidence/history-retention-2026-11-27/ACCEPTANCE-116.md. Parar nesta entrega.
