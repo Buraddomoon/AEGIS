@@ -123,3 +123,14 @@ dos cards, modal de22px, ausência de overflow em390px e zero erros JavaScript.
 Um segundo perfil Firefox com movimento reduzido confirmou animações paradas e
 brilho por posição desativado. Capturas e resultado ficam em
 `.local/frontend-preview/motion`; o backend e os dados da prévia foram preservados.
+
+## Consolidação do acesso
+
+Uma resposta anônima repetida podia remover a consulta de identidade observada
+pelo React Query; o POST de login era aceito, mas a tela permanecia no formulário.
+O encerramento de sessão agora preserva essa consulta e limpa os dados privados;
+o login aguarda sua conclusão e publica o usuário retornado pelo backend. Leituras
+canceladas recebem `AbortSignal`. A regressão de resposta anônima repetida foi
+reproduzida antes da correção e passou depois, junto aos186testes React e21checks
+de segurança do glob. O teste aguarda a tentativa de leitura já prevista na
+configuração do cliente, sem alterar a política de retry da aplicação.

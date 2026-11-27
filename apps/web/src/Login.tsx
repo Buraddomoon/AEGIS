@@ -14,8 +14,15 @@ import {
 } from 'lucide-react'
 import { api } from './lib'
 import { Brand } from './Brand'
+import type { User } from './types'
 
-export default function Login({ onLogin, message }: { onLogin: () => void; message?: string }) {
+export default function Login({
+  onLogin,
+  message,
+}: {
+  onLogin: (user: User) => void | Promise<void>
+  message?: string
+}) {
   const [username, setUsername] = useState(''),
     [password, setPassword] = useState('')
   const [error, setError] = useState(''),
@@ -70,11 +77,11 @@ export default function Login({ onLogin, message }: { onLogin: () => void; messa
               setBusy(true)
               setError('')
               try {
-                await api('/auth/login', {
+                const result = await api<{ user: User }>('/auth/login', {
                   method: 'POST',
                   body: JSON.stringify({ username, password }),
                 })
-                onLogin()
+                await onLogin(result.user)
               } catch (err) {
                 setError((err as Error).message)
               } finally {

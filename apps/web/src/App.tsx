@@ -81,9 +81,15 @@ export default function App() {
     cache = useQueryClient()
   useEffect(() => {
     const ended = (event: Event) => {
-      if (cache.getQueryData(['/auth/me'])) setSessionMessage((event as CustomEvent<string>).detail)
+      // An anonymous response is not a session transition. Keep the observed
+      // identity query attached so a subsequent successful login can update it.
+      if (!cache.getQueryData(['/auth/me'])) return
+      setSessionMessage((event as CustomEvent<string>).detail)
+      setMobile(false)
+      setQuickNav(false)
+      setNotice(null)
       void cache.cancelQueries()
-      cache.clear()
+      cache.removeQueries({ predicate: (query) => query.queryKey[0] !== '/auth/me' })
       cache.setQueryData(['/auth/me'], null)
     }
     addEventListener('aegis-session-ended', ended)
@@ -165,9 +171,11 @@ export default function App() {
     return (
       <Login
         message={sessionMessage}
-        onLogin={() => {
+        onLogin={async (authenticatedUser) => {
+          await cache.cancelQueries()
+          cache.removeQueries({ predicate: (query) => query.queryKey[0] !== '/auth/me' })
+          cache.setQueryData(['/auth/me'], authenticatedUser)
           setSessionMessage('')
-          return cache.invalidateQueries()
         }}
       />
     )

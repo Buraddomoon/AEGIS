@@ -41,8 +41,25 @@ try {
   await page.click('button[aria-label="Mostrar senha"]')
   assert.equal(await page.$eval('#login-password', (element) => element.type), 'text')
   await page.click('button[aria-label="Ocultar senha"]')
+  // A periodic anonymous check used to detach the identity query from the UI.
+  // Reproduce that transition before submitting valid credentials.
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new CustomEvent('aegis-session-ended', {
+        detail: 'Sessão expirada ou revogada. Entre novamente.',
+      }),
+    ),
+  )
   await page.click('button[type="submit"]')
   await page.waitForSelector('.stats-grid')
+  const identity = await page.evaluate(async () => {
+    const response = await fetch('/api/v1/auth/me')
+    if (!response.ok) throw new Error(`Session not established: ${response.status}`)
+    const user = await response.json()
+    return { username: user.username, role: user.role }
+  })
+  assert.equal(identity.username, username)
+  assert.equal(identity.role, 'administrator')
   checks.push('login, password visibility, fresh-session message and mobile layout')
 
   await page.click('button[aria-label="Abrir menu"]')

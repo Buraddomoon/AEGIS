@@ -117,10 +117,49 @@ describe('Workspace access and navigation', () => {
       vi.fn().mockResolvedValue(json({ error: { message: 'Autenticação necessária' } }, 401)),
     )
     queryRender(<App />)
-    expect(await screen.findByRole('form', { name: 'Acessar workspace' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('form', { name: 'Acessar workspace' }, { timeout: 4000 }),
+    ).toBeInTheDocument()
     expect(
       screen.queryByText('Sessão expirada ou revogada. Entre novamente.'),
     ).not.toBeInTheDocument()
+  })
+
+  it('opens the workspace after login even after a repeated unauthenticated response', async () => {
+    vi.stubGlobal('scrollTo', vi.fn())
+    let signedIn = false
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.endsWith('/auth/login')) {
+          signedIn = true
+          return json({
+            user: { id: 'preview', username: 'preview', role: 'administrator', active: true },
+          })
+        }
+        if (url.endsWith('/auth/me'))
+          return signedIn
+            ? json({ id: 'preview', username: 'preview', role: 'administrator', active: true })
+            : json({ error: { message: 'Autenticação necessária' } }, 401)
+        return json(
+          url.endsWith('/coverage') ? coverage : { items: [], total: 0, worker_online: false },
+        )
+      }),
+    )
+    queryRender(<App />)
+    await screen.findByRole('form', { name: 'Acessar workspace' }, { timeout: 4000 })
+    fireEvent(
+      window,
+      new CustomEvent('aegis-session-ended', {
+        detail: 'Sessão expirada ou revogada. Entre novamente.',
+      }),
+    )
+    await userEvent.type(screen.getByLabelText('Usuário'), 'preview')
+    await userEvent.type(screen.getByLabelText('Senha'), 'local-test-password')
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar no workspace' }))
+    expect(
+      await screen.findByRole('navigation', { name: 'Navegação principal' }),
+    ).toBeInTheDocument()
   })
 
   it('preserves the session-expired notice when concurrent requests report revocation', async () => {

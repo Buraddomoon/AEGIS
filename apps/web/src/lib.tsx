@@ -38,7 +38,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 export function useData<T>(path: string, interval: number | false = false) {
   return useQuery({
     queryKey: [path],
-    queryFn: () => api<T>(path),
+    queryFn: ({ signal }) => api<T>(path, { signal }),
     refetchInterval: interval,
     retry: 1,
   })
