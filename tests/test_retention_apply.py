@@ -210,3 +210,15 @@ def test_plan_tampering_never_passes_even_with_matching_local_authorization(read
             dry_run=False,
             clock=lambda: AT.isoformat(),
         )
+
+
+def test_ownership_drift_during_restore_aborts_before_deletion(ready):
+    def changed(identifier, folder):
+        marker = s.read_json(ready[0] / "owner.json")
+        marker["store_id"] = "0" * 32
+        (ready[0] / "owner.json").write_text(json.dumps(marker))
+        return restore_fixture(identifier, folder)
+
+    with pytest.raises(ValueError, match="ownership drift"):
+        execute(ready, restore=changed)
+    assert len(list((ready[0] / "snapshots").iterdir())) == 9

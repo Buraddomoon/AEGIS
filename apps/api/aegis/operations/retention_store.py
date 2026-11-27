@@ -103,6 +103,8 @@ def locked(root):
         raise ValueError("Owned retention store required")
     for name in ("snapshots", "archives", "receipts", "work"):
         vault.check_directory(root / name)
+    if any((root / "work").iterdir()):
+        raise ValueError("Unresolved private restore staging; manual review required")
     with vault.private_file(root / "lock", maximum=0) as stream:
         try:
             fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)

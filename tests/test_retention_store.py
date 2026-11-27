@@ -270,3 +270,13 @@ def test_authenticated_but_invalid_archive_structure_is_refused(store, change):
             pytest.fail("Unsafe authenticated archive exposed")
     assert not (root / "work" / "escape").exists()
     assert not list((root / "work").iterdir())
+
+
+def test_unresolved_private_staging_refuses_other_operations(store):
+    root, *_ = store
+    leftover = root / "work" / "restore-interrupted"
+    leftover.mkdir(mode=0o700)
+    vault.write_private(leftover / "database.dump", b"incomplete private restore")
+    with pytest.raises(ValueError, match="staging"):
+        s.build_plan(root)
+    assert (leftover / "database.dump").read_bytes() == b"incomplete private restore"

@@ -45,6 +45,8 @@ def approval(value, plan, *, at):
 
 def recheck(root, marker, plan, expected_sha256, clock):
     retention.check_plan(plan, expected_sha256, at=clock())
+    if store.read_json(root / "owner.json") != marker:
+        raise ValueError("Retention ownership drift")
     current = store.plan_locked(root, marker, at=plan["created_at"], expires_at=plan["expires_at"])
     if current != plan:
         raise ValueError("Retention drift; new plan and approval required")
@@ -201,6 +203,8 @@ def apply(
 
                 def authorized():
                     retention.check_plan(plan, expected_sha256, at=clock())
+                    if store.read_json(root / "owner.json") != marker:
+                        raise ValueError("Retention ownership drift")
                     approval(authorization, plan, at=clock())
                     if retention.policy(store.read_json(root / "policy.json")) != plan["policy"]:
                         raise ValueError("Retention policy or hold changed")
