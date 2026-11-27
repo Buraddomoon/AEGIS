@@ -7,6 +7,7 @@ suítes compartilhadas, executar em sequência:
 
 ```sh
 .venv/bin/pytest tests/test_lab_registry.py tests/test_lab_registry_api.py tests/test_multi_lab_execution.py tests/test_linux_campaigns.py tests/test_binding_review.py tests/test_transactions.py tests/test_scheduling.py tests/test_linux_scheduling.py tests/test_wazuh_campaigns.py tests/test_security.py tests/test_flow.py tests/test_migrations.py -q --tb=short
+.venv/bin/pytest tests/test_runner_rotation_native.py tests/test_runner_persisted_probe.py tests/test_linux_binding_rotation.py tests/test_wazuh_cycle_catalog.py -q --tb=short
 npm --prefix apps/web test
 make lint
 make build
@@ -17,7 +18,10 @@ Os contratos puros verificam SSRF/perfis/caminhos, symlink/FIFO/permissões/limi
 identidades duplicadas e drift. PG/HTTP em memória verifica dois runners com
 artefatos temporários próprios, reservas/claims/dispatches/cleanup separados,
 RBAC/CSRF, revisão/hash, mudança durante preflight, FK composta, downgrade seguro,
-Windows recusado e escopos históricos preservados. Não é transporte nativo.
+Windows recusado e escopos históricos preservados. Rotação/leitura b7 e adoção
+de catálogo usam schemas descartáveis e runtime simulado; a coluna nova não é
+exigida para ler o journal antigo. Seu tipo/nullability continuam verificados
+quando ela existe. Não é transporte nativo.
 
 O E2E cria schema, conta e API/worker próprios em18789; Alembic/seed afetam somente
 o schema descartável. Firefox sem interceptar a API registra uma conexão Linux

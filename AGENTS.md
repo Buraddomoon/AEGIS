@@ -241,6 +241,18 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   implantação ou operação Linux/Wazuh/originais. Ver docs/development/user-maintenance-checkpoint.md
   e docs/evidence/user-maintenance-2026-11-25/INTEGRATED-24.md. Parar nesta entrega.
 
+- #25 com aceite offline em27/11: #108/#109/#110 atendidas. Registro host-only
+  opt-in de conexões revisadas, migração explícitaf3b28c5d901a, ativo/FK de campanha,
+  resolução por lab, capacidade e histórico por ativo. Um runner/ativo por registro
+  Linux; sem host/URL/comando livre ou equivalência Windows. Fontec419d4b e
+  CI45686709531 SUCCESS:4234Python/9skips,172React/21glob, quatro partições
+  conferidas. Leitores b7/d446 preservados; primeira CI falha retida. Firefox
+  descartável VERIFIED, duas runs sintéticas, cadastro Linux offline revogado/
+  desconectado,1440/390px/zero erros JS; processos/schema próprios encerrados.
+  Demo anterior preservado; sem implantação, migração de originais ou operação
+  Linux/Wazuh/SIEM. Provas em docs/evidence/lab-registry-2026-11-25/README.md
+  e checkpoint em docs/development/lab-registry-checkpoint.md. Parar neste escopo.
+
 Ao terminar: comentário na issue com comportamento entregue, arquivos relevantes,
 testes realmente executados, falhas/limitações, commits/último hash/mensagem e
 sincronização. Atualizar checkpoint curto quando necessário. Não fabricar /compact
