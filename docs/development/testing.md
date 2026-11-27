@@ -1,5 +1,26 @@
 # Testes e evidências
 
+## Retenção de histórico — #27
+
+```sh
+make test-retention
+make test-retention-native-fixture
+```
+
+O primeiro target usa temporários privados e age/X25519 real, sem PG/Redis/Docker.
+Cobre política/mínimo distinto, holds, incompletos, hashes/deriva, locks, cifra,
+restauração simulada, falha de cleanup/exclusão, validade, aprovação exata, uso
+único e CLI/dry-run. Não confundir o callback de fixture com restore nativo.
+
+O segundo é **opt-in**, fora da coleta padrão/CI: usa a imagem PostgreSQL17 local,
+uma fonte e clones novos sem rede/portas/mounts persistentes, somente tmpfs. Cria
+fixture relacional não vazia com evidência/evento, recibo, auditoria, versões,
+synthetic=true e relatório congelado relacionado a duas runs; dump/age/restore e
+inventários de dados/estrutura reais verificam preservação byte a byte e cleanup.
+Não é o schema completo da app nem ensaio de laboratório ou dados humanos.
+Não abre volumes originais, acessa Demo ou executa marcador. Sem implantação.
+Ver [operação e limites](../operations/history-retention.md).
+
 ## Conexões defensivas — #26
 
 Somente arquivos temporários, HTTP em memória e TLS loopback:

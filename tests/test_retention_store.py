@@ -224,3 +224,49 @@ def test_cannot_adopt_existing_directory_or_use_concurrent_store(store):
             s.build_plan(root)
     with pytest.raises(FileExistsError):
         s.enroll(root, original)
+
+
+@pytest.mark.parametrize("change", ["escape", "symlink", "duplicate", "missing", "index"])
+def test_authenticated_but_invalid_archive_structure_is_refused(store, change):
+    import io
+    import tarfile
+
+    root, _, key, identity = store
+    envelope = s.archive(root, ID, key["recipient"])
+    index = {k: envelope[k] for k in ("format", "store_id", "id", "backup_id", "files")}
+    if change == "index":
+        index["backup_id"] = "unrelated"
+    plain = io.BytesIO()
+    with tarfile.open(fileobj=plain, mode="w", format=tarfile.USTAR_FORMAT) as tar:
+        data = json.dumps(index).encode()
+        entry = tarfile.TarInfo("archive-index.json")
+        entry.size = len(data)
+        tar.addfile(entry, io.BytesIO(data))
+        if change == "duplicate":
+            tar.addfile(entry, io.BytesIO(data))
+        for name in envelope["files"]:
+            if change == "missing" and name == "database.dump":
+                continue
+            entry = tarfile.TarInfo("../escape" if change == "escape" else name)
+            if change == "symlink" and name == "database.dump":
+                entry.type, entry.linkname = tarfile.SYMTYPE, "/etc/passwd"
+                tar.addfile(entry)
+            else:
+                data = (root / "snapshots" / ID / name).read_bytes()
+                entry.size = len(data)
+                tar.addfile(entry, io.BytesIO(data))
+    plain.seek(0)
+    target = root / "archives" / envelope["id"]
+    with (target / "bundle.age").open("wb") as output:
+        vault.crypto().encrypt_io(
+            plain, output, [vault.crypto().x25519.Recipient.from_str(key["recipient"])]
+        )
+    with vault.private_file(target / "bundle.age") as stream:
+        envelope["ciphertext_sha256"] = vault.hash_stream(stream)
+        envelope["ciphertext_bytes"] = os.fstat(stream.fileno()).st_size
+    (target / "envelope.json").write_text(json.dumps(envelope))
+    with pytest.raises(ValueError, match="archive|Archive"):
+        with s.restored_files(root, envelope["id"], envelope["ciphertext_sha256"], identity):
+            pytest.fail("Unsafe authenticated archive exposed")
+    assert not (root / "work" / "escape").exists()
+    assert not list((root / "work").iterdir())

@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 import demo_backup
+from aegis.operations import retention_apply, vault
 from aegis.operations import retention_store as store
-from aegis.operations import vault
 
 
 def restore(identifier, folder):
@@ -31,6 +31,15 @@ def main():
     verify.add_argument("--keys", type=Path, required=True)
     verify.add_argument("--key-id", required=True)
     actions.add_parser("plan")
+    apply = actions.add_parser("apply")
+    apply.add_argument("--plan", type=Path, required=True)
+    apply.add_argument("--expected-sha256", required=True)
+    mode = apply.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--dry-run", action="store_true")
+    mode.add_argument("--confirm-remove-copies", action="store_true")
+    apply.add_argument("--authorization", type=Path)
+    apply.add_argument("--keys", type=Path)
+    apply.add_argument("--key-id")
     args = parser.parse_args()
     try:
         if args.action == "init":
@@ -43,6 +52,23 @@ def main():
             identity = vault.load_key(args.keys, args.key_id)
             result = store.verify(
                 args.store, args.archive_id, args.expected_sha256, identity, restore
+            )
+        elif args.action == "apply":
+            authorization, identity = None, None
+            if not args.dry_run:
+                if not (args.authorization and args.keys and args.key_id):
+                    raise ValueError("Specific authorization and key required")
+                authorization = store.read_json(args.authorization)
+                identity = vault.load_key(args.keys, args.key_id)
+            result = retention_apply.apply(
+                args.store,
+                store.read_json(args.plan),
+                args.expected_sha256,
+                authorization=authorization,
+                identity=identity,
+                restore=restore,
+                confirm=args.confirm_remove_copies,
+                dry_run=args.dry_run,
             )
         else:
             result = store.build_plan(args.store)

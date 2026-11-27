@@ -75,3 +75,57 @@ reativa dados. Recibo de sucesso só é publicado depois da remoção do clone e
 staging privado. Falhas retêm cópias e pacotes parciais. Dump confiável apenas:
 restaurar SQL pode executar funções; arquivo recebido de terceiro não se torna
 confiável apenas por ter um hash válido. Ver [limites de recuperação](backup-recovery.md).
+
+## Revisão e aplicação de uso único
+
+Salve o plano em arquivo0600 fora da área gerenciada; confira IDs, motivos,
+bytes, hashes, holds e validade. `apply --dry-run` só revalida o plano atual:
+
+```sh
+.venv/bin/python scripts/history_retention.py --store /AREA/NOVA apply --plan /PRIVADO/plan.json --expected-sha256 PLAN_SHA256 --dry-run
+```
+
+Para uma operação futura **separadamente aprovada**, o operador humano fornece
+um arquivo0600 com estes campos exatos (sem ferramenta que autoaprove):
+
+```json
+{
+  "format": "aegis-history-retention-approval/1",
+  "store_id": "ID_EXATO_DA_AREA",
+  "plan_sha256": "HASH_EXATO_DO_PLANO",
+  "decision": "approve_enrolled_plaintext_removal",
+  "approved_by": "IDENTIFICADOR_DO_APROVADOR",
+  "approved_at": "INSTANTE_COM_FUSO",
+  "expires_at": "ATE_A_VALIDADE_DO_PLANO"
+}
+```
+
+O arquivo é registro de aprovação operacional, não autenticação, assinatura ou
+prova automática de que um humano aprovou. A aprovação deve existir antes de o
+operador materializar esse registro. A flag sozinha não concede autorização.
+Nesta sessão, não criar esse registro para ambiente humano nem aplicar nele.
+
+```sh
+.venv/bin/python scripts/history_retention.py --store /AREA/NOVA apply --plan /PRIVADO/plan.json --expected-sha256 PLAN_SHA256 --authorization /PRIVADO/approval.json --keys /PRIVADO/KEYS --key-id KEY_ID --confirm-remove-copies
+```
+
+A trava exclusiva cobre cadastro, arquivamento, verificação, plano e aplicação.
+A intenção durável consome o hash uma única vez. Todas as cópias candidatas são
+restauradas novamente, com clone/staging removidos, antes da primeira remoção;
+depois todo o inventário é reconferido. Aprovação, prazo e holds são revistos
+antes de cada unlink. Somente nomes explicitamente inventariados em diretórios
+cadastrados podem ser removidos, usando descritores de diretório e sem recursão.
+Arquivos cifrados e fontes originais permanecem. Não há comando de prune global.
+
+`receipts/HASH-begin.json` e `HASH-result.json` são privados e exclusivos. Falha
+ou interrupção após begin consome o plano; não repetir nem remover recibos para
+liberar replay. Exclusão parcial deixa cópia incompleta preservada no próximo
+plano; o arquivo cifrado completo continua disponível para recuperação isolada.
+Se faltar resultado, inspecionar intenção, clones próprios e arquivos privados;
+não supor cleanup. Não alterar fonte/manifesto/recibos para obter aceite.
+
+O piso de sete snapshots usa verificações registradas; não comprova capacidade
+atual de todas as chaves nem custódia independente. Os arquivos cifrados nunca
+são removidos por esta versão. Assim, crescimento de armazenamento de arquivos
+cifrados e tabelas ativas permanece fora da aplicação destrutiva: alterar essa
+política exige decisão explícita e trabalho próprio, preservando append-only.

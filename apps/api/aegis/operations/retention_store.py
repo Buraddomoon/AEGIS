@@ -319,7 +319,7 @@ def verify(root, archive_id, expected_sha256, identity, restore):
         return verify_locked(root, archive_id, expected_sha256, identity, restore)
 
 
-def verify_locked(root, archive_id, expected_sha256, identity, restore):
+def verify_locked(root, archive_id, expected_sha256, identity, restore, *, publish=True):
     with restored_files(root, archive_id, expected_sha256, identity) as (folder, envelope):
         receipt = restore(envelope["backup_id"], folder)
         if (
@@ -340,9 +340,10 @@ def verify_locked(root, archive_id, expected_sha256, identity, restore):
         "verified_at": datetime.now(UTC).isoformat(),
         "recovery": receipt,
     }
-    vault.write_json(
-        root / "archives" / archive_id / ("verification-" + uuid.uuid4().hex + ".json"), result
-    )
+    if publish:
+        vault.write_json(
+            root / "archives" / archive_id / ("verification-" + uuid.uuid4().hex + ".json"), result
+        )
     return result
 
 
