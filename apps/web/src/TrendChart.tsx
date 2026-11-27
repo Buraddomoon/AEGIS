@@ -11,38 +11,46 @@ import type { Coverage } from './types'
 
 export default function TrendChart({ trend }: { trend: Coverage['trend'] }) {
   return (
-    <div className="chart">
+    <div
+      className="chart"
+      role="img"
+      aria-label={`Evolução de ${trend.length} execuções concluídas. ${trend.map((t, i) => `Execução ${i + 1}: ${t.detected} detectados de ${t.evaluated} avaliados`).join('; ')}.`}
+    >
       <ResponsiveContainer width="100%" height={230}>
         <AreaChart data={trend.map((t, i) => ({ ...t, label: `#${i + 1}` }))}>
           <defs>
             <linearGradient id="detected" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#59d7b2" stopOpacity={0.23} />
-              <stop offset="100%" stopColor="#59d7b2" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--detection)" stopOpacity={0.23} />
+              <stop offset="100%" stopColor="var(--detection)" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} stroke="#252f3c" strokeDasharray="3 5" />
+          <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 5" />
           <XAxis
             dataKey="label"
-            tick={{ fill: '#8491a5', fontSize: 11 }}
+            tick={{ fill: 'var(--muted)', fontSize: 11 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             allowDecimals={false}
-            tick={{ fill: '#8491a5', fontSize: 11 }}
+            tick={{ fill: 'var(--muted)', fontSize: 11 }}
             axisLine={false}
             tickLine={false}
             width={30}
           />
           <Tooltip
-            contentStyle={{ background: '#171e2a', border: '1px solid #303d4e', borderRadius: 8 }}
+            contentStyle={{
+              background: 'var(--graphite)',
+              border: '1px solid var(--steel)',
+              borderRadius: 8,
+            }}
           />
           <Area
             isAnimationActive={false}
             type="monotone"
             name="Avaliados"
             dataKey="evaluated"
-            stroke="#536478"
+            stroke="var(--frost)"
             fill="transparent"
           />
           <Area
@@ -50,7 +58,7 @@ export default function TrendChart({ trend }: { trend: Coverage['trend'] }) {
             type="monotone"
             name="Detectados"
             dataKey="detected"
-            stroke="#59d7b2"
+            stroke="var(--detection)"
             fill="url(#detected)"
             strokeWidth={2.5}
           />

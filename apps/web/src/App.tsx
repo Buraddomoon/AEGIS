@@ -1,13 +1,13 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   Activity,
-  ArrowUpRight,
   BookOpen,
   CalendarClock,
   CheckCircle2,
   ChevronRight,
-  CircleDot,
+  Monitor,
+  Search,
   FileChartColumn,
   FlaskConical,
   Grid2X2,
@@ -15,40 +15,28 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  Plus,
   Radio,
   Settings2,
   Shield,
   ShieldCheck,
-  Target,
   Workflow,
   X,
 } from 'lucide-react'
-import {
-  api,
-  Badge,
-  date,
-  Empty,
-  Failure,
-  Go,
-  Loading,
-  navigate,
-  NoticeContext,
-  PageHeading,
-  Panel,
-  useData,
-} from './lib'
-import type { Campaign, Connectors, Coverage, Page, Run, User } from './types'
+import { api, Empty, Go, Loading, NoticeContext, useData } from './lib'
+import type { User } from './types'
 import { Catalog, TestLibrary } from './Catalog'
 import { Campaigns, Executions, ExecutionDetail, CoveragePage, Reports } from './Operations'
 import { Laboratories, Rules, Settings } from './Management'
 import { Scheduling } from './Scheduling'
 
-const TrendChart = lazy(() => import('./TrendChart'))
+import Overview from './Overview'
+import Login from './Login'
+import { Brand } from './Brand'
+import { QuickNavigation } from './QuickNavigation'
 
 const navigation = [
   {
-    group: 'WORKSPACE',
+    group: 'PRINCIPAL',
     items: [
       { id: 'overview', label: 'Visão geral', icon: LayoutDashboard },
       { id: 'attack', label: 'Matriz ATT&CK', icon: Grid2X2 },
@@ -83,13 +71,17 @@ const navigation = [
 export default function App() {
   const [route, setRoute] = useState(location.hash.slice(1) || 'overview'),
     [mobile, setMobile] = useState(false)
+  const sidebarRef = useRef<HTMLElement>(null)
+  const mainRef = useRef<HTMLElement>(null)
+  const menuRef = useRef<HTMLButtonElement>(null)
+  const [quickNav, setQuickNav] = useState(false)
   const [notice, setNotice] = useState<{ message: string; error: boolean } | null>(null)
   const [sessionMessage, setSessionMessage] = useState('')
   const user = useData<User>('/auth/me', 30000),
     cache = useQueryClient()
   useEffect(() => {
     const ended = (event: Event) => {
-      setSessionMessage((event as CustomEvent<string>).detail)
+      if (cache.getQueryData(['/auth/me'])) setSessionMessage((event as CustomEvent<string>).detail)
       void cache.cancelQueries()
       cache.clear()
       cache.setQueryData(['/auth/me'], null)
@@ -110,6 +102,59 @@ export default function App() {
     const timeout = setTimeout(() => setNotice(null), 7000)
     return () => clearTimeout(timeout)
   }, [notice])
+  useEffect(() => {
+    if (!user.data) return
+    const shortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setQuickNav((open) => !open)
+      }
+    }
+    addEventListener('keydown', shortcut)
+    return () => removeEventListener('keydown', shortcut)
+  }, [!!user.data])
+  useEffect(() => {
+    if (!mobile) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusable = () =>
+      Array.from(
+        sidebarRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? [],
+      )
+    focusable()[0]?.focus()
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobile(false)
+      if (event.key !== 'Tab') return
+      const items = focusable(),
+        first = items[0],
+        last = items.at(-1)
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last?.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first?.focus()
+      }
+    }
+    const desktop = window.matchMedia('(min-width: 851px)')
+    const resize = () => {
+      if (desktop.matches) setMobile(false)
+    }
+    desktop.addEventListener('change', resize)
+    addEventListener('keydown', keydown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      removeEventListener('keydown', keydown)
+      desktop.removeEventListener('change', resize)
+      menuRef.current?.focus()
+    }
+  }, [mobile])
+  useEffect(() => {
+    if (user.data) {
+      mainRef.current?.focus({ preventScroll: true })
+      window.scrollTo({ top: 0 })
+    }
+  }, [route, user.data?.id])
   if (user.isLoading)
     return (
       <div className="fullscreen">
@@ -137,21 +182,48 @@ export default function App() {
   return (
     <NoticeContext.Provider value={(message, error = false) => setNotice({ message, error })}>
       <div className="app-shell">
-        <aside className={`sidebar ${mobile ? 'mobile-open' : ''}`}>
-          <a href="#overview" className="brand">
-            <span className="brand-mark">
-              <Shield size={24} />
-            </span>
-            <span>
-              ÆGIS<small>PURPLE TEAM PLATFORM</small>
-            </span>
+        <a
+          className="skip-link"
+          href="#main"
+          onClick={(event) => {
+            event.preventDefault()
+            mainRef.current?.focus()
+          }}
+        >
+          Pular para o conteúdo
+        </a>
+        {mobile && (
+          <button
+            className="mobile-backdrop"
+            aria-label="Fechar navegação"
+            tabIndex={-1}
+            onClick={() => setMobile(false)}
+          />
+        )}
+        <aside
+          ref={sidebarRef}
+          id="workspace-navigation"
+          className={`sidebar ${mobile ? 'mobile-open' : ''}`}
+          role={mobile ? 'dialog' : undefined}
+          aria-modal={mobile || undefined}
+          aria-label="Menu do workspace"
+        >
+          <button
+            className="icon-button sidebar-close"
+            aria-label="Fechar menu"
+            onClick={() => setMobile(false)}
+          >
+            <X size={20} />
+          </button>
+          <a href="#overview" aria-label="AEGIS — Visão geral" onClick={() => setMobile(false)}>
+            <Brand subtitle />
           </a>
           <div className="workspace">
             <span className="workspace-avatar">A</span>
             <div>
-              Workspace local<small>Detection Validation</small>
+              Workspace local<small>Validação de detecção</small>
             </div>
-            <span className="workspace-dot" />
+            <Shield size={15} className="workspace-lock" aria-hidden="true" />
           </div>
           <nav aria-label="Navegação principal">
             {navigation.map((group) => (
@@ -161,6 +233,7 @@ export default function App() {
                   <a
                     key={item.id}
                     href={`#${item.id}`}
+                    onClick={() => setMobile(false)}
                     className={`nav-item ${page === item.id ? 'active' : ''}`}
                     aria-current={page === item.id ? 'page' : undefined}
                   >
@@ -203,26 +276,41 @@ export default function App() {
             </button>
           </div>
         </aside>
-        <div className="main-shell">
+        <div className="main-shell" inert={mobile}>
           <header className="topbar">
             <div className="breadcrumb">
               <button
+                ref={menuRef}
                 className="icon-button mobile-menu"
-                aria-label="Abrir menu"
+                aria-label={mobile ? 'Fechar menu' : 'Abrir menu'}
+                aria-expanded={mobile}
+                aria-controls="workspace-navigation"
                 onClick={() => setMobile(!mobile)}
               >
                 <Menu size={20} />
               </button>
               <Shield size={16} />
-              <span>Workspace</span>
+              <span>Console</span>
               <ChevronRight size={14} />
               <strong>{title}</strong>
             </div>
-            <span className="demo-pill">
-              <CircleDot size={13} /> ESCOPO AUTORIZADO
-            </span>
+            <div className="topbar-actions">
+              <button
+                className="quick-nav-trigger"
+                onClick={() => setQuickNav(true)}
+                aria-label="Buscar página"
+              >
+                <Search size={16} />
+                <span>Ir para uma página</span>
+                <kbd>Ctrl K</kbd>
+              </button>
+              <span className="local-pill">
+                <Monitor size={14} />
+                <span>Ambiente local</span>
+              </span>
+            </div>
           </header>
-          <main id="main">
+          <main id="main" ref={mainRef} tabIndex={-1}>
             {page === 'overview' ? (
               <Overview user={user.data} />
             ) : page === 'attack' ? (
@@ -258,6 +346,7 @@ export default function App() {
             <span>Uso exclusivo em ambientes autorizados</span>
           </footer>
         </div>
+        {quickNav && <QuickNavigation groups={navigation} onClose={() => setQuickNav(false)} />}
         {notice && (
           <div className={`toast ${notice.error ? 'danger' : ''}`} role="alert">
             {notice.error ? <Radio size={18} /> : <CheckCircle2 size={18} />}
@@ -273,336 +362,5 @@ export default function App() {
         )}
       </div>
     </NoticeContext.Provider>
-  )
-}
-
-function Login({ onLogin, message }: { onLogin: () => void; message?: string }) {
-  const [username, setUsername] = useState(''),
-    [password, setPassword] = useState(''),
-    [error, setError] = useState(''),
-    [busy, setBusy] = useState(false)
-  return (
-    <div className="login-layout">
-      <div className="login-brand">
-        <div className="brand">
-          <span className="brand-mark">
-            <Shield size={26} />
-          </span>
-          ÆGIS
-        </div>
-        <span className="eyebrow">PURPLE TEAM · DETECTION VALIDATION</span>
-        <h1>
-          A confiança começa
-          <br />
-          com uma evidência.
-        </h1>
-        <p>Conecte simulações controladas à validação da sua capacidade de detecção.</p>
-        <div className="login-flow">
-          <span>
-            <Target />
-            Simular
-          </span>
-          <ChevronRight />
-          <span>
-            <Radio />
-            Observar
-          </span>
-          <ChevronRight />
-          <span>
-            <ShieldCheck />
-            Validar
-          </span>
-        </div>
-        <div className="notice">
-          Demo disponível sem SIEM. Laboratórios reais exigem configuração e autorização
-          específicas.
-        </div>
-      </div>
-      <form
-        className="login-card"
-        onSubmit={async (e) => {
-          e.preventDefault()
-          setBusy(true)
-          setError('')
-          try {
-            await api('/auth/login', {
-              method: 'POST',
-              body: JSON.stringify({ username, password }),
-            })
-            onLogin()
-          } catch (err) {
-            setError((err as Error).message)
-          } finally {
-            setBusy(false)
-          }
-        }}
-      >
-        <span className="eyebrow">SEU WORKSPACE DE VALIDAÇÃO</span>
-        <h2>Bem-vindo ao ÆGIS</h2>
-        <p>Entre com sua conta local para continuar.</p>
-        {message && (
-          <div className="notice" role="status">
-            {message}
-          </div>
-        )}
-        <label>
-          Usuário
-          <input
-            autoComplete="username"
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </label>
-        <label>
-          Senha
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
-        {error && (
-          <div className="notice danger" role="alert">
-            {error}
-          </div>
-        )}
-        <button disabled={busy} className="button primary" type="submit">
-          {busy ? 'Autenticando…' : 'Entrar no workspace'}
-          <ArrowUpRight size={18} />
-        </button>
-        <p className="login-help">
-          Primeiro acesso? Crie seu administrador com <code>make bootstrap</code> no terminal local.
-        </p>
-      </form>
-    </div>
-  )
-}
-
-function Overview({ user }: { user: User }) {
-  const coverage = useData<Coverage>('/coverage', 5000),
-    runs = useData<Page<Run>>('/executions?mode=demo&limit=6', 3000),
-    campaigns = useData<Page<Campaign>>('/campaigns?limit=1000'),
-    connectors = useData<Connectors>('/connectors', 5000)
-  if (coverage.isLoading) return <Loading />
-  if (coverage.error) return <Failure error={coverage.error} />
-  const c = coverage.data!
-  return (
-    <>
-      <PageHeading
-        eyebrow="CONTROLE CONTÍNUO. CONFIANÇA COMPROVADA."
-        title="Visão geral"
-        description="Escopo Demo · simulações e evidências sintéticas, com indicadores separados do Linux real."
-        action={
-          user.role !== 'viewer' && (
-            <button className="button primary" onClick={() => navigate('campaigns/new')}>
-              <Plus size={17} />
-              Nova campanha
-            </button>
-          )
-        }
-      />
-      <div className="overview-banner">
-        <div className="banner-icon">
-          <ShieldCheck size={28} />
-        </div>
-        <div>
-          <strong>Seu ambiente de validação está pronto.</strong>
-          <p>Execute uma campanha no Demo Lab e acompanhe cada evidência, do início à conclusão.</p>
-        </div>
-        <a href="#tests">
-          Explorar testes <ArrowUpRight size={17} />
-        </a>
-      </div>
-      <div className="stats-grid">
-        <Metric
-          label="Técnicas avaliadas nesta release"
-          value={c.evaluated_techniques ?? '—'}
-          icon={<Grid2X2 size={18} />}
-          detail={`de ${c.catalogued_techniques} técnicas ativas no catálogo atual`}
-        />
-        <Metric
-          label="Execuções solicitadas"
-          value={c.total_runs}
-          icon={<Activity size={18} />}
-          detail={`${c.completed_tests} testes concluídos`}
-        />
-        <Metric
-          label="Simulações detectadas"
-          value={c.outcomes.DETECTED ?? 0}
-          icon={<ShieldCheck size={18} />}
-          detail={`${c.valid_tests} testes válidos no escopo`}
-          accent
-        />
-        <Metric
-          label="Taxa de detecção no escopo"
-          value={c.detected_percentage === null ? '—' : `${c.detected_percentage}%`}
-          icon={<Target size={18} />}
-          detail="Dados sintéticos · denominador explícito"
-        />
-      </div>
-      <div className="dashboard-grid">
-        <Panel
-          title="Evolução das detecções"
-          subtitle="Resultados por execução concluída · dados sintéticos"
-          action={<Go to="coverage">Ver cobertura</Go>}
-        >
-          <div className="chart-legend">
-            <span>
-              <i className="legend-dot mint" />
-              Detectados
-            </span>
-            <span>
-              <i className="legend-dot muted" />
-              Avaliados
-            </span>
-          </div>
-          {c.trend.length ? (
-            <Suspense fallback={<Loading />}>
-              <TrendChart trend={c.trend} />
-            </Suspense>
-          ) : (
-            <Empty title="A evolução começa na primeira campanha">
-              Conclua uma execução para visualizar a tendência de detecção.
-            </Empty>
-          )}
-        </Panel>
-        <Panel title="Resultados de validação" subtitle="Cada classificação tem um significado">
-          <div className="outcome-list">
-            {['DETECTED', 'OBSERVED_NOT_ALERTED', 'NO_TELEMETRY', 'INCONCLUSIVE'].map((k) => (
-              <div key={k}>
-                <Badge value={k} />
-                <strong>{c.outcomes[k] ?? 0}</strong>
-              </div>
-            ))}
-          </div>
-          <div className="panel-footnote">
-            Somente testes concluídos. Ausência de alerta não comprova falha de detecção.
-          </div>
-        </Panel>
-      </div>
-      <Panel
-        title="Últimas execuções"
-        subtitle="Histórico rastreável de validação"
-        action={<Go to="executions">Ver todas</Go>}
-      >
-        {runs.error ? (
-          <Failure error={runs.error} />
-        ) : runs.data?.items.length ? (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Campanha / execução</th>
-                  <th>Modo</th>
-                  <th>Estado</th>
-                  <th>Solicitada em</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {runs.data.items.map((r) => (
-                  <tr key={r.id}>
-                    <td>
-                      <a href={`#executions/${r.id}`} className="table-title">
-                        {campaigns.data?.items.find((x) => x.id === r.campaign_id)?.name ??
-                          'Campanha'}
-                        <small>{r.id.slice(0, 8)}</small>
-                      </a>
-                    </td>
-                    <td>
-                      <span className="subtle-tag">Demo Lab</span>
-                    </td>
-                    <td>
-                      <Badge value={r.state} />
-                    </td>
-                    <td className="muted-text">{date(r.created_at)}</td>
-                    <td>
-                      <Go to={`executions/${r.id}`}>Detalhes</Go>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <Empty title="Nenhuma execução por aqui">
-            Crie uma campanha, revise o escopo e autorize sua primeira simulação.
-          </Empty>
-        )}
-      </Panel>
-      <div className="dashboard-grid lower">
-        <Panel title="Saúde das integrações" subtitle="Estado real dos componentes configurados">
-          <div className="connector-list">
-            {connectors.data?.items.map((x) => (
-              <div key={x.id}>
-                <span className="connector-icon">
-                  {x.id === 'demo' ? <FlaskConical size={20} /> : <Radio size={20} />}
-                </span>
-                <div>
-                  <strong>{x.name}</strong>
-                  <small>{x.description}</small>
-                </div>
-                <Badge value={x.status} />
-              </div>
-            ))}
-          </div>
-        </Panel>
-        <Panel title="Worker de execução" subtitle="Fila durável no PostgreSQL">
-          <div className="worker-info">
-            <span className={`worker-orb ${connectors.data?.worker_online ? 'online' : ''}`}>
-              <Activity size={23} />
-            </span>
-            <div>
-              <strong>
-                {connectors.data?.worker_online
-                  ? 'Worker disponível'
-                  : 'Worker sem heartbeat recente'}
-              </strong>
-              <p>
-                {connectors.data?.worker_online
-                  ? 'Aguardando campanhas autorizadas.'
-                  : 'Execuções permanecem na fila até o worker iniciar.'}
-              </p>
-            </div>
-          </div>
-          <div className="panel-footnote">
-            Agendamentos Demo exigem aprovação administrativa com validade e limites. Linux real
-            exige configuração opt-in e aprovação por outra pessoa.
-          </div>
-        </Panel>
-      </div>
-      <p className="scope-note">
-        <CircleDot size={14} />
-        {c.denominator}. {c.limitation}
-      </p>
-    </>
-  )
-}
-
-function Metric({
-  label,
-  value,
-  icon,
-  detail,
-  accent = false,
-}: {
-  label: string
-  value: string | number
-  icon: React.ReactNode
-  detail: string
-  accent?: boolean
-}) {
-  return (
-    <div className={`metric ${accent ? 'metric-accent' : ''}`}>
-      <div>
-        <span>{label}</span>
-        {icon}
-      </div>
-      <strong>{value}</strong>
-      <p>{detail}</p>
-    </div>
   )
 }

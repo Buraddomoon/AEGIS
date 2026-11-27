@@ -1,7 +1,7 @@
 import { createContext, useContext, useRef, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertCircle, ArrowRight, Check, LoaderCircle, X } from 'lucide-react'
+import { AlertCircle, ArrowRight, Check, Inbox, LoaderCircle, X } from 'lucide-react'
 
 export function csrf() {
   return (
@@ -121,7 +121,9 @@ export function Empty({
 }) {
   return (
     <div className="empty">
-      <span className="empty-icon">◇</span>
+      <span className="empty-icon" aria-hidden="true">
+        <Inbox size={26} strokeWidth={1.5} />
+      </span>
       <h3>{title}</h3>
       <p>{children ?? 'Os dados aparecerão aqui após a primeira execução.'}</p>
     </div>

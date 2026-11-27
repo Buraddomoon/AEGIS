@@ -203,7 +203,7 @@ export function Catalog({ canReview = false }: { canReview?: boolean }) {
         <span>{filtered.length} técnicas no filtro atual</span>
         <div className="chart-legend">
           <span>
-            <i className="legend-dot mint" />
+            <i className="legend-dot detection" />
             Detectada
           </span>
           <span>
