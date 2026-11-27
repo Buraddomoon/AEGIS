@@ -10,6 +10,11 @@ const browser = await puppeteer.launch({
   browser: process.env.AEGIS_BROWSER ?? 'firefox',
   executablePath: process.env.AEGIS_BROWSER_PATH ?? '/usr/bin/firefox',
   headless: true,
+  extraPrefsFirefox: {
+    'ui.primaryPointerCapabilities': 6,
+    'ui.allPointerCapabilities': 6,
+    'ui.prefersReducedMotion': 0,
+  },
 })
 const page = await browser.newPage(),
   errors = []
@@ -52,9 +57,24 @@ async function navigate(hash) {
     location.hash = hash
   }, hash)
 }
-async function screenshot(name) {
-  const dismiss = await page.$('button[aria-label="Dispensar mensagem"]')
-  if (dismiss) await dismiss.click()
+async function screenshot(name, preservePointer = false) {
+  await page.bringToFront()
+  // Toasts expire independently; resolve and dismiss the current node in one
+  // turn so a disappearing notification cannot detach a cached handle.
+  await page.evaluate(() =>
+    document.querySelector('button[aria-label="Dispensar mensagem"]')?.click(),
+  )
+  if (!preservePointer) {
+    await page.evaluate(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    })
+    await page.mouse.move(Math.min(1000, (page.viewport()?.width ?? 390) - 20), 25)
+  }
+  await page.waitForNetworkIdle({ idleTime: 100, timeout: 10000 })
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  )
   await page.screenshot({ path: `${screenshotDirectory}/${name}.png`, fullPage: true })
   screenshotCount += 1
 }
@@ -127,7 +147,10 @@ async function verifyRecommendations(id) {
   await page.evaluate(() => scrollTo(0, 0))
   await screenshot('recommendations')
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
-  await page.waitForFunction(() => document.querySelector('.sidebar').getBoundingClientRect().right <= 0, { polling: 100 })
+  await page.waitForFunction(
+    () => document.querySelector('.sidebar').getBoundingClientRect().right <= 0,
+    { polling: 100 },
+  )
   assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
   await screenshot('recommendations-mobile')
   await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 1 })
@@ -190,6 +213,7 @@ async function approveAndRun() {
 try {
   await page.goto(origin, { waitUntil: 'networkidle0' })
   await page.waitForSelector('input[autocomplete="username"]')
+  await screenshot('login')
   await page.type('input[autocomplete="username"]', username)
   await page.type('input[autocomplete="current-password"]', password)
   await button('Entrar no workspace')
@@ -432,6 +456,24 @@ try {
   assert.equal(coverage.valid_tests, 6)
   assert.equal(coverage.detected_percentage, 33.3)
   await screenshot('overview')
+  await page.hover('.metric')
+  await page.waitForFunction(
+    () =>
+      document.querySelector('.metric')?.hasAttribute('data-glow-active') &&
+      getComputedStyle(document.querySelector('.metric'), '::before').opacity === '1',
+  )
+  await screenshot('overview-hover', true)
+  await page.click('button[aria-label="Buscar página"]')
+  await page.waitForSelector('dialog[open]')
+  await page.waitForFunction(() =>
+    document
+      .querySelector('dialog[open]')
+      .getAnimations()
+      .every((animation) => animation.playState !== 'running'),
+  )
+  await screenshot('navigation-modal')
+  await page.keyboard.press('Escape')
+  await page.waitForFunction(() => !document.querySelector('dialog[open]'))
   await navigate('attack')
   await text('706 referências no estado selecionado')
   await screenshot('attack')

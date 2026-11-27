@@ -23,6 +23,16 @@ necessário; cada issue delimita a entrega, subissues, dependências e aceite.
 
 ![Dashboard real do Demo, com dados sintéticos identificados](docs/images/overview.png)
 
+## Interface
+
+O workspace usa a paleta AEGIS, cards com iluminação ao passar o mouse, modais
+com bordas suaves e uma composição animada no login. O movimento respeita a
+preferência de acessibilidade do sistema.
+
+![Tela de acesso com o novo visual AEGIS](docs/images/login.png)
+
+[Veja o hover, os modais e as telas atualizadas na galeria](docs/images/README.md).
+
 ## Executar localmente
 
 Ambiente validado: Linux x86_64, Docker Engine com Compose, Make, Git e Python 3.13.

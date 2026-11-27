@@ -1,57 +1,87 @@
-# Galeria de capturas reais
+# Galeria da interface AEGIS
 
-Capturas da interface executável, sem mockups. Os nomes abaixo apontam para os
-arquivos originais versionados. Dados Demo vêm da API/worker/PostgreSQL reais no
-schema E2E descartável; eventos/alertas desse adaptador são **sintéticos**. Nenhuma
-imagem de Demo prova uma detecção externa.
+Capturas de 27/11/2026 com a paleta AEGIS, superfícies iluminadas, modais suaves e
+login animado. São screenshots da aplicação executável em Firefox, com API,
+worker, PostgreSQL e Redis em schema E2E descartável. Os dados e evidências do
+Demo são **sintéticos**. As imagens não contêm credenciais e não demonstram
+uma detecção externa.
 
-As 13 capturas Demo foram geradas por `scripts/e2e.py` e `apps/web/e2e.mjs` no fluxo
-Firefox de 2026-10-26: 4 runs / 16 testes sintéticos, zero erros JavaScript e viewport de 390 px
-sem overflow, incluindo o modal de transformação. A rodada atual acrescentou a
-prévia oficial de rename e preservou o relatório histórico. São 14 arquivos com a
-captura Linux anterior; nenhuma nova execução real de laboratório. A primeira
-página PDF acrescenta uma captura, totalizando15arquivos; foi atualizada em
-2026-11-09 com o resumo executivo e é rasterização de um relatório realmente
-gerado/baixado no E2E Demo, com evidências sintéticas.
-Relatórios automáticos acrescenta a captura de09/11/fonte0609ad2, total16arquivos:
-duas ocorrências aprovadas, snapshot inicial/comparativo e downloads reais, sem
-novo ensaio Linux/Wazuh. O E2E dessa extensão confirmou5runs/20testes sintéticos.
-[Política e limites da prévia](../integrations/sigma.md#prévia-de-transformação-de-campos).
+A fonte da aplicação é `606879f`, incluindo o visual de `24f87ce` e `43c5a15`.
+As capturas são reproduzidas por [e2e.py](../../scripts/e2e.py) e
+[e2e.mjs](../../apps/web/e2e.mjs). O fluxo verifica 5 runs e 20 testes sintéticos,
+5 exportações PDF, 2 relatórios automáticos e zero erros JavaScript. As 22 capturas de
+Firefox usam 1440 px no desktop e 390 px no móvel. A primeira página de um PDF
+real exportado completa o conjunto atual com 23 imagens.
+
+O [guia do frontend](../development/frontend-design.md) descreve as interações e
+a preferência de movimento reduzido. Uma imagem estática mostra um instante da
+animação: os anéis do login giram, os blocos flutuam e os cards reagem ao mouse
+na aplicação em execução.
+
+## Identidade e interação
+
+| Captura | Conteúdo |
+| --- | --- |
+| [Login](login.png) | Formulário vazio e composição decorativa animada, antes de digitar credenciais |
+| [Visão geral](overview.png) | Indicadores, histórico e distribuição dos resultados Demo |
+| [Brilho no card](overview-hover.png) | Iluminação acompanhando o cursor e elevação do card |
+| [Modal de navegação](navigation-modal.png) | Busca de páginas, cantos suaves e superfície com profundidade |
+| [Mobile](mobile.png) | Visão geral em 390 px, com dados do mesmo ciclo sintético |
+
+![Tela de acesso AEGIS com composição de órbitas](login.png)
+
+![Card iluminado pelo cursor na visão geral](overview-hover.png)
+
+![Modal de navegação com bordas suaves](navigation-modal.png)
+
+## Operações e evidências
 
 | Captura | Conteúdo e origem |
-|---|---|
-| [Overview](overview.png) | Indicadores Demo, denominadores e histórico da API |
+| --- | --- |
 | [Execução](execution.png) | Classificações sintéticas e evidências inspecionáveis |
+| [Recomendações](recommendations.png) | Análise vinculada a fatos e evidências da execução |
+| [Recomendações no celular](recommendations-mobile.png) | Mesmo percurso em 390 px |
 | [Cobertura](coverage.png) | Filtros de período/release e exportação do recorte |
-| [ATT&CK](attack.png) | Matriz de catálogo oficial, sem inferir técnicas testadas |
+| [ATT&CK](attack.png) | Matriz do catálogo oficial; catalogado não significa testado |
 | [Catálogo](attack-catalog.png) | Proveniência e histórico do snapshot inicial |
+| [Metadados Atomic](atomic-metadata.png) | Importação e revisão offline de metadados, sem execução Atomic |
+| [Atomic no celular](atomic-metadata-mobile.png) | Inspeção dos mesmos metadados em 390 px |
 | [Agendamentos](schedules.png) | Plano Demo aprovado e ocorrência emitida pelo worker |
-| [Revisões](rule-test-links.png) | Associação de versão Sigma/teste; não é implantação |
-| [Comparação](scope-comparison.png) | Diferenças de versões e vínculos registrados nos scopes |
+| [Relatórios automáticos](scheduled-reports.png) | Duas ocorrências aprovadas, snapshot inicial e comparação |
+| [Vínculos de regras](rule-test-links.png) | Associação de versão Sigma/teste; não é implantação |
+| [Comparação](scope-comparison.png) | Diferenças de versões e vínculos registrados nos escopos |
 | [Análise Sigma](sigma-analysis.png) | Achado estático parcial em regra demonstrativa |
-| [Preparação Sigma](sigma-readiness.png) | Campos candidatos com conversão explicitamente bloqueada |
-| [Prévia de campos](sigma-mapping.png) | Transformação oficial real em memória, antes/depois normalizados; nenhuma consulta SIEM gerada |
-| [Wazuh desconectado](wazuh-preparation.png) | Demo padrão sem conector; não representa o banco do ensaio Wazuh |
-| [Mobile](mobile.png) | Interface Demo em viewport móvel; screenshot pode excluir a barra de rolagem |
-| [Linux encerrado](linux-execution.png) | Captura histórica de 2026-10-21: campanha real autorizada, INCONCLUSIVE sem SIEM, recibo separado de detecção |
-| [Relatório PDF](report-pdf.png) | Primeira página do PDF de execução do E2E Firefox2026-11-09, fonte26605ff; 1 detecção em3testes válidos, com1inconclusivo fora da taxa. Documento completo13páginas/67.550bytes e aviso sintético em todas |
-| [Relatórios automáticos](scheduled-reports.png) | Plano Demo com duas ocorrências a60s, relatório inicial e comparação por grant; E2E Firefox09/11/fonte0609ad2, quatro PDFs e zeroerrosJS |
+| [Preparação Sigma](sigma-readiness.png) | Campos candidatos e condições da conversão |
+| [Prévia de campos](sigma-mapping.png) | Transformação oficial em memória, antes/depois normalizados |
+| [Consulta offline](sigma-query.png) | Consulta e procedência geradas offline; nenhuma consulta SIEM |
+| [Wazuh desconectado](wazuh-preparation.png) | Demo sem conector; não representa um ensaio Wazuh |
+| [Relatório PDF](report-pdf.png) | Primeira página do PDF atual de uma execução com 4 simulações; 1 detectado em 3 testes válidos, 1 inconclusivo fora da taxa |
 
-A imagem Linux foi capturada consultando o histórico após o único ensaio integrado,
-sem repetir o marcador. Ver [escopo e encerramento](../../labs/linux/README.md).
-O [ensaio Wazuh](../evidence/wazuh-2026-10-22/README.md) possui eventos/evidências
-registrados e não ganhou uma screenshot fictícia ou um novo efeito para ilustração.
+![Resultados de uma campanha sintética na interface atual](execution.png)
 
-![Dashboard Demo real](overview.png)
+![Filtros de cobertura com o visual atual](coverage.png)
 
-![Filtros de cobertura reais](coverage.png)
+## Capturas históricas
 
-![Prévia real de rename de campos, com conversão SIEM bloqueada](sigma-mapping.png)
+As 16 imagens anteriores foram preservadas byte a byte no
+[arquivo anterior à revisão visual](archive/pre-2026-11-27/README.md), junto à
+sua descrição original e respectivas datas. Isso inclui o PDF de 09/11 e a
+[campanha Linux encerrada de 21/10](archive/pre-2026-11-27/linux-execution.png).
+A imagem Linux também permanece no caminho histórico `linux-execution.png`.
+Não houve nova execução ou captura nativa Linux/Wazuh nesta revisão visual.
 
-![Histórico da campanha Linux encerrada](linux-execution.png)
+## Reprodução e verificação
 
-`make release-check` confere presença no índice Git e cabeçalho/dimensões PNG.
-Essa checagem não verifica pixels, procedência ou ausência de informação sensível;
-revisão humana e evidências do fluxo continuam necessárias. Não exponha capturas
-com dados empresariais ou segredos. Para regenerar Demo use `make e2e`; ensaios
-reais Linux/Wazuh exigem autorização específica própria.
+`make e2e` usa schema próprio e atualiza as capturas da interface; o diretório pode
+ser alterado com `AEGIS_E2E_SCREENSHOTS`. O fluxo fotografa o login antes do
+preenchimento, registra o hover e o modal e mantém todos os testes anteriores.
+Antes de fotografar páginas longas, o helper aguarda as requisições pendentes,
+retorna ao topo e sincroniza a pintura do navegador, preservando o posicionamento
+do menu e do cabeçalho fixos. Notificações temporárias são dispensadas sem manter
+referências a elementos que podem desaparecer durante a captura.
+O PDF é rasterizado a partir do arquivo realmente exportado pelo E2E; ele tem
+formatação própria, independente do CSS da aplicação.
+
+`make release-check` confere os links locais e os cabeçalhos/dimensões PNG do
+índice Git. Essa checagem não substitui inspeção visual ou comprovação da origem.
+Credenciais, logs e PDFs de teste permanecem em `.local`, fora do repositório.
