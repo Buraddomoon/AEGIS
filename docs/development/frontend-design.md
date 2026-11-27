@@ -97,3 +97,29 @@ descartável e Redis13; o Demo original em18780 não foi implantado ou migrado.
 Quatro campanhas sintéticas e11testes concluídos foram criados pelos endpoints
 normais, com aprovação e worker, sem fabricar resultados ou modificar históricos.
 Credenciais e capturas permanecem somente em `.local/frontend-preview`.
+
+## Luz, material e movimento
+
+A segunda revisão visual acrescenta uma camada própria em
+[effects.css](../../apps/web/src/effects.css). Cards e painéis ganham profundidade,
+cantos mais suaves e bordas iluminadas no hover. Botões recebem reflexo de luz,
+feedback de pressão e halo de foco; tabelas destacam a linha sob o cursor. Modais
+usam borda arredondada de22px, sombra difusa, backdrop desfocado e entrada curta.
+
+No login, os anéis e seus pontos de luz giram em sentidos opostos, os três blocos
+flutuam e o núcleo pulsa lentamente. São elementos decorativos, sem indicar
+conectividade ou atividade real. A preferência `prefers-reduced-motion` desativa
+as animações e os deslocamentos; os indicadores continuam legíveis.
+
+[SurfaceEffects](../../apps/web/src/SurfaceEffects.tsx) acompanha o cursor com
+uma única escuta delegada e no máximo uma atualização por frame, sem atualizar
+estado React. O brilho fica sob o conteúdo e não intercepta cliques. A interação
+com posição do cursor é limitada a dispositivos com mouse/ponteiro preciso e
+desativada com movimento reduzido. Não acrescenta bibliotecas nem cores de origem.
+
+Validação desta camada: build/tipagem e formatação aprovados. Firefox verificou
+deslocamento dos anéis ao longo do tempo, brilho acompanhando o mouse, elevação
+dos cards, modal de22px, ausência de overflow em390px e zero erros JavaScript.
+Um segundo perfil Firefox com movimento reduzido confirmou animações paradas e
+brilho por posição desativado. Capturas e resultado ficam em
+`.local/frontend-preview/motion`; o backend e os dados da prévia foram preservados.
