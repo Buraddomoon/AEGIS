@@ -40,3 +40,38 @@ Uso destrutivo no ambiente humano exige nova aprovação específica do pacote e
 é proibido na sessão de implementação da #116. Testes usam recursos descartáveis.
 A fonte em10/11 tinha somente planos consultivos de backups; este documento não
 reescreve essa evidência histórica nem altera os comandos consultivos existentes.
+
+## Cadastrar, arquivar e verificar
+
+Todos os caminhos são absolutos, sem symlinks; diretórios0700 e arquivos0600,
+pertencentes ao usuário atual. A área deve ser **nova**; `init` recusa adotar
+qualquer diretório existente. Não há pasta padrão nem descoberta de originais.
+Crie o JSON da política como arquivo privado e use:
+
+```sh
+.venv/bin/python scripts/history_retention.py --store /AREA/NOVA init --policy /PRIVADO/policy.json
+.venv/bin/python scripts/history_retention.py --store /AREA/NOVA enroll --source /BACKUPS/ID
+.venv/bin/python scripts/history_retention.py --store /AREA/NOVA archive ID --recipient AGE_PUBLIC_RECIPIENT
+.venv/bin/python scripts/history_retention.py --store /AREA/NOVA verify ARCHIVE_ID --expected-sha256 CIPHER_SHA256 --keys /PRIVADO/KEYS --key-id KEY_ID
+.venv/bin/python scripts/history_retention.py --store /AREA/NOVA plan
+```
+
+O cadastro copia manifesto, dump e todos os recibos reconhecidos, byte a byte;
+publica ownership somente após conferir origem/destino. Um cadastro interrompido
+fica preservado e inelegível. Arquivos extras/desconhecidos são recusados. Não
+remova/recrie um cadastro incompleto para fazer o plano passar.
+
+O pacote versionado contém índice, manifesto original, dump e recibos completos,
+com referências/hashes; não exporta uma seleção mutilada de linhas. O dump mantém
+proveniência, flags `synthetic`, versões, relações e snapshots. Age/X25519 faz a
+cifra autenticada; não existe fallback para texto em claro. O índice e todos os
+membros devem coincidir; links, caminhos, tipos especiais, duplicatas e excesso
+de tamanho são recusados na extração manual. Pacotes e chaves ficam no host.
+
+`verify` executa o coordenador de recuperação existente: PostgreSQL17 local
+fixado no manifesto, clone novo sem rede/portas/volumes persistentes, inventário
+de dados/estrutura idêntico e cleanup. Não inicia API/worker nem reconcilia ou
+reativa dados. Recibo de sucesso só é publicado depois da remoção do clone e do
+staging privado. Falhas retêm cópias e pacotes parciais. Dump confiável apenas:
+restaurar SQL pode executar funções; arquivo recebido de terceiro não se torna
+confiável apenas por ter um hash válido. Ver [limites de recuperação](backup-recovery.md).
