@@ -1,5 +1,12 @@
 # Custódia externa — checkpoint #28/#117/#118
 
+Estado final: [aceite do perfil manual em 27/11/2026](../evidence/external-custody-2026-11-27/ACCEPTANCE-28.md).
+Registros abaixo preservam as etapas e os bloqueios anteriores. O responsável
+confirmou a guarda após receber o conjunto atual e a instrução de separar a
+chave; execução final dos ZIPs exatos restaurou 33 tabelas/3.399 linhas em destino
+novo, sem fallback ou alteração do Demo. Confirmação externa é do responsável;
+sem auditoria da nuvem ou download de retorno verificado pelo agente.
+
 Sessão de 27/11/2026, limitada à #28 e suas duas subissues. Base examinada:
 `4ee910c113f5b6e89d04519e99ed340d892ccaef`, `main`, árvore inicialmente limpa e
 remoto no mesmo hash. Última mensagem da base:
@@ -157,7 +164,7 @@ Aceitação pessoal de risco não reescreve o envio conjunto histórico nem subs
 os critérios pendentes. Encerrar o trabalho executável nesta máquina sem nova
 pergunta, novos envios, replays ou entrega fora da #28.
 
-## Condições para continuidade
+## Condições registradas antes da confirmação final
 
 Registrar a decisão completa da #117, em canal privado
 para dados sensíveis. O pacote concreto da #118 deve delimitar conjunto,
@@ -168,3 +175,26 @@ inventários, tempos e cleanup precisam de provas do ensaio realmente executado.
 Checks de staged/release, commit final, mensagem e sincronização ficam registrados
 nos comentários finais de #28/#117/#118. Nenhuma issue foi fechada por esta
 preparação. Encerrar aqui, sem iniciar outra entrega ou o ensaio bloqueado.
+
+## Aceite final do fluxo manual
+
+Após a entrega dos três artefatos atuais, preservados em caminhos privados
+separados, o responsável respondeu “pronto” e reiterou concluir a issue. Isso
+confirma o atendimento manual às instruções recebidas, incluindo guarda da
+identidade nova separadamente. Não é declaração de auditoria feita pelo agente.
+Política adotada sob a delegação e aceitação do risco: destino/acesso operados
+pelo responsável, preservação integral sem exclusão e recuperação manual em
+melhor esforço, sem promessa de frequência/RPO/RTO máximos.
+
+Para fechar a parte técnica do conjunto entregue, o agente conferiu hash do ZIP
+contra a referência separada e executou decriptação/restore reais somente dos
+dois ZIPs atuais em destino novo, sem acesso a backups em claro ou banco fonte:
+**`decrypted_and_restore_verified`**, 33 tabelas/3.399 linhas, inventários iguais,
+restore 5,983s/total 6,09s, cleanup confirmado e pós-consulta do clone ausente.
+Staging e cópia temporária da chave removidos; dois ZIPs e referência inalterados.
+Referência privada `custody-transport/2026-11-27/e7d79c2448b64dfc80e214dd017ed150`.
+
+O [aceite conjunto](../evidence/external-custody-2026-11-27/ACCEPTANCE-28.md)
+explicita evidências e limites de cada critério, inclusive ausência de auditoria
+remota. Encerrar filhos #117/#118 e então #28 com comentário de provas, commit
+e sincronização; parar nesse escopo. Não reabrir aprovação/ensaio/ambiente Lab.

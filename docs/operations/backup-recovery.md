@@ -346,9 +346,10 @@ A extensão host-only age/X25519 acrescenta `backup-keygen`, `seal-backup`,
 `verify-sealed-backup` e `backup-vault-plan`. A cópia cifrada pode ser decriptada
 e restaurada no mesmo clone offline sem acessar banco/dump fonte. Originais,
 chaves, imagens e evidências não são removidos; retenção permanece só plano.
-[Procedimento, custódia e limites](encrypted-backups.md). Transporte externo,
-guarda independente de chaves e cutover continuam pendentes.
+[Procedimento, custódia e limites](encrypted-backups.md). O fluxo manual externo
+da #28 foi aceito em27/11: guarda/separação confirmadas pelo responsável e
+restore nativo dos ZIPs em destino novo isolado. Sem auditoria remota ou cutover.
 
-A [preparação de custódia externa #28/#117](external-backup-custody.md) registra
-os campos que o responsável precisa decidir e as condições do ensaio #118.
-Não concede autorização de transporte ou recuperação em outro host.
+A [custódia externa manual #28/#117/#118](external-backup-custody.md) registra
+a política de preservação e recuperação em melhor esforço, provas e limites.
+Não concede autorização de novo transporte ou recuperação operacional em outro host.

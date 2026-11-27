@@ -130,14 +130,14 @@ o operador ainda precisa do checkout confiável para validar seu framing.
 
 Isso não cifra o banco, filesystem, swap, dump original ou backups anteriores.
 Chave e ciphertext no mesmo computador não protegem contra comprometimento do
-host ou perda do disco. Nesta entrega não houve transporte externo ou teste de
-custódia independente. Imagens, configuração, segredos/roles PostgreSQL, Redis,
+host ou perda do disco. No marco original de26/10 não houve transporte externo
+ou teste de custódia independente. Imagens, configuração, segredos/roles PostgreSQL, Redis,
 PKI e diários de runner precisam de guarda própria; não fazem parte do pacote.
 Sem promessa de RPO/RTO ou recuperação operacional entre hosts.
 
-[Decisão de custódia externa #28/#117](external-backup-custody.md): alternativas,
-campos pendentes e procedimento condicionado à autorização da #118. Destino,
-acesso, retenção, RPO/RTO e ensaio externo continuam pendentes; testes locais
-não alteram esse estado.
+[Custódia externa manual #28/#117/#118](external-backup-custody.md): política e
+aceite de27/11 com guarda externa/separação confirmadas pelo responsável e
+restore nativo dos ZIPs atuais em destino novo isolado. Sem auditoria remota,
+automação ou garantia de RPO/RTO; evidências e limites discriminados no aceite.
 
 [Evidência local e limites](../evidence/encrypted-backups-2026-10-26/README.md).

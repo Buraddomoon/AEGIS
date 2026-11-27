@@ -1,4 +1,18 @@
-# Custódia externa — decisão pendente #28/#117
+# Custódia externa manual — #28/#117/#118
+
+Perfil manual com aceite em 27/11/2026: o responsável confirmou a guarda do
+conjunto atual após entrega do ZIP cifrado, da nova chave separada e da referência
+de hashes. A confirmação do responsável é a evidência externa; o agente verificou
+nativamente hash, age, restore dos ZIPs exatos e cleanup, sem auditar a nuvem.
+Ver [aceite e política](../evidence/external-custody-2026-11-27/ACCEPTANCE-28.md).
+
+Acesso e transporte ficam sob controle do responsável. Preservar todas as cópias
+e respectivas chaves, sem exclusão automática. Perfil manual, sem frequência,
+RPO máximo ou RTO máximo garantidos, sob aceitação do risco de perda: recuperação
+até o último snapshot guardado e restore em melhor esforço. Isso não promete
+backup contínuo, provedor auditado, SLA ou recuperação em outro computador.
+
+## Histórico da preparação
 
 Estado atualizado em 27/11/2026: o responsável informou ter guardado manualmente
 o `backup-vault` histórico em nuvem e pediu continuidade. **Envio informado pelo
@@ -139,8 +153,8 @@ antes do restore. Um clone descartável local pode verificar os dados devolvidos
 pela nuvem, mas não demonstra recuperação em outro computador ou independência
 da chave se ela ainda for obtida somente no host original. Registrar cada limite.
 
-Revisão do runbook e testes locais de age com fixture sintética demonstram
-somente os contratos locais exercitados. A #117 permanece aberta até decisão
-explícita completa; a #118 permanece bloqueada até essa decisão, infraestrutura
-e autorização. O pai #28 permanece aberto até as provas e o aceite conjunto.
+Revisão do runbook e testes de age com fixture sintética demonstram somente os
+contratos locais exercitados. O aceite final acrescenta a decisão/custódia manual
+confirmadas pelo responsável e a recuperação nativa dos ZIPs atuais em destino
+novo isolado. Manter separadas as fontes de evidência e os limites do perfil.
 Ver [checkpoint e resultados desta sessão](../development/external-custody-checkpoint.md).
