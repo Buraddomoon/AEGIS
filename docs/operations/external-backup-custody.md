@@ -7,6 +7,21 @@ responsável; cópia remota ainda não verificada pelo agente.** A cópia identi
 acesso, retenção, RPO/RTO e teste de recuperação ainda precisam ser confirmados.
 O relato de envio não comprova integridade remota ou restore.
 
+Complemento: o usuário informou ter guardado também a chave **no mesmo lugar**
+do backup. Isso não atende à separação de custódia/canal exigida pela #118. O
+ZIP local enviado passou por decriptação e restore reais em clone descartável,
+32 tabelas/3.169 linhas, cleanup confirmado; ele não foi baixado de volta da
+nuvem. A verificação remota continua pendente. Recibos e limites estão no
+[checkpoint](../development/external-custody-checkpoint.md).
+
+Depois, o responsável manifestou intenção de guardar a chave separadamente,
+aceitou o risco de perda e pediu continuidade. Uma cópia **atual de 27/11/2026**
+foi criada do Demo ativo em snapshot somente leitura, cifrada com identidade
+nova e restaurada/verificada: 33 tabelas/3.399 linhas, cleanup confirmado. ZIPs
+privados de cópia e chave foram preparados em diretórios separados, além de
+referência de hashes. Esse novo conjunto ainda não teve transporte externo
+informado ou verificado. Preservar o conjunto histórico e sua chave anterior.
+
 Reutilizar [cifragem age/X25519](encrypted-backups.md) e
 [recuperação em quarentena](backup-recovery.md), conforme o
 [ADR0016](../architecture/decisions/0016-encrypted-demo-backups.md).

@@ -83,6 +83,80 @@ comparação e teste. Sem esse retorno, o agente só dispõe do arquivo local
 original. Retenção, acesso e metas de perda/tempo de recuperação continuam sem
 decisão explícita. #117/#118/#28 permanecem abertas, sem aceite conjunto.
 
+## Verificação nativa local dos ZIPs informados
+
+O usuário confirmou ter guardado também o ZIP da chave, mas no mesmo lugar da
+cópia. Confirmou que o ZIP local é o arquivo enviado, não um download de retorno.
+Logo, a guarda externa é relato do responsável e a separação de custódia/canal
+ainda não foi atendida. Não converter esse envio conjunto em prova de separação.
+
+Em 27/11, 20:24:47–20:24:52 UTC, a orquestração host-only em
+`.venv/bin/python` chamou o fluxo real `scripts/demo_backup.py::verify_sealed`
+sobre os ZIPs locais conhecidos, com SHA256 esperado vindo da referência local
+anterior. ZIPs foram lidos sem extração genérica: apenas `bundle.age`,
+`envelope.json` e a identidade específica foram materializados em diretórios
+novos 0700/arquivos0600. Rejeição de paths inseguros/links, nomes duplicados e
+limites aplicada antes do uso. Fonte em claro e banco fonte foram explicitamente
+indisponibilizados para impedir fallback. Funções de decriptação, restore,
+inventário e cleanup foram reais, sem substituir Docker/PostgreSQL por fixtures.
+
+**`decrypted_and_restore_verified`**, 32 tabelas/3.169 linhas, inventários de
+dados/estrutura iguais ao snapshot de 26/10. Restore medido em 5,29s; operação
+local total 5,368s. Clone novo PostgreSQL17 por ID, sem rede/portas/volumes
+persistentes, somente tmpfs; sem aplicação/worker/SIEM. Recibo publicado após
+cleanup; staging decriptado e cópia temporária da chave removidos. ZIPs fontes
+byte a byte iguais antes/depois. Consulta posterior do nome próprio confirmou
+ausência do único clone criado. Não foi criado snapshot atual ou alterado o Demo.
+
+Referência opaca do conjunto privado de recibo/intents/summary:
+`custody-local-zip/2026-11-27/8bc74e0e33664bb29761a8b784b1a942`.
+Não publicar os ZIPs, chave, hashes humanos ou caminhos privados na issue.
+O teste valida recuperabilidade local do pacote enviado. Não comprova bytes/ACLs
+da nuvem, canal separado da chave, perda do host, outro computador ou RPO/RTO.
+Solicitado download para arquivo novo e escolha de guarda separada da chave.
+
+## Cópia atual preparada e verificada
+
+O responsável manifestou intenção de guardar a chave separadamente. Informou
+“pronto” para o download, porém nenhum arquivo de retorno foi encontrado no
+caminho solicitado nem nos diretórios de backup/Downloads consultados; o único
+ZIP identificado continuava sendo o original enviado. Ao pedir esclarecimento
+do caminho, o usuário pediu seguir e aceitou o risco de perda. Esse aceite foi
+respeitado sem novas perguntas; não foi convertido em evidência de download,
+ACL, segregação já efetivada, retenção ou metas numéricas de recuperação.
+
+Para preparar um conjunto atual completo e revisável, foi usado o fluxo real
+`scripts/demo_backup.py::backup` → `seal_backup` → `verify_sealed`, por
+orquestração host-only em `.venv/bin/python`, sem alteração dessas funções.
+Configuração existente usada somente no processo, sem imprimir credenciais.
+Fonte restrita ao único DB do Demo padrão já ativo; URL/cluster/imagem conferidos
+pelas guardas existentes. Transação REPEATABLE READ/READ ONLY e snapshot exportado
+compartilhado com pg_dump, sem migração, DDL, mudança de grants ou operação Lab.
+
+Snapshot de **27/11/2026, 20:28:00 UTC**, 33 tabelas/3.399 linhas. Identidade age
+nova e cifra reais, 1.340.002 bytes de ciphertext. Restore completo em clone
+PostgreSQL17 local por ID, sem rede/portas/volumes persistentes, inventários
+iguais, **`decrypted_and_restore_verified`**, 5,802s de restore. Clone e staging
+removidos antes do recibo; consulta posterior do nome próprio confirmou ausência
+do único clone criado. Sem boot de aplicação, Redis, worker, cutover ou Lab.
+Backup novo e arquivos históricos preservados. Não é SLA ou RPO/RTO medido.
+
+Referência opaca dos recibos/manifesto/envelope/summary privados:
+`custody-current/2026-11-27/66285a1dc03c4967999df6f834554ff9`.
+Pacote de entrega privado: ZIP de 1.341.456 bytes contendo somente ciphertext,
+envelope e instruções; nenhuma chave ou dump em claro. ZIP da identidade nova
+preparado em outro diretório privado, 569 bytes; ZIP não cifra a chave. Referência
+de SHA256 preparada separadamente. Arquivos0600 e diretórios0700; criação
+exclusiva/fsync e CRC dos ZIPs conferidos. Nenhum artefato privado incluído no Git.
+
+O novo conjunto exige usar sua própria chave, preservando a antiga para o
+snapshot anterior. O agente não o enviou à nuvem; entrega externa e guarda
+separada continuam a cargo do responsável. #117/#118/#28 permanecem abertas:
+faltam decisões explícitas de acesso/retenção/RPO/RTO e prova externa completa.
+Aceitação pessoal de risco não reescreve o envio conjunto histórico nem substitui
+os critérios pendentes. Encerrar o trabalho executável nesta máquina sem nova
+pergunta, novos envios, replays ou entrega fora da #28.
+
 ## Condições para continuidade
 
 Registrar a decisão completa da #117, em canal privado
