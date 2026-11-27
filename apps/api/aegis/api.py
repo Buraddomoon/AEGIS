@@ -404,7 +404,8 @@ def review_wazuh_binding(
     if not lab:
         raise HTTPException(404, "Laboratório não encontrado.")
     try:
-        return queries.record(telemetry.bind(db, lab, user, data.review))
+        telemetry.bind(db, lab, user, data.review, data.profile_id, data.confirm_configuration_hash)
+        return telemetry.status(db, lab)
     except IntegrityError:
         db.rollback()
         raise HTTPException(
@@ -412,12 +413,22 @@ def review_wazuh_binding(
         ) from None
 
 
-@router.post("/labs/{lab_id}/wazuh-binding/remove", tags=["Integrations"])
-def remove_wazuh_binding(lab_id: str, data: schemas.Confirm, user: Admin, db: DB) -> dict:
+@router.post("/labs/{lab_id}/wazuh-binding/test", tags=["Integrations"])
+def diagnose_wazuh_binding(lab_id: str, data: schemas.WazuhDiagnostic, user: Admin, db: DB) -> dict:
+    rate_limit("wazuh-test:" + user.id, 5, 60)
     lab = db.scalar(select(Laboratory).where(Laboratory.id == lab_id).with_for_update())
     if not lab:
         raise HTTPException(404, "Laboratório não encontrado.")
-    telemetry.unbind(db, lab, user)
+    return telemetry.diagnose(db, lab, user, data.confirm_configuration_hash)
+
+
+@router.post("/labs/{lab_id}/wazuh-binding/remove", tags=["Integrations"])
+def remove_wazuh_binding(lab_id: str, data: schemas.WazuhRemoval, user: Admin, db: DB) -> dict:
+    rate_limit("wazuh-binding:" + user.id, 10, 3600)
+    lab = db.scalar(select(Laboratory).where(Laboratory.id == lab_id).with_for_update())
+    if not lab:
+        raise HTTPException(404, "Laboratório não encontrado.")
+    telemetry.unbind(db, lab, user, data.confirm_configuration_hash)
     return telemetry.status(db, lab)
 
 
@@ -1149,10 +1160,13 @@ def connectors(user: Viewer) -> dict:
                 "id": "wazuh",
                 "name": "Wazuh Indexer",
                 "synthetic": False,
-                "status": "configured_unverified" if settings().wazuh_url else "disconnected",
+                "status": "configured_unverified"
+                if settings().wazuh_url and settings().defensive_profiles is None
+                else "disconnected",
                 "description": "Somente leitura. Conexão externa ainda não validada.",
             },
         ],
+        "profiles_enabled": settings().defensive_profiles is not None,
         "worker_online": worker,
         "scheduling": "approved_demo_only",
         "lab_mode": "linux_opt_in" if configured else "not_configured",
@@ -1164,9 +1178,11 @@ def test_wazuh(user: Admin, db: DB) -> dict:
     from aegis.integrations.wazuh import configured_provider
 
     rate_limit("wazuh-test:" + user.id, 5, 60)
+    if settings().defensive_profiles is not None:
+        raise HTTPException(409, "Use o diagnóstico do binding revisado do laboratório.")
     try:
         provider = configured_provider()
-        version = provider.test_connection()
+        provider.test_connection()
     except ValueError:
         raise HTTPException(
             409, "Wazuh não configurado: exige HTTPS, IP fixado, credenciais e CA válida."
@@ -1179,7 +1195,6 @@ def test_wazuh(user: Admin, db: DB) -> dict:
     db.commit()
     return {
         "status": "connected",
-        "version": version,
         "scope": "indexer_read_only",
         "limitation": "Conectividade não comprova ingestão de telemetria nem detecção.",
     }

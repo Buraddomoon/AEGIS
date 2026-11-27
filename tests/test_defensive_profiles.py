@@ -110,3 +110,37 @@ def test_duplicate_profile_ids_and_json_keys_rejected(profile_registry):
     path.write_text('{"format":"aegis-defensive-profiles/1","entries":[],"entries":[]}')
     with pytest.raises(ValueError):
         profiles.load()
+
+
+def test_provider_uses_captured_profile_and_rejects_last_moment_drift(
+    profile_registry, monkeypatch
+):
+    import httpx
+    from aegis.integrations.wazuh import configured_provider
+
+    path, entry = profile_registry
+    reviewed_hash = digest(descriptor(entry["id"]))
+    requests = []
+
+    def handle(request):
+        requests.append(request)
+        return httpx.Response(200, json={"version": {"number": "fixture-only"}})
+
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:1")
+    monkeypatch.setenv("SSL_CERT_FILE", "/nonexistent/environment-ca")
+    remote = configured_provider(
+        profile_id=entry["id"], expected_hash=reviewed_hash, transport=httpx.MockTransport(handle)
+    )
+    assert remote.test_connection() == "fixture-only"
+    assert remote.closed and len(requests) == 1
+    assert requests[0].url.host == "192.0.2.10"
+    assert requests[0].headers["Host"] == "indexer.fixture:9200"
+    assert requests[0].extensions["sni_hostname"] == "indexer.fixture"
+    entry["revision"] += 1
+    save(path, entry)
+    with pytest.raises(ValueError, match="mudou"):
+        configured_provider(
+            profile_id=entry["id"],
+            expected_hash=reviewed_hash,
+            transport=httpx.MockTransport(lambda _: pytest.fail("No send")),
+        )

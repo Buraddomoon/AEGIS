@@ -392,12 +392,15 @@ def configured_provider(
     policy: WazuhCollectionConfig | None = None, **kwargs
 ) -> WazuhIndexerProvider:
     profile_id = kwargs.pop("profile_id", None)
+    expected_hash = kwargs.pop("expected_hash", None)
     if settings().defensive_profiles is not None:
         from aegis.integrations.defensive_profiles import selected
 
         if profile_id is None:
             raise ValueError("Perfil defensivo obrigatório.")
         resolved = selected(profile_id)
+        if expected_hash is not None and digest(resolved.descriptor()) != expected_hash:
+            raise ValueError("Perfil mudou antes do transporte.")
         profile = resolved.profile
         if policy is not None and policy != profile.policy:
             raise ValueError("Política difere do perfil revisado.")

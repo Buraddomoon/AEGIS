@@ -100,7 +100,19 @@ class BindingReviewRead(BaseModel):
     normal_operation_permitted: Literal[False]
 
 
+class WazuhRemoval(Input):
+    confirm: Literal[True]
+    confirm_configuration_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+
+
+class WazuhDiagnostic(Input):
+    confirm_configuration_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    confirm: Literal[True]
+
+
 class WazuhBindingReview(Input):
+    profile_id: str | None = Field(default=None, pattern=r"^[a-z][a-z0-9-]{2,63}$")
+    confirm_configuration_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     review: str = Field(min_length=20, max_length=4000)
     confirm_read_only_scope: Literal[True]
 

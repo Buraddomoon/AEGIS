@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from aegis import binding_review
+from aegis.config import settings
 from aegis.db import session_factory
 from aegis.domain.contracts import Collection, ExecutionContext
 from aegis.domain.validation import digest
@@ -39,14 +40,41 @@ def binding(db: Session, lab_id: str) -> WazuhBinding | None:
     return db.scalar(select(WazuhBinding).where(WazuhBinding.laboratory_id == lab_id))
 
 
+def available_profiles(lab_id: str) -> list[dict]:
+    from aegis.integrations.defensive_profiles import candidates
+
+    if settings().defensive_profiles is None:
+        return []
+    try:
+        return candidates(lab_id)
+    except (ValueError, OSError):
+        return []
+
+
+def reviewed_descriptor(item: WazuhBinding) -> dict:
+    if settings().defensive_profiles is None:
+        return descriptor()
+    candidates = [
+        p
+        for p in available_profiles(item.laboratory_id)
+        if p["configuration_hash"] == item.configuration_hash
+    ]
+    if len(candidates) != 1:
+        raise ValueError("Perfil revisado mudou ou está indisponível.")
+    return descriptor(candidates[0]["id"])
+
+
 def status(db: Session, lab: Laboratory) -> dict:
     item = binding(db, lab.id)
     try:
-        proposed = descriptor()
+        proposed = reviewed_descriptor(item) if item else descriptor()
     except (ValueError, OSError):
         proposed = None
     fingerprint = digest(proposed) if proposed else None
     return {
+        "profiles_enabled": settings().defensive_profiles is not None,
+        "profiles": available_profiles(lab.id),
+        "configuration_hash": fingerprint,
         "configuration_available": bool(proposed and proposed["policy"]["laboratory_id"] == lab.id),
         "proposed_policy": proposed["policy"]
         if proposed and proposed["policy"]["laboratory_id"] == lab.id
@@ -73,14 +101,25 @@ def status(db: Session, lab: Laboratory) -> dict:
     }
 
 
-def bind(db: Session, lab: Laboratory, actor: User, review: str) -> WazuhBinding:
+def bind(
+    db: Session,
+    lab: Laboratory,
+    actor: User,
+    review: str,
+    profile_id: str | None = None,
+    expected_hash: str | None = None,
+) -> WazuhBinding:
     binding_review.require_review(db, lab)
     try:
-        value = descriptor()
+        value = descriptor(profile_id)
     except (ValueError, OSError):
         raise HTTPException(
             409, "Política Wazuh/HTTPS/IP/credenciais/CA inválidos ou ausentes na implantação."
         ) from None
+    if (
+        settings().defensive_profiles is not None or expected_hash is not None
+    ) and expected_hash != digest(value):
+        raise HTTPException(409, "Perfil mudou; recarregue e confirme a versão atual.")
     policy = WazuhCollectionConfig.model_validate(value["policy"])
     asset = db.get(Asset, str(policy.asset_id))
     if (
@@ -114,10 +153,14 @@ def bind(db: Session, lab: Laboratory, actor: User, review: str) -> WazuhBinding
     return item
 
 
-def unbind(db: Session, lab: Laboratory, actor: User):
+def unbind(db: Session, lab: Laboratory, actor: User, expected_hash: str | None = None):
     binding_review.require_review(db, lab)
     item = binding(db, lab.id)
     if item:
+        if (
+            settings().defensive_profiles is not None or expected_hash is not None
+        ) and item.configuration_hash != expected_hash:
+            raise HTTPException(409, "Binding mudou; recarregue antes de desativar.")
         db.delete(item)
         lab.environment_version += 1
         audit(
@@ -135,7 +178,7 @@ def scope_for(db: Session, lab: Laboratory, asset: Asset) -> dict:
     if item is None:
         return {"provider": "unavailable"}
     try:
-        value = descriptor()
+        value = reviewed_descriptor(item)
     except (ValueError, OSError):
         raise HTTPException(
             409, "Configuração Wazuh revisada indisponível; revise o binding."
@@ -154,7 +197,9 @@ def scope_valid(db: Session, run: CampaignRun) -> bool:
         item
         and item.id == planned.get("binding_id")
         and item.asset_id == run.scope["asset_id"]
-        and item.configuration_hash == planned.get("configuration_hash") == configured_hash()
+        and item.configuration_hash
+        == planned.get("configuration_hash")
+        == configured_hash(planned.get("profile", {}).get("id"))
     )
 
 
@@ -171,7 +216,16 @@ def collect_real(run_id: str, context: ExecutionContext, guard) -> Collection:
         else:
             try:
                 policy = WazuhCollectionConfig.model_validate(planned["policy"])
-                poll = WazuhPollingProvider(configured_provider(policy), deadline, guard)
+                provider = (
+                    configured_provider(
+                        policy,
+                        profile_id=planned["profile"]["id"],
+                        expected_hash=planned["configuration_hash"],
+                    )
+                    if planned.get("profile")
+                    else configured_provider(policy)
+                )
+                poll = WazuhPollingProvider(provider, deadline, guard)
                 result = poll.collect(context)
             except (ValueError, OSError, httpx.HTTPError):
                 result = Collection(
@@ -204,3 +258,52 @@ def collect_real(run_id: str, context: ExecutionContext, guard) -> Collection:
                 )
             )
             db.commit()
+
+
+def diagnose(db: Session, lab: Laboratory, actor: User, expected_hash: str) -> dict:
+    """One bounded root request, only for a current reviewed binding; no event search."""
+    binding_review.require_review(db, lab)
+    item = binding(db, lab.id)
+    if item is None or item.configuration_hash != expected_hash:
+        raise HTTPException(409, "Binding ausente ou revisão alterada; recarregue.")
+    try:
+        value = reviewed_descriptor(item)
+        if digest(value) != expected_hash:
+            raise ValueError("Revisão desatualizada.")
+    except (ValueError, OSError):
+        raise HTTPException(409, "Perfil indisponível ou alterado; revise novamente.") from None
+    result = "unavailable"
+    try:
+        provider = configured_provider(
+            WazuhCollectionConfig.model_validate(value["policy"]),
+            **(
+                {"profile_id": value["profile"]["id"], "expected_hash": expected_hash}
+                if value.get("profile")
+                else {}
+            ),
+        )
+        provider.test_connection()
+        result = "reachable"
+    except Exception:
+        pass  # No upstream body, version, path, exception or credentials escape.
+    try:
+        if digest(reviewed_descriptor(item)) != expected_hash:
+            result = "stale"
+    except (ValueError, OSError):
+        result = "stale"
+    audit(
+        db,
+        actor.id,
+        "wazuh.profile_diagnostic",
+        lab.id,
+        configuration_hash=expected_hash,
+        result=result,
+    )
+    db.commit()
+    return {
+        "status": result,
+        "configuration_hash": expected_hash,
+        "checked_at": now().isoformat(),
+        "events_queried": False,
+        "limitation": "Diagnóstico pontual de transporte; não comprova ingestão ou detecção. Indisponível não significa zero eventos.",
+    }
