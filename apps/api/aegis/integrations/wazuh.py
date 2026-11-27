@@ -66,6 +66,7 @@ class WazuhIndexerProvider:
         policy: WazuhCollectionConfig | None = None,
         guard: Callable[[], None] = lambda: None,
         budget_end: float | None = None,
+        ca_data: str | None = None,
     ):
         if policy:
             alerts_index, archives_index = policy.alerts_index, policy.archives_index
@@ -82,7 +83,7 @@ class WazuhIndexerProvider:
         self.loop, self.closed = asyncio.Runner(), False
         self.client = httpx.AsyncClient(
             auth=(username, password),
-            verify=ssl.create_default_context(cafile=ca_bundle),
+            verify=ssl.create_default_context(cafile=ca_bundle, cadata=ca_data),
             transport=transport,
             timeout=httpx.Timeout(10, connect=3),
             follow_redirects=False,
@@ -390,6 +391,27 @@ class WazuhIndexerProvider:
 def configured_provider(
     policy: WazuhCollectionConfig | None = None, **kwargs
 ) -> WazuhIndexerProvider:
+    profile_id = kwargs.pop("profile_id", None)
+    if settings().defensive_profiles is not None:
+        from aegis.integrations.defensive_profiles import selected
+
+        if profile_id is None:
+            raise ValueError("Perfil defensivo obrigatório.")
+        resolved = selected(profile_id)
+        profile = resolved.profile
+        if policy is not None and policy != profile.policy:
+            raise ValueError("Política difere do perfil revisado.")
+        return WazuhIndexerProvider(
+            profile.url,
+            resolved.username.get_secret_value(),
+            resolved.password.get_secret_value(),
+            profile.allowed_ip,
+            ca_data=resolved.ca,
+            policy=profile.policy,
+            **kwargs,
+        )
+    if profile_id is not None:
+        raise ValueError("Catálogo defensivo ausente.")
     cfg = settings()
     if not all([cfg.wazuh_url, cfg.wazuh_username, cfg.wazuh_password, cfg.wazuh_allowed_ip]):
         raise ValueError("Wazuh não configurado.")

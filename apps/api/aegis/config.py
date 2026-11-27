@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     linux_runner_registry: Path | None = None
     linux_runner_config: Path | None = None
     linux_scheduling_enabled: bool = False
+    defensive_profiles: Path | None = None
     wazuh_collection_config: Path | None = None
     sigma_validation_scope: Path | None = None
     operating_mode: Literal["normal", "recovery"] = "normal"

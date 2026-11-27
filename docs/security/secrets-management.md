@@ -26,3 +26,24 @@ Não montar CAs privadas nem a pasta inteira. OpenSSL usa caminho/comandos fixos
 sem overrides de usuário; política padrão do sistema preservada. Manifesto/hash
 não é assinatura, custódia externa ou autorização de ativação. Certificados têm
 validade curta e exigem nova verificação no uso. [Procedimento](../operations/runner-pki.md).
+
+## Perfis defensivos host-only — #26/#111
+
+`DEFENSIVE_PROFILES` habilita, explicitamente, um catálogo JSON absoluto protegido
+(0600, proprietário root ou UID do processo, diretórios sem escrita por terceiros,
+sem symlinks). Formato `aegis-defensive-profiles/1`, até100entradas/256KiB.
+Cada entrada contém `id`, `revision` positiva, `url` HTTPS, `allowed_ip` fixado,
+`ca_file`, `username_file`, `password_file` absolutos e `policy` no contrato
+`WazuhCollectionConfig`. Destinos e caminhos só podem ser provisionados no host.
+Os dois arquivos de credenciais são0600 (até1/4KiB); CA até64KiB, sem escrita por
+terceiros, parseada antes de anunciar disponibilidade. Montar somente leitura.
+Nenhum endpoint recebe URL, caminho ou credencial. A API publica somente ID,
+revisão, política e hash; os caminhos e valores secretos não são devolvidos.
+
+Alterar destino, IP, CA, principal, referências, política ou revisão altera o hash
+e exige nova revisão. Ao rotacionar senha no mesmo arquivo, **incrementar revision**;
+não persistir hashes de senhas como versão pública. Não existe fallback para o
+ambiente legado quando o catálogo está habilitado mas inválido/ausente.
+Sem opt-in, o fluxo de ambiente/binding anterior continua disponível. Não há
+migração de banco para esses perfis: o binding guarda somente o hash já existente.
+Registro/revisão não testa conexão, não autoriza laboratório e não implanta regra.

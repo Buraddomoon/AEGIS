@@ -87,7 +87,16 @@ def load_config() -> WazuhCollectionConfig:
         raise ValueError("Política Wazuh inválida ou inacessível na implantação.") from None
 
 
-def descriptor() -> dict:
+def descriptor(profile_id: str | None = None) -> dict:
+    if settings().defensive_profiles is not None:
+        from aegis.integrations.defensive_profiles import selected
+
+        if profile_id is None:
+            raise ValueError("Selecione um perfil defensivo conhecido.")
+        return selected(profile_id).descriptor()
+    if profile_id is not None:
+        raise ValueError("Catálogo defensivo ausente.")
+
     from aegis.integrations.wazuh import validate_destination
 
     cfg, connection = load_config(), settings()
@@ -116,8 +125,8 @@ def descriptor() -> dict:
     }
 
 
-def configured_hash() -> str | None:
+def configured_hash(profile_id: str | None = None) -> str | None:
     try:
-        return digest(descriptor())
+        return digest(descriptor(profile_id))
     except (ValueError, OSError):
         return None
