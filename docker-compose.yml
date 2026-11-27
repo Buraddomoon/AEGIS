@@ -44,6 +44,7 @@ services:
       WAZUH_PASSWORD: ${WAZUH_PASSWORD:-}
       WAZUH_CA_BUNDLE: ${WAZUH_CA_BUNDLE:-}
       WAZUH_COLLECTION_CONFIG: ${WAZUH_COLLECTION_CONFIG:-}
+      DEFENSIVE_PROFILES: ${DEFENSIVE_PROFILES:-}
       APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Run scripts/init_env.py}
     networks: [backend]
     depends_on:
@@ -63,6 +64,7 @@ services:
       WAZUH_PASSWORD: ${WAZUH_PASSWORD:-}
       WAZUH_CA_BUNDLE: ${WAZUH_CA_BUNDLE:-}
       WAZUH_COLLECTION_CONFIG: ${WAZUH_COLLECTION_CONFIG:-}
+      DEFENSIVE_PROFILES: ${DEFENSIVE_PROFILES:-}
     ports: ['127.0.0.1:18780:8080']
     networks: [backend, ingress]
     depends_on:

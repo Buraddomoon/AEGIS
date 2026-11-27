@@ -1,5 +1,36 @@
 # Testes e evidências
 
+## Conexões defensivas — #26
+
+Somente arquivos temporários, HTTP em memória e TLS loopback:
+
+```sh
+.venv/bin/pytest tests/test_defensive_profiles.py tests/test_wazuh_tls.py tests/test_wazuh_collection.py tests/test_wazuh_availability.py -q --tb=short
+```
+
+Com PG/Redis15 de testes disponíveis, credenciais somente no processo e sem
+outra suíte compartilhada, executar **sequencialmente**:
+
+```sh
+.venv/bin/pytest tests/test_defensive_connector_api.py tests/test_wazuh_campaigns.py tests/test_binding_review.py tests/test_security.py tests/test_integrations.py -q --tb=short
+npm --prefix apps/web test
+make lint
+make build
+.venv/bin/python scripts/defensive_profiles_e2e.py
+```
+
+O E2E aplica Alembic/seed somente em schema próprio, cria conta/ativo/lab
+**offline** e catálogo temporários e inicia API em18790 e servidor HTTPS próprio
+em loopback. Processo de API exclusivo do harness traduz somente o IP de fixture
+192.0.2.10 para esse servidor; TLS verifica CA e SNI originais. Não altera o
+transporte da aplicação normal. Firefox usa a API real, sem interceptações, para
+selecionar/revisar, consultar um único `GET /`, verificar confirmação descartada,
+diagnóstico sanitizado e desativar. Captura1440/390px; finally encerra API/TLS,
+remove schema e limites próprios. Logs/provas/PKI privada ficam em
+`.local/defensive-profiles/acceptance-*`, nunca no Git. Nenhum contato SIEM nativo,
+marcador, worker, contêiner, migração de original ou implantação. Veja
+[operação](../operations/defensive-profiles.md).
+
 ## Registro fechado e múltiplos laboratórios — #25
 
 Com PG/Redis de testes disponíveis, credenciais apenas no processo e sem outras

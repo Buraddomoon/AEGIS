@@ -6,6 +6,9 @@ O catálogo opt-in e as referências privadas seguem
 [gestão de segredos](../security/secrets-management.md).
 
 O administrador provisiona `DEFENSIVE_PROFILES` somente na implantação desejada.
+Compose repassa a variável para API/worker; acrescente mounts somente leitura
+em override revisado, com os mesmos caminhos absolutos e UID capaz de ler os
+arquivos0600. O Compose padrão não monta arquivos privados automaticamente.
 Use um `id` estável, `revision` positiva e crescente e política exata do lab/ativo.
 A API não permite editar destino, CA, referência ou credencial. Com catálogo
 habilitado, ausência, erro de permissões/PKI ou ID desconhecido bloqueiam o perfil;

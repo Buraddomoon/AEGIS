@@ -491,7 +491,7 @@ function IntegrationSettings({ user }: { user: User }) {
   return (
     <Panel
       title="Integrações"
-      subtitle="Credenciais e destinos são configurados por ambiente; nunca enviados pelo navegador."
+      subtitle="Credenciais e destinos são provisionados no host; revise os perfis conhecidos por laboratório."
     >
       {data.error ? (
         <Failure error={data.error} />
@@ -506,17 +506,23 @@ function IntegrationSettings({ user }: { user: User }) {
               <p>{c.description}</p>
               <Badge value={c.status} />
             </div>
-            {c.id === 'wazuh' && user.role === 'administrator' && (
+            {c.id === 'wazuh' && data.data?.profiles_enabled && (
+              <a className="button" href="#labs">
+                Consultar perfis por laboratório
+              </a>
+            )}
+            {c.id === 'wazuh' && !data.data?.profiles_enabled && user.role === 'administrator' && (
               <button
                 className="button"
                 disabled={busy}
                 onClick={() =>
                   void run(async () => {
-                    const result = await api<{ status: string; version: string }>(
-                      '/connectors/wazuh/test',
-                      { method: 'POST' },
+                    const result = await api<{ status: string }>('/connectors/wazuh/test', {
+                      method: 'POST',
+                    })
+                    setTested(
+                      `Diagnóstico pontual: ${result.status}. Não comprova ingestão ou detecção.`,
                     )
-                    setTested(`Último teste: ${result.status} · versão ${result.version}`)
                   }, 'Consulta de conectividade concluída. Não valida ingestão nem detecção.')
                 }
               >

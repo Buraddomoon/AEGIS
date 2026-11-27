@@ -288,6 +288,7 @@ export interface Coverage {
   trend: { run_id: string; date: string; detected: number; evaluated: number }[]
 }
 export interface Connectors {
+  profiles_enabled?: boolean
   items: { id: string; name: string; status: string; synthetic: boolean; description: string }[]
   worker_online: boolean
   scheduling: string

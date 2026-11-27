@@ -1202,6 +1202,9 @@ tbody tr:hover {
   gap: 12px;
   margin-top: 24px;
 }
+.wazuh-actions {
+  flex-wrap: wrap;
+}
 .test-grid,
 .campaign-grid {
   display: grid;
