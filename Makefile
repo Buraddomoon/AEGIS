@@ -352,9 +352,13 @@ runner-diagnostic-cleanup:
 	$(VENV)/python scripts/runner_diagnostic.py cleanup --plan-id "$(DIAGNOSTIC_PLAN_ID)" --expected-sha256 "$(DIAGNOSTIC_PLAN_SHA256)" --operation-id "$(DIAGNOSTIC_OPERATION_ID)" --begin-sha256 "$(DIAGNOSTIC_BEGIN_SHA256)"
 
 # Private temporaries and age only; no Docker or shared PG/Redis required.
-.PHONY: test-retention test-retention-native-fixture
+.PHONY: test-retention test-retention-native-fixture test-retention-native-apply
 test-retention:
 	$(VENV)/pytest tests/test_retention_policy.py tests/test_retention_store.py tests/test_retention_apply.py tests/test_retention_cli.py -q --tb=short
 # Explicit fixture starts only fresh offline PG17 in tmpfs, never original Labs.
 test-retention-native-fixture:
 	$(VENV)/pytest tests/native_retention.py -q -s --tb=short
+
+# Explicit complete-schema acceptance: nine snapshots, real restore/apply in temporaries.
+test-retention-native-apply:
+	$(VENV)/pytest tests/native_retention_apply.py -q -s --tb=short

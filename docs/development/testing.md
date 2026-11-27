@@ -5,6 +5,7 @@
 ```sh
 make test-retention
 make test-retention-native-fixture
+make test-retention-native-apply
 ```
 
 O primeiro target usa temporários privados e age/X25519 real, sem PG/Redis/Docker.
@@ -19,6 +20,14 @@ synthetic=true e relatório congelado relacionado a duas runs; dump/age/restore 
 inventários de dados/estrutura reais verificam preservação byte a byte e cleanup.
 Não é o schema completo da app nem ensaio de laboratório ou dados humanos.
 Não abre volumes originais, acessa Demo ou executa marcador. Sem implantação.
+`test-retention-native-apply` complementa o roundtrip reduzido: aplica todo o
+Alembic atual em PostgreSQL novo sem rede, insere uma fixture sintética relacional
+e usa a CLI real, sem substituir restore/transporte, para nove snapshots distintos.
+Confere mínimo de sete, hold adicional, dry-run, drift, aplicação com aprovação
+exclusiva de fixture, redução exata dos bytes em claro e restore após a remoção.
+Compara inventários completos de dados/estrutura antes/depois e preserva fonte,
+arquivos cifrados, relações e relatórios congelados. Não acessa PG/Redis de testes
+compartilhados ou qualquer banco humano. O teste permanece opt-in, fora da CI.
 Ver [operação e limites](../operations/history-retention.md).
 
 ## Conexões defensivas — #26

@@ -222,3 +222,16 @@ def test_ownership_drift_during_restore_aborts_before_deletion(ready):
     with pytest.raises(ValueError, match="ownership drift"):
         execute(ready, restore=changed)
     assert len(list((ready[0] / "snapshots").iterdir())) == 9
+
+
+def test_consumed_approval_refuses_recreated_identical_copies(ready):
+    root, _, _, plan, _ = ready
+    result = execute(ready)
+    assert result["status"] == "applied"
+    for identifier in result["removed_ids"]:
+        s.enroll(root, root.parent / identifier)
+    # Even the exact prior inventory cannot reactivate the consumed approval.
+    assert s.build_plan(root, at=plan["created_at"], expires_at=plan["expires_at"]) == plan
+    with pytest.raises(ValueError, match="consumed"):
+        execute(ready)
+    assert s.read_json(root / "receipts" / (plan["sha256"] + "-result.json")) == result
