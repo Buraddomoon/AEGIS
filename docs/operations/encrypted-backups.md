@@ -135,4 +135,9 @@ custódia independente. Imagens, configuração, segredos/roles PostgreSQL, Redi
 PKI e diários de runner precisam de guarda própria; não fazem parte do pacote.
 Sem promessa de RPO/RTO ou recuperação operacional entre hosts.
 
+[Decisão de custódia externa #28/#117](external-backup-custody.md): alternativas,
+campos pendentes e procedimento condicionado à autorização da #118. Destino,
+acesso, retenção, RPO/RTO e ensaio externo continuam pendentes; testes locais
+não alteram esse estado.
+
 [Evidência local e limites](../evidence/encrypted-backups-2026-10-26/README.md).

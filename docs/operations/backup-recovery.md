@@ -348,3 +348,7 @@ e restaurada no mesmo clone offline sem acessar banco/dump fonte. Originais,
 chaves, imagens e evidências não são removidos; retenção permanece só plano.
 [Procedimento, custódia e limites](encrypted-backups.md). Transporte externo,
 guarda independente de chaves e cutover continuam pendentes.
+
+A [preparação de custódia externa #28/#117](external-backup-custody.md) registra
+os campos que o responsável precisa decidir e as condições do ensaio #118.
+Não concede autorização de transporte ou recuperação em outro host.
