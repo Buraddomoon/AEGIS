@@ -1,9 +1,11 @@
 # Custódia externa — decisão pendente #28/#117
 
-Estado em 27/11/2026: **ADIADO, aguardando decisão do responsável**. As issues
-#28/#117 não escolhem destino nem autorizam transporte. A #118 depende dessa
-decisão e de autorização específica para o ensaio. Este documento prepara a
-decisão; não é um registro de aprovação ou de cópia externa realizada.
+Estado atualizado em 27/11/2026: o responsável informou ter guardado manualmente
+o `backup-vault` histórico em nuvem e pediu continuidade. **Envio informado pelo
+responsável; cópia remota ainda não verificada pelo agente.** A cópia identificada
+é de 26/10/2026 e não representa os dados atuais. Custódia independente da chave,
+acesso, retenção, RPO/RTO e teste de recuperação ainda precisam ser confirmados.
+O relato de envio não comprova integridade remota ou restore.
 
 Reutilizar [cifragem age/X25519](encrypted-backups.md) e
 [recuperação em quarentena](backup-recovery.md), conforme o
@@ -12,9 +14,10 @@ Não há novo upload, agendamento, provedor ou endpoint de restore.
 
 ## Alternativas para o responsável avaliar
 
-Nenhuma alternativa está selecionada. Disponibilidade, capacidade, acesso e
-eventuais custos precisam ser confirmados pelo responsável; não criar contas,
-contratar serviços ou presumir armazenamento gratuito.
+O responsável escolheu transporte manual para armazenamento em nuvem que já
+utiliza; provedor/conta e detalhes de acesso não foram informados. As alternativas
+abaixo preservam o contexto da decisão. Não criar contas, contratar serviços ou
+presumir armazenamento gratuito.
 
 | Alternativa | Condição para independência do computador | Limitação a decidir |
 | --- | --- | --- |
@@ -46,7 +49,7 @@ são campos pendentes, sem valores operacionais predefinidos.
 | Retenção | Duração, número de snapshots distintos, holds e tratamento de cópias antigas/chaves; sem autorizar exclusão nesta entrega |
 | RPO | Perda máxima aceitável em tempo, frequência de snapshot/transporte e como detectar atraso |
 | RTO | Tempo máximo desejado, marco inicial do incidente e marco final: dados verificados, API em quarentena ou serviço recuperado |
-| Ensaio #118 | Máquina nova isolada, recursos/imagens compatíveis, janela/validade, operador, canais, ações permitidas e cleanup |
+| Ensaio #118 | Destino novo isolado, recursos/imagens compatíveis, janela/validade, operador, canais, ações permitidas e cleanup |
 | Aprovação | Referência, data e aceite explícito do responsável sobre esses valores e o conjunto do ensaio |
 
 RPO é objetivo de perda tolerada, não a idade de qualquer arquivo disponível.
@@ -114,6 +117,12 @@ jobs, reservas e efeitos externos históricos exigem reconciliação própria an
 de qualquer retomada. Não há replay automático ou autorização de cutover.
 
 ## Limite de aceite desta preparação
+
+Para verificar o envio manual informado, baixar a cópia da nuvem para uma pasta
+nova, preservando o original; comparar seu hash com a referência local confiável
+antes do restore. Um clone descartável local pode verificar os dados devolvidos
+pela nuvem, mas não demonstra recuperação em outro computador ou independência
+da chave se ela ainda for obtida somente no host original. Registrar cada limite.
 
 Revisão do runbook e testes locais de age com fixture sintética demonstram
 somente os contratos locais exercitados. A #117 permanece aberta até decisão

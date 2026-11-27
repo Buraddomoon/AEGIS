@@ -5,7 +5,7 @@ Sessão de 27/11/2026, limitada à #28 e suas duas subissues. Base examinada:
 remoto no mesmo hash. Última mensagem da base:
 `docs(retention): record integrated acceptance of snapshot retention (Refs #116, Refs #27)`.
 
-## Resultado e bloqueadores
+## Resultado inicial e bloqueadores
 
 - **#117 aberta/adiada:** falta decisão explícita do responsável sobre destino,
   acesso, custódia independente da chave, retenção, RPO/RTO e condições do ensaio.
@@ -49,9 +49,43 @@ operacional ou operação Linux/Wazuh/SIEM/originais. Backups e chaves de custó
 operacionais não foram abertos, modificados ou removidos. A suíte integral/CI
 não foi usada como prova de validação desta preparação documental.
 
-## Retomada e encerramento
+## Retomada após transporte manual informado
 
-Retomar somente após registrar a decisão completa da #117, em canal privado
+Ainda em 27/11, após explicação do objetivo, o responsável informou:
+“backup-vault guardado em nuvem,pode continuar”. Isso registra escolha de
+transporte manual para nuvem e relato de cópia realizada pelo próprio usuário;
+o agente não acessou o provedor nem verificou seus bytes/ACLs. Nenhum endereço,
+conta, caminho privado de custódia ou hash do backup humano é publicado aqui.
+
+A inspeção local de metadados encontrou no checkout histórico uma cópia cifrada
+de 26/10/2026, 1.318.864 bytes. Seu SHA256 corresponde ao envelope e ao recibo
+histórico `decrypted_and_restore_verified` de 26/10. Isso confirma integridade
+local e vínculo com registro anterior, não uma nova decriptação/recuperação ou
+a integridade da cópia na nuvem. Há uma identidade privada local; seu conteúdo
+não foi lido nessa inspeção. A imagem PostgreSQL17 local e pyrage1.4.0 estão
+disponíveis, sem pull/build/start.
+
+Validação complementar já executada na retomada:
+
+```sh
+.venv/bin/pytest tests/test_backup_cli.py -k sealed -q --tb=short
+```
+
+**5 passed, 62 deselected, 1 warning in 0.08s**. Seleção dos contratos de cópia
+cifrada: uso exclusivo do staging autenticado, origem em claro indisponível,
+recusa de adulteração, falhas de restore/cleanup e publicação do recibo somente
+após cleanup. age real/arquivos sintéticos; Docker/restore substituídos por
+fixtures. Aviso existente Starlette/httpx; nenhuma falha. Não é nova CI integral.
+
+Solicitado ao responsável confirmar custódia da chave em local separado e
+baixar novamente a cópia da nuvem para pasta nova, informando o caminho para
+comparação e teste. Sem esse retorno, o agente só dispõe do arquivo local
+original. Retenção, acesso e metas de perda/tempo de recuperação continuam sem
+decisão explícita. #117/#118/#28 permanecem abertas, sem aceite conjunto.
+
+## Condições para continuidade
+
+Registrar a decisão completa da #117, em canal privado
 para dados sensíveis. O pacote concreto da #118 deve delimitar conjunto,
 destino, acesso, canais separados, janela, ações e cleanup antes da aprovação.
 Pedido genérico de trabalho não supre esses requisitos. Hash/autenticação,
