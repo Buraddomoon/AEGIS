@@ -203,6 +203,16 @@ def test_no_network_for_unreviewed_artifact_or_scope(monkeypatch, assay):
 
 def test_private_scope_expiry_drift_and_recovery_fail_closed(tmp_path, monkeypatch):
     # Do not use assay fixture: test the real private-file gate.
+    class ScopeClock:
+        current = datetime.now(UTC)
+
+        @classmethod
+        def now(cls, tz):
+            return cls.current.astimezone(tz)
+
+    # Collection can precede this test by longer than the scope's lifetime.
+    # Control only the clock, retaining the real scope and private-file checks.
+    monkeypatch.setattr(validation, "datetime", ScopeClock)
     source = {
         "index_profile": profile().model_dump(),
         "connection_sha256": "a" * 64,
@@ -214,8 +224,8 @@ def test_private_scope_expiry_drift_and_recovery_fail_closed(tmp_path, monkeypat
         "agent_id": "001",
         "start": TIME,
         "end": TIME,
-        "approved_at": NOW.isoformat(),
-        "expires_at": (NOW + timedelta(minutes=5)).isoformat(),
+        "approved_at": ScopeClock.current.isoformat(),
+        "expires_at": (ScopeClock.current + timedelta(minutes=5)).isoformat(),
     }
     source["end"] = "2026-11-16T12:01:00Z"
     path = tmp_path / "scope.json"
@@ -228,14 +238,20 @@ def test_private_scope_expiry_drift_and_recovery_fail_closed(tmp_path, monkeypat
     with pytest.raises(validation.ValidationBlocked):
         validation.load_scope()
     path.chmod(0o600)
-    source["expires_at"] = (NOW - timedelta(minutes=1)).isoformat()
-    path.write_text(json.dumps(source))
+    ScopeClock.current += timedelta(minutes=5)
+    # The document stays valid; the wall clock reaches its exclusive deadline.
+    assert validation.Scope.model_validate(source).expires_at == ScopeClock.current
     with pytest.raises(validation.ValidationBlocked):
         validation.load_scope()
     path.unlink()
     path.symlink_to(tmp_path / "absent")
     with pytest.raises(validation.ValidationBlocked):
         validation.load_scope()
+    path.unlink()
+    path.write_text(json.dumps(source))
+    path.chmod(0o600)
+    ScopeClock.current -= timedelta(minutes=5)
+    assert validation.load_scope().agent_id == "001"
     monkeypatch.setattr(settings(), "operating_mode", "recovery")
     with pytest.raises(validation.ValidationBlocked):
         validation.load_scope()
