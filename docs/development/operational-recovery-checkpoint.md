@@ -1,5 +1,11 @@
 # Recuperação operacional — checkpoint #29
 
+Atualização após a retomada dos testes: [CI integral46112721312](https://github.com/Buraddomoon/AEGIS/actions/runs/46112721312)
+**SUCCESS**, fonte `287ed69`, 4.304Python/9skips existentes e186React. Conjunto de
+recuperação235casos aprovado em Linux. Relato cronológico, primeira falha e
+correção abaixo; #29/#119/#120/#121 continuam abertas pelas pendências
+operacionais, sem transporte/cutover ou aceite entre hosts.
+
 Sessão de 28/11/2026, limitada a #29/#119/#120/#121. Base
 `e7fe3e08cc05cd6390f30f29efedaf6a73caa535`, `main`, árvore limpa;
 `git ls-remote origin refs/heads/main` conferido no mesmo hash.
@@ -91,3 +97,122 @@ abertos. Retomar somente esta entrega com ambiente POSIX/Docker compatível e
 conjunto/destino concreto, respeitando ordem e gates. O pacote específico será
 revisado antes de solicitar aprovação dos efeitos; esta preparação não o aprova.
 Parar após o registro, sem avançar para outra feature.
+
+## Retomada dos testes em ambiente compatível — 28/11/2026
+
+Após o pedido explícito do responsável, “pode realizar os testes”, foi disparado
+o workflow existente `ci.yml`, por `workflow_dispatch` em main, em 28/11/2026
+05:19:27 UTC. Fonte fixada e conferida antes do dispatch:
+`1de0ba7bf2bf7669cda23e3b1fd15053ce9a3eb2`.
+[Execução 46111578459](https://github.com/Buraddomoon/AEGIS/actions/runs/46111578459).
+
+Ubuntu24.04/Python3.13, PostgreSQL17 e Redis8 novos por job, quatro partições
+Python complementares, max-parallel2/timeout18min e React. Workflow, seleção,
+testes, limites e dependências não alterados. Não foi adicionado skip para
+contornar as falhas Windows. Serviços de testes são descartáveis na VM de CI;
+nenhum backup, chave, `.env` ou volume humano foi enviado à execução.
+
+Primeira execução **FAILURE**, cinco jobs encerrados e logs conferidos:
+
+| Job | Resultado da primeira execução |
+| --- | --- |
+| Python 0 | 1.016 passed, 2 skipped, 1 warning, 136,64s |
+| Python 1 | 1 failed, 1.095 passed, 2 skipped, 1 warning, 379,89s |
+| Python 2 | 1.081 passed, 1 skipped, 1 warning, 265,36s |
+| Python 3 | 1.111 passed, 4 skipped, 1 warning, 326,37s |
+| React | 186 passed/24 arquivos, 21 testes glob, lint/formato/build/audit aprovados |
+
+Total Python **4.303 passed, 1 failed, 9 skipped**; não é workflow verde. Os
+235 casos de recuperação pertencem às partições0/2/3, todas aprovadas; nenhum
+skip delas pertence aos nove arquivos do target. As falhas Windows da sessão
+anterior não se repetiram nesses testes em Linux. A API em quarentena/papéis
+mínimos e o ciclo API/worker usam PostgreSQL/Redis reais descartáveis; Docker
+da orquestração e suas falhas continuam simulados. Não houve restore/boot de
+imagem operacional ou transporte de backup humano.
+
+Falha única em
+`tests/test_sigma_validation.py::test_private_scope_expiry_drift_and_recovery_fail_closed`:
+`NOW` é calculado na importação durante a coleta e a aprovação da fixture vale
+cinco minutos. O teste rodou após esse prazo e `load_scope()` recusou corretamente
+a autorização expirada. Não foi identificada falha da guarda da aplicação.
+
+Correção mínima de teste em `287ed692042967195b30358798312b6bbfbfcae1`,
+`test(recovery): make private scope expiry deterministic (Refs #120, Refs #29)`:
+relógio controlado só nesse caso, aprovado no instante do teste, expiração
+exatamente no limite exclusivo com documento ainda válido. Após o caso de
+symlink, arquivo/permissões/prazo válidos são restaurados e aceitos antes da
+recusa em recovery; assim a asserção de quarentena não é satisfeita por outro
+erro de arquivo/prazo. `load_scope`, validação de escopo e guardas POSIX não
+foram substituídos; nenhum código de aplicação ou validade operacional mudou.
+Ruff check/formato desse arquivo, staged/segredos/whitespace e release-check
+aprovados antes do commit, push direto concluído. Nova CI integral disparada
+pelo push, com as mesmas quatro partições/limites e React. Logs consultados por
+API autenticada, sem publicar credencial, log bruto ou artefato operacional.
+
+Coleta complementar local, com `PYTHONPATH=apps/api` somente no processo:
+`.venv/Scripts/python.exe -m pytest` com os nove arquivos do target
+`make test-recovery`, `--collect-only -q` → **235 testes coletados em1,88s**,
+exit0/um aviso existente Starlette/httpx. Coleta não é execução. A função
+inalterada de `scripts/run_ci_tests.py` atribui os arquivos assim:
+
+| Partição | Arquivos do conjunto de recuperação |
+| --- | --- |
+| 0 | `test_backup_cli.py`, `test_recovery_guards.py`, `test_recovery_api.py` |
+| 1 | Nenhum dos nove arquivos; contém os demais contratos da suíte integral |
+| 2 | `test_backup_vault.py`, `test_recovered_demo_cycle.py`, `test_recovery_cycle_runtime.py` |
+| 3 | `test_backup_inventory.py`, `test_recovery_probe.py`, `test_recovery_reconciliation.py` |
+
+Os resultados Windows anteriores permanecem históricos e válidos para aquele
+ambiente. O pedido atual autoriza os testes; não escolhe um destino operacional
+nem aprova novo transporte de backup/imagens, interrupção de origem ou cutover.
+As pendências concretas de #119/#120/#121 e o pai continuam abertas até suas
+próprias provas e gates. Nenhum ensaio entre hosts/RPO/RTO decorre da CI.
+
+### Resultado final da validação compatível
+
+[CI46112721312](https://github.com/Buraddomoon/AEGIS/actions/runs/46112721312)
+**SUCCESS**, fonte `287ed692042967195b30358798312b6bbfbfcae1`, evento push,
+attempt1, 05:34:29–05:44:59 UTC em28/11. Quatro jobs Python e React encerrados
+com sucesso; todos os passos esperados completos e logs de resultados lidos.
+
+| Job | Resultado final | Job ID |
+| --- | --- | --- |
+| Python 0 | 1.016 passed, 2 skipped, 1 warning, 148,53s | 140879624099 |
+| Python 1 | 1.096 passed, 2 skipped, 1 warning, 264,56s | 140879624315 |
+| Python 2 | 1.081 passed, 1 skipped, 1 warning, 256,77s | 140879624211 |
+| Python 3 | 1.111 passed, 4 skipped, 1 warning, 267,97s | 140879624278 |
+| React | 186 passed/24 arquivos; 21 testes glob; lint/formato/build/audit aprovados | 140879624331 |
+
+Total **4.304Python passed/9skips existentes**, partições complementares,
+4.313casos totais; não somar os deselected entre partições ou rodadas. Os235
+casos do target de recuperação foram exercitados nas partições0/2/3, sem skip
+nesse conjunto. Casos reais em PG/Redis descartáveis cobrem permissões, bloqueio
+de sessões antigas/token independente, reconciliação/fences, rollback por falha
+tardia, plano obsoleto/lock concorrente, dispatch ambíguo recusado, conta nova,
+ciclo API/worker sintético e relatórios/histórico preservados. Os23casos de
+orquestração que falharam/deram erro no Windows passaram no Linux com o driver
+Docker simulado existente, sem remover as asserções de permissões/cleanup.
+
+Nove skips opcionais mantidos: projeção de metadata de imagem(1), API Demo
+existente ausente(1), ferramentas PostgreSQL locais opcionais ausentes(1),
+inspeção do DB Demo existente ausente(1), rede Demo existente ausente(1) e
+objetos próprios de inspeção Wazuh ausentes(4). Não criar esses recursos para
+eliminar skips. Aviso upstream Starlette/httpx existente por partição.
+Ruff/formato/mypy aprovados. Auditoria Python: um finding diskcache5.6.3
+PYSEC-2026-2447 explicitamente revisado como caminho do parser não afetado;
+não é alegação de zero findings. npm audit: zero vulnerabilidades.
+
+**Implementado nesta retomada:** correção determinística de uma fixture de
+recovery e registro de provas. **Testado:** fonte atual nas suítes integrais,
+contratos e integração com dados/papéis descartáveis. **Implantado:** nada.
+O ambiente de testes compatível foi obtido pela CI, sem instalar Docker/WSL ou
+stack no Windows. Inventário/exportação/transporte das imagens concretas e boot
+de imagem compatível com o backup humano continuam pendentes na #119; o aceite
+operacional da #120 depende disso. A #121 continua sem destino/recursos/cutover
+aprovados. Nenhum backup/segredo operacional foi acessado ou transportado,
+nenhuma fonte/volume original alterado e nenhum Lab/SIEM iniciado.
+
+Commit final documental, checks staged/release, push e sincronização devem
+constar nos comentários das quatro issues. A primeira CI vermelha e as falhas
+Windows permanecem registradas; nenhuma foi substituída por alegação de sucesso.
+Encerrar os testes pedidos e parar nesta entrega, mantendo pai/filhos abertos.
