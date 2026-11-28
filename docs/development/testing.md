@@ -1,5 +1,25 @@
 # Testes e evidências
 
+## Recuperação entre hosts — #29
+
+Contrato sem Docker/PG/rede, inclusive no Windows:
+
+```sh
+.venv/bin/pytest tests/test_operational_recovery.py tests/test_recovery_guards.py tests/test_recovery_probe.py -q --tb=short
+```
+
+Plano/ator/prazo/budget/IDs, host distinto, integridade, nomes/links/tamanhos do
+arquivo e limites de medição. Não confundir contratos com o ensaio nativo.
+`make test-recovery` inclui também esses novos contratos na suíte completa.
+
+O workflow manual `operational-recovery.yml` prepara imagens/plano e espera
+aprovação posterior do pacote exato na #121. Só depois cria origem sintética,
+transporta o conjunto cifrado e restaura em outro job/host vazio, com papéis
+mínimos, falha/rollback real e novo ciclo Demo. Sem backups humanos/Labs.
+Proposta, secret temporário, orçamento, isolamento e cleanup descritos no
+[runbook](../operations/operational-demo-recovery.md). Não disparar o ensaio
+com autorização antiga nem renovar candidato/tentativa consumida.
+
 ## Retenção de histórico — #27
 
 ```sh

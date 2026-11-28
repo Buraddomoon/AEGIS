@@ -1,0 +1,114 @@
+name: Approve and rehearse two-host Demo recovery29
+on:
+  workflow_dispatch:
+    inputs:
+      recipient:
+        description: Public age recipient for a new controller-held rehearsal key
+        required: true
+        type: string
+permissions:
+  contents: read
+  issues: read
+concurrency:
+  group: aegis-operational-recovery29
+  cancel-in-progress: false
+jobs:
+  source:
+    name: Prepare exact package then approved synthetic origin
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    outputs:
+      plan_sha: ${{ steps.prepare.outputs.plan_sha }}
+      envelope_sha: ${{ steps.source.outputs.envelope_sha }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RECOVERY29_RECIPIENT: ${{ inputs.recipient }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements-dev.lock
+      - name: Install locked controller tools
+        run: |
+          umask 077
+          python -m pip install pip==26.2.2
+          pip install --require-hashes --no-deps -r requirements-dev.lock
+          pip install -e . --no-deps
+      - name: Build dedicated images and exact plan without containers
+        id: prepare
+        run: python scripts/operational_recovery_assay.py prepare
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: recovery29-proposal-${{ github.run_id }}
+          path: .local/recovery29-public/proposal.json
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: error
+      - name: Wait for later exact approval by initiating human on issue121
+        run: python scripts/operational_recovery_assay.py wait
+      - name: Fence own normal source, snapshot, save images, encrypt and cleanup
+        id: source
+        run: python scripts/operational_recovery_assay.py source
+      - name: Transfer only authenticated ciphertext and public envelope
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: recovery29-encrypted-${{ github.run_id }}
+          path: |
+            .local/recovery29-transfer/bundle.age
+            .local/recovery29-transfer/envelope.json
+          include-hidden-files: true
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
+      - name: Preserve only sanitized own origin proof
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: recovery29-source-proof-${{ github.run_id }}
+          path: .local/recovery29-public/*.json
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: warn
+  destination:
+    name: Fresh other VM restore, rollback, internal cutover and cleanup
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: requirements-dev.lock
+      - name: Install locked tools and private incoming directory
+        run: |
+          umask 077
+          mkdir -p .local/recovery29-transfer
+          python -m pip install pip==26.2.2
+          pip install --require-hashes --no-deps -r requirements-dev.lock
+          pip install -e . --no-deps
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: recovery29-encrypted-${{ github.run_id }}
+          path: .local/recovery29-transfer
+      - name: Authenticate package and images, quarantine, rollback, new Demo cycle
+        env:
+          RECOVERY29_PLAN_SHA: ${{ needs.source.outputs.plan_sha }}
+          RECOVERY29_ENVELOPE_SHA: ${{ needs.source.outputs.envelope_sha }}
+          RECOVERY29_IDENTITY: ${{ secrets[format('AEGIS_RECOVERY29_{0}', github.run_id)] }}
+        run: python scripts/operational_recovery_assay.py destination
+      - name: Preserve only sanitized own destination proof
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: recovery29-destination-proof-${{ github.run_id }}
+          path: .local/recovery29-public/*.json
+          include-hidden-files: true
+          retention-days: 7
+          if-no-files-found: warn

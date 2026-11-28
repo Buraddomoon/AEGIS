@@ -166,3 +166,75 @@ início/fim do restore, gates, ciclo e eventual serviço aceito. RPO observado
 depende do snapshot e do fence da origem; RTO observado inclui o intervalo de
 indisponibilidade definido. Tempos locais de restore da #28 não medem RPO/RTO
 de recuperação entre hosts e não são SLA.
+
+## Implementação do ensaio próprio entre duas VMs
+
+`scripts/operational_recovery_assay.py` e o workflow manual
+`.github/workflows/operational-recovery.yml` implementam o perfil fechado
+`two-host-synthetic-demo/1`. A capacidade é demonstrada com uma origem Demo
+nova, sintética e nativa; os critérios das issues não exigem mover o backup
+humano ou implantar serviço permanente. As observações anteriores de falta
+desses recursos continuam históricas, sem transformar esse perfil em prova
+de recuperação do Demo humano. O aceite depende das provas reais do ensaio.
+
+O primeiro job cria imagens dedicadas, fixa IDs/OS/arquitetura/schema e publica
+um plano com SHA256. **Nenhum container da aplicação/banco é iniciado antes
+da aprovação posterior, literal, pelo responsável que iniciou o workflow na
+issue121.** A validade do plano é45min, sem renovação; aprovação antiga, de outro
+ator, genérica ou de outro pacote não passa. Não fazer rerun de tentativa
+consumida: usar nova proposta, imagens identificadas e nova aprovação.
+
+O controlador gera uma identidade age exclusiva deste ensaio, guardada fora
+do Git/artefatos/logs. Depois do aceite do pacote, cadastra o secret temporário
+`AEGIS_RECOVERY29_<workflow_run>` sem sobrescrever secret existente. Só o passo
+de recuperação no segundo job recebe a identidade; a variável é removida do
+ambiente do processo e nunca herdada pelo Docker. O controlador remove esse
+secret após a tentativa, inclusive falha; preservar a chave local protege a
+cópia cifrada até sua expiração. Não reutilizar essa identidade como chave dos
+backups humanos. [API oficial de secrets](https://docs.github.com/en/rest/actions/secrets).
+
+Fluxo aprovado, limitado a recursos novos na VM hospedada:
+
+1. **Origem:** PostgreSQL17 tmpfs/sem rede externa ou portas; Alembic explícito
+   apenas no banco vazio. Reutiliza a fixture sintética não vazia de relatórios:
+   dois READY, um FAILED, um PENDING, fila, reserva, sessão e schedule/grant
+   antigos. API normal/Redis próprios, role runtime e conta/senhas novas.
+   Conferir SPA/login/coverage/logout. Nenhum worker de origem é iniciado.
+2. **Fence:** parar/remover API/Redis próprios; tomar snapshot final quiescido,
+   comparar inventário antes/depois do dump e remover o banco. Fonte sem
+   consumidores/escritas após o fence. Guardar instantes UTC reais. O serviço
+   interrompido é somente esse Demo de ensaio, não o Demo humano.
+3. **Conjunto:** `docker image save` dos três IDs, sem tags a sobrescrever;
+   manifesto/data dump, lista/hash dos arquivos, imagens e configuração de
+   provisioning revisada. Cifrar tudo com age/X25519 para o recipient aprovado.
+   Upload somente de `bundle.age` e envelope público vinculados à mesma run;
+   artefato cifrado retido por um dia. Chave/senhas/SQL/logs não são artefatos.
+4. **Outro host:** segundo job em VM nova, com identidade de boot diferente e
+   origem já encerrada. Conferir hash de envelope recebido por output confiável
+   do primeiro job, ciphertext, recipient, run/commit/plano e autenticação age
+   completa antes de expor conteúdo. Extrair somente quatro arquivos regulares
+   de nomes fixos; recusar links, duplicatas, PAX, caminhos e tamanhos indevidos.
+5. **Imagens:** validar hashes/IDs no arquivo exportado antes do load e IDs/
+   OS/arquitetura depois; não reconstruir nem fazer pull no destino. Papel SQL,
+   configuração/HBA e senhas do destino são provisionados novamente pelo fluxo
+   existente; não restaurar roles globais, Redis antigo ou `.env` da origem.
+6. **Três restores, uma run:** primeiro boot real em quarentena; depois plano
+   deliberadamente obsoleto, erro real PostgreSQL, rollback com inventário
+   idêntico e cleanup; por último restore/reconciliação/boot em quarentena,
+   identidades novas e API/worker normais no endpoint interno do destino.
+   Exatamente uma run/quatro testes Demo novos; fila/schedules antigos não
+   executados, histórico e relatórios congelados preservados.
+7. **Encerramento:** revogar lab novo/fechar sessão/desativar conta, remover
+   worker→API→Redis→DB próprios e verificar ausência. Falha de cleanup retém
+   dependências e impede sucesso. Remover staging decriptado e secret temporário;
+   publicar só resumo sanitizado. Sem operação contínua ou endpoint público.
+
+O cutover deste perfil é a aceitação do fluxo normal no endpoint interno da
+nova VM depois da indisponibilidade comprovada da origem de ensaio. Não altera
+DNS/TLS/proxy ou endpoint humano. RTO observado vai do pedido de parada da API
+origem até o fluxo normal verificado no destino, incluindo empacotamento/fila/
+transporte; utiliza relógios UTC do provedor. RPO observado zero é restrito ao
+snapshot final **após** fence com nenhuma escrita posterior e inventário fiel;
+não é ensaio de perda inesperada nem garantia de RPO/RTO/SLA. O pacote enumera
+esses limites antes da aprovação. Somente após execução, cleanup, prova e aceite
+conjunto podem ser encerradas #119→#120→#121 e então #29.

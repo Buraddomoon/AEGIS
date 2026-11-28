@@ -87,7 +87,7 @@ verify-backup:
 backup-retention-plan:
 	$(VENV)/python scripts/demo_backup.py retention-plan
 test-recovery:
-	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py tests/test_backup_vault.py tests/test_recovery_guards.py tests/test_recovery_api.py tests/test_recovery_probe.py tests/test_recovery_reconciliation.py tests/test_recovered_demo_cycle.py tests/test_recovery_cycle_runtime.py -q
+	$(VENV)/pytest tests/test_backup_inventory.py tests/test_backup_cli.py tests/test_backup_vault.py tests/test_recovery_guards.py tests/test_recovery_api.py tests/test_recovery_probe.py tests/test_recovery_reconciliation.py tests/test_recovered_demo_cycle.py tests/test_recovery_cycle_runtime.py tests/test_operational_recovery.py -q
 
 # Historical Lab recovery tools are host-only. Unit tests never open Lab volumes.
 .PHONY: test-lab-recovery test-lab-recovery-native-fixture
