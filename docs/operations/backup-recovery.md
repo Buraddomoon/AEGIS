@@ -314,6 +314,11 @@ sintéticos,2.885linhas anteriores intactas, relatórios e cleanup confirmados.
 
 ## Recuperação operacional completa permanece manual
 
+A [preparação da #29](operational-demo-recovery.md) define o conjunto de
+configuração/imagens/privilégios e os gates de transição/cutover. Ainda não
+comprova recuperação entre hosts; conferir os bloqueios no
+[checkpoint](../development/operational-recovery-checkpoint.md).
+
 Dumps contêm hashes de senha, sessões, scopes e evidências. Guardar criptografados,
 fora do host e com acesso restrito;0600 não é criptografia. Hashes detectam mudança
 acidental e não são assinatura: alterar dump e manifesto juntos pode enganar a

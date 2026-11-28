@@ -23,6 +23,8 @@ Linux opt-in: seguir [escopo e instalação](../../labs/linux/README.md), usando
 
 
 Backup e ensaio de recuperação: [procedimento operacional](backup-recovery.md).
+A recuperação em outro ambiente tem [inventário e gates próprios da #29](operational-demo-recovery.md),
+com boot compatível e autorização de destino/cutover ainda pendentes.
 A ferramenta host-only precisa do acesso administrativo loopback de desenvolvimento;
 ela nunca é exposta à API e não publica portas no clone. Não usar um dump para
 iniciar workers sem revisar jobs/agendamentos e efeitos externos do snapshot.
