@@ -151,20 +151,53 @@ try {
     name: 'Native recurring marker104',
     objective: 'Two bounded real markers; no SIEM or ATT&CK efficacy claim.',
     laboratory_id: lab.id,
+    asset_id: plan.identity.asset_id,
     test_ids: [plan.definition_id],
   })
-  // API setup bypasses useAction's query invalidation. Load a fresh document so
-  // the overview's cached empty campaign list cannot mask the new campaign.
+  // API setup bypasses useAction's query invalidation. Start with a fresh cache.
   await operator.goto(`${plan.origin}/#schedules`, { waitUntil: 'networkidle0' })
+  // Fragment navigation can reuse the document; reload explicitly.
+  await operator.reload({ waitUntil: 'networkidle0' })
   await button(operator, 'Novo agendamento')
-  await operator.waitForFunction(
-    (id) =>
-      [...document.querySelectorAll('dialog select option')].some(
-        (e) => e.value === id && e.textContent.includes('Linux real'),
+  try {
+    await operator.waitForFunction(
+      (id) =>
+        [...document.querySelectorAll('dialog select option')].some(
+          (e) => e.value === id && e.textContent.includes('Linux real'),
+        ),
+      { polling: 100 },
+      campaign.id,
+    )
+  } catch (error) {
+    // This form has no credentials. Preserve only own UI and public DTO fields.
+    await save(
+      'campaign-form-failure.json',
+      JSON.stringify(
+        {
+          campaign_id: campaign.id,
+          laboratory_id: lab.id,
+          ui: await operator.evaluate(() => ({
+            text: document.querySelector('main')?.innerText.slice(0, 6000),
+            options: [...document.querySelectorAll('dialog select option')].map((e) => ({
+              value: e.value,
+              text: e.textContent,
+            })),
+          })),
+          campaigns: await api(operator, '/campaigns?limit=1000')
+            .then((r) => r.items.map((c) => ({ id: c.id, laboratory_id: c.laboratory_id })))
+            .catch((e) => ({ error: e.message })),
+          laboratories: await api(operator, '/labs?limit=1000')
+            .then((r) => r.items.map((l) => ({ id: l.id, kind: l.kind })))
+            .catch((e) => ({ error: e.message })),
+          browser_errors: errors,
+        },
+        null,
+        2,
       ),
-    { polling: 100 },
-    campaign.id,
-  )
+    )
+    await operator.screenshot({ path: `${output}/campaign-form-failure.png`, fullPage: true })
+    throw error
+  }
   await operator.select('dialog select', campaign.id)
   await operator.click('dialog input[type="checkbox"]')
   const requestedAt = Date.now()

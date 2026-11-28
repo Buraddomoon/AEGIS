@@ -61,7 +61,7 @@ def proposal():
         "origin": "http://192.168.253.12:8080",
         "subnets": ["192.168.253.0/29", "192.168.253.8/29"],
         "original_volumes": [],
-        "schema": "e2a71c9d064b",
+        "schema": "f3b28c5d901a",
         "expected_outcome": "INCONCLUSIVE",
         "host_disposal": "github_ephemeral_after_verified_cleanup",
         "images": images,

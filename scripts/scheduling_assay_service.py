@@ -10,7 +10,7 @@ from sqlalchemy import delete, func, select, text
 from sqlalchemy.engine import make_url
 
 SECRETS = Path("/run/secrets")
-SCHEMA = "e2a71c9d064b"
+SCHEMA = "f3b28c5d901a"
 
 
 def secret(name):

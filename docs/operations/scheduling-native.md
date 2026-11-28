@@ -40,7 +40,7 @@ com pelo menos5min restantes. Não renovar pacote/PKI/prazo silenciosamente.
   Helper administrativo256MiB em fase separada. Exigir MemAvailable≥3072MiB;
   não alterar memória/swap/sysctl/host para passar.
 - Banco novo `schedule104`, owner próprio e grants mínimos `aegis_app`.
-  Migração explícita e2a/36tabelas somente se vazio; seed versionado e duas contas
+  Migração explícita f3b28c5d901a/36tabelas somente se vazio; seed versionado e duas contas
   próprias distintas. Resposta ambígua de bootstrap não é repetida.
 - Sem SIEM/EDR/Wazuh, shell ou Atomic. Resultado esperado **INCONCLUSIVE** e
   `synthetic=false`; recibo não equivale a detecção.
