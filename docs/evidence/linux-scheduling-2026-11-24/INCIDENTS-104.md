@@ -55,3 +55,11 @@ sincronizou main por fast-forward de5e4737a para5e5feb9, preservando as entregas
 publicadas durante a pausa. A nova prova usa essa fonte atual, não presume
 equivalência das imagens antigas. O conector GitHub desconectado foi substituído
 pelo acesso autenticado já existente, sem mudanças na conexão do usuário.
+
+Na retomada27/11, [preparação46090198892](https://github.com/Buraddomoon/AEGIS/actions/runs/46090198892)
+da fonte4812780 falhou no smoke isolado do Firefox: não publicou endpoint WS em
+30s. `check_browser()` é a primeira operação de `prepare`, anterior à criação do
+diretório privado, PKI, manifesto, build e serviços. Nenhum pacote foi publicado,
+nenhuma autorização foi consumida e nenhum Lab/efeito foi criado. O upload não
+encontrou arquivos públicos, conforme o log. A causa não foi estabelecida por esse
+timeout; não se removem o smoke ou a barreira humana para contorná-lo.

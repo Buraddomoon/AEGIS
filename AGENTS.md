@@ -215,20 +215,20 @@ Não iniciar labs automaticamente com desenvolvimento/CI. Não resetar a fonte.
   docs/evidence/lab-backup-2026-11-24/VERIFIED-66.md e checkpoint lab-backup.
   Entrega encerrada; parar neste escopo.
 
-- #23 preparada em24/11: #102/#103 com aceite técnico; opt-in Linux desligado por
-  padrão, marcador fixo, grant segregado, fila/cleanup e snapshots reais. CI da
-  fonted46850c SUCCESS:4131Python/9skips e159React/21glob; E2E Demo45504677648
-  SUCCESS,5runs/20testes sintéticos/2snapshots/5PDFs. #104 e pai continuam abertos:
-  falta ambiente/pacote/autorizações novas do ensaio nativo. Nenhuma implantação
-  ou operação Lab. Ver docs/development/linux-scheduling-checkpoint.md. Parar;
-  não habilitar flag, iniciar labs ou reutilizar autorizações históricas.
-
-  Retomada posterior da mesma #23: fonte178e7df prepara ensaio novo em VM Linux
-  efêmera do GitHub Actions, sem originais. CI45514261833 SUCCESS,
-  4164Python/9skips e159React/21glob. Pacote concreto28de3e3f no workflow45514289124
-  aguarda aprovação humana exata para duas ocorrências; nenhum Lab iniciado.
-  Ver docs/evidence/linux-scheduling-2026-11-24/REQUEST-104-28de3e3f.md. Pedido
-  genérico/CI/build não autorizam efeitos; respeitar validade, sem renovação automática.
+- #23 com aceite conjunto em27/11: #102/#103/#104 atendidas. Opt-in Linux
+  desligado por padrão, marcador fixo, grant segregado, fila/cleanup e snapshots
+  reais. Fonte4812780 e CI46090184659 SUCCESS:4304Python/9skips existentes,
+  186React/24arquivos/21glob, quatro partições conferidas. Ensaio nativo autorizado
+  46090496469, pacotecaa9078d, NATIVE_RECURRENCE_VERIFIED_CLEANED: exatamente duas
+  ocorrências43bytes/60s/30s/concorrência1, COMPLETED/INCONCLUSIVE/CLEANED,
+  synthetic=false; dois snapshots/JSON/HTML/PDF,23páginas verificadas/zero erros JS.
+  VM Linux nova do GitHub Actions, f3b/36tabelas no banco vazio; sem Windows ou
+  originais. Agenda/lab revogados, duas contas inativas/zero sessões, workspace
+  vazio, recursos próprios encerrados/volumes novos sem consumidores. Tentativas
+  anteriores preservadas com zero efeitos; pacote e orçamento consumidos.
+  Sem implantação no Demo/originais, SIEM ou operação contínua. Provas em
+  docs/evidence/linux-scheduling-2026-11-24/VERIFIED-104.md e ACCEPTANCE-23.md;
+  checkpoint linux-scheduling. Parar neste escopo, sem replay/reativação.
 
 - #24 encerrada em25/11: #105/#106/#107 e aceite conjunto atendidos. Contas/papéis,
   senha própria/reset administrativo e sessões via API/UI; último admin protegido,

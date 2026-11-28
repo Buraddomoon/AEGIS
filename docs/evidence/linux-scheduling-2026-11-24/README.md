@@ -1,5 +1,16 @@
 # Recorrência Linux delimitada — provas da #23
 
+Estado final em27/11/2026: #102/#103/#104 e aceite conjunto atendidos.
+[Prova nativa verificada](VERIFIED-104.md), [aceite conjunto](ACCEPTANCE-23.md)
+e [incidentes preservados](INCIDENTS-104.md). CI46090184659 SUCCESS na fonte4812780:
+4304Python/9skips existentes,186React/21glob. Ensaio46090496469 SUCCESS:
+duas ocorrências reais43bytes, mesmo grant, recibos/cleanup, dois snapshots e
+encerramento confirmado. Orçamento/pacote consumidos; sem replay ou operação
+contínua. Os registros abaixo preservam o estado histórico de24/11, inclusive
+o bloqueio inicial e a proposta depois expirada; não são o estado atual.
+
+## Registro histórico da implementação e preparação inicial
+
 Implementação em `main`, restrita a #102/#103/#104. Base `5f6f880`; commits
 `03d7dd3`, `656caec` e `d46850c`. Dependência #5 fechada, sem autorização reutilizável.
 

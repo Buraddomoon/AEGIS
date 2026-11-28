@@ -1,45 +1,46 @@
-# Recorrência Linux — #23
+# Recorrência Linux — #23 concluída
 
-Escopo exclusivo: #102, #103 e #104. Dependência #5 encerrada, com autorização
-histórica consumida. Entrada atual em `5f6f880`, sincronizada por fast-forward;
-nenhuma leitura integral de PROGRESS ou dependência do chat.
+Escopo exclusivo #102/#103/#104, com aceite conjunto em27/11/2026
+America/Sao_Paulo (28/11UTC nas provas finais). GitHub é a fonte de estado;
+não é necessário carregar o chat ou PROGRESS inteiro.
 
-- `03d7dd3`: opt-in de implantação desativado por padrão, plano real separado,
-  revisão segregada, grant exato por ocorrência, reserva/fila/dispatch/cleanup
-  existentes e snapshots reais.
-- `656caec`: UI distingue Demo/Linux real, revisa limites e confirmação explícita;
-  snapshots verificam origem de escopo, execução, resultado e eventos.
-- `d46850c`: formulário não presume Demo enquanto o modo do laboratório está
-  indisponível e recusa propor plano nessa condição.159React/21glob locais
-  passaram em execução serial;12casos de componentes pertinentes aprovados.
-- Escopo real limitado a `linux-file-marker/v1`. Sem Atomic/shell/alvo livre,
-  atualização automática de preflight, replay ou operação contínua autorizada.
-- Sem alteração de schema, migração de originais, implantação no Demo ou operação
-  Linux/Wazuh. Relatórios congelados não são regenerados para corrigir apresentação.
+- `03d7dd3`: opt-in desligado por padrão, plano/grant real segregado, emissão,
+  reserva/fila/cleanup e snapshots reais. `656caec`: UI de revisão e origem dos
+  documentos. `d46850c`: modo do laboratório confirmado antes de propor.
+- Fonte final `4812780c90c9f8aead155de5fe9fe17bef070d40`, sobre main5e5feb9
+  sincronizado por fast-forward. Harness força reload após setup API e fixa
+  schema f3b compatível, exclusivamente em banco novo vazio.
+- [CI46090184659](https://github.com/Buraddomoon/AEGIS/actions/runs/46090184659)
+  SUCCESS, quatro partições Python e React:4304Python/9skips existentes,
+  186React/24arquivos e21glob; lint/tipos/build/auditorias passaram. Local56testes
+  de preparação/política e checks staged/release aprovados.
+- [Ensaio46090496469](https://github.com/Buraddomoon/AEGIS/actions/runs/46090496469)
+  SUCCESS, `NATIVE_RECURRENCE_VERIFIED_CLEANED`, pacote `caa9078d…` sob
+  autorização explícita continuada do usuário para concluir a entrega sem afetar
+  seu computador; contexto e gate exato registrados na #104.
+- Exatamente duas ocorrências reais do marcador43bytes,60s/30s/concorrência1,
+  mesmo grant, solicitante/aprovador distintos, duas runs COMPLETED/INCONCLUSIVE/
+  CLEANED, `synthetic=false`, zero eventos defensivos. Dois snapshots/JSON/HTML/PDF,
+  23páginas e capturas1440/390px verificados; zero erros JS. Documentos congelados
+  idênticos após revogação; nenhum teste emitido por exportação.
+- VM Linux nova do GitHub Actions; schema f3b/36tabelas apenas no banco vazio.
+  Agenda/lab revogados, duas contas próprias inativas/zero sessões, workspace
+  vazio, recursos próprios encerrados e dois volumes novos sem consumidores
+  antes do término do job. Sem serviço do ensaio no Windows, alteração de
+  rede/sysctl/Docker local, migração/implantação no Demo ou em originais.
+- Pacote28de3e3f expirou sem Lab. Quatro tentativas posteriores falharam antes de
+  qualquer run/dispatch/teste, com cleanup confirmado. Preparação46090198892
+  falhou no smoke do browser antes de pacote/Lab; nova preparação na mesma fonte
+  passou. Todos os erros/candidatos estão preservados, sem replay ou gates relaxados.
+- E2E Demo histórico45504677648/d46850c SUCCESS:5runs/20testes sintéticos,
+  2snapshots/5PDFs. É prova histórica da implementação, distinta da CI atual e
+  do ensaio nativo. Limites de captura/retenção e ausência de SIEM estão nas provas.
 
-Provas e resultado das verificações ficam em
-[relatório da sessão](../evidence/linux-scheduling-2026-11-24/README.md).
-As issues GitHub são a fonte do estado de execução e bloqueios.
+[Prova nativa](../evidence/linux-scheduling-2026-11-24/VERIFIED-104.md),
+[aceite conjunto](../evidence/linux-scheduling-2026-11-24/ACCEPTANCE-23.md),
+[incidentes](../evidence/linux-scheduling-2026-11-24/INCIDENTS-104.md) e
+[procedimento](../operations/scheduling-native.md).
 
-Aceite técnico de #102/#103: CI final45504635253 SUCCESS,4131Python/9skips,
-159React/21glob; E2E final45504677648 SUCCESS,5runs/20testes sintéticos,
-2snapshots/5PDFs/0erros JS. Fonte executáveld46850c; commit final documental.
-Falha temporal Sigma da CI anterior e falhas locais de harness/timeouts estão
-preservadas no relatório. #104 e o pai #23 seguem abertos pelo ensaio nativo.
-
-Retomada nativa da #104 depende de ambiente Linux e pacote com identidade,
-imagem/código, hashes, isolamento, janela UTC, intervalo/duração, concorrência1,
-orçamento exato e cleanup/recuperação revisados, além de autorização humana nova.
-Este checkpoint não concede essa autorização. Não habilitar a flag, reutilizar
-pacotes históricos, iniciar laboratórios ou avançar para outra entrega.
-
-Retomada sob novo pedido de concluir toda a #23: preparação de workflow nativo
-separado em VM Linux nova do GitHub Actions, com duas ocorrências e barreira de
-aprovação pelo hash concreto. Sem laboratório nesta etapa. Ver
-[procedimento fechado](../operations/scheduling-native.md); não publicar chaves
-nem iniciar efeitos a partir do pedido genérico ou da CI.
-
-Pacote concreto [28de3e3f](../evidence/linux-scheduling-2026-11-24/REQUEST-104-28de3e3f.md)
-preparado no workflow45514289124: sem Lab iniciado, aguardando autorização humana
-específica. CI45514261833 SUCCESS na fonte178e7df,4164Python/9skips e159React/21glob.
-Prazo UTC e descarte do host efêmero estão no pacote; não renovar silenciosamente.
+Orçamento total de duas ocorrências e pacote consumidos. Sem Atomic/shell/alvo
+livre, SIEM/Wazuh, reativação ou operação contínua. Novas operações exigem novo
+escopo/autorização. **Parar ao concluir o registro/fechamento desta entrega.**
