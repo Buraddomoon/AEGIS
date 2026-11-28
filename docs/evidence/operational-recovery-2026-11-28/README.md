@@ -106,3 +106,34 @@ em acompanhamento. Antes de liberar efeitos, conferir quatro partições e React
 e obter o aceite do responsável sobre esse pacote concreto. Depois registrar
 secret temporário novo e comentário de autorização exato, sem expor identidade
 ou token. Pais/filhos continuam abertos enquanto essas fases não têm prova.
+
+## CI completa da fonte exata do pacote
+
+[46183661714](https://github.com/Buraddomoon/AEGIS/actions/runs/46183661714)
+**SUCCESS**, fonte1503fc2eb2ee718554eab1b89df60a87b73dbc4e, attempt1,
+19:55:20–20:06:35 UTC em28/11. Quatro jobs Python e React conferidos, logs
+lidos; seleção, concorrência, limites e skips não alterados.
+
+| Job | Resultado | Job ID |
+| --- | --- | --- |
+| Python0 | 1.016passed/2skips/1aviso,202,95s | 141098711867 |
+| Python1 | 1.096passed/2skips/1aviso,271,00s | 141098711908 |
+| Python2 | 1.112passed/1skip/1aviso,269,07s | 141098711930 |
+| Python3 | 1.111passed/4skips/1aviso,276,81s | 141098711778 |
+| React | 186passed/24arquivos +21glob; lint/formato/build/audit | 141098711645 |
+
+Total **4.335Python passed/9skips opcionais existentes**,4.344casos;
+31contratos novos incluídos na partição2, além das suítes de recuperação,
+permissões, API/worker, rollback e histórico já existentes. Não somar rodadas
+ou deselected complementares. Skips mantidos de inspeções opt-in por ausência
+de imagem/API/DB/rede/objetos Demo ou ferramentas PostgreSQL locais opcionais.
+Aviso upstream Starlette/httpx. Ruff/formato/mypy aprovados; auditoria Python
+mantém um finding diskcache5.6.3/PYSEC-2026-2447 explicitamente revisado, não
+zero findings; npm zero vulnerabilidades.
+
+`bdd0f07d296b96e5c56bea52a1e005d640403f27` registrou a proposta sem alterar
+código/testes/workflow da fonte validada. Na conclusão dessa CI, a run nativa
+46183684773 permanecia no gate, sem identidade enviada ao provedor e sem
+runtime de origem/destino. Aceite solicitado sobre o pacote concreto, porque
+a #121 exige ensaio próprio após escolha do destino/aprovação específica.
+Não converter esta CI em prova de transporte, restore entre hosts ou cutover.
