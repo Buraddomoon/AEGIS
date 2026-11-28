@@ -1,5 +1,10 @@
 # Recuperação operacional — checkpoint #29
 
+Retomada para concluir o ensaio nativo entre hosts: implementação e registro de
+tentativas em [provas #29](../evidence/operational-recovery-2026-11-28/README.md).
+As fases antigas abaixo continuam históricas; não confundir CI com aceite do
+novo ensaio. Pai/filhos permanecem abertos até aprovação, execução e cleanup.
+
 Atualização após a retomada dos testes: [CI integral46112721312](https://github.com/Buraddomoon/AEGIS/actions/runs/46112721312)
 **SUCCESS**, fonte `287ed69`, 4.304Python/9skips existentes e186React. Conjunto de
 recuperação235casos aprovado em Linux. Relato cronológico, primeira falha e

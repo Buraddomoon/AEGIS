@@ -1,7 +1,9 @@
 import copy
+import importlib.util
 import io
 import tarfile
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pyrage
 import pytest
@@ -212,3 +214,42 @@ def test_archive_does_not_extract_any_entry_while_inventory_is_rejected():
     stream.seek(0)
     with tarfile.open(fileobj=stream) as archive, pytest.raises(ValueError):
         recovery.validate_members(archive.getmembers())
+
+
+def test_preparation_binds_one_clock_and_starts_no_runtime(plan, tmp_path, monkeypatch):
+    scripts = Path(__file__).resolve().parents[1] / "scripts"
+    monkeypatch.syspath_prepend(str(scripts))
+    spec = importlib.util.spec_from_file_location(
+        "operational_recovery_assay_test", scripts / "operational_recovery_assay.py"
+    )
+    assay = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(assay)
+
+    class TickingClock:
+        value = NOW
+
+        @classmethod
+        def now(cls, tz):
+            cls.value += timedelta(microseconds=1)
+            return cls.value
+
+    monkeypatch.setattr(assay, "datetime", TickingClock)
+    monkeypatch.setattr(
+        assay, "context", lambda: (plan["workflow_run"], plan["approved_by"], plan["source_commit"])
+    )
+    monkeypatch.setattr(assay, "host", lambda: plan["source_host"])
+    monkeypatch.setattr(assay, "image", lambda reference: plan["images"]["application"])
+    monkeypatch.setattr(assay, "required_revision", lambda: plan["schema"])
+    monkeypatch.setattr(assay, "output", lambda *args: None)
+    calls, captured = [], []
+    monkeypatch.setattr(assay.native, "docker", lambda *args, **kwargs: calls.append(args))
+    monkeypatch.setattr(assay.native, "write_json", lambda path, value: captured.append(value))
+    monkeypatch.setenv("RECOVERY29_RECIPIENT", plan["recipient"])
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(tmp_path / "summary"))
+    assay.prepare()
+    assert [args[0] for args in calls] == ["pull", "pull", "build"]
+    prepared = captured[0]
+    assert recovery.timestamp(prepared["expires_at"]) - recovery.timestamp(
+        prepared["prepared_at"]
+    ) == timedelta(minutes=45)
+    assert recovery.validate_plan(prepared) is prepared

@@ -123,14 +123,15 @@ def prepare():
     native.docker("pull", "postgres:17-alpine", timeout=240)
     native.docker("pull", "redis:8-alpine", timeout=240)
     native.docker("build", "--pull=false", "-t", tag, str(ROOT), timeout=900)
+    prepared_at = datetime.now(UTC)
     plan = {
         "format": contract.FORMAT,
         "profile": contract.PROFILE,
         "workflow_run": run,
         "source_commit": commit,
         "approved_by": actor,
-        "prepared_at": now(),
-        "expires_at": (datetime.now(UTC) + timedelta(minutes=45)).isoformat(),
+        "prepared_at": prepared_at.isoformat(),
+        "expires_at": (prepared_at + timedelta(minutes=45)).isoformat(),
         "recipient": recipient,
         "source_host": host(),
         "schema": required_revision(),
