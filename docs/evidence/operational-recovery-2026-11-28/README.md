@@ -75,3 +75,34 @@ credencial Git, plaintext, dumps, logs ou caminhos privados em Git/issue/artefat
 RPO/RTO só podem ser registrados a partir dos instantes do ensaio realmente
 executado; plano ou CI não são essas medições. Até essas provas, pai/filhos
 permanecem abertos. [Procedimento](../../operations/operational-demo-recovery.md).
+
+## Nova proposta concreta preparada, ainda sem efeitos
+
+Correção publicada em `1503fc2eb2ee718554eab1b89df60a87b73dbc4e`,
+`fix(recovery): bind proposal expiry to a single clock instant (Refs #119, Refs #121, Refs #29)`.
+Checks staged/release antes do commit aprovados:875arquivos/245Markdown/
+811links locais, zero erros. Push direto, main local/remoto conferidos.
+[CI anterior46182942068](https://github.com/Buraddomoon/AEGIS/actions/runs/46182942068)
+cancelada automaticamente pelo push da correção: React/Python0/Python1
+aprovados; Python2/Python3 cancelados, sem alegar CI integral verde.
+
+[Run46183684773](https://github.com/Buraddomoon/AEGIS/actions/runs/46183684773)
+preparou a proposta em28/11/2026 **19:56:46,300207 UTC**, com validade
+exatamente45min, até20:41:46,300207 UTC. A espera de aprovação termina20:21:46
+para reservar20min aos efeitos e encerramento. Fonte1503fc2, Linux/amd64,
+schemaf3b28c5d901a. Pacote:
+`d7d1134fbd9d79fe74e05dfd0771d45ff2cfef5ca30eba4de54e09130740a28c`.
+
+Imagens efetivamente inspecionadas, com todos os IDs completos no manifesto
+público e [comentário de proposta da #121](https://github.com/Buraddomoon/AEGIS/issues/121#issuecomment-7244952392):
+aplicação`d48398d8d0f1`, PostgreSQL`fa7e2700e906` e Redis`78195281e51d`.
+O novo teste de relógio corresponde ao pacote aceito pelo validador real.
+Job141098711315 está no gate de aprovação posterior, sem container de DB/API,
+backup, exportação/cifra de dados ou transporte de conjunto iniciados. Nenhum
+secret de identidade foi cadastrado no provedor. Proposta não é autorização.
+
+[CI46183661714 da fonte corrigida](https://github.com/Buraddomoon/AEGIS/actions/runs/46183661714)
+em acompanhamento. Antes de liberar efeitos, conferir quatro partições e React
+e obter o aceite do responsável sobre esse pacote concreto. Depois registrar
+secret temporário novo e comentário de autorização exato, sem expor identidade
+ou token. Pais/filhos continuam abertos enquanto essas fases não têm prova.
